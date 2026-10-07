@@ -1,0 +1,15 @@
+title: Open Space HDL
+tagline: Open-source VHDL IP for spacecraft data links
+description: >-
+  Open-source VHDL implementations of SpaceWire, SpaceFibre and RMAP,
+  built on the Open Logic VHDL library.
+url: https://openspacehdl.org
+baseurl: ""
+github_org: https://github.com/open-space-hdl
+
+# Repos with their own GitHub Pages site are served at /<repo>/ by GitHub.
+# Never create a folder here that has the same name as a repo.
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock

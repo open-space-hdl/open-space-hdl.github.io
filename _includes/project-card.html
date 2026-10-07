@@ -1,0 +1,19 @@
+{%- assign p = include.project -%}
+<article class="card">
+  <div class="card-head">
+    <h3>{{ p.name }}</h3>
+    {%- unless p.public %}
+    <span class="badge">Coming soon</span>
+    {%- endunless %}
+  </div>
+  <p class="card-protocol">{{ p.protocol }}</p>
+  <p class="card-summary">{{ p.summary }}</p>
+  {%- if p.public %}
+  <p class="card-links">
+    {%- if p.docs %}
+    <a href="{{ '/' | append: p.repo | append: '/' | relative_url }}">Documentation</a>
+    {%- endif %}
+    <a href="{{ site.github_org }}/{{ p.repo }}">Source on GitHub</a>
+  </p>
+  {%- endif %}
+</article>

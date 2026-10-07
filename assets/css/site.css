@@ -1,0 +1,195 @@
+@font-face {
+  font-family: "Sora";
+  src: url("../fonts/sora-latin.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/jetbrains-mono-latin.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+:root {
+  --navy: #0E1A2B;
+  --orange: #EE5A12;
+  --orange-text: #B9430A;
+  --light: #F4F6F8;
+  --surface: #EEF1F4;
+  --text: #0E1A2B;
+  --text-muted: #4A5565;
+  --on-navy-muted: #B7C0CC;
+  --border: #D9DEE5;
+  --font-sans: "Sora", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+  --wrap: 1080px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--text);
+  background: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main { flex: 1 0 auto; }
+
+a { color: var(--orange-text); text-underline-offset: 0.2em; }
+a:hover { color: var(--navy); }
+
+h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; }
+
+.wrap {
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Header */
+.site-header { background: var(--navy); }
+
+.header-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 32px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.brand { display: inline-flex; }
+.brand img { display: block; height: 30px; width: auto; }
+
+.site-nav { display: flex; gap: 24px; }
+.site-nav a {
+  color: var(--light);
+  text-decoration: none;
+  font-size: 0.95rem;
+  padding: 8px 0;
+}
+.site-nav a:hover { color: var(--orange); }
+
+/* Hero */
+.hero {
+  background: var(--navy);
+  color: var(--light);
+  padding: 72px 0 96px;
+}
+
+.eyebrow {
+  margin: 0 0 16px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.hero h1 {
+  margin: 0;
+  max-width: 18ch;
+  font-size: clamp(2.1rem, 5vw, 3.4rem);
+}
+
+.lead {
+  margin: 24px 0 0;
+  max-width: 56ch;
+  font-size: 1.15rem;
+  color: var(--on-navy-muted);
+}
+.lead a { color: var(--light); }
+.lead a:hover { color: var(--orange); }
+
+/* Projects */
+.projects { padding: 72px 0 88px; }
+.projects h2 { margin: 0 0 28px; font-size: 1.75rem; }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.card h3 { margin: 0; font-size: 1.35rem; }
+
+.badge {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--navy);
+  border: 1.5px solid var(--navy);
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+.card-protocol {
+  margin: 4px 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--orange-text);
+}
+
+.card-summary { margin: 14px 0 0; color: var(--text-muted); }
+
+.card-links {
+  margin: auto 0 0;
+  padding-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-weight: 600;
+}
+
+/* Plain content pages (404, later: about, imprint, ...) */
+.page { padding: 72px 0 88px; }
+.page h1 { margin-top: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+
+/* Footer */
+.site-footer {
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.footer-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+.footer-bar nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.site-footer a { color: var(--text-muted); }
+.site-footer a:hover { color: var(--navy); }

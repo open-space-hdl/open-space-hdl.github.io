@@ -1,0 +1,24 @@
+---
+layout: default
+---
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">SpaceWire · SpaceFibre · RMAP</p>
+    <h1>{{ site.tagline }}</h1>
+    <p class="lead">
+      Open implementations of the on-board data link protocols used in spacecraft,
+      built on the <a href="https://github.com/open-logic/open-logic">Open Logic</a> VHDL library.
+    </p>
+  </div>
+</section>
+
+<section class="projects" id="projects">
+  <div class="wrap">
+    <h2>Projects</h2>
+    <div class="card-grid">
+      {%- for project in site.data.projects %}
+      {% include project-card.html project=project %}
+      {%- endfor %}
+    </div>
+  </div>
+</section>

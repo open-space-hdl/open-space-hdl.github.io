@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="{{ page.lang | default: 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {%- assign description = page.description | default: site.description | strip_newlines %}
+  <title>{% if page.title %}{{ page.title }} · {{ site.title }}{% else %}{{ site.title }} – {{ site.tagline }}{% endif %}</title>
+  <meta name="description" content="{{ description }}">
+  <link rel="canonical" href="{{ page.url | absolute_url }}">
+  <link rel="icon" href="{{ '/favicon.ico' | relative_url }}" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="{{ '/favicon.svg' | relative_url }}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{{ '/apple-touch-icon.png' | relative_url }}">
+  <meta name="theme-color" content="#0E1A2B">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ site.title }}">
+  <meta property="og:title" content="{{ page.title | default: site.title }}">
+  <meta property="og:description" content="{{ description }}">
+  <meta property="og:url" content="{{ page.url | absolute_url }}">
+  <meta property="og:image" content="{{ '/assets/img/social-preview.png' | absolute_url }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preload" href="{{ '/assets/fonts/sora-latin.woff2' | relative_url }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-bar">
+      <a class="brand" href="{{ '/' | relative_url }}">
+        <img src="{{ '/assets/img/logo-horizontal-inverse.svg' | relative_url }}" alt="{{ site.title }}" width="233" height="30">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="{{ '/#projects' | relative_url }}">Projects</a>
+        <a href="{{ site.github_org }}">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {{ content }}
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-bar">
+      <span>{{ site.title }}</span>
+      <nav aria-label="Footer">
+        <a href="{{ site.github_org }}">github.com/open-space-hdl</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
