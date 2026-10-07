@@ -50,6 +50,8 @@ a:hover { color: var(--navy); }
 
 h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; }
 
+.nowrap { white-space: nowrap; }
+
 .wrap {
   max-width: var(--wrap);
   margin: 0 auto;

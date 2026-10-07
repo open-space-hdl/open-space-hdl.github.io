@@ -4,9 +4,9 @@ layout: default
 <section class="hero">
   <div class="wrap">
     <p class="eyebrow">SpaceWire · SpaceFibre · RMAP</p>
-    <h1>{{ site.tagline }}</h1>
+    <h1>{{ site.tagline | replace: 'on-board', '<span class="nowrap">on-board</span>' }}</h1>
     <p class="lead">
-      Open implementations of the on-board data link protocols and signal processing
+      Open implementations of the <span class="nowrap">on-board</span> data link protocols and signal processing
       functions used in spacecraft, built on the <a href="https://github.com/open-logic/open-logic">Open Logic</a> VHDL library.
     </p>
   </div>
