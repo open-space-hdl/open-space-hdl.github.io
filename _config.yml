@@ -1,7 +1,8 @@
 title: Open Space HDL
-tagline: Open-source VHDL IP for spacecraft data links
+tagline: Open-source VHDL IP for spacecraft
 description: >-
-  Open-source VHDL implementations of SpaceWire, SpaceFibre and RMAP,
+  Open-source VHDL IP for spacecraft: on-board data link protocols such as
+  SpaceWire, SpaceFibre and RMAP, and signal processing functions,
   built on the Open Logic VHDL library.
 url: https://openspacehdl.org
 baseurl: ""
