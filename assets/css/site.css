@@ -100,7 +100,8 @@ h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; }
 
 .hero h1 {
   margin: 0;
-  max-width: 18ch;
+  max-width: 22ch;
+  text-wrap: balance;
   font-size: clamp(2.1rem, 5vw, 3.4rem);
 }
 
@@ -153,7 +154,7 @@ h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; }
   padding: 2px 7px;
 }
 
-.card-protocol {
+.card-category {
   margin: 4px 0 0;
   font-family: var(--font-mono);
   font-size: 0.85rem;
