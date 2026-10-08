@@ -12,21 +12,21 @@
   repo: openwire
   category: SpaceWire
   summary: Open SpaceWire implementation based on the Open Logic VHDL library.
-  public: false
+  public: true
   docs: false
 
 - name: OpenFibre
   repo: openfibre
   category: SpaceFibre
   summary: Open SpaceFibre implementation based on the Open Logic VHDL library.
-  public: false
+  public: true
   docs: false
 
 - name: OpenRMAP
   repo: openrmap
   category: RMAP
   summary: Open implementation of the Remote Memory Access Protocol for SpaceWire and SpaceFibre networks.
-  public: false
+  public: true
   docs: false
 
 - name: Open Logic FT
