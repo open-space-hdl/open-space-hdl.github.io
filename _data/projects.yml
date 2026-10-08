@@ -3,7 +3,7 @@
 #   repo:      repository name in github.com/open-space-hdl
 #   category:  short label under the name (protocol, domain, ...)
 #   public:    true once the repository is public -> card links to the source
-#   docs:      true once the repository publishes its own GitHub Pages site
+#   docs:      true once the repository publishes its own GitHub Pages site (MkDocs, tools/ of the repository)
 #              -> card links to openspacehdl.org/<repo>/
 #
 # While public is false the card shows "Coming soon" and no links.
@@ -13,25 +13,25 @@
   category: SpaceWire
   summary: Open SpaceWire implementation based on the Open Logic VHDL library.
   public: true
-  docs: false
+  docs: true
 
 - name: OpenFibre
   repo: openfibre
   category: SpaceFibre
   summary: Open SpaceFibre implementation based on the Open Logic VHDL library.
   public: true
-  docs: false
+  docs: true
 
 - name: OpenRMAP
   repo: openrmap
   category: RMAP
   summary: Open implementation of the Remote Memory Access Protocol for SpaceWire and SpaceFibre networks.
   public: true
-  docs: false
+  docs: true
 
 - name: Open Logic FT
   repo: open-logic-ft
   category: Fault tolerance
   summary: Fault-tolerant fork of the Open Logic FPGA Library.
   public: true
-  docs: false
+  docs: true

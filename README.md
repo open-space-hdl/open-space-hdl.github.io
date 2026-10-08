@@ -21,12 +21,17 @@ Add an entry to `_data/projects.yml`. While `public: false` the card shows "Comi
 
 ## Project pages (openspacehdl.org/&lt;repo&gt;/)
 
-Every public repo in the organization can publish its own GitHub Pages site (e.g. MkDocs Material
-via GitHub Actions). Because this site owns the custom domain, GitHub serves those sites automatically at
-`https://openspacehdl.org/<repo>/` – nothing to configure here.
+Every public repo in the organization can publish its own GitHub Pages site. Because this site owns the custom
+domain, GitHub serves those sites automatically at `https://openspacehdl.org/<repo>/` – nothing to configure here.
 
-1. Make the repo public and enable Pages in its settings.
-2. Set `public: true` and `docs: true` for it in `_data/projects.yml`.
+The project repos build their documentation with MkDocs (Material theme, same colours and fonts as this site) from
+the Markdown files they already contain: `tools/docs/` (`tools/ft_docs/` in open-logic-ft) holds `mkdocs.yml`,
+the hook `hooks.py` and the theme assets, `.github/workflows/docs.yml` builds and deploys on every push.
+
+1. Make the repo public and copy `tools/docs/` and `.github/workflows/docs.yml` from openwire; adapt the names and
+   the `nav` in `mkdocs.yml`.
+2. Enable Pages with GitHub Actions as source (`gh api -X POST repos/open-space-hdl/<repo>/pages -f build_type=workflow`).
+3. Set `public: true` and `docs: true` for it in `_data/projects.yml`.
 
 Do not create folders in this repo named like a repository – the project site would collide with them.
 
