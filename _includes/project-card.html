@@ -1,12 +1,25 @@
 {%- assign p = include.project -%}
-<article class="card">
+{%- if p.public -%}
+  {%- if p.docs -%}
+    {%- assign target = '/' | append: p.repo | append: '/' | relative_url -%}
+  {%- else -%}
+    {%- assign target = site.github_org | append: '/' | append: p.repo -%}
+  {%- endif -%}
+{%- endif -%}
+<article class="card{% if p.public %} card-linked{% endif %}">
   <div class="card-head">
-    <h3>{{ p.name }}</h3>
+    <h3>
+      {%- if p.public -%}
+      <a class="card-link" href="{{ target }}">{{ p.name }}</a>
+      {%- else -%}
+      {{ p.name }}
+      {%- endif -%}
+    </h3>
     {%- unless p.public %}
     <span class="badge">Coming soon</span>
     {%- endunless %}
     {%- if p.public and p.trl %}
-    <a class="badge badge-trl" href="{{ '/trl/' | relative_url }}" title="Technology readiness level: what it means">TRL {{ p.trl }}</a>
+    {% include trl-badge.html level=p.trl link=true %}
     {%- endif %}
   </div>
   <p class="card-category">{{ p.category }}</p>

@@ -1,0 +1,9 @@
+{%- comment -%}
+  Two-tone TRL badge (navy "TRL", orange level), the same look as the badge in the READMEs.
+  Parameters: level (number), link (true: link to the TRL page).
+{%- endcomment -%}
+{%- if include.link -%}
+<a class="trl" href="{{ '/trl/' | relative_url }}" title="Technology readiness level {{ include.level }}: what it means"><span class="trl-key">TRL</span><span class="trl-val">{{ include.level }}</span></a>
+{%- else -%}
+<span class="trl" title="Technology readiness level {{ include.level }}"><span class="trl-key">TRL</span><span class="trl-val">{{ include.level }}</span></span>
+{%- endif -%}

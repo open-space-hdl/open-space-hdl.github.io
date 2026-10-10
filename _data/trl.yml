@@ -1,0 +1,60 @@
+# Technology readiness levels for the IP cores of Open Space HDL (shown on trl.html).
+#
+#   level:    1 to 9 (ISO 16290 / ECSS-E-AS-11C)
+#   phase:    group heading of the table; a new group starts where the phase changes
+#   meaning:  what the level means for an IP core
+#   evidence: documents that show the level
+
+- level: 1
+  phase: Specification and simulation
+  meaning: "Basic functions defined: the standard and the scope of the implementation are identified."
+  evidence: [Specification]
+
+- level: 2
+  phase: Specification and simulation
+  meaning: "In development: first modules simulated, first performance estimates."
+  evidence: [First testbenches]
+
+- level: 3
+  phase: Specification and simulation
+  meaning: The IP core is fully verified by simulation, including its failure modes.
+  evidence: [Regression, Coverage closure, Compliance matrix, Fault injection in simulation, Verification report]
+
+- level: 4
+  phase: Hardware and radiation tests
+  meaning: >-
+    Synthesized and implemented with timing closure on a representative FPGA and tested on hardware in the
+    laboratory against its functional and performance requirements, ideally with an independent link partner.
+  evidence: [Synthesis and timing report, Hardware test plan, Hardware test report]
+
+- level: 5
+  phase: Hardware and radiation tests
+  meaning: >-
+    Running on the radiation-tolerant target FPGA; a single-event effects (SEE) test, such as a heavy-ion or proton
+    beam test with the IP core in operation, confirms the effectiveness of its mitigation (ECC, TMR, safe state
+    machines) and quantifies the error rates. Operation over the temperature range is demonstrated.
+  evidence: [SEE test plan, SEE test report]
+
+- level: 6
+  phase: Representative unit
+  meaning: >-
+    Integrated in a representative unit (engineering model) with its real link partners and validated in the
+    intended application environment; released with frozen requirements.
+  evidence: [User guide, Verification and validation report]
+
+- level: 7
+  phase: Qualification and flight
+  meaning: >-
+    Part of an FPGA design qualified according to ECSS-E-ST-20-40 and ECSS-Q-ST-60-02 in a qualified unit,
+    including radiation hardness assurance.
+  evidence: [Qualification of the unit]
+
+- level: 8
+  phase: Qualification and flight
+  meaning: Part of a flight model that has passed acceptance and meets the mission requirements.
+  evidence: [Flight model acceptance]
+
+- level: 9
+  phase: Qualification and flight
+  meaning: "Flight proven: typically two years of nominal operation in orbit."
+  evidence: [Operation data]

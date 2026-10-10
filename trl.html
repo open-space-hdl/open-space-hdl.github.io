@@ -15,25 +15,42 @@ permalink: /trl/
     </p>
 
     <h2 id="status">Where the projects stand</h2>
-    <div class="table-scroll">
-      <table>
+    <div class="table-frame">
+      <table class="trl-table status-table">
         <thead>
-          <tr><th>Project</th><th>TRL</th><th>Status</th></tr>
+          <tr><th scope="col">Project</th><th scope="col">Level</th><th scope="col">Status</th></tr>
         </thead>
         <tbody>
           {%- for p in site.data.projects %}
           {%- if p.trl %}
+          {%- if p.docs %}
+            {%- assign target = '/' | append: p.repo | append: '/' | relative_url %}
+          {%- else %}
+            {%- assign target = site.github_org | append: '/' | append: p.repo %}
+          {%- endif %}
           <tr>
-            <td><a href="{{ site.github_org }}/{{ p.repo }}">{{ p.name }}</a></td>
-            <td class="nowrap">TRL {{ p.trl }}</td>
-            <td>{{ p.trl_status }}</td>
+            <td data-label="Project">
+              <a class="project-name" href="{{ target }}">{{ p.name }}</a>
+              <span class="project-category">{{ p.category }}</span>
+            </td>
+            <td data-label="Level">
+              <div class="level-cell">
+                {% include trl-badge.html level=p.trl %}
+                <span class="trl-scale" role="img" aria-label="Level {{ p.trl }} of 9">
+                  {%- for i in (1..9) -%}
+                  <span{% if i <= p.trl %} class="on"{% endif %}></span>
+                  {%- endfor -%}
+                </span>
+              </div>
+            </td>
+            <td data-label="Status">{{ p.trl_status }}</td>
           </tr>
           {%- endif %}
           {%- endfor %}
         </tbody>
       </table>
     </div>
-    <p>The roadmap of each project lists the steps to the next level.</p>
+    <p class="table-note">The roadmap of each project lists the steps to the next level.</p>
 
     <h2 id="levels">What the levels mean for our IP cores</h2>
     <p>
@@ -44,70 +61,41 @@ permalink: /trl/
       by the qualification of the target FPGA, and the IP core has to show that it works on that device. This gives the
       following meaning for each level:
     </p>
-    <div class="table-scroll">
-      <table class="levels">
+    <div class="table-frame">
+      <table class="trl-table levels-table">
         <thead>
-          <tr><th>TRL</th><th>Meaning for an IP core</th><th>Evidence</th></tr>
+          <tr><th scope="col">Level</th><th scope="col">Meaning for an IP core</th><th scope="col">Evidence</th></tr>
         </thead>
         <tbody>
-          <tr>
-            <td>1</td>
-            <td>Basic functions defined: the standard and the scope of the implementation are identified.</td>
-            <td>Specification</td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>In development: first modules simulated, first performance estimates.</td>
-            <td>First testbenches</td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td>The IP core is fully verified by simulation, including its failure modes.</td>
-            <td>Regression, coverage closure, compliance matrix, fault injection in simulation, verification report</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>
-              Synthesized and implemented with timing closure on a representative FPGA and tested on hardware in the
-              laboratory against its functional and performance requirements, ideally with an independent link partner.
+          {%- assign phase = "" %}
+          {%- for l in site.data.trl %}
+          {%- if l.phase != phase %}
+          {%- assign phase = l.phase %}
+          <tr class="phase-row"><th colspan="3" scope="colgroup">{{ phase }}</th></tr>
+          {%- endif %}
+          {%- assign here_list = site.data.projects | where: "trl", l.level %}
+          <tr id="trl-{{ l.level }}"{% if here_list.size > 0 %} class="is-current"{% endif %}>
+            <td data-label="Level"><span class="level-num">{{ l.level }}</span></td>
+            <td data-label="Meaning">
+              {{ l.meaning }}
+              {%- if here_list.size > 0 %}
+              <p class="level-here">
+                <span class="level-here-label">Today</span>
+                {%- for p in here_list %}
+                <span class="level-here-name">{{ p.name }}</span>
+                {%- endfor %}
+              </p>
+              {%- endif %}
             </td>
-            <td>Synthesis and timing report, hardware test plan and test report</td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td>
-              Running on the radiation-tolerant target FPGA; a single-event effects (SEE) test, such as a heavy-ion or
-              proton beam test with the IP core in operation, confirms the effectiveness of its mitigation (ECC, TMR, safe
-              state machines) and quantifies the error rates. Operation over the temperature range is demonstrated.
+            <td data-label="Evidence">
+              <ul class="chips">
+                {%- for e in l.evidence %}
+                <li>{{ e }}</li>
+                {%- endfor %}
+              </ul>
             </td>
-            <td>SEE test plan and test report</td>
           </tr>
-          <tr>
-            <td>6</td>
-            <td>
-              Integrated in a representative unit (engineering model) with its real link partners and validated in the
-              intended application environment; released with frozen requirements.
-            </td>
-            <td>Data package: user guide, verification and validation report</td>
-          </tr>
-          <tr>
-            <td>7</td>
-            <td>
-              Part of an FPGA design qualified according to ECSS-E-ST-20-40 and ECSS-Q-ST-60-02 in a qualified unit,
-              including radiation hardness assurance.
-            </td>
-            <td>Qualification of the unit</td>
-          </tr>
-          <tr>
-            <td>8</td>
-            <td>Part of a flight model that has passed acceptance and meets the mission requirements.</td>
-            <td>Flight model acceptance</td>
-          </tr>
-          <tr>
-            <td>9</td>
-            <td>Flight proven: typically two years of nominal operation in orbit.</td>
-            <td>Operation data</td>
-          </tr>
+          {%- endfor %}
         </tbody>
       </table>
     </div>
