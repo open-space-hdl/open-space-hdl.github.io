@@ -7,6 +7,7 @@ Source of the Open Space HDL website, published with GitHub Pages (Jekyll, built
 | Path | Purpose |
 |---|---|
 | `index.html` | Start page (hero + project cards) |
+| `trl.html` | Technology readiness levels: status of every project and what the levels mean for our IP cores (`/trl/`) |
 | `_data/projects.yml` | Project list – the cards are generated from it |
 | `_layouts/default.html` | Page frame: head, header, footer |
 | `_includes/project-card.html` | One project card |
@@ -18,6 +19,9 @@ No external requests: fonts and images are served from this repo.
 ## Adding a project
 
 Add an entry to `_data/projects.yml`. While `public: false` the card shows "Coming soon".
+
+Every public project states its technology readiness level: `trl` (badge on the card, row on the TRL page) and
+`trl_status` (one sentence for the TRL page). Keep them in line with the README and the roadmap of the project.
 
 ## Project pages (openspacehdl.org/&lt;repo&gt;/)
 

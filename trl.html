@@ -1,0 +1,134 @@
+---
+layout: default
+title: Technology readiness levels
+description: >-
+  What the technology readiness levels (TRL) mean for the IP cores of Open Space HDL and where each project
+  stands today.
+permalink: /trl/
+---
+<section class="page">
+  <div class="wrap prose">
+    <h1>Technology readiness levels</h1>
+    <p>
+      Every Open Space HDL project states its technology readiness level (TRL), so that verification results in
+      simulation are not mistaken for hardware validation or flight heritage.
+    </p>
+
+    <h2 id="status">Where the projects stand</h2>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Project</th><th>TRL</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {%- for p in site.data.projects %}
+          {%- if p.trl %}
+          <tr>
+            <td><a href="{{ site.github_org }}/{{ p.repo }}">{{ p.name }}</a></td>
+            <td class="nowrap">TRL {{ p.trl }}</td>
+            <td>{{ p.trl_status }}</td>
+          </tr>
+          {%- endif %}
+          {%- endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p>The roadmap of each project lists the steps to the next level.</p>
+
+    <h2 id="levels">What the levels mean for our IP cores</h2>
+    <p>
+      The levels are those of ISO 16290, adopted by ECSS as ECSS-E-AS-11C. The ECSS handbook ECSS-E-HB-11A explains
+      how to apply them; for components such as IP cores, its Annex B (Table B-1) lists the milestones of every level,
+      and ESA uses this table for IP cores as well. Our IP cores are VHDL soft IP for FPGAs: properties of the device
+      such as the package, the temperature range, total ionising dose (TID) and single-event latch-up (SEL) are covered
+      by the qualification of the target FPGA, and the IP core has to show that it works on that device. This gives the
+      following meaning for each level:
+    </p>
+    <div class="table-scroll">
+      <table class="levels">
+        <thead>
+          <tr><th>TRL</th><th>Meaning for an IP core</th><th>Evidence</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Basic functions defined: the standard and the scope of the implementation are identified.</td>
+            <td>Specification</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>In development: first modules simulated, first performance estimates.</td>
+            <td>First testbenches</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>The IP core is fully verified by simulation, including its failure modes.</td>
+            <td>Regression, coverage closure, compliance matrix, fault injection in simulation, verification report</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>
+              Synthesized and implemented with timing closure on a representative FPGA and tested on hardware in the
+              laboratory against its functional and performance requirements, ideally with an independent link partner.
+            </td>
+            <td>Synthesis and timing report, hardware test plan and test report</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>
+              Running on the radiation-tolerant target FPGA; a single-event effects (SEE) test, such as a heavy-ion or
+              proton beam test with the IP core in operation, confirms the effectiveness of its mitigation (ECC, TMR, safe
+              state machines) and quantifies the error rates. Operation over the temperature range is demonstrated.
+            </td>
+            <td>SEE test plan and test report</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>
+              Integrated in a representative unit (engineering model) with its real link partners and validated in the
+              intended application environment; released with frozen requirements.
+            </td>
+            <td>Data package: user guide, verification and validation report</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td>
+              Part of an FPGA design qualified according to ECSS-E-ST-20-40 and ECSS-Q-ST-60-02 in a qualified unit,
+              including radiation hardness assurance.
+            </td>
+            <td>Qualification of the unit</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td>Part of a flight model that has passed acceptance and meets the mission requirements.</td>
+            <td>Flight model acceptance</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td>Flight proven: typically two years of nominal operation in orbit.</td>
+            <td>Operation data</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="sources">Sources</h2>
+    <ul>
+      <li>
+        ISO 16290:2013, Space systems: Definition of the technology readiness levels (TRLs) and their criteria of
+        assessment, adopted as
+        <a href="https://ecss.nl/standard/ecss-e-as-11c-adoption-notice-of-iso-16290-space-systems-definition-of-the-technology-readiness-levels-trls-and-their-criteria-of-assessment-1-october-2014/">ECSS-E-AS-11C</a>
+        (1 October 2014)
+      </li>
+      <li>
+        <a href="https://ecss.nl/home/ecss-e-hb-11a-technology-readiness-level-trl-guidelines-1-march-2017/">ECSS-E-HB-11A</a>,
+        Technology readiness level (TRL) guidelines (1 March 2017): clause 5.3 and Annex B, Table B-1
+      </li>
+      <li>
+        ESA,
+        <a href="https://www.esa.int/ESA_Multimedia/Images/2018/07/IPs_TRL_Levels_ECSS-E-HB-11A">IPs TRL levels
+        (ECSS-E-HB-11A)</a>
+      </li>
+    </ul>
+  </div>
+</section>

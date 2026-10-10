@@ -5,6 +5,9 @@
     {%- unless p.public %}
     <span class="badge">Coming soon</span>
     {%- endunless %}
+    {%- if p.public and p.trl %}
+    <a class="badge badge-trl" href="{{ '/trl/' | relative_url }}" title="Technology readiness level: what it means">TRL {{ p.trl }}</a>
+    {%- endif %}
   </div>
   <p class="card-category">{{ p.category }}</p>
   <p class="card-summary">{{ p.summary }}</p>

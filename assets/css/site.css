@@ -174,9 +174,31 @@ h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; }
   font-weight: 600;
 }
 
-/* Plain content pages (404, later: about, imprint, ...) */
+a.badge-trl { text-decoration: none; }
+a.badge-trl:hover { color: var(--orange-text); border-color: var(--orange-text); }
+
+
+/* Plain content pages (404, TRL, later: about, imprint, ...) */
 .page { padding: 72px 0 88px; }
 .page h1 { margin-top: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+
+.prose { max-width: 920px; }
+.prose h2 { margin: 48px 0 16px; font-size: 1.5rem; }
+
+.table-scroll { overflow-x: auto; }
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+.prose th, .prose td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.prose th { background: var(--surface); font-weight: 600; }
+.prose .levels td:first-child { white-space: nowrap; font-family: var(--font-mono); }
 
 /* Footer */
 .site-footer {

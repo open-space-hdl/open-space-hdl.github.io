@@ -5,6 +5,8 @@
 #   public:    true once the repository is public -> card links to the source
 #   docs:      true once the repository publishes its own GitHub Pages site (MkDocs, tools/ of the repository)
 #              -> card links to openspacehdl.org/<repo>/
+#   trl:       technology readiness level (see trl.html, openspacehdl.org/trl/) -> badge on the card
+#   trl_status: one sentence for the status table of the TRL page
 #
 # While public is false the card shows "Coming soon" and no links.
 
@@ -14,6 +16,8 @@
   summary: Open SpaceWire implementation based on the Open Logic VHDL library.
   public: true
   docs: true
+  trl: 3
+  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
 
 - name: OpenFibre
   repo: openfibre
@@ -21,6 +25,8 @@
   summary: Open SpaceFibre implementation based on the Open Logic VHDL library.
   public: true
   docs: true
+  trl: 3
+  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
 
 - name: OpenRMAP
   repo: openrmap
@@ -28,6 +34,8 @@
   summary: Open implementation of the Remote Memory Access Protocol for SpaceWire and SpaceFibre networks.
   public: true
   docs: true
+  trl: 3
+  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
 
 - name: Open Logic FT
   repo: open-logic-ft
@@ -35,3 +43,19 @@
   summary: Fault-tolerant fork of the Open Logic FPGA Library.
   public: true
   docs: true
+  trl: 3
+  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
+
+- name: OpenSPP
+  repo: openspp
+  category: Space Packet Protocol
+  summary: An open Space Packet Protocol implementation according to CCSDS 133.0-B-2.
+  public: false
+  docs: false
+
+- name: OpenCompact
+  repo: opencompact
+  category: Image compression
+  summary: An open hyperspectral image compression core according to CCSDS 123.0-B-2.
+  public: false
+  docs: false
