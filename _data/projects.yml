@@ -70,5 +70,7 @@
   repo: opencrypto
   category: Encryption
   summary: An open AES-GCM implementation for encryption and decryption of real-time data streams.
-  public: false
-  docs: false
+  public: true
+  docs: true
+  trl: 3
+  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
