@@ -65,3 +65,10 @@
   trl_status: >-
     Demonstrator: compresses the images of 24 configurations, covering every option of the standard, identically to
     the CNES reference software. Not yet fully verified, not tested on hardware.
+
+- name: OpenCrypto
+  repo: opencrypto
+  category: Encryption
+  summary: An open AES-GCM implementation for encryption and decryption of real-time data streams.
+  public: false
+  docs: false
