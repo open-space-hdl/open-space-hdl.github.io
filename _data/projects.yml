@@ -52,6 +52,8 @@
   summary: An open Space Packet Protocol implementation according to CCSDS 133.0-B-2.
   public: false
   docs: false
+  trl: 3
+  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
 
 - name: OpenCompact
   repo: opencompact

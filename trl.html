@@ -30,7 +30,11 @@ permalink: /trl/
           {%- endif %}
           <tr>
             <td data-label="Project">
+              {%- if p.public %}
               <a class="project-name" href="{{ target }}">{{ p.name }}</a>
+              {%- else %}
+              <span class="project-name">{{ p.name }}</span>
+              {%- endif %}
               <span class="project-category">{{ p.category }}</span>
             </td>
             <td data-label="Level">
