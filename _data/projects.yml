@@ -59,12 +59,10 @@
   repo: opencompact
   category: Image compression
   summary: An open hyperspectral image compression core according to CCSDS 123.0-B-2.
-  public: false
-  docs: false
-  trl: 2
-  trl_status: >-
-    Demonstrator: compresses the images of 24 configurations, covering every option of the standard, identically to
-    the CNES reference software. Not yet fully verified, not tested on hardware.
+  public: true
+  docs: true
+  trl: 3
+  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
 
 - name: OpenCrypto
   repo: opencrypto
