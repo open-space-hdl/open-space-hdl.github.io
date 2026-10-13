@@ -97,6 +97,10 @@ test('SPP over SpaceWire: the N-Char adapter is inserted with one click and serv
   d = await design(page);
   expect(d.instances).toHaveLength(3);
   expect(d.connections.slice(2).map((/** @type {any} */ c) => [c.from, c.to])).toEqual([['spw0.M_Pkt', 'nchar0.S_NChar'], ['nchar0.M_Link', 'spp0.S_Link']]);
+  await page.getByRole('button', { name: 'Fit' }).click();
+  await page.mouse.click(...Object.values(await canvasPoint(page, 0.97, 0.97)));
+  await settled(page);
+  await shot(page, info, '04b-bridge-inserted');
   // one undo step removes the adapter and both connections
   await page.keyboard.press('Control+z');
   await page.keyboard.press('Control+z');

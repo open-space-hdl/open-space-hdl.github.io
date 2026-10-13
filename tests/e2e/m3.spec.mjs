@@ -118,15 +118,21 @@ test('connecting: compatible ports pulse, the band snaps, the connection draws i
   await expect(page.locator('.cmp-band')).toHaveClass(/is-snapped/);
   await page.waitForTimeout(250);
   await shot(page, info, '07-connect-1-snap');
+  // record the effects of the release (they may be over before a slow browser reports back)
+  await page.evaluate(() => {
+    const w = /** @type {any} */ (window);
+    w.drew = false;
+    w.flashed = false;
+    new MutationObserver(() => {
+      if (document.querySelector('.cmp-edge-line[data-drawing]')) w.drew = true;
+      if (document.querySelector('.cmp-flash')) w.flashed = true;
+    }).observe(document.querySelector('.cmp-world') ?? document.body, { subtree: true, childList: true, attributes: true });
+  });
   await page.mouse.up();
   await page.waitForTimeout(120);
   await shot(page, info, '07-connect-2-draw');
-  const drawing = await page.evaluate(() => document.getAnimations().some((x) => {
-    const t = /** @type {KeyframeEffect} */ (x.effect)?.target;
-    return t instanceof Element && t.classList.contains('cmp-edge-line');
-  }));
-  expect(drawing).toBe(true);
-  await expect(page.locator('.cmp-flash').first()).toBeAttached();
+  await expect.poll(() => page.evaluate(() => /** @type {any} */ (window).drew)).toBe(true);
+  await expect.poll(() => page.evaluate(() => /** @type {any} */ (window).flashed)).toBe(true);
   await expect(page.locator('.cmp-edge')).toHaveClass(/is-flowing/);
   await page.waitForTimeout(400);
   await shot(page, info, '07-connect-3-flow');

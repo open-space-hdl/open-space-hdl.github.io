@@ -42,6 +42,8 @@ const DRAG_THRESHOLD = 4;
 const SNAP_RADIUS = 36;
 /** How long a new connection shows its flow. */
 const FLOW_MS = 2600;
+/** Domains with more blocks do not follow a drag live. */
+const LIVE_BOX_MAX = 16;
 
 /** Colours of the clock domain boxes, by position of the domain. */
 export const DOMAIN_TINTS = [
@@ -245,10 +247,10 @@ export class CanvasView {
 
   applyView() {
     const { x, y, zoom } = this.view;
-    // the SVG is twice the size of the visible area and centred on it, so that a pan can move it as a whole (a cheap
-    // CSS transform) and the parts that come into view are already drawn
-    const ox = x + this.wrap.clientWidth / 2;
-    const oy = y + this.wrap.clientHeight / 2;
+    // while panning the SVG is twice the size of the visible area and centred on it (see panFrame)
+    const big = this.wrap.classList.contains('is-pan-big');
+    const ox = x + (big ? this.wrap.clientWidth / 2 : 0);
+    const oy = y + (big ? this.wrap.clientHeight / 2 : 0);
     this.world.setAttribute('transform', `translate(${ox} ${oy}) scale(${zoom})`);
     const pattern = this.svg.querySelector('#cmp-grid');
     pattern?.setAttribute('patternTransform', `translate(${ox} ${oy}) scale(${zoom})`);
@@ -1238,12 +1240,18 @@ export class CanvasView {
   }
 
   /**
-   * One frame of panning: the SVG moves as a whole; after a long way the world is drawn at its new place.
+   * One frame of panning. For the pan the SVG grows to twice the visible area, with the parts around the view
+   * already drawn, and moves as a whole (a CSS transform, no redrawing); after a long way the world is drawn at its new
+   * place. Outside a pan the SVG has the size of the view, so that changes redraw as little as possible.
    * @param {any} dr
    */
   panFrame(dr) {
     dr.frame = 0;
     if (this.drag !== dr || !dr.last) return;
+    if (!this.wrap.classList.contains('is-pan-big')) {
+      this.wrap.classList.add('is-pan-big');
+      this.applyView();
+    }
     const dx = dr.last.x - dr.start.x;
     const dy = dr.last.y - dr.start.y;
     dr.committed = dr.committed ?? { x: 0, y: 0 };
@@ -1265,7 +1273,9 @@ export class CanvasView {
   endPan(dr, cx, cy) {
     if (dr.frame) cancelAnimationFrame(dr.frame);
     this.svg.style.transform = '';
+    this.wrap.classList.remove('is-pan-big');
     if (dr.moved) this.setView({ x: dr.view.x + cx - dr.start.x, y: dr.view.y + cy - dr.start.y, zoom: dr.view.zoom }, false);
+    else this.applyView();
   }
 
   /**
@@ -1319,10 +1329,11 @@ export class CanvasView {
       const b = dr.box;
       this.applyDomain(dr.domain, { x: b.x + dx, y: b.y + dy, w: b.w, h: b.h });
     } else {
-      // the box of each touched domain follows its blocks on a spring
+      // the box of each touched domain follows its blocks on a spring; a large box (many blocks) is redrawn only when
+      // the blocks land, since redrawing it on every frame would make the drag stutter
       const sc = this.scene;
       for (const dm of sc?.domains.values() ?? []) {
-        if (!dm.members.some((m) => dr.moving.has(m))) continue;
+        if (dm.members.length > LIVE_BOX_MAX || !dm.members.some((m) => dr.moving.has(m))) continue;
         const rects = dm.members.map((m) => {
           const b = sc?.blocks.get(m);
           const p = this.shown.blocks.get(m) ?? b;
