@@ -4,15 +4,20 @@
  * commands on the design (each one undoable).
  */
 
-import { checkConnection } from '../model/compat.js';
+import { isDriver } from '../model/catalog.js';
+import { checkConnection, resolveEndpoint } from '../model/compat.js';
 import {
-  addConnection, addInstance, DesignError, getInstance, moveInstances, removeConnections, removeInstances,
-  renameInstance, setGeneric, setSideband, setSystem, setViewport,
+  addConnection, addDomain, addInstance, adoptAdapter, assignClock, clearGeneric, DesignError, getInstance,
+  moveInstances, moveToDomain, removeConnections, removeDomain, removeInstances, renameDomain, renameInstance,
+  setAdapterGeneric, setDomainBox, setExternal, setGeneric, setSideband, setSystem, setViewport, sidebandDefaults,
+  updateDomain,
 } from '../model/design.js';
-import { BLOCK_WIDTH, boundsOf, fitViewport, snap } from '../model/layout.js';
+import { ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, boundsOf, fitViewport, freeSpot, snap } from '../model/layout.js';
+import { resolve } from '../model/resolver.js';
 import { FormatError, fromText, toText } from '../model/serialize.js';
 import { loadSnapshot, saveSnapshot, Workspace } from '../model/workspace.js';
 import { CanvasView } from './canvas.js';
+import { ChecksView } from './checks.js';
 import { h, replace } from './dom.js';
 import { InspectorView } from './inspector.js';
 import { PaletteView } from './palette.js';
@@ -20,7 +25,15 @@ import { TabsView } from './tabs.js';
 
 /** @typedef {import('../model/catalog.js').Catalog} Catalog */
 /** @typedef {import('../model/design.js').Design} Design */
-/** @typedef {{ instances: Set<string>, connections: Set<string>, port?: string }} Selection */
+/** @typedef {import('../model/resolver.js').Resolved} Resolved */
+/**
+ * @typedef {object} Selection
+ * @property {Set<string>} instances
+ * @property {Set<string>} connections
+ * @property {string} [port]     interface shown in the inspector
+ * @property {string} [auto]     inserted adapter
+ * @property {string} [domain]   clock domain
+ */
 
 const AUTOSAVE_DELAY = 400;
 
@@ -53,6 +66,8 @@ export class App {
 
     /** @type {number | undefined} */
     this.toastTimer = undefined;
+    /** @type {WeakMap<Design, Resolved>} */
+    this.resolvedCache = new WeakMap();
 
     // page structure: toolbar, tabs, palette | canvas | inspector, messages
     const btn = (/** @type {string} */ label, /** @type {() => void} */ fn, /** @type {Record<string, string>} */ extra = {}) =>
@@ -74,6 +89,8 @@ export class App {
         h('div', { class: 'cmp-menu-wrap' }, this.btnExamples, this.examplesMenu)),
       h('div', { class: 'cmp-toolgroup' }, this.btnUndo, this.btnRedo, this.btnDelete),
       h('div', { class: 'cmp-toolgroup' },
+        btn('Clock domain', () => this.addDomain(), { title: 'Add a clock domain; drag blocks into its box' })),
+      h('div', { class: 'cmp-toolgroup' },
         btn('−', () => this.canvas.zoomBy(1 / 1.25), { 'aria-label': 'Zoom out', title: 'Zoom out (-)' }),
         btn('+', () => this.canvas.zoomBy(1.25), { 'aria-label': 'Zoom in', title: 'Zoom in (+)' }),
         btn('Fit', () => this.fit(), { title: 'Fit the system into the view (0)' })),
@@ -82,10 +99,12 @@ export class App {
     this.palette = new PaletteView(this);
     this.canvas = new CanvasView(this);
     this.inspector = new InspectorView(this);
+    this.checks = new ChecksView(this);
     this.live = h('div', { class: 'cmp-sr', role: 'status', 'aria-live': 'polite' });
     this.toast = h('div', { class: 'cmp-toast', role: 'alert', hidden: true });
     this.dialog = /** @type {HTMLDialogElement} */ (h('dialog', { class: 'cmp-dialog' }));
-    const work = h('div', { class: 'cmp-work', id: 'cmp-workarea', role: 'tabpanel' }, this.palette.root, this.canvas.wrap, this.inspector.root);
+    const side = h('div', { class: 'cmp-side' }, this.inspector.root, this.checks.root);
+    const work = h('div', { class: 'cmp-work', id: 'cmp-workarea', role: 'tabpanel' }, this.palette.root, this.canvas.wrap, side);
     const narrow = h('div', { class: 'cmp-narrow' },
       h('p', {}, 'The Composer is an editor for larger screens. On this screen the canvas is small, but all functions work.'),
       h('button', { type: 'button', class: 'cmp-btn', onclick: () => document.body.classList.add('cmp-narrow-ok') }, 'Continue'));
@@ -118,6 +137,20 @@ export class App {
     return this.ws.activeId;
   }
 
+  /**
+   * Resolution of the active design (cached per design object, so it is computed once per change).
+   * @returns {Resolved}
+   */
+  get resolved() {
+    const d = this.design;
+    let r = this.resolvedCache.get(d);
+    if (!r) {
+      r = resolve(this.catalog, d);
+      this.resolvedCache.set(d, r);
+    }
+    return r;
+  }
+
   /** @returns {Selection} */
   get selection() {
     let sel = this.selections.get(this.tabId);
@@ -147,6 +180,8 @@ export class App {
     for (const id of [...sel.instances]) if (!getInstance(d, id)) sel.instances.delete(id);
     for (const id of [...sel.connections]) if (!d.connections.some((c) => c.id === id)) sel.connections.delete(id);
     if (sel.port && !sel.instances.has(sel.port.split('.')[0])) delete sel.port;
+    if (sel.auto && !this.resolved.byId.has(sel.auto)) delete sel.auto;
+    if (sel.domain && !d.clockDomains.some((c) => c.id === sel.domain)) delete sel.domain;
   }
 
   render() {
@@ -155,6 +190,7 @@ export class App {
     this.tabs.render();
     this.canvas.render();
     this.inspector.render();
+    this.checks.render();
     this.btnUndo.disabled = !tab?.history.canUndo;
     this.btnRedo.disabled = !tab?.history.canRedo;
     this.btnUndo.title = tab?.history.canUndo ? `Undo ${tab.history.undoLabel} (Ctrl+Z)` : 'Undo (Ctrl+Z)';
@@ -195,6 +231,8 @@ export class App {
     const sel = this.selection;
     sel.instances = new Set(ids);
     sel.connections = new Set();
+    delete sel.auto;
+    delete sel.domain;
     if (port) sel.port = port;
     else delete sel.port;
     this.render();
@@ -207,6 +245,8 @@ export class App {
     if (sel.instances.has(id)) sel.instances.delete(id);
     else sel.instances.add(id);
     delete sel.port;
+    delete sel.auto;
+    delete sel.domain;
     this.render();
   }
 
@@ -223,16 +263,67 @@ export class App {
     if (add && sel.connections.has(id)) sel.connections.delete(id);
     else sel.connections.add(id);
     delete sel.port;
+    delete sel.auto;
+    delete sel.domain;
+    this.render();
+  }
+
+  /**
+   * Selects an adapter inserted by the resolver.
+   * @param {string} id
+   */
+  selectAuto(id) {
+    const sel = this.selection;
+    sel.instances = new Set();
+    sel.connections = new Set();
+    delete sel.port;
+    delete sel.domain;
+    sel.auto = id;
+    this.render();
+  }
+
+  /**
+   * Selects a clock domain.
+   * @param {string} id
+   */
+  selectDomain(id) {
+    const sel = this.selection;
+    sel.instances = new Set();
+    sel.connections = new Set();
+    delete sel.port;
+    delete sel.auto;
+    sel.domain = id;
     this.render();
   }
 
   clearSelection() {
     const sel = this.selection;
-    if (sel.instances.size + sel.connections.size === 0) return;
+    if (sel.instances.size + sel.connections.size === 0 && !sel.auto && !sel.domain) return;
     sel.instances = new Set();
     sel.connections = new Set();
     delete sel.port;
+    delete sel.auto;
+    delete sel.domain;
     this.render();
+  }
+
+  /**
+   * Shows the subject of a check: its connection, block or clock domain.
+   * @param {import('../model/resolver.js').Check} c
+   */
+  focusCheck(c) {
+    if (c.connection && this.design.connections.some((x) => x.id === c.connection)) {
+      this.selectConnection(c.connection, false);
+      const conn = this.design.connections.find((x) => x.id === c.connection);
+      const p = conn ? this.canvas.portPosition(conn.from) : null;
+      if (p) this.canvas.centerOn(p);
+    } else if (c.instance && getInstance(this.design, c.instance)) {
+      this.selectInstances([c.instance], undefined, { focusCanvas: true });
+      const p = this.canvas.blockCenter(c.instance);
+      if (p) this.canvas.centerOn(p);
+    } else if (c.domain) {
+      this.selectDomain(c.domain);
+    }
   }
 
   focusInspector() {
@@ -250,8 +341,9 @@ export class App {
    */
   addBlockAt(blockId, preset, world) {
     let newId = '';
+    const domain = this.canvas.domainAt(world) ?? undefined;
     this.ws.apply('add block', (d) => {
-      const r = addInstance(d, this.catalog, blockId, { x: snap(world.x - BLOCK_WIDTH / 2), y: snap(world.y - 28) }, preset);
+      const r = addInstance(d, this.catalog, blockId, { x: snap(world.x - BLOCK_WIDTH / 2), y: snap(world.y - 28) }, preset, { domain });
       newId = r.id;
       return r.design;
     });
@@ -268,20 +360,156 @@ export class App {
    */
   addBlockAtCenter(blockId, preset) {
     const c = this.canvas.visibleCenter();
-    const taken = new Set(Object.values(this.design.layout.instances).map((p) => `${p.x},${p.y}`));
-    let k = 0;
-    let pos = { x: snap(c.x - BLOCK_WIDTH / 2), y: snap(c.y - 60) };
-    while (taken.has(`${pos.x},${pos.y}`) && k < 50) {
-      k += 1;
-      pos = { x: pos.x + 32, y: pos.y + 32 };
-    }
+    const b = this.catalog.block(blockId);
+    const size = blockGeometry(this.catalog.ports(b, this.catalog.genericValues(b, {}, preset)), b.clocks.filter((x) => !x.output).length - 1);
+    const pos = freeSpot([...this.canvas.blockRects().values()], { x: c.x - size.width / 2, y: c.y - size.height / 2 }, size);
     const id = this.addBlockAt(blockId, preset, { x: pos.x + BLOCK_WIDTH / 2, y: pos.y + 28 });
     this.canvas.focusBlock(id);
   }
 
-  /** @param {Record<string, {x: number, y: number}>} moves */
-  moveInstances(moves) {
-    this.ws.apply('move', (d) => moveInstances(d, moves));
+  /**
+   * Moves blocks; blocks dropped into the box of another clock domain join it (one undo step).
+   * @param {Record<string, {x: number, y: number}>} moves
+   * @param {Record<string, string>} [domains] block id -> new clock domain
+   */
+  moveInstances(moves, domains = {}) {
+    this.ws.apply(Object.keys(domains).length ? 'move to clock domain' : 'move', (d) => {
+      let next = moveInstances(d, moves);
+      for (const [id, dom] of Object.entries(domains)) next = moveToDomain(next, this.catalog, id, dom);
+      return next;
+    });
+    for (const [id, dom] of Object.entries(domains)) {
+      this.notify(`${id} now runs in ${this.design.clockDomains.find((c) => c.id === dom)?.name ?? dom}.`);
+    }
+  }
+
+  /**
+   * Moves the blocks of a clock domain (and the placeholder box of an empty domain).
+   * @param {string} id
+   * @param {Record<string, {x: number, y: number}>} moves
+   * @param {{x: number, y: number, w: number, h: number}} box
+   */
+  moveDomain(id, moves, box) {
+    this.ws.apply('move clock domain', (d) => {
+      const next = moveInstances(d, moves);
+      return Object.keys(moves).length === 0 ? setDomainBox(next, id, box) : next;
+    });
+  }
+
+  /** Adds a clock domain with a placeholder box in the visible area. */
+  addDomain() {
+    const c = this.canvas.visibleCenter();
+    const size = { width: 360, height: 260 };
+    const taken = [...this.canvas.blockRects().values(), ...[...this.canvas.domBoxes.values()].map((b) => ({ x: b.x, y: b.y, width: b.w, height: b.h }))];
+    const spot = freeSpot(taken, { x: c.x - size.width / 2, y: c.y - size.height / 2 }, size);
+    let id = '';
+    this.ws.apply('add clock domain', (d) => {
+      const r = addDomain(d, { box: { x: spot.x, y: spot.y, w: size.width, h: size.height } });
+      id = r.id;
+      return r.design;
+    });
+    this.selectDomain(id);
+    this.notify(`Added clock domain ${id}. Drag blocks into its box.`);
+  }
+
+  /**
+   * @param {string} id
+   * @param {{ name?: string, frequencyHz?: number }} props
+   * @returns {string | null}
+   */
+  updateDomain(id, props) {
+    return this.tryApply('clock domain', (d) => updateDomain(d, id, props));
+  }
+
+  /**
+   * @param {string} oldId
+   * @param {string} newId
+   * @returns {string | null}
+   */
+  renameDomain(oldId, newId) {
+    const err = this.tryApply('rename clock domain', (d) => renameDomain(d, oldId, newId));
+    if (!err && this.selection.domain === oldId) this.selectDomain(newId);
+    return err;
+  }
+
+  /**
+   * Merges a clock domain into another one (its blocks move there).
+   * @param {string} id
+   * @param {string} target
+   * @returns {string | null}
+   */
+  mergeDomain(id, target) {
+    const err = this.tryApply('merge clock domains', (d) => removeDomain(d, id, target));
+    if (!err) {
+      this.selectDomain(target);
+      this.notify(`Clock domain ${id} merged into ${target}.`);
+    }
+    return err;
+  }
+
+  /**
+   * @param {string} instId
+   * @param {string} port
+   * @param {string} domain
+   * @returns {string | null}
+   */
+  assignClock(instId, port, domain) {
+    return this.tryApply('clock domain of a clock', (d) => assignClock(d, this.catalog, instId, port, domain));
+  }
+
+  /**
+   * @param {string} ref
+   * @param {string | null} prefix
+   * @returns {string | null}
+   */
+  setExternal(ref, prefix) {
+    return this.tryApply(prefix === null ? 'internal interface' : 'external interface', (d) => setExternal(d, ref, prefix));
+  }
+
+  /**
+   * @param {string} connId
+   * @param {'cdc' | 'wconv'} kind
+   * @param {string} name
+   * @param {unknown} value
+   */
+  setAdapterGeneric(connId, kind, name, value) {
+    return this.tryApply(`set ${name}`, (d) => setAdapterGeneric(d, connId, kind, name, value));
+  }
+
+  /**
+   * Turns an inserted adapter into a normal block next to its connection.
+   * @param {string} autoId
+   */
+  adoptAdapter(autoId) {
+    const rec = this.resolved.byId.get(autoId);
+    if (!rec || rec.origin !== 'auto' || !rec.connection) return;
+    const el = this.canvas.autoLayer.querySelector(`[data-auto="${autoId}"]`);
+    const tr = /** @type {RegExpMatchArray | null} */ (el?.getAttribute('transform')?.match(/translate\(([-\d.]+) ([-\d.]+)\)/) ?? null);
+    const pos = tr ? { x: snap(Number(tr[1]) + ADAPTER_WIDTH / 2 - BLOCK_WIDTH / 2), y: snap(Number(tr[2]) - 20) } : this.canvas.visibleCenter();
+    let newId = '';
+    this.ws.apply('make a normal block', (d) => {
+      const r = adoptAdapter(d, this.catalog, rec, pos);
+      newId = r.id;
+      return r.design;
+    });
+    this.selectInstances([newId], undefined, { focusCanvas: true });
+    this.notify(`${rec.entity} is now the block ${newId}.`);
+  }
+
+  /**
+   * Runs a command that may be refused; returns the reason or null.
+   * @param {string} label
+   * @param {(d: Design) => Design} fn
+   * @returns {string | null}
+   */
+  tryApply(label, fn) {
+    try {
+      this.ws.apply(label, fn);
+      return null;
+    } catch (e) {
+      if (e instanceof DesignError) return e.message;
+      throw e;
+    }
   }
 
   /**
@@ -292,6 +520,10 @@ export class App {
    */
   connect(a, b, at) {
     const chk = checkConnection(this.catalog, this.design, a, b);
+    if (!chk.ok && chk.bridge) {
+      this.offerBridge(a, b, chk.bridge, chk.reason ?? '', at);
+      return false;
+    }
     if (!chk.ok || !chk.from || !chk.to) {
       const msg = chk.reason ?? 'These interfaces cannot be connected.';
       this.notify(msg, 'error');
@@ -301,12 +533,7 @@ export class App {
       }
       return false;
     }
-    /** @type {Record<string, number | boolean> | undefined} */
-    let sideband;
-    if (chk.sideband) {
-      sideband = {};
-      for (const f of chk.sideband) sideband[f.name] = f.default ?? (f.kind === 'boolean' ? false : 0);
-    }
+    const sideband = chk.sideband ? sidebandDefaults(chk.sideband) : undefined;
     let connId = '';
     const from = chk.from;
     const to = chk.to;
@@ -320,6 +547,82 @@ export class App {
     return true;
   }
 
+  /**
+   * Offers to connect two interfaces through a bridge block (one click).
+   * @param {string} a
+   * @param {string} b
+   * @param {{ type: string, via: string }} bridge
+   * @param {string} reason
+   * @param {{x: number, y: number}} [at]
+   */
+  offerBridge(a, b, bridge, reason, at) {
+    const via = this.catalog.blocks.get(bridge.via);
+    const name = via ? `${via.name} (${via.entity})` : bridge.via;
+    const pos = at ?? (() => {
+      const r = this.canvas.wrap.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    })();
+    this.canvas.showPopover([
+      h('p', { class: 'cmp-popover-text' }, reason),
+      h('div', { class: 'cmp-popover-actions' },
+        h('button', { type: 'button', class: 'cmp-btn cmp-btn-primary', onclick: () => { this.canvas.hidePopover(); this.insertBridge(a, b, bridge.via); } }, `Insert ${via?.name ?? 'adapter'}`),
+        h('button', { type: 'button', class: 'cmp-btn', onclick: () => this.canvas.hidePopover() }, 'Cancel')),
+    ], pos.x, pos.y, `Connect through ${name}`);
+    this.notify(`${reason} Choose Insert to add it.`);
+  }
+
+  /**
+   * Connects two interfaces through a bridge block: an existing one between the two blocks with free interfaces, or a
+   * new one placed between them. One undo step.
+   * @param {string} a
+   * @param {string} b
+   * @param {string} via catalog block id of the bridge
+   */
+  insertBridge(a, b, via) {
+    const ea = resolveEndpoint(this.catalog, this.design, a);
+    if (!ea) return;
+    const [drv, rcv] = isDriver(ea.port.itf.role) ? [a, b] : [b, a];
+    let used = '';
+    this.ws.apply('connect through an adapter', (d0) => {
+      const ends = [drv.split('.')[0], rcv.split('.')[0]];
+      const free = (/** @type {Design} */ d, /** @type {string} */ id) => {
+        const inst = getInstance(d, id);
+        const blk = inst && this.catalog.blocks.get(inst.block);
+        if (!inst || !blk) return null;
+        const ports = this.catalog.ports(blk, this.catalog.genericValues(blk, inst.generics, inst.preset));
+        const sink = ports.find((p) => checkConnection(this.catalog, d, drv, `${id}.${p.ref}`).ok);
+        const source = ports.find((p) => checkConnection(this.catalog, d, `${id}.${p.ref}`, rcv).ok);
+        return sink && source ? { sink: `${id}.${sink.ref}`, source: `${id}.${source.ref}` } : null;
+      };
+      // reuse a bridge that already serves one of the two blocks
+      let d = d0;
+      let id = d.instances.find((i) => i.block === via && d.connections.some((c) => ends.includes(c.from.split('.')[0]) && c.to.startsWith(`${i.id}.`) || ends.includes(c.to.split('.')[0]) && c.from.startsWith(`${i.id}.`)) && free(d, i.id))?.id;
+      if (!id) {
+        const pa = this.canvas.blockCenter(ends[0]) ?? { x: 0, y: 0 };
+        const pb = this.canvas.blockCenter(ends[1]) ?? { x: 0, y: 0 };
+        const vb = this.catalog.block(via);
+        const size = blockGeometry(this.catalog.ports(vb, this.catalog.genericValues(vb)), vb.clocks.filter((x) => !x.output).length - 1);
+        const spot = freeSpot([...this.canvas.blockRects().values()], { x: (pa.x + pb.x) / 2 - size.width / 2, y: Math.max(pa.y, pb.y) + 120 }, size);
+        const r = addInstance(d, this.catalog, via, spot, undefined, {
+          domain: this.resolved.byId.get(ends[0])?.domain,
+        });
+        d = r.design;
+        id = r.id;
+      }
+      const ports = free(d, id);
+      if (!ports) return d0;
+      used = id;
+      d = addConnection(d, drv, ports.sink).design;
+      return addConnection(d, ports.source, rcv).design;
+    });
+    if (used) {
+      this.selectInstances([used], undefined, { focusCanvas: true });
+      this.notify(`Connected ${drv} to ${rcv} through ${used}.`);
+    } else {
+      this.notify('The adapter could not be connected.', 'error');
+    }
+  }
+
   /** @param {string[]} ids */
   removeConnections(ids) {
     if (this.ws.apply('disconnect', (d) => removeConnections(d, ids))) {
@@ -331,7 +634,10 @@ export class App {
     const sel = this.selection;
     const inst = [...sel.instances];
     const conns = [...sel.connections];
-    if (inst.length + conns.length === 0) return;
+    if (inst.length + conns.length === 0) {
+      if (sel.auto) this.notify('An inserted block disappears with its reason. Make it a normal block to change or delete it.', 'error');
+      return;
+    }
     this.ws.apply('delete', (d) => removeInstances(removeConnections(d, conns), inst));
     this.notify(`Deleted ${[inst.length ? `${inst.length} block${inst.length > 1 ? 's' : ''}` : '', conns.length ? `${conns.length} connection${conns.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' and ')}.`);
   }
@@ -366,11 +672,14 @@ export class App {
    * @param {string} name
    */
   resetGeneric(id, name) {
-    const inst = getInstance(this.design, id);
-    if (!inst) return;
-    const b = this.catalog.block(inst.block);
-    const base = this.catalog.genericValues(b, {}, inst.preset);
-    this.setGeneric(id, name, base[name]);
+    /** @type {import('../model/design.js').Connection[]} */
+    let removed = [];
+    this.ws.apply(`reset ${name}`, (d) => {
+      const r = clearGeneric(d, this.catalog, id, name);
+      removed = r.removed;
+      return r.design;
+    });
+    if (removed.length > 0) this.notify(`${removed.length} connection${removed.length > 1 ? 's' : ''} removed: the interface no longer exists.`, 'error');
   }
 
   /**

@@ -826,7 +826,9 @@ export class Resolution {
             this.tieOffs.push({ port: target, value: '0', reason: `${ref} is not connected.` });
           }
         }
-        if (!mode && !p.itf.mustServe && isDriver(p.itf.role) === false) {
+        if (!mode && !p.itf.mustServe && p.itf.role === 'slave') {
+          this.check('info', 'unconnected', `${ref} is not connected: the registers are not accessible, the block runs with its reset values.`, { instance: inst.id });
+        } else if (!mode && !p.itf.mustServe && isDriver(p.itf.role) === false) {
           this.check('warning', 'unconnected', `${ref} is not connected: its inputs are tied to zero.`, { instance: inst.id });
         } else if (!mode && !p.itf.mustServe && Object.values(p.itf.signals).some((pn) => b.ports.find((x) => x.name === pn)?.dir === 'in' && b.ports.find((x) => x.name === pn)?.default === undefined)) {
           this.check('warning', 'unconnected', `${ref} is not connected: its ready input is tied to zero, the interface never transfers.`, { instance: inst.id });

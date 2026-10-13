@@ -52,8 +52,8 @@ The Composer is a browser editor for systems built from the cores and from Open 
 | `_composer/catalog/` | Catalog source: interface types, pinned source repositories, palette, block descriptions |
 | `tools/composer_catalog.py` | Builds `assets/composer/catalog.json` from the catalog source and the VHDL entities at the pinned commits, and checks them |
 | `tools/composer_examples.mjs` | Writes the example systems in `assets/composer/examples/` |
-| `assets/composer/js/model/` | Catalog access, design model, connection rules, file format (no DOM, unit tested) |
-| `assets/composer/js/view/` | Editor: palette, canvas, inspector, tabs |
+| `assets/composer/js/model/` | Catalog access, design model, connection rules, resolver (adapters, clock domains, resets, top level), design rules, file format (no DOM, unit tested) |
+| `assets/composer/js/view/` | Editor: palette, canvas with clock domains, inspector, checks, tabs |
 | `composer/schema/system-1.json` | JSON schema of the `.composer.json` files |
 | `tests/` | Unit tests (`node --test`), type check (TypeScript) and browser tests (Playwright) |
 

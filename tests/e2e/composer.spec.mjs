@@ -1,118 +1,18 @@
 // Browser tests of the Composer (milestone 1): build, connect, save, reload, keyboard, inspector, examples.
-import { expect, test } from '@playwright/test';
-import { mkdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
-const SCREENS = process.env.COMPOSER_SCREENS;
+import { test } from '@playwright/test';
+import { canvasPoint, design, dragBlock, dragWire, expect, open, saveText, shot, watch } from './helpers.mjs';
 
 /** @type {string[]} */
 let problems = [];
 
 test.beforeEach(async ({ page }) => {
   problems = [];
-  page.on('console', (m) => {
-    if (m.type() === 'error') problems.push(`console: ${m.text()}`);
-  });
-  page.on('pageerror', (e) => problems.push(`page error: ${e.message}`));
-  page.on('request', (r) => {
-    if (!r.url().startsWith('http://127.0.0.1') && !r.url().startsWith('blob:') && !r.url().startsWith('data:')) {
-      problems.push(`external request: ${r.url()}`);
-    }
-  });
+  watch(page, problems);
 });
 
 test.afterEach(() => {
   expect(problems, problems.join('\n')).toEqual([]);
 });
-
-/** @param {import('@playwright/test').Page} page */
-async function open(page) {
-  await page.goto('/composer/');
-  await page.waitForSelector('.cmp.is-ready');
-}
-
-/**
- * @param {import('@playwright/test').Page} page
- * @param {import('@playwright/test').TestInfo} info
- * @param {string} name
- */
-async function shot(page, info, name) {
-  if (!SCREENS || info.project.name !== 'chromium') return;
-  mkdirSync(SCREENS, { recursive: true });
-  await page.screenshot({ path: join(SCREENS, `${name}.png`) });
-}
-
-/**
- * Position inside the canvas, as fractions of its size.
- * @param {import('@playwright/test').Page} page
- * @param {number} fx
- * @param {number} fy
- */
-async function canvasPoint(page, fx, fy) {
-  const box = await page.locator('.cmp-canvas').boundingBox();
-  if (!box) throw new Error('no canvas');
-  return { x: box.x + box.width * fx, y: box.y + box.height * fy };
-}
-
-/**
- * Drags a palette entry onto the canvas.
- * @param {import('@playwright/test').Page} page
- * @param {string} name
- * @param {{x: number, y: number}} to
- */
-async function dragBlock(page, name, to) {
-  const item = page.locator('.cmp-pal-item').filter({ has: page.locator('.cmp-pal-name', { hasText: new RegExp(`^${name}$`) }) }).first();
-  await item.scrollIntoViewIfNeeded();
-  const box = await item.boundingBox();
-  if (!box) throw new Error(`no palette entry ${name}`);
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 30, box.y + box.height / 2 + 10, { steps: 5 });
-  await page.mouse.move(to.x, to.y, { steps: 15 });
-  await page.mouse.up();
-}
-
-/**
- * @param {import('@playwright/test').Page} page
- * @param {string} ref
- */
-async function portCenter(page, ref) {
-  const box = await page.locator(`[data-port="${ref}"] .cmp-port-glyph`).boundingBox();
-  if (!box) throw new Error(`no port ${ref}`);
-  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-}
-
-/**
- * Drags a connection from one port to another.
- * @param {import('@playwright/test').Page} page
- * @param {string} from
- * @param {string} to
- * @param {boolean} [release]
- */
-async function dragWire(page, from, to, release = true) {
-  const a = await portCenter(page, from);
-  const b = await portCenter(page, to);
-  await page.mouse.move(a.x, a.y);
-  await page.mouse.down();
-  await page.mouse.move(a.x + 24, a.y + 12, { steps: 4 });
-  await page.mouse.move(b.x, b.y, { steps: 18 });
-  if (release) await page.mouse.up();
-}
-
-/** @param {import('@playwright/test').Page} page */
-function design(page) {
-  return page.evaluate(() => JSON.parse(JSON.stringify(/** @type {any} */ (window).composer.design)));
-}
-
-/** @param {import('@playwright/test').Page} page */
-async function saveText(page) {
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.getByRole('button', { name: 'Save', exact: true }).click(),
-  ]);
-  const path = await download.path();
-  return { name: download.suggestedFilename(), text: readFileSync(path, 'utf-8') };
-}
 
 test('build OWR and OMAP by hand, connect both directions, save and reload unchanged', async ({ page, browser }, info) => {
   await open(page);

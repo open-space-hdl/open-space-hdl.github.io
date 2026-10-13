@@ -557,6 +557,38 @@ export function clearGeneric(d, cat, id, name) {
 }
 
 /**
+ * Turns an adapter that the resolver inserted on a connection into a normal block: the connection is replaced by
+ * two connections through a new instance with the generic values of the adapter (widths keep following their
+ * connections) and its clock domains.
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {{ block: string, generics: Record<string, unknown>, clocks: Record<string, string>, connection?: string }} rec
+ * @param {{x: number, y: number}} pos
+ * @returns {{ design: Design, id: string }}
+ */
+export function adoptAdapter(d, cat, rec, pos) {
+  const conn = d.connections.find((c) => c.id === rec.connection);
+  if (!conn) throw new DesignError('The adapter belongs to no connection.');
+  const b = cat.block(rec.block);
+  const added = addInstance(removeConnections(d, [conn.id]), cat, rec.block, pos);
+  const id = added.id;
+  const base = cat.genericValues(b);
+  /** @type {Record<string, unknown>} */
+  const generics = {};
+  for (const g of b.generics) {
+    if (g.follow || g.fromClock) continue;
+    if (g.name in rec.generics && !sameValue(rec.generics[g.name], base[g.name])) generics[g.name] = rec.generics[g.name];
+  }
+  let next = {
+    ...added.design,
+    instances: added.design.instances.map((i) => (i.id === id ? { ...i, generics, clocks: { ...i.clocks, ...rec.clocks } } : i)),
+  };
+  next = addConnection(next, conn.from, `${id}.In`).design;
+  next = addConnection(next, `${id}.Out`, conn.to, conn.sideband).design;
+  return { design: next, id };
+}
+
+/**
  * Default constants of a side band (catalog defaults, else false or 0).
  * @param {import('./catalog.js').SidebandField[]} fields
  * @returns {Record<string, number | boolean>}

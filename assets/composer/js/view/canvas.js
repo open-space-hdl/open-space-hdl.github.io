@@ -1,20 +1,49 @@
 // @ts-check
 /**
- * The canvas: SVG view of the active system with pan and zoom, blocks with typed ports and connections, and the
- * pointer and keyboard interaction (select, move, connect, delete). Elements are keyed by id and reused between
- * renders, so that focus survives an update and movement can be animated.
+ * The canvas: SVG view of the active system with pan and zoom. It shows the clock domains as boxes, the blocks with
+ * typed ports and clock chips, the connections with the adapters the resolver inserts (dashed, marked "auto"), and
+ * the external interfaces. Interaction: select, move (into another domain box to change the clock domain), connect,
+ * pan and zoom. Elements are keyed by id and reused between renders, so that focus survives an update and movement
+ * can be animated.
  */
 
-import { candidates, checkConnection, effectiveType, resolveEndpoint } from '../model/compat.js';
-import { blockGeometry, connectionPath, GRID, HEADER_HEIGHT, isBackward, snap } from '../model/layout.js';
+import { candidates, effectiveType } from '../model/compat.js';
+import {
+  ADAPTER_HEIGHT, ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, boxAt, CHIP_HEIGHT, connectionPath, DOMAIN_HEAD,
+  domainBoxes, GRID, HEADER_HEIGHT, isBackward, routeChain, snap,
+} from '../model/layout.js';
+import { formatHz } from '../model/rules.js';
 import { glyphPath, s } from './dom.js';
 
 /** @typedef {import('./app.js').App} App */
 /** @typedef {import('../model/design.js').Design} Design */
+/** @typedef {import('../model/layout.js').Box} Box */
 
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 2.5;
 const DRAG_THRESHOLD = 4;
+
+/** Colours of the clock domain boxes, by position of the domain. */
+export const DOMAIN_TINTS = [
+  { fill: 'rgba(25, 113, 194, 0.06)', stroke: '#5B95CF' },
+  { fill: 'rgba(238, 90, 18, 0.06)', stroke: '#E07A42' },
+  { fill: 'rgba(47, 158, 68, 0.07)', stroke: '#4FA463' },
+  { fill: 'rgba(112, 72, 232, 0.06)', stroke: '#8467E0' },
+  { fill: 'rgba(12, 133, 153, 0.07)', stroke: '#3696A8' },
+  { fill: 'rgba(214, 51, 108, 0.06)', stroke: '#D05E87' },
+];
+
+/** Short name of an inserted adapter. */
+const ROLE_LABEL = {
+  olo_ft_fifo_async: 'Async FIFO',
+  olo_base_fifo_async: 'Async FIFO',
+  olo_base_cc_simple: 'Clock crossing',
+  olo_base_cc_bits: 'Level crossing',
+  olo_base_cc_pulse: 'Pulse crossing',
+  olo_base_wconv_n2xn: 'Width converter',
+  olo_base_wconv_xn2n: 'Width converter',
+  olo_base_wconv_n2m: 'Width converter',
+};
 
 /**
  * @typedef {object} BlockEntry
@@ -44,10 +73,13 @@ export class CanvasView {
     );
     this.gridRect = s('rect', { class: 'cmp-grid', x: 0, y: 0, width: '100%', height: '100%', fill: 'url(#cmp-grid)' });
     this.world = /** @type {SVGGElement} */ (s('g', { class: 'cmp-world' }));
+    this.domainLayer = /** @type {SVGGElement} */ (s('g', { class: 'cmp-domains' }));
     this.edgeLayer = /** @type {SVGGElement} */ (s('g', { class: 'cmp-edges' }));
+    this.headLayer = /** @type {SVGGElement} */ (s('g', { class: 'cmp-domain-heads' }));
+    this.autoLayer = /** @type {SVGGElement} */ (s('g', { class: 'cmp-autos' }));
     this.blockLayer = /** @type {SVGGElement} */ (s('g', { class: 'cmp-blocks' }));
     this.overlay = /** @type {SVGGElement} */ (s('g', { class: 'cmp-overlay' }));
-    this.world.append(this.edgeLayer, this.blockLayer, this.overlay);
+    this.world.append(this.domainLayer, this.edgeLayer, this.headLayer, this.autoLayer, this.blockLayer, this.overlay);
     this.svg.append(defs, this.gridRect, this.world);
 
     this.tip = document.createElement('div');
@@ -55,15 +87,22 @@ export class CanvasView {
     this.tip.setAttribute('role', 'tooltip');
     this.tip.hidden = true;
 
+    this.popover = document.createElement('div');
+    this.popover.className = 'cmp-popover';
+    this.popover.setAttribute('role', 'dialog');
+    this.popover.hidden = true;
+
     this.empty = document.createElement('div');
     this.empty.className = 'cmp-empty';
 
-    this.wrap.append(this.svg, this.empty, this.tip);
+    this.wrap.append(this.svg, this.empty, this.tip, this.popover);
 
     /** @type {Map<string, BlockEntry>} */
     this.blocks = new Map();
     /** @type {Map<string, SVGGElement>} */
     this.edges = new Map();
+    /** @type {Map<string, Box>} */
+    this.domBoxes = new Map();
     /** @type {{x: number, y: number, zoom: number}} */
     this.view = { x: 0, y: 0, zoom: 1 };
     /** @type {any} */
@@ -78,6 +117,9 @@ export class CanvasView {
     this.svg.addEventListener('keydown', (e) => this.onKeyDown(e));
     this.svg.addEventListener('dblclick', (e) => this.onDoubleClick(e));
     this.svg.addEventListener('focusin', (e) => this.onFocusIn(e));
+    this.popover.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.hidePopover();
+    });
   }
 
   // ------------------------------------------------------------------------------------------------------------------
@@ -92,6 +134,16 @@ export class CanvasView {
   toWorld(cx, cy) {
     const r = this.svg.getBoundingClientRect();
     return { x: (cx - r.left - this.view.x) / this.view.zoom, y: (cy - r.top - this.view.y) / this.view.zoom };
+  }
+
+  /**
+   * Client position of a world position.
+   * @param {number} x
+   * @param {number} y
+   */
+  toClient(x, y) {
+    const r = this.svg.getBoundingClientRect();
+    return { x: r.left + this.view.x + x * this.view.zoom, y: r.top + this.view.y + y * this.view.zoom };
   }
 
   /** Centre of the visible area in world coordinates. */
@@ -139,20 +191,39 @@ export class CanvasView {
     this.setView({ x: px - (px - this.view.x) * k, y: py - (py - this.view.y) * k, zoom });
   }
 
+  /**
+   * Pans so that a world point is in the middle of the canvas.
+   * @param {{x: number, y: number}} p
+   */
+  centerOn(p) {
+    const r = this.svg.getBoundingClientRect();
+    this.setView({ x: r.width / 2 - p.x * this.view.zoom, y: r.height / 2 - p.y * this.view.zoom, zoom: this.view.zoom });
+  }
+
   /** Size of the canvas in pixels. */
   size() {
     const r = this.svg.getBoundingClientRect();
     return { width: r.width, height: r.height };
   }
 
-  /** Boxes of all blocks and of the detours of backward connections, in world coordinates. */
-  boxes() {
+  /** Rectangles of the blocks in world coordinates. */
+  blockRects() {
     const d = this.app.design;
-    const out = d.instances.map((i) => {
+    /** @type {Map<string, {x: number, y: number, width: number, height: number}>} */
+    const out = new Map();
+    for (const i of d.instances) {
       const p = d.layout.instances[i.id] ?? { x: 0, y: 0 };
       const g = this.blocks.get(i.id)?.geom;
-      return { x: p.x, y: p.y, width: g?.width ?? 248, height: g?.height ?? 120 };
-    });
+      out.set(i.id, { x: p.x, y: p.y, width: g?.width ?? BLOCK_WIDTH, height: g?.height ?? 120 });
+    }
+    return out;
+  }
+
+  /** Boxes of the blocks, the domains and the detours of backward connections (for fitting the view). */
+  boxes() {
+    const d = this.app.design;
+    const out = [...this.blockRects().values()];
+    for (const b of this.domBoxes.values()) out.push({ x: b.x, y: b.y, width: b.w, height: b.h });
     /** @type {Map<string, number>} */
     const loops = new Map();
     for (const c of d.connections) {
@@ -160,9 +231,17 @@ export class CanvasView {
       const z = this.portPosition(c.to);
       const detour = this.detourFor(c.from, c.to, loops);
       if (!a || !z || !isBackward(a, z)) continue;
-      out.push({ x: z.x - 64, y: Math.min(a.y, z.y), width: a.x - z.x + 128, height: detour - Math.min(a.y, z.y) + 8 });
+      out.push({ x: z.x - 64, y: Math.min(a.y, z.y), width: a.x - z.x + 128, height: detour - Math.min(a.y, z.y) + ADAPTER_HEIGHT + 8 });
     }
     return out;
+  }
+
+  /**
+   * Clock domain whose box contains a world point (the smallest one), or null.
+   * @param {{x: number, y: number}} p
+   */
+  domainAt(p) {
+    return boxAt(this.domBoxes, p);
   }
 
   // ------------------------------------------------------------------------------------------------------------------
@@ -173,25 +252,30 @@ export class CanvasView {
   render() {
     const d = this.app.design;
     const cat = this.app.catalog;
+    const res = this.app.resolved;
     this.view = { ...d.layout.viewport };
     this.applyView();
     const sel = this.app.selection;
     const connected = new Set(d.connections.flatMap((c) => [c.from, c.to]));
+    const domainIndex = new Map(d.clockDomains.map((c, k) => [c.id, k]));
 
     // blocks
     const seen = new Set();
     for (const inst of d.instances) {
       seen.add(inst.id);
       const b = cat.blocks.get(inst.block);
-      if (!b) continue;
-      const values = cat.genericValues(b, inst.generics, inst.preset);
-      const ports = cat.ports(b, values);
-      const signature = JSON.stringify([inst.id, inst.block, inst.preset, inst.generics]);
+      const rec = res.byId.get(inst.id);
+      if (!b || !rec) continue;
+      const ports = cat.ports(b, rec.generics);
+      const primary = b.clocks.find((c) => c.primary)?.port;
+      const chips = b.clocks.filter((c) => !c.output && c.port !== primary).map((c) => ({ port: c.port, domain: rec.clocks[c.port] }));
+      const domainsSig = chips.map((c) => `${c.port}:${c.domain}:${domainIndex.get(c.domain)}:${d.clockDomains.find((x) => x.id === c.domain)?.name}`);
+      const signature = JSON.stringify([inst.id, inst.block, inst.preset, rec.generics, domainsSig]);
       let entry = this.blocks.get(inst.id);
       if (!entry || entry.signature !== signature) {
-        const geom = blockGeometry(ports);
+        const geom = blockGeometry(ports, chips.length);
         const el = entry?.el ?? /** @type {SVGGElement} */ (s('g', { class: 'cmp-block' }));
-        this.buildBlock(el, inst, b, ports, geom);
+        this.buildBlock(el, inst, b, ports, geom, chips);
         if (!entry) this.blockLayer.append(el);
         entry = { el, signature, geom, portRefs: ports.map((p) => p.ref) };
         this.blocks.set(inst.id, entry);
@@ -202,11 +286,13 @@ export class CanvasView {
       entry.el.classList.toggle('is-selected', selected);
       entry.el.setAttribute('aria-label', `${inst.id}, ${b.name} (${b.entity})${selected ? ', selected' : ''}`);
       for (const ref of entry.portRefs) {
-        const pe = entry.el.querySelector(`[data-port="${inst.id}.${ref}"]`);
+        const pe = /** @type {SVGElement | null} */ (entry.el.querySelector(`[data-port="${inst.id}.${ref}"]`));
         if (!pe) continue;
-        pe.classList.toggle('is-connected', connected.has(`${inst.id}.${ref}`));
-        const t = effectiveType(cat, d, `${inst.id}.${ref}`);
-        if (t) /** @type {SVGElement} */ (pe).style.setProperty('--c', t.color);
+        const full = `${inst.id}.${ref}`;
+        pe.classList.toggle('is-connected', connected.has(full));
+        pe.classList.toggle('is-external', res.externals.some((e) => e.interface === full));
+        const t = effectiveType(cat, d, full);
+        if (t) pe.style.setProperty('--c', t.color);
       }
     }
     for (const [id, entry] of this.blocks) {
@@ -216,38 +302,109 @@ export class CanvasView {
       }
     }
 
-    // connections
+    // clock domains
+    this.domBoxes = domainBoxes(res.domains, this.blockRects(), d.layout.domains ?? {});
+    this.domainLayer.replaceChildren();
+    this.headLayer.replaceChildren();
+    for (const dom of res.domains) {
+      const box = this.domBoxes.get(dom.id);
+      if (!box) continue;
+      const k = domainIndex.get(dom.id) ?? 0;
+      const tint = DOMAIN_TINTS[k % DOMAIN_TINTS.length];
+      const selected = sel.domain === dom.id;
+      const label = `${dom.name} · ${formatHz(dom.frequencyHz)}`;
+      const style = `--d-fill: ${tint.fill}; --d-stroke: ${tint.stroke}`;
+      // the header lies above the connections, so that it can always be grabbed
+      this.headLayer.append(s('g', { class: `cmp-domain-head${selected ? ' is-selected' : ''}`, 'data-domain-head': dom.id, transform: `translate(${box.x} ${box.y})`, style },
+        s('rect', { class: 'cmp-domain-tab', x: 0, y: 0, width: Math.min(box.w, 30 + label.length * 7.2 + 46), height: DOMAIN_HEAD - 6, rx: 12 }),
+        s('text', { class: 'cmp-domain-label', x: 14, y: 19 }, label),
+        s('text', { class: 'cmp-domain-reset', x: 22 + label.length * 7.2, y: 19 }, 'rst'),
+        s('title', {}, `Clock domain ${dom.name} (${dom.id}), ${formatHz(dom.frequencyHz)}, clock ${dom.clock}; reset generator ${dom.resetGen || 'none'}. Drag the header to move its blocks.`)));
+      this.domainLayer.append(s('g', {
+        class: `cmp-domain${selected ? ' is-selected' : ''}${dom.members.length ? '' : ' is-empty'}`,
+        'data-domain': dom.id,
+        style,
+      },
+      s('rect', { class: 'cmp-domain-box', x: box.x, y: box.y, width: box.w, height: box.h, rx: 18 }),
+      dom.members.length === 0
+        ? s('text', { class: 'cmp-domain-hint', x: box.x + box.w / 2, y: box.y + box.h / 2 + 8, 'text-anchor': 'middle' }, 'Drop blocks here')
+        : null));
+    }
+
+    // connections, with the adapters inserted by the resolver; adapters do not overlap each other
     const seenEdges = new Set();
+    /** @type {{x: number, y: number}[]} */
+    const placed = [];
+    const adjust = (/** @type {{x: number, y: number, flip: boolean}} */ c) => {
+      let y = c.y;
+      const hit = () => placed.some((p) => Math.abs(p.x - c.x) < ADAPTER_WIDTH + 8 && Math.abs(p.y - y) < ADAPTER_HEIGHT + 8);
+      for (let k = 0; k < 20 && hit(); k += 1) y += ADAPTER_HEIGHT + 12;
+      placed.push({ x: c.x, y });
+      return { ...c, y };
+    };
     /** @type {Map<string, number>} */
     const loops = new Map();
+    this.autoLayer.replaceChildren();
     for (const c of d.connections) {
       const a = this.portPosition(c.from);
       const z = this.portPosition(c.to);
       if (!a || !z) continue;
       const detour = this.detourFor(c.from, c.to, loops);
       seenEdges.add(c.id);
+      const chain = res.chainOf.get(c.id);
+      const adapters = (chain?.adapters ?? []).map((id) => res.byId.get(id)).filter((x) => x !== undefined);
       let el = this.edges.get(c.id);
       if (!el) {
-        el = /** @type {SVGGElement} */ (s('g', { class: 'cmp-edge', 'data-edge': c.id },
-          s('path', { class: 'cmp-edge-hit' }),
-          s('path', { class: 'cmp-edge-line' }),
-          s('title', {})));
+        el = /** @type {SVGGElement} */ (s('g', { class: 'cmp-edge', 'data-edge': c.id }));
         this.edgeLayer.append(el);
         this.edges.set(c.id, el);
       }
-      const path = connectionPath(a, z, detour);
-      for (const p of el.querySelectorAll('path')) p.setAttribute('d', path);
+      /** @type {string[]} */
+      let paths;
+      if (adapters.length === 0) {
+        paths = [connectionPath(a, z, detour)];
+      } else {
+        const srcDom = res.byId.get(c.from.split('.')[0])?.domain;
+        const dstDom = res.byId.get(c.to.split('.')[0])?.domain;
+        const route = routeChain(a, z, adapters.map((x) => x.role ?? ''), {
+          detourY: detour,
+          srcBox: srcDom ? this.domBoxes.get(srcDom) : undefined,
+          dstBox: dstDom ? this.domBoxes.get(dstDom) : undefined,
+          adjust,
+        });
+        paths = route.segments;
+        adapters.forEach((ad, k) => this.autoLayer.append(this.buildAuto(ad, route.centers[k], sel.auto === ad.id)));
+      }
+      el.replaceChildren(...paths.flatMap((p) => [s('path', { class: 'cmp-edge-hit', d: p }), s('path', { class: 'cmp-edge-line', d: p })]), s('title', {}));
       const t = effectiveType(cat, d, c.from) ?? effectiveType(cat, d, c.to);
       if (t) el.style.setProperty('--c', t.color);
       el.classList.toggle('is-selected', sel.connections.has(c.id));
       const title = el.querySelector('title');
-      if (title) title.textContent = `${c.from} to ${c.to}${t ? ` (${t.name})` : ''}`;
+      if (title) {
+        const via = adapters.length ? ` through ${adapters.map((x) => x.entity).join(' and ')}` : '';
+        title.textContent = `${c.from} to ${c.to}${t ? ` (${t.name})` : ''}${via}`;
+      }
     }
     for (const [id, el] of this.edges) {
       if (!seenEdges.has(id)) {
         el.remove();
         this.edges.delete(id);
       }
+    }
+
+    // external interfaces: a stub towards the top level
+    for (const e of res.externals) {
+      const p = this.portPosition(e.interface);
+      if (!p) continue;
+      const len = 30;
+      const x2 = p.side === 'left' ? p.x - len : p.side === 'right' ? p.x + len : p.x;
+      const y2 = p.side === 'bottom' ? p.y + len : p.y;
+      const tx = p.side === 'left' ? x2 - 4 : p.side === 'right' ? x2 + 4 : x2;
+      const ty = p.side === 'bottom' ? y2 + 12 : y2 + 4;
+      this.autoLayer.append(s('g', { class: 'cmp-external' },
+        s('path', { class: 'cmp-external-line', d: `M${p.x},${p.y} L${x2},${y2}` }),
+        s('text', { class: 'cmp-external-label', x: tx, y: ty, 'text-anchor': p.side === 'left' ? 'end' : p.side === 'right' ? 'start' : 'middle' }, `${e.prefix}…`),
+        s('title', {}, `${e.interface}: ports of the top level with the prefix ${e.prefix}`)));
     }
 
     this.renderEmpty();
@@ -301,9 +458,11 @@ export class CanvasView {
    * @param {import('../model/catalog.js').BlockDef} b
    * @param {import('../model/catalog.js').PortView[]} ports
    * @param {ReturnType<typeof blockGeometry>} geom
+   * @param {{ port: string, domain: string }[]} chips
    */
-  buildBlock(el, inst, b, ports, geom) {
+  buildBlock(el, inst, b, ports, geom, chips) {
     const cat = this.app.catalog;
+    const d = this.app.design;
     const category = cat.categoryOf(b);
     el.replaceChildren();
     el.setAttribute('class', `cmp-block cmp-block-${category}`);
@@ -320,6 +479,16 @@ export class CanvasView {
       s('text', { class: 'cmp-block-name', x: 16, y: 44 }, `${preset?.name ?? b.name} · ${b.entity}`),
       s('rect', { class: 'cmp-block-focus', x: -5, y: -5, width: w + 10, height: hgt + 10, rx: 16 }),
     );
+    chips.forEach((c, k) => {
+      const di = d.clockDomains.findIndex((x) => x.id === c.domain);
+      const tint = DOMAIN_TINTS[Math.max(0, di) % DOMAIN_TINTS.length];
+      const name = d.clockDomains[di]?.name ?? 'no domain';
+      const y = (geom.chipsY ?? 0) + k * CHIP_HEIGHT;
+      el.append(s('g', { class: 'cmp-chip', transform: `translate(12 ${y})`, style: `--d-fill: ${tint.fill}; --d-stroke: ${tint.stroke}` },
+        s('rect', { class: 'cmp-chip-box', x: 0, y: 1, width: w - 24, height: CHIP_HEIGHT - 4, rx: 8 }),
+        s('text', { class: 'cmp-chip-text', x: 8, y: 13 }, `${c.port}: ${name}`),
+        s('title', {}, `Clock ${c.port} runs in the clock domain ${name}. Change it in the inspector.`)));
+    });
     for (const p of ports) {
       const pos = geom.ports.get(p.ref);
       if (!pos) continue;
@@ -344,6 +513,42 @@ export class CanvasView {
     }
   }
 
+  /**
+   * Element of an inserted adapter, centred on the connection.
+   * @param {import('../model/resolver.js').ResolvedInstance} ad
+   * @param {{ x: number, y: number, flip: boolean }} c
+   * @param {boolean} selected
+   */
+  buildAuto(ad, c, selected) {
+    const w = ADAPTER_WIDTH;
+    const hgt = ADAPTER_HEIGHT;
+    const label = /** @type {Record<string, string>} */ (ROLE_LABEL)[ad.entity] ?? ad.entity;
+    const detail = ad.role === 'wconv'
+      ? `${ad.generics.InWidth_g} to ${ad.generics.OutWidth_g} bit`
+      : ad.entity === 'olo_ft_fifo_async' || ad.entity === 'olo_base_fifo_async'
+        ? `${ad.generics.Width_g} bit, ${ad.generics.Depth_g} deep`
+        : `${ad.generics.Width_g ?? ad.generics.NumPulses_g} bit`;
+    const inX = c.flip ? w : 0;
+    const outX = c.flip ? 0 : w;
+    return s('g', {
+      class: `cmp-auto${selected ? ' is-selected' : ''}`,
+      'data-auto': ad.id,
+      transform: `translate(${Math.round(c.x - w / 2)} ${Math.round(c.y - hgt / 2)})`,
+      tabindex: '0',
+      role: 'button',
+      'aria-label': `${label} inserted automatically: ${ad.reason ?? ''}`,
+    },
+    s('rect', { class: 'cmp-auto-body', width: w, height: hgt, rx: 10 }),
+    s('text', { class: 'cmp-auto-name', x: w / 2, y: 17, 'text-anchor': 'middle' }, label),
+    s('text', { class: 'cmp-auto-detail', x: w / 2, y: 31, 'text-anchor': 'middle' }, detail),
+    s('g', { class: 'cmp-auto-badge', transform: `translate(${w - 34} -8)` },
+      s('rect', { width: 30, height: 15, rx: 7.5 }),
+      s('text', { x: 15, y: 11, 'text-anchor': 'middle' }, 'auto')),
+    s('circle', { class: 'cmp-auto-port', cx: inX, cy: hgt / 2, r: 4 }),
+    s('circle', { class: 'cmp-auto-port', cx: outX, cy: hgt / 2, r: 4 }),
+    s('title', {}, `${ad.entity} (${ad.id}), inserted automatically. ${ad.reason ?? ''}`));
+  }
+
   // ------------------------------------------------------------------------------------------------------------------
   // Pointer interaction
   // ------------------------------------------------------------------------------------------------------------------
@@ -351,13 +556,16 @@ export class CanvasView {
   /** @param {PointerEvent} e */
   onPointerDown(e) {
     if (e.button !== 0 && e.button !== 1) return;
+    this.hidePopover();
     const target = /** @type {Element} */ (e.target);
     const portEl = target.closest('[data-port]');
     const blockEl = target.closest('[data-block]');
     const edgeEl = target.closest('[data-edge]');
+    const autoEl = target.closest('[data-auto]');
+    const headEl = target.closest('[data-domain-head]');
     this.svg.setPointerCapture(e.pointerId);
     const start = { x: e.clientX, y: e.clientY };
-    if (e.button === 1 || this.spaceDown || (!portEl && !blockEl && !edgeEl)) {
+    if (e.button === 1 || this.spaceDown || (!portEl && !blockEl && !edgeEl && !autoEl && !headEl)) {
       this.drag = { kind: 'pan', start, view: { ...this.view }, moved: false, clear: e.button === 0 && !this.spaceDown && !e.shiftKey };
       this.svg.classList.add('is-panning');
       return;
@@ -365,6 +573,22 @@ export class CanvasView {
     if (portEl) {
       const ref = /** @type {string} */ (portEl.getAttribute('data-port'));
       this.drag = { kind: 'connect', start, from: ref, moved: false };
+      return;
+    }
+    if (autoEl) {
+      this.app.selectAuto(/** @type {string} */ (autoEl.getAttribute('data-auto')));
+      this.drag = null;
+      return;
+    }
+    if (headEl) {
+      const id = /** @type {string} */ (headEl.getAttribute('data-domain-head'));
+      const dom = this.app.resolved.domains.find((x) => x.id === id);
+      const ids = dom?.members ?? [];
+      const pos = this.app.design.layout.instances;
+      this.drag = {
+        kind: 'domain', start, domain: id, ids, moved: false,
+        origin: Object.fromEntries(ids.map((i) => [i, { ...pos[i] }])), box: { ...(this.domBoxes.get(id) ?? { x: 0, y: 0, w: 0, h: 0 }) },
+      };
       return;
     }
     if (edgeEl) {
@@ -397,7 +621,7 @@ export class CanvasView {
     }
     if (dr.kind === 'pan') {
       this.setView({ x: dr.view.x + dx, y: dr.view.y + dy, zoom: dr.view.zoom }, false);
-    } else if (dr.kind === 'move') {
+    } else if (dr.kind === 'move' || dr.kind === 'domain') {
       const z = this.view.zoom;
       for (const id of dr.ids) {
         const o = dr.origin[id];
@@ -405,6 +629,15 @@ export class CanvasView {
         if (o && el) el.setAttribute('transform', `translate(${o.x + dx / z} ${o.y + dy / z})`);
       }
       this.updateEdgesLive(dr, dx / z, dy / z);
+      if (dr.kind === 'domain') {
+        const g = this.domainLayer.querySelector(`[data-domain="${dr.domain}"]`);
+        g?.setAttribute('transform', `translate(${dx / z} ${dy / z})`);
+        const head = this.headLayer.querySelector(`[data-domain-head="${dr.domain}"]`);
+        const box = this.domBoxes.get(dr.domain);
+        if (head && box) head.setAttribute('transform', `translate(${box.x + dx / z} ${box.y + dy / z})`);
+      } else {
+        this.markDropDomain(dr, dx / z, dy / z);
+      }
     } else if (dr.kind === 'connect') {
       this.updateConnect(dr, e);
     }
@@ -421,6 +654,7 @@ export class CanvasView {
       if (dr.moved) this.app.storeViewport(this.view);
       else if (dr.clear) this.app.clearSelection();
     } else if (dr.kind === 'move') {
+      for (const el of this.domainLayer.querySelectorAll('.is-drop-target')) el.classList.remove('is-drop-target');
       if (!dr.moved) return;
       const z = this.view.zoom;
       const dx = (e.clientX - dr.start.x) / z;
@@ -428,9 +662,62 @@ export class CanvasView {
       /** @type {Record<string, {x: number, y: number}>} */
       const moves = {};
       for (const id of dr.ids) moves[id] = { x: snap(dr.origin[id].x + dx), y: snap(dr.origin[id].y + dy) };
-      this.app.moveInstances(moves);
+      this.app.moveInstances(moves, this.dropDomains(dr.ids, moves));
+    } else if (dr.kind === 'domain') {
+      if (!dr.moved) {
+        this.app.selectDomain(dr.domain);
+        return;
+      }
+      const z = this.view.zoom;
+      const dx = (e.clientX - dr.start.x) / z;
+      const dy = (e.clientY - dr.start.y) / z;
+      /** @type {Record<string, {x: number, y: number}>} */
+      const moves = {};
+      for (const id of dr.ids) moves[id] = { x: snap(dr.origin[id].x + dx), y: snap(dr.origin[id].y + dy) };
+      this.app.moveDomain(dr.domain, moves, { ...dr.box, x: snap(dr.box.x + dx), y: snap(dr.box.y + dy) });
     } else if (dr.kind === 'connect') {
       this.endConnect(dr, e);
+    }
+  }
+
+  /**
+   * New clock domains of moved blocks: a block whose centre lands in the box of another domain joins it. The boxes
+   * are computed without the moved blocks.
+   * @param {string[]} ids
+   * @param {Record<string, {x: number, y: number}>} moves
+   * @returns {Record<string, string>}
+   */
+  dropDomains(ids, moves) {
+    const res = this.app.resolved;
+    const moving = new Set(ids);
+    const rects = this.blockRects();
+    const doms = res.domains.map((dm) => ({ id: dm.id, members: dm.members.filter((m) => !moving.has(m)) }));
+    const boxes = domainBoxes(doms, rects, this.app.design.layout.domains ?? {});
+    /** @type {Record<string, string>} */
+    const out = {};
+    for (const id of ids) {
+      const g = this.blocks.get(id)?.geom;
+      const p = moves[id];
+      if (!g || !p) continue;
+      const target = boxAt(boxes, { x: p.x + g.width / 2, y: p.y + g.height / 2 });
+      if (target && target !== res.byId.get(id)?.domain) out[id] = target;
+    }
+    return out;
+  }
+
+  /**
+   * Highlights the domain box a moved block would join.
+   * @param {any} dr
+   * @param {number} dx
+   * @param {number} dy
+   */
+  markDropDomain(dr, dx, dy) {
+    /** @type {Record<string, {x: number, y: number}>} */
+    const moves = {};
+    for (const id of dr.ids) moves[id] = { x: dr.origin[id].x + dx, y: dr.origin[id].y + dy };
+    const targets = new Set(Object.values(this.dropDomains(dr.ids, moves)));
+    for (const el of this.domainLayer.querySelectorAll('[data-domain]')) {
+      el.classList.toggle('is-drop-target', targets.has(/** @type {string} */ (el.getAttribute('data-domain'))));
     }
   }
 
@@ -442,7 +729,7 @@ export class CanvasView {
   }
 
   /**
-   * Updates the connections of moving blocks while dragging.
+   * Updates the connections of moving blocks while dragging (straight, without adapters).
    * @param {any} dr
    * @param {number} dx
    * @param {number} dy
@@ -466,8 +753,13 @@ export class CanvasView {
       const el = this.edges.get(c.id);
       if (!a || !z || !el) continue;
       const path = connectionPath(a, z, detour);
-      for (const p of el.querySelectorAll('path')) p.setAttribute('d', path);
+      const paths = el.querySelectorAll('path');
+      paths.forEach((p, k) => {
+        if (k < 2) p.setAttribute('d', path);
+        else p.setAttribute('d', '');
+      });
     }
+    for (const el of this.autoLayer.querySelectorAll('.cmp-auto, .cmp-external')) /** @type {SVGElement} */ (el).style.opacity = '0.25';
   }
 
   /** @param {any} dr */
@@ -483,7 +775,8 @@ export class CanvasView {
       }
       const chk = dr.candidates.get(ref);
       el.classList.toggle('is-target', Boolean(chk?.ok));
-      el.classList.toggle('is-dimmed', !chk?.ok);
+      el.classList.toggle('is-bridge', Boolean(!chk?.ok && chk?.bridge));
+      el.classList.toggle('is-dimmed', !chk?.ok && !chk?.bridge);
     }
     const t = effectiveType(cat, d, dr.from);
     dr.band = s('path', { class: 'cmp-band', style: `--c: ${t?.color ?? '#6C757D'}` });
@@ -504,8 +797,9 @@ export class CanvasView {
     const end = target ?? { x: w.x, y: w.y, side: a.side === 'left' ? 'right' : a.side === 'right' ? 'left' : 'top' };
     dr.band.setAttribute('d', connectionPath(a, end));
     const chk = hover && hover !== dr.from ? dr.candidates.get(hover) : undefined;
-    dr.band.classList.toggle('is-invalid', Boolean(chk && !chk.ok));
-    if (chk && !chk.ok) this.showTip(chk.reason ?? 'Not possible.', e.clientX, e.clientY);
+    dr.band.classList.toggle('is-invalid', Boolean(chk && !chk.ok && !chk.bridge));
+    dr.band.classList.toggle('is-bridge', Boolean(chk && !chk.ok && chk.bridge));
+    if (chk && !chk.ok) this.showTip(chk.bridge ? `${chk.reason} Release to insert it.` : chk.reason ?? 'Not possible.', e.clientX, e.clientY);
     else this.hideTip();
   }
 
@@ -527,8 +821,8 @@ export class CanvasView {
   }
 
   clearConnectMarks() {
-    for (const el of this.svg.querySelectorAll('.is-target, .is-dimmed, .is-origin')) {
-      el.classList.remove('is-target', 'is-dimmed', 'is-origin');
+    for (const el of this.svg.querySelectorAll('.is-target, .is-dimmed, .is-origin, .is-bridge')) {
+      el.classList.remove('is-target', 'is-dimmed', 'is-origin', 'is-bridge');
     }
     this.overlay.replaceChildren();
     this.svg.classList.remove('is-connecting');
@@ -563,6 +857,29 @@ export class CanvasView {
     this.tip.hidden = true;
   }
 
+  /**
+   * Shows a small dialog at a client position; the content is built by the caller.
+   * @param {Node[]} content
+   * @param {number} cx
+   * @param {number} cy
+   * @param {string} label
+   */
+  showPopover(content, cx, cy, label) {
+    const r = this.wrap.getBoundingClientRect();
+    this.popover.replaceChildren(...content);
+    this.popover.setAttribute('aria-label', label);
+    this.popover.hidden = false;
+    const x = Math.min(cx - r.left + 12, r.width - this.popover.offsetWidth - 8);
+    const y = Math.min(cy - r.top + 12, r.height - this.popover.offsetHeight - 8);
+    this.popover.style.left = `${Math.max(8, x)}px`;
+    this.popover.style.top = `${Math.max(8, y)}px`;
+    /** @type {HTMLElement | null} */ (this.popover.querySelector('button'))?.focus();
+  }
+
+  hidePopover() {
+    this.popover.hidden = true;
+  }
+
   /** @param {WheelEvent} e */
   onWheel(e) {
     e.preventDefault();
@@ -582,10 +899,17 @@ export class CanvasView {
 
   /** @param {FocusEvent} e */
   onFocusIn(e) {
-    const blockEl = /** @type {Element} */ (e.target).closest('[data-block]');
-    if (!blockEl || this.drag) return;
-    const id = /** @type {string} */ (blockEl.getAttribute('data-block'));
-    if (!this.app.selection.instances.has(id)) this.app.selectInstances([id], undefined, { keepFocus: true });
+    const t = /** @type {Element} */ (e.target);
+    const blockEl = t.closest('[data-block]');
+    const autoEl = t.closest('[data-auto]');
+    if (this.drag) return;
+    if (blockEl) {
+      const id = /** @type {string} */ (blockEl.getAttribute('data-block'));
+      if (!this.app.selection.instances.has(id)) this.app.selectInstances([id], undefined, { keepFocus: true });
+    } else if (autoEl) {
+      const id = /** @type {string} */ (autoEl.getAttribute('data-auto'));
+      if (this.app.selection.auto !== id) this.app.selectAuto(id);
+    }
   }
 
   /** @param {KeyboardEvent} e */
@@ -617,19 +941,11 @@ export class CanvasView {
   }
 
   /**
-   * Checks a connection for the keyboard path of the inspector.
-   * @param {string} a
-   * @param {string} b
+   * Centre of a block in world coordinates.
+   * @param {string} id
    */
-  check(a, b) {
-    return checkConnection(this.app.catalog, this.app.design, a, b);
-  }
-
-  /**
-   * Whether an endpoint still exists.
-   * @param {string} ref
-   */
-  exists(ref) {
-    return resolveEndpoint(this.app.catalog, this.app.design, ref) !== null;
+  blockCenter(id) {
+    const r = this.blockRects().get(id);
+    return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null;
   }
 }

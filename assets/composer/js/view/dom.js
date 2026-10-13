@@ -9,6 +9,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
  * @typedef {Record<string, string | number | boolean | null | undefined | ((e: any) => void)>} Attrs
  * Keys starting with "on" register event listeners; "class", "style" and "dataset"-like "data-*" are attributes.
  * @typedef {Node | string | number | null | undefined | false} Child
+ * @typedef {Child | any[]} Children   nested lists of children are flattened
  */
 
 /**
@@ -44,7 +45,7 @@ function append(el, children) {
  * @template {keyof HTMLElementTagNameMap} K
  * @param {K} tag
  * @param {Attrs} [attrs]
- * @param {...(Child | Child[])} children
+ * @param {...Children} children
  * @returns {HTMLElementTagNameMap[K]}
  */
 export function h(tag, attrs = {}, ...children) {
@@ -58,7 +59,7 @@ export function h(tag, attrs = {}, ...children) {
  * Creates an SVG element.
  * @param {string} tag
  * @param {Attrs} [attrs]
- * @param {...(Child | Child[])} children
+ * @param {...Children} children
  * @returns {SVGElement}
  */
 export function s(tag, attrs = {}, ...children) {
@@ -71,7 +72,7 @@ export function s(tag, attrs = {}, ...children) {
 /**
  * Replaces the children of an element.
  * @param {Element} el
- * @param {...(Child | Child[])} children
+ * @param {...Children} children
  */
 export function replace(el, ...children) {
   el.replaceChildren();

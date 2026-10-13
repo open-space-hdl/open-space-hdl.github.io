@@ -121,7 +121,7 @@ export function runRules(res) {
           for (const chain of res.chains) {
             const at = rule.interfaces.some((/** @type {string} */ i) => chain.from === `${inst.id}.${i}` || chain.to === `${inst.id}.${i}`);
             if (at && chain.adapters.some((a) => res.byId.get(a)?.role === 'cdc')) {
-              res.check('warning', rule.kind, `${inst.id}: ${rule.message}`, { ...where, connection: chain.connection });
+              res.check('warning', rule.kind, `${inst.id}: ${rule.message} (${chain.connection})`, { ...where, connection: chain.connection });
             }
           }
           break;
