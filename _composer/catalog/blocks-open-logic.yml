@@ -18,7 +18,7 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: Width_g, label: Width, unit: bits, example: 32, description: Data width. }
+      - { name: Width_g, label: Width, unit: bits, example: 32, description: Data width; follows the connected stream., follow: { interfaces: [In, Out], measure: packed } }
       - { name: Depth_g, label: Depth, unit: words, example: 512, description: Number of entries. }
       - { name: AlmFullOn_g, label: Almost full flag, advanced: true }
       - { name: AlmFullLevel_g, label: Almost full level, advanced: true }
@@ -59,7 +59,7 @@ blocks:
       - { port: In_RstOut, dir: out, active: high, clock: In_Clk, description: Reset of the input side, active while either side is in reset. }
       - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk, description: Reset of the output side, active while either side is in reset. }
     generics:
-      - { name: Width_g, label: Width, unit: bits, example: 32, description: Data width. }
+      - { name: Width_g, label: Width, unit: bits, example: 32, description: Data width; follows the connected stream., follow: { interfaces: [In, Out], measure: packed } }
       - { name: Depth_g, label: Depth, unit: words, check: pow2, example: 512, description: Number of entries (power of 2). }
       - { name: AlmFullOn_g, label: Almost full flag, advanced: true }
       - { name: AlmFullLevel_g, label: Almost full level, advanced: true }
@@ -91,7 +91,7 @@ blocks:
       - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Out_Clk, tieOff: open, signals: { sec: Out_EccSec, ded: Out_EccDed } }
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: In_Clk, tieOff: default, signals: { bitflip: In_ErrInj_BitFlip, valid: In_ErrInj_Valid } }
     constraints:
-      - { kind: vendor_scoped, file: tcl/olo_base_fifo_async.tcl, note: Scoped timing constraints of the Open Logic clock crossing. }
+      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
 
   - id: olo/olo_ft_fifo_packet
     kind: olo
@@ -108,7 +108,7 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: Width_g, label: Width, unit: bits, example: 32, description: Data width. }
+      - { name: Width_g, label: Width, unit: bits, example: 32, description: Data width; follows the connected stream., follow: { interfaces: [In, Out], measure: packed } }
       - { name: Depth_g, label: Depth, unit: words, example: 1024, description: Number of entries. }
       - { name: FeatureSet_g, label: Feature set, choices: [FULL, DROP_SKIP_ONLY], advanced: true }
       - { name: RamStyle_g, label: RAM style, advanced: true }
@@ -137,6 +137,111 @@ blocks:
     notes:
       - In_Drop on any beat of a packet discards the packet (for example the error end of packet flag of a link on the last beat).
 
+  - id: olo/olo_base_fifo_async
+    kind: olo
+    name: Asynchronous FIFO
+    group: olo-fifo
+    source: olo
+    entity: olo_base_fifo_async
+    path: src/base/vhdl/olo_base_fifo_async.vhd
+    idPrefix: afifo
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_fifo_async.html
+    summary: FIFO between two clock domains without memory protection; optionally triplicated synchronisers.
+    clocks:
+      - { port: In_Clk, primary: true, label: Input clock }
+      - { port: Out_Clk, label: Output clock }
+    resets:
+      - { port: In_Rst, active: high, sync: sync, clock: In_Clk }
+      - { port: Out_Rst, active: high, sync: sync, clock: Out_Clk }
+      - { port: In_RstOut, dir: out, active: high, clock: In_Clk }
+      - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk }
+    generics:
+      - { name: Width_g, label: Width, unit: bits, example: 32, description: Data width; follows the connected stream., follow: { interfaces: [In, Out], measure: packed } }
+      - { name: Depth_g, label: Depth, unit: words, check: pow2, example: 32, description: Number of entries (power of 2). }
+      - { name: AlmFullOn_g, label: Almost full flag, advanced: true }
+      - { name: AlmFullLevel_g, label: Almost full level, advanced: true }
+      - { name: AlmEmptyOn_g, label: Almost empty flag, advanced: true }
+      - { name: AlmEmptyLevel_g, label: Almost empty level, advanced: true }
+      - { name: RamStyle_g, label: RAM style, advanced: true }
+      - { name: RamBehavior_g, label: RAM behaviour, choices: [RBW, WBR], advanced: true }
+      - { name: ReadyRstState_g, label: Ready during reset, advanced: true }
+      - { name: Optimization_g, label: Optimisation, choices: [SPEED, LATENCY], advanced: true }
+      - { name: SyncStages_g, label: Synchroniser stages }
+      - { name: SyncTmr_g, label: Triplicated synchronisers }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: In_Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Out_Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready } }
+      - name: InStatus
+        label: Input fill status
+        type: sig.status
+        role: event_out
+        clock: In_Clk
+        tieOff: open
+        signals: { full: In_Full, empty: In_Empty, alm_full: In_AlmFull, alm_empty: In_AlmEmpty, level: In_Level }
+      - name: OutStatus
+        label: Output fill status
+        type: sig.status
+        role: event_out
+        clock: Out_Clk
+        tieOff: open
+        signals: { full: Out_Full, empty: Out_Empty, alm_full: Out_AlmFull, alm_empty: Out_AlmEmpty, level: Out_Level }
+    constraints:
+      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
+
+  - id: olo/olo_base_cc_bits
+    kind: olo
+    name: Clock crossing of levels
+    group: olo-cc
+    source: olo
+    entity: olo_base_cc_bits
+    path: src/base/vhdl/olo_base_cc_bits.vhd
+    idPrefix: ccbits
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_bits.html
+    summary: Synchronises independent level signals into another clock domain.
+    clocks:
+      - { port: In_Clk, primary: true, label: Input clock }
+      - { port: Out_Clk, label: Output clock }
+    resets:
+      - { port: In_Rst, active: high, sync: sync, clock: In_Clk }
+      - { port: Out_Rst, active: high, sync: sync, clock: Out_Clk }
+    generics:
+      - { name: Width_g, label: Width, unit: bits, follow: { interfaces: [In, Out], measure: packed } }
+      - { name: SyncStages_g, label: Synchroniser stages }
+      - { name: SyncTmr_g, label: Triplicated synchronisers }
+    interfaces:
+      - { name: In, label: Input, type: event.any, role: event_in, clock: In_Clk, signals: { data: In_Data } }
+      - { name: Out, label: Output, type: event.any, role: event_out, clock: Out_Clk, signals: { data: Out_Data } }
+    constraints:
+      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
+
+  - id: olo/olo_base_cc_pulse
+    kind: olo
+    name: Clock crossing of pulses
+    group: olo-cc
+    source: olo
+    entity: olo_base_cc_pulse
+    path: src/base/vhdl/olo_base_cc_pulse.vhd
+    idPrefix: ccpulse
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_pulse.html
+    summary: Passes single-cycle pulses into another clock domain.
+    clocks:
+      - { port: In_Clk, primary: true, label: Input clock }
+      - { port: Out_Clk, label: Output clock }
+    resets:
+      - { port: In_RstIn, active: high, sync: sync, clock: In_Clk }
+      - { port: Out_RstIn, active: high, sync: sync, clock: Out_Clk }
+      - { port: In_RstOut, dir: out, active: high, clock: In_Clk }
+      - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk }
+    generics:
+      - { name: NumPulses_g, label: Pulses, follow: { interfaces: [In, Out], measure: packed } }
+      - { name: SyncStages_g, label: Synchroniser stages }
+      - { name: SyncTmr_g, label: Triplicated synchronisers }
+    interfaces:
+      - { name: In, label: Input, type: event.any, role: event_in, clock: In_Clk, signals: { pulse: In_Pulse } }
+      - { name: Out, label: Output, type: event.any, role: event_out, clock: Out_Clk, signals: { pulse: Out_Pulse } }
+    constraints:
+      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
+
   # Width conversion --------------------------------------------------------------------------------------------------
   - id: olo/olo_base_wconv_n2xn
     kind: olo
@@ -153,11 +258,11 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: InWidth_g, label: Input width, unit: bits, example: 8 }
-      - { name: OutWidth_g, label: Output width, unit: bits, example: 32, description: An integer multiple of the input width. }
+      - { name: InWidth_g, label: Input width, unit: bits, example: 8, follow: { interfaces: [In], measure: data } }
+      - { name: OutWidth_g, label: Output width, unit: bits, example: 32, description: An integer multiple of the input width., follow: { interfaces: [Out], measure: data } }
     interfaces:
-      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
-      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, wordena: Out_WordEna } }
+      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, wordena: Out_WordEna } }
     notes:
       - A partially filled output word leaves only with In_Last; a source without last strands its final words.
 
@@ -176,11 +281,11 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: InWidth_g, label: Input width, unit: bits, example: 32, description: An integer multiple of the output width. }
-      - { name: OutWidth_g, label: Output width, unit: bits, example: 8 }
+      - { name: InWidth_g, label: Input width, unit: bits, example: 32, description: An integer multiple of the output width., follow: { interfaces: [In], measure: data } }
+      - { name: OutWidth_g, label: Output width, unit: bits, example: 8, follow: { interfaces: [Out], measure: data } }
     interfaces:
-      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last, wordena: In_WordEna } }
-      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
+      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last, wordena: In_WordEna } }
+      - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
 
   - id: olo/olo_base_wconv_n2m
     kind: olo
@@ -197,12 +302,12 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: InWidth_g, label: Input width, unit: bits }
-      - { name: OutWidth_g, label: Output width, unit: bits }
+      - { name: InWidth_g, label: Input width, unit: bits, follow: { interfaces: [In], measure: data } }
+      - { name: OutWidth_g, label: Output width, unit: bits, follow: { interfaces: [Out], measure: data } }
       - { name: UseBe_g, label: Byte enables, description: Handles byte enables (both widths a multiple of 8). }
     interfaces:
-      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, keep: In_Be, valid: In_Valid, ready: In_Ready, last: In_Last } }
-      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, keep: Out_Be, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
+      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, keep: In_Be, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, keep: Out_Be, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
 
   # Clock crossings ---------------------------------------------------------------------------------------------------
   - id: olo/olo_base_cc_handshake
@@ -224,7 +329,7 @@ blocks:
       - { port: In_RstOut, dir: out, active: high, clock: In_Clk }
       - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk }
     generics:
-      - { name: Width_g, label: Width, unit: bits, example: 32 }
+      - { name: Width_g, label: Width, unit: bits, example: 32, follow: { interfaces: [In, Out], measure: packed } }
       - { name: ReadyRstState_g, label: Ready during reset, advanced: true }
       - { name: SyncStages_g, label: Synchroniser stages }
       - { name: SyncTmr_g, label: Triplicated synchronisers }
@@ -232,7 +337,7 @@ blocks:
       - { name: In, label: Input, type: axis.any, role: sink, clock: In_Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready } }
       - { name: Out, label: Output, type: axis.any, role: source, clock: Out_Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready } }
     constraints:
-      - { kind: vendor_scoped, file: tcl/olo_base_cc_handshake.tcl }
+      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
 
   - id: olo/olo_base_cc_simple
     kind: olo
@@ -253,14 +358,14 @@ blocks:
       - { port: In_RstOut, dir: out, active: high, clock: In_Clk }
       - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk }
     generics:
-      - { name: Width_g, label: Width, unit: bits }
+      - { name: Width_g, label: Width, unit: bits, follow: { interfaces: [In, Out], measure: packed } }
       - { name: SyncStages_g, label: Synchroniser stages }
       - { name: SyncTmr_g, label: Triplicated synchronisers }
     interfaces:
       - { name: In, label: Input, type: axis.any, role: sink, clock: In_Clk, signals: { data: In_Data, valid: In_Valid } }
       - { name: Out, label: Output, type: axis.any, role: source, clock: Out_Clk, signals: { data: Out_Data, valid: Out_Valid } }
     constraints:
-      - { kind: vendor_scoped, file: tcl/olo_base_cc_simple.tcl }
+      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
 
   - id: olo/olo_base_cc_n2xn
     kind: olo
@@ -281,7 +386,7 @@ blocks:
       - { port: In_RstOut, dir: out, active: high, clock: In_Clk }
       - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk }
     generics:
-      - { name: Width_g, label: Width, unit: bits }
+      - { name: Width_g, label: Width, unit: bits, follow: { interfaces: [In, Out], measure: packed } }
       - { name: SyncStages_g, label: Synchroniser stages }
       - { name: SyncTmr_g, label: Triplicated synchronisers }
     interfaces:
@@ -309,7 +414,7 @@ blocks:
       - { port: In_RstOut, dir: out, active: high, clock: In_Clk }
       - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk }
     generics:
-      - { name: Width_g, label: Width, unit: bits, example: 32 }
+      - { name: Width_g, label: Width, unit: bits, example: 32, follow: { interfaces: [In, Out], measure: packed } }
       - { name: SyncStages_g, label: Synchroniser stages }
       - { name: SyncTmr_g, label: Triplicated synchronisers }
     interfaces:
@@ -358,7 +463,7 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: Width_g, label: Width, unit: bits, example: 32 }
+      - { name: Width_g, label: Width, unit: bits, example: 32, follow: { interfaces: [In, Out], measure: packed } }
       - { name: UseReady_g, label: Use ready, advanced: true }
       - { name: Stages_g, label: Stages }
     interfaces:
@@ -380,7 +485,7 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: Width_g, label: Width, unit: bits, example: 32 }
+      - { name: Width_g, label: Width, unit: bits, example: 32, follow: { interfaces: [In, Out], measure: packed } }
       - { name: RegisterReady_g, label: Registered ready, advanced: true }
       - { name: Mode_g, label: Mode, choices: [SMOOTH, BLOCK] }
       - { name: Period_g, label: Period, unit: cycles, example: 10 }
@@ -406,7 +511,7 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: DataWidth_g, label: Width, unit: bits, example: 8 }
+      - { name: DataWidth_g, label: Width, unit: bits, example: 8, follow: { interfaces: [In, Out], measure: data } }
       - { name: CrcPolynomial_g, label: Polynomial, example: 'x"07"' }
       - { name: CrcInitialValue_g, label: Initial value }
       - { name: CrcBitOrder_g, label: Bit order, choices: [MSB_FIRST, LSB_FIRST] }
@@ -414,8 +519,8 @@ blocks:
       - { name: CrcBitflipOutput_g, label: Reflect output }
       - { name: CrcXorOutput_g, label: Output XOR }
     interfaces:
-      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
-      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
+      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
 
   - id: olo/olo_base_crc_check
     kind: olo
@@ -432,7 +537,7 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: DataWidth_g, label: Width, unit: bits, example: 8 }
+      - { name: DataWidth_g, label: Width, unit: bits, example: 8, follow: { interfaces: [In, Out], measure: data } }
       - { name: FifoDepth_g, label: FIFO depth, unit: words }
       - { name: FifoRamStyle_g, label: FIFO RAM style, advanced: true }
       - { name: FifoRamBehavior_g, label: FIFO RAM behaviour, choices: [RBW, WBR], advanced: true }
@@ -444,8 +549,8 @@ blocks:
       - { name: CrcBitflipOutput_g, label: Reflect output }
       - { name: CrcXorOutput_g, label: Output XOR }
     interfaces:
-      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
-      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, crc_err: Out_CrcErr } }
+      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, crc_err: Out_CrcErr } }
 
   - id: olo/olo_base_chunker
     kind: olo
@@ -462,11 +567,11 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: Width_g, label: Width, unit: bits, example: 32 }
+      - { name: Width_g, label: Width, unit: bits, example: 32, follow: { interfaces: [In, Out], measure: data } }
       - { name: ChunkBeats_g, label: Chunk size, unit: beats, example: 128, description: Beats of a chunk; the last chunk of a packet may be shorter. }
     interfaces:
-      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, keep: In_Be, valid: In_Valid, ready: In_Ready, last: In_Last } }
-      - { name: Out, label: Chunks, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, keep: Out_Be, valid: Out_Valid, ready: Out_Ready, last: Out_Last, in_last: Out_InLast } }
+      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, keep: In_Be, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: Out, label: Chunks, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, keep: Out_Be, valid: Out_Valid, ready: Out_Ready, last: Out_Last, in_last: Out_InLast } }
 
   # EDAC --------------------------------------------------------------------------------------------------------------
   - id: olo/olo_ft_ecc_monitor

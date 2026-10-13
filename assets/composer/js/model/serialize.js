@@ -5,7 +5,7 @@
  */
 
 import { checkConnection } from './compat.js';
-import { createDesign, identifierProblem } from './design.js';
+import { createDesign, DEFAULT_DOMAIN, identifierProblem } from './design.js';
 import { validateValue } from './generics.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
@@ -77,11 +77,13 @@ export function toDocument(d, cat) {
       /** @type {Record<string, unknown>} */
       const o = { id: c.id, from: c.from, to: c.to };
       if (c.sideband) o.sideband = { ...c.sideband };
+      if (c.adapters) o.adapters = JSON.parse(JSON.stringify(c.adapters));
       return o;
     }),
     externals: d.externals.map((e) => ({ interface: e.interface, prefix: e.prefix })),
     layout: {
       instances: Object.fromEntries(d.instances.map((i) => [i.id, { ...(d.layout.instances[i.id] ?? { x: 0, y: 0 }) }])),
+      domains: Object.fromEntries(d.clockDomains.filter((c) => d.layout.domains?.[c.id]).map((c) => [c.id, { ...d.layout.domains[c.id] }])),
       viewport: { ...d.layout.viewport },
     },
   };
@@ -94,6 +96,26 @@ export function toDocument(d, cat) {
  */
 export function toText(d, cat) {
   return `${JSON.stringify(toDocument(d, cat), null, 2)}\n`;
+}
+
+/**
+ * Generic values of the adapters of a connection: { cdc?: {...}, wconv?: {...} } with numbers or booleans.
+ * @param {unknown} v
+ * @returns {import('./design.js').Connection['adapters'] | string | undefined}
+ */
+function readAdapters(v) {
+  if (!isObject(v)) return 'adapters must be an object.';
+  /** @type {Record<string, Record<string, unknown>>} */
+  const out = {};
+  for (const [kind, gen] of Object.entries(/** @type {Record<string, unknown>} */ (v))) {
+    if (kind !== 'cdc' && kind !== 'wconv') return `unknown adapter "${kind}".`;
+    if (!isObject(gen)) return `adapters.${kind} must be an object.`;
+    for (const [name, val] of Object.entries(/** @type {Record<string, unknown>} */ (gen))) {
+      if (!/^[A-Za-z]\w*_g$/.test(name) || !(typeof val === 'number' || typeof val === 'boolean')) return `adapters.${kind}.${name} is not a generic value.`;
+    }
+    if (Object.keys(/** @type {object} */ (gen)).length) out[kind] = { .../** @type {object} */ (gen) };
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 /** @param {unknown} v */
@@ -216,9 +238,23 @@ export function fromDocument(doc, cat) {
     /** @type {Record<string, string>} */
     const clocks = {};
     for (const [port, dom] of Object.entries(isObject(inst.clocks) ? inst.clocks : {})) {
-      if (!b.clocks.some((c) => c.port === port)) warnings.push(`${inst.id}: ${b.entity} has no clock ${port}; ignored.`);
+      if (!b.clocks.some((c) => c.port === port && !c.output)) warnings.push(`${inst.id}: ${b.entity} has no clock input ${port}; ignored.`);
       else if (typeof dom !== 'string' || !d.clockDomains.some((c) => c.id === dom)) errors.push(`${inst.id}.clocks.${port}: unknown clock domain.`);
       else clocks[port] = dom;
+    }
+    const inputs = b.clocks.filter((c) => !c.output);
+    const missing = inputs.filter((c) => !(c.port in clocks));
+    if (missing.length > 0) {
+      if (d.clockDomains.length === 0) {
+        d.clockDomains.push({ ...DEFAULT_DOMAIN, source: { kind: 'external' } });
+        warnings.push(`The file has no clock domains: the blocks were put into ${DEFAULT_DOMAIN.name}.`);
+      }
+      const primary = inputs.find((c) => c.primary);
+      const fallback = (primary && clocks[primary.port]) ?? d.clockDomains[0].id;
+      for (const c of missing) clocks[c.port] = fallback;
+      if (inputs.length > missing.length || d.clockDomains.length > 1) {
+        warnings.push(`${inst.id}: ${missing.map((c) => c.port).join(', ')} assigned to clock domain ${fallback}.`);
+      }
     }
     /** @type {import('./design.js').Instance} */
     const rec = { id: inst.id, block: b.id, generics, clocks };
@@ -237,6 +273,23 @@ export function fromDocument(doc, cat) {
       warnings.push(`${inst.id}: no position in the layout; placed automatically.`);
     }
   });
+  const boxes = isObject(lay.domains) ? lay.domains : {};
+  for (const c of d.clockDomains) {
+    const bx = boxes[c.id];
+    if (isObject(bx) && [bx.x, bx.y, bx.w, bx.h].every(isFiniteNumber) && bx.w > 0 && bx.h > 0) {
+      d.layout.domains[c.id] = { x: Math.round(bx.x), y: Math.round(bx.y), w: Math.round(bx.w), h: Math.round(bx.h) };
+    }
+  }
+  // a domain with a block as source needs that block and its clock output
+  for (const c of d.clockDomains) {
+    const src = /** @type {{ kind: string, instance?: string, port?: string }} */ (c.source);
+    if (src.kind === 'external') continue;
+    const inst = d.instances.find((i) => i.id === src.instance);
+    const b = inst && cat.blocks.get(inst.block);
+    if (src.kind !== 'block' || !b || !b.clocks.some((x) => x.output && x.port === src.port)) {
+      errors.push(`Clock domain ${c.id}: its source must be a clock output of an instance.`);
+    }
+  }
   if (isObject(lay.viewport) && isFiniteNumber(lay.viewport.x) && isFiniteNumber(lay.viewport.y) && isFiniteNumber(lay.viewport.zoom) && lay.viewport.zoom > 0) {
     d.layout.viewport = { x: lay.viewport.x, y: lay.viewport.y, zoom: Math.min(4, Math.max(0.1, lay.viewport.zoom)) };
   }
@@ -280,6 +333,11 @@ export function fromDocument(doc, cat) {
       conn.sideband = sb;
     } else if (c.sideband !== undefined) {
       warnings.push(`Connection ${c.id}: the side band is not used by this connection and is ignored.`);
+    }
+    if (c.adapters !== undefined) {
+      const ad = readAdapters(c.adapters);
+      if (typeof ad === 'string') errors.push(`Connection ${c.id}: ${ad}`);
+      else if (ad) conn.adapters = ad;
     }
     d.connections.push(conn);
   }

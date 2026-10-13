@@ -49,55 +49,64 @@ function instanceOf(ref) {
 }
 
 /**
- * Effective type of a port: an untyped Open Logic stream (axis.any) takes the type of the typed interface it is
- * connected to, also through a chain of untyped blocks (a FIFO between two cores carries the type of the cores).
+ * The typed interface an untyped Open Logic interface (axis.any, event.any) is connected to, also through a chain of
+ * untyped blocks: a FIFO between two cores carries the data of the cores. Returns the port itself when it is typed,
+ * and null when the port does not exist or no typed interface is reachable.
  * @param {Catalog} cat
  * @param {Design} d
  * @param {string} ref endpoint
  * @param {string} [ignoreConnection] connection id to leave out (for re-checking an existing connection)
- * @returns {TypeDef | null} null if the port does not exist
+ * @returns {{ ref: string, type: TypeDef } | null}
  */
-export function effectiveType(cat, d, ref, ignoreConnection) {
+export function typedEndpoint(cat, d, ref, ignoreConnection) {
   const start = resolveEndpoint(cat, d, ref);
   if (!start) return null;
-  if (!start.port.type.generic) return start.port.type;
-  // breadth-first over untyped stream interfaces: the ports of the same untyped block and their partners
+  if (!start.port.type.generic) return { ref, type: start.port.type };
+  const kind = start.port.type.kind;
+  // breadth-first over untyped interfaces: the untyped ports of the same block and their partners
   const seen = new Set([ref]);
   const queue = [ref];
   while (queue.length > 0) {
     const cur = /** @type {string} */ (queue.shift());
     const ep = resolveEndpoint(cat, d, cur);
     if (!ep) continue;
-    if (!ep.port.type.generic && ep.port.type.kind === 'stream') return ep.port.type;
-    if (ep.port.type.generic) {
-      // all untyped stream ports of this instance carry the same data
-      for (const p of cat.ports(ep.block, ep.values)) {
-        if (!p.type.generic) continue;
-        const r = `${ep.inst.id}.${p.ref}`;
-        if (!seen.has(r)) {
-          seen.add(r);
-          queue.push(r);
-        }
+    if (!ep.port.type.generic) {
+      if (ep.port.type.kind === kind) return { ref: cur, type: ep.port.type };
+      continue;
+    }
+    for (const p of cat.ports(ep.block, ep.values)) {
+      if (!p.type.generic || p.type.kind !== kind) continue;
+      const r = `${ep.inst.id}.${p.ref}`;
+      if (!seen.has(r)) {
+        seen.add(r);
+        queue.push(r);
       }
-      for (const c of d.connections) {
-        if (c.id === ignoreConnection) continue;
-        const other = c.from === cur ? c.to : c.to === cur ? c.from : null;
-        if (other && !seen.has(other)) {
-          seen.add(other);
-          queue.push(other);
-        }
+    }
+    for (const c of d.connections) {
+      if (c.id === ignoreConnection) continue;
+      const other = c.from === cur ? c.to : c.to === cur ? c.from : null;
+      if (other && !seen.has(other)) {
+        seen.add(other);
+        queue.push(other);
       }
     }
   }
-  return start.port.type;
+  return null;
 }
 
 /**
- * Data width of a port in bits, if known.
- * @param {PortView} p
+ * Effective type of a port: an untyped Open Logic interface takes the type of the typed interface it is connected to
+ * (see typedEndpoint).
+ * @param {Catalog} cat
+ * @param {Design} d
+ * @param {string} ref endpoint
+ * @param {string} [ignoreConnection]
+ * @returns {TypeDef | null} null if the port does not exist
  */
-function dataWidth(p) {
-  return p.widths.data;
+export function effectiveType(cat, d, ref, ignoreConnection) {
+  const typed = typedEndpoint(cat, d, ref, ignoreConnection);
+  if (typed) return typed.type;
+  return resolveEndpoint(cat, d, ref)?.port.type ?? null;
 }
 
 /**
@@ -180,10 +189,6 @@ export function checkConnection(cat, d, a, b, opts = {}) {
           }
         }
         if (acc.note) notes.push(acc.note);
-        if (acc.sideband === 'required') {
-          const sb = rcv.port.itf.sideband;
-          if (sb) result.sideband = sb.fields;
-        }
       } else {
         const bridge = (tDrv.bridges ?? []).find((x) => x.type === tRcv.id);
         if (bridge) {
@@ -200,15 +205,9 @@ export function checkConnection(cat, d, a, b, opts = {}) {
     }
   }
 
-  // parameters that an adapter will take care of
-  const wd = dataWidth(drv.port);
-  const wr = dataWidth(rcv.port);
-  if (wd !== undefined && wr !== undefined && wd !== wr && !(tDrv.generic && tRcv.generic)) {
-    notes.push(`The data widths differ (${wd} and ${wr} bit): a width converter is needed.`);
-  }
-  if (drv.port.widths.user !== undefined && rcv.port.widths.user !== undefined && drv.port.widths.user !== rcv.port.widths.user) {
-    notes.push(`The user widths differ (${drv.port.widths.user} and ${rcv.port.widths.user} bit): user bit 0 (end of packet error) is passed on.`);
-  }
+  // a receiver with a side band that the driver does not provide gets constants on the connection
+  const sb = rcv.port.itf.sideband;
+  if (sb && !(sb.signal in drv.port.itf.signals)) result.sideband = sb.fields;
   return result;
 }
 

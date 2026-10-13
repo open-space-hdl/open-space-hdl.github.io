@@ -15,6 +15,9 @@
 # accepts: further source types a sink of this type accepts, with the condition.
 # bridges: types that can be reached through a bridge block.
 # Colours: contrast of at least 3:1 against the canvas (checked by the unit tests).
+# cdc:     how an interface of this type crosses clock domains: streams use an asynchronous FIFO when the source
+#          has ready and a simple crossing otherwise; events: level (synchronised bits), pulse (pulse crossing),
+#          valid (valid with data, simple crossing), none (not possible: both ends must be in one domain).
 
 types:
   # SpaceWire ---------------------------------------------------------------------------------------------------------
@@ -160,6 +163,7 @@ types:
     name: Space Packet errors
     family: Space Packets
     kind: event
+    cdc: valid
     color: "#C92A2A"
     description: One-cycle event for every rejected SDU and every discarded packet, with code, port and APID.
     signals:
@@ -183,6 +187,7 @@ types:
     name: SpaceFibre physical adapter
     family: SpaceFibre
     kind: bus
+    cdc: none
     color: "#364FC7"
     description: Symbol streams, control and status of every lane between the core and its physical adapter.
     fields: mixed
@@ -245,6 +250,7 @@ types:
     name: RMAP authorisation
     family: RMAP
     kind: bus
+    cdc: none
     color: "#5F3DC4"
     description: External authorisation of RMAP commands; the request is held until the response.
     signals:
@@ -257,6 +263,7 @@ types:
     name: RMAP indications
     family: RMAP
     kind: event
+    cdc: valid
     color: "#6741D9"
     description: One-cycle indication of every RMAP command with an intact header, with its header fields and status.
     signals:
@@ -327,6 +334,7 @@ types:
     name: AXI4 memory bus
     family: Buses
     kind: bus
+    cdc: none
     color: "#0E1A2B"
     description: AXI4 memory-mapped bus (bursts), for example the memory access of an RMAP target.
     signals:
@@ -366,6 +374,7 @@ types:
     name: AXI4-Lite register bus
     family: Buses
     kind: bus
+    cdc: none
     color: "#5A6B80"
     description: AXI4-Lite register access (32 bit data), for example the register file of a core.
     accepts:
@@ -395,6 +404,7 @@ types:
     name: Interrupt
     family: Events
     kind: event
+    cdc: level
     color: "#C2255C"
     description: Level interrupt of a register file.
     signals:
@@ -404,6 +414,7 @@ types:
     name: EDAC events
     family: Events
     kind: event
+    cdc: pulse
     color: "#8F6B00"
     description: Corrected single and detected double bit errors of SECDED-protected memories (pulses or vectors).
     signals:
@@ -415,6 +426,7 @@ types:
     name: EDAC error injection
     family: Events
     kind: event
+    cdc: valid
     color: "#7A6A00"
     description: Error injection into SECDED-protected memories, for tests.
     fields: out
@@ -423,6 +435,7 @@ types:
     name: Reset
     family: Events
     kind: event
+    cdc: none
     color: "#343A40"
     description: Synchronous high-active reset of a clock domain.
     signals:
@@ -432,6 +445,7 @@ types:
     name: Status signals
     family: Events
     kind: event
+    cdc: level
     color: "#808891"
     description: Status outputs of a block (levels, flags), for monitoring.
     fields: out
@@ -440,6 +454,7 @@ types:
     name: Control signals
     family: Events
     kind: event
+    cdc: level
     color: "#808891"
     description: Static or slow control inputs of a block.
     fields: out
@@ -459,5 +474,14 @@ types:
       ready: { dir: in, optional: true }
       last: { dir: out, optional: true }
       keep: { dir: out, optional: true }
+    fields: out
+    generic: true
+
+  - id: event.any
+    name: Generic event
+    family: Generic
+    kind: event
+    color: "#6C757D"
+    description: Untyped Open Logic signals of a clock crossing; they take the type of the first interface they are connected to.
     fields: out
     generic: true

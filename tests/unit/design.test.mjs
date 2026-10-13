@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
 import {
-  addInstance, createDesign, DesignError, identifierProblem, moveInstances, removeConnections, removeInstances,
+  addDomain, addInstance, assignClock, clearGeneric, createDesign, DesignError, identifierProblem, moveInstances, moveToDomain,
+  removeConnections, removeDomain, removeInstances, renameDomain, setAdapterGeneric, setExternal, updateDomain,
   renameInstance, setGeneric, setSideband, setSystem,
 } from '../../assets/composer/js/model/design.js';
 import { History } from '../../assets/composer/js/model/history.js';
@@ -114,4 +115,52 @@ test('layout geometry', () => {
   assert.equal(snap(25), 32);
   const v = fitViewport({ x: 0, y: 0, width: 400, height: 200 }, 800, 600);
   assert.ok(v.zoom > 0 && v.zoom <= 1.25);
+});
+
+test('clock domains: add, update, rename, merge and assign', () => {
+  const { design } = designWith(cat, ['openwire/owr_core', 'openrmap/omap_core']);
+  const a = addDomain(design, { name: 'Link', frequencyHz: 200e6, box: { x: 1, y: 2, w: 300, h: 200 } });
+  assert.equal(a.id, 'clk1');
+  assert.deepEqual(a.design.layout.domains.clk1, { x: 1, y: 2, w: 300, h: 200 });
+  assert.throws(() => addDomain(design, { frequencyHz: 0 }), DesignError);
+  assert.throws(() => updateDomain(a.design, 'clk1', { frequencyHz: -5 }), DesignError);
+  assert.throws(() => updateDomain(a.design, 'clk1', { name: ' ' }), DesignError);
+  assert.equal(updateDomain(a.design, 'clk1', { name: ' Fast ' }).clockDomains[1].name, 'Fast');
+  let d = assignClock(a.design, cat, 'spw0', 'LinkClk', 'clk1');
+  assert.deepEqual(d.instances[0].clocks, { UserClk: 'sys', LinkClk: 'clk1', MgmtClk: 'sys' });
+  assert.throws(() => assignClock(d, cat, 'spw0', 'Nope', 'clk1'), DesignError);
+  assert.throws(() => assignClock(d, cat, 'spw0', 'UserClk', 'nope'), DesignError);
+  // moving to a domain takes the clocks that share the domain of the primary clock along
+  const moved = moveToDomain(d, cat, 'spw0', 'clk1');
+  assert.deepEqual(moved.instances[0].clocks, { UserClk: 'clk1', LinkClk: 'clk1', MgmtClk: 'clk1' });
+  d = renameDomain(d, 'clk1', 'link');
+  assert.equal(d.instances[0].clocks.LinkClk, 'link');
+  assert.ok(d.layout.domains.link);
+  assert.throws(() => renameDomain(d, 'link', 'sys'), DesignError);
+  assert.throws(() => renameDomain(d, 'link', 'Bad'), DesignError);
+  const merged = removeDomain(d, 'link', 'sys');
+  assert.deepEqual(merged.clockDomains.map((c) => c.id), ['sys']);
+  assert.equal(merged.instances[0].clocks.LinkClk, 'sys');
+  assert.ok(!merged.layout.domains.link);
+  assert.throws(() => removeDomain(d, 'link', 'link'), DesignError);
+});
+
+test('externals, adapter generics and generics that follow a connection', () => {
+  const { design } = designWith(cat, ['openwire/owr_core', 'openrmap/omap_core', 'olo/olo_ft_fifo_sync']);
+  let d = setExternal(design, 'spw0.S_AxiLite', 'Regs_');
+  assert.deepEqual(d.externals, [{ interface: 'spw0.S_AxiLite', prefix: 'Regs_' }]);
+  d = setExternal(d, 'spw0.S_AxiLite', 'Owr_');
+  assert.deepEqual(d.externals, [{ interface: 'spw0.S_AxiLite', prefix: 'Owr_' }]);
+  assert.throws(() => setExternal(d, 'spw0.S_Pkt', '1x'), DesignError);
+  const linked = connect(d, checkConnection(cat, d, 'rmap0.M_Pkt', 'spw0.S_Pkt'));
+  assert.throws(() => setExternal(linked, 'spw0.S_Pkt', 'P_'), DesignError);
+  assert.deepEqual(setExternal(d, 'spw0.S_AxiLite', null).externals, []);
+  let e = setAdapterGeneric(linked, 'c1', 'cdc', 'Depth_g', 128);
+  assert.deepEqual(e.connections[0].adapters, { cdc: { Depth_g: 128 } });
+  e = setAdapterGeneric(e, 'c1', 'cdc', 'Depth_g', undefined);
+  assert.equal(e.connections[0].adapters, undefined);
+  // a width set to its default stays set (it no longer follows the connection) until it is cleared
+  const fixed = setGeneric(design, cat, 'fifo0', 'Width_g', 32).design;
+  assert.deepEqual(fixed.instances[2].generics, { Width_g: 32 });
+  assert.deepEqual(clearGeneric(fixed, cat, 'fifo0', 'Width_g').design.instances[2].generics, {});
 });

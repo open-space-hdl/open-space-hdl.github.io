@@ -131,7 +131,7 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: DataWidth_g, label: Link width, unit: bits, check: multiple8, description: Width of the link streams; equal to the width of the connected link. }
+      - { name: DataWidth_g, label: Link width, unit: bits, check: multiple8, description: Width of the link streams; follows the connected link., follow: { interfaces: [S_Link, M_Link], measure: data } }
     interfaces:
       - name: S_Link
         label: Link in

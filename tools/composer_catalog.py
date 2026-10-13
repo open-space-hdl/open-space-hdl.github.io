@@ -52,6 +52,17 @@ ROLE_KINDS = {
     "event_in": {"event"},
 }
 GENERIC_KINDS = {"boolean", "integer", "real", "std_logic", "std_logic_vector", "string", "integer_vector", "opaque"}
+# design rules implemented by the Composer (assets/composer/js/model/rules.js) with their required keys
+RULE_KINDS = {
+    "clock_freq_multiple": ("clock", "multipleHz", "tolerance"),
+    "clock_relation": ("faster", "slower"),
+    "generic_any_true": ("generics",),
+    "generic_multiple": ("generic", "of"),
+    "generic_requires": ("generic", "value", "requires"),
+    "mutual_initiator": ("generic",),
+    "same_domain": ("interfaces",),
+}
+CDC_MODES = {"level", "pulse", "valid", "none"}
 INT_MAX = 2**31 - 1
 
 
@@ -655,6 +666,10 @@ def load_types() -> dict[str, dict]:
                 raise CatalogError(f"{where}: signal {sname} needs dir in/out")
         if t.get("fields") not in (None, "in", "out", "mixed"):
             raise CatalogError(f"{where}: fields must be in, out or mixed")
+        if "cdc" in t and t["cdc"] not in CDC_MODES:
+            raise CatalogError(f"{where}: cdc must be one of {', '.join(sorted(CDC_MODES))}")
+        if kind in ("event", "bus") and "cdc" not in t and not t.get("generic"):
+            raise CatalogError(f"{where}: event and bus types need a cdc mode")
         types[tid] = t
     for t in types.values():
         for acc in t.get("accepts") or []:
@@ -707,9 +722,14 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             gen["defaultText"] = g.default
             if representable:
                 gen["default"] = default
-        for key in ("label", "description", "choices", "check", "advanced", "fromClock", "unit", "min", "max"):
+        for key in ("label", "description", "choices", "check", "advanced", "fromClock", "unit", "min", "max", "follow"):
             if key in m:
                 gen[key] = m[key]
+        if "follow" in m:
+            fol = m["follow"]
+            if kind != "integer" or not isinstance(fol, dict) or fol.get("measure") not in ("data", "packed") \
+                    or not isinstance(fol.get("interfaces"), list) or not fol["interfaces"]:
+                ctx.err(where, f"generic {g.name}: follow needs an integer generic, interfaces and measure data or packed")
         if "min" in m and kind == "integer" and m["min"] < lo:
             ctx.err(where, f"generic {g.name}: min {m['min']} below the VHDL range {lo}")
         if "max" in m and kind == "integer" and m["max"] > hi:
@@ -760,14 +780,20 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
     clocks = []
     for c in b.get("clocks") or []:
         p = use(require(c, "port", where), "clocks")
-        if p and (p["dir"] != "in" or p["width"] != "1"):
-            ctx.err(where, f"clock {c['port']} must be a std_logic input")
+        expected_dir = "out" if c.get("output") else "in"
+        if p and (p["dir"] != expected_dir or p["width"] != "1"):
+            ctx.err(where, f"clock {c['port']} must be a std_logic {'output' if c.get('output') else 'input'}")
+        if c.get("output") and ("frequency" not in c or c.get("primary")):
+            ctx.err(where, f"clock output {c['port']} needs a frequency and cannot be primary")
         if "freqGeneric" in c and c["freqGeneric"] not in gen_names:
             ctx.err(where, f"clock {c['port']}: unknown frequency generic {c['freqGeneric']}")
         clocks.append({k: v for k, v in c.items()})
     clock_ports = {c["port"] for c in clocks}
     if clocks and sum(1 for c in clocks if c.get("primary")) != 1:
         ctx.err(where, "exactly one clock must be primary")
+    for c in clocks:
+        if c.get("output") and try_evaluate(str(c["frequency"]), defaults_env) is None:
+            ctx.err(where, f"clock output {c['port']}: frequency '{c['frequency']}' cannot be evaluated")
     resets = []
     for r in b.get("resets") or []:
         p = use(require(r, "port", where), "resets")
@@ -849,9 +875,11 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 ctx.err(iwhere, f"required signal '{sname}' of type {tid} not mapped")
         out = {"name": iname, "type": tid, "role": role}
         for key in ("clock", "label", "description", "mustServe", "externalOnly", "enabledBy", "sideband",
-                    "params", "vector", "tieOff", "domainOf"):
+                    "params", "vector", "tieOff", "carry"):
             if key in itf:
                 out[key] = itf[key]
+        if "carry" in itf and (itf["carry"] not in ("native", "packed") or not ttype.get("generic")):
+            ctx.err(iwhere, "carry (native or packed) is only for untyped interfaces")
         out["signals"] = signals
         # element widths of data/keep/user (vector interfaces divide by the count)
         widths = {}
@@ -921,6 +949,31 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
     for p in ports:
         if p["name"] not in used:
             ctx.err(where, f"port {p['name']} is not assigned to an interface, clock, reset or tie-off")
+
+    # References of the generic follow rules and of the design rules
+    itf_names = {i["name"] for i in interfaces}
+    for g in generics:
+        for iname in (g.get("follow") or {}).get("interfaces", []):
+            if iname not in itf_names:
+                ctx.err(where, f"generic {g['name']} follows unknown interface {iname}")
+    for r in b.get("rules") or []:
+        kind = r.get("kind")
+        if kind not in RULE_KINDS:
+            ctx.err(where, f"unknown rule kind {kind}")
+            continue
+        for key in RULE_KINDS[kind]:
+            if key not in r:
+                ctx.err(where, f"rule {kind} needs '{key}'")
+        refs = [r.get(k) for k in ("clock", "faster", "slower") if r.get(k)]
+        for c in refs:
+            if c not in clock_ports:
+                ctx.err(where, f"rule {kind}: unknown clock {c}")
+        for gname in [r.get("generic")] + list(r.get("generics") or []):
+            if gname and gname not in gen_names:
+                ctx.err(where, f"rule {kind}: unknown generic {gname}")
+        for iname in r.get("interfaces") or []:
+            if iname not in itf_names:
+                ctx.err(where, f"rule {kind}: unknown interface {iname}")
 
     # Presets
     presets = []

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
-import { setGeneric } from '../../assets/composer/js/model/design.js';
+import { addDomain, moveToDomain, setAdapterGeneric, setExternal, setGeneric, setSideband } from '../../assets/composer/js/model/design.js';
 import { FormatError, fromDocument, fromText, toDocument, toText } from '../../assets/composer/js/model/serialize.js';
 import { loadSnapshot, saveSnapshot, Workspace } from '../../assets/composer/js/model/workspace.js';
 import { connect, designWith, loadCatalog } from './helpers.mjs';
@@ -124,4 +124,48 @@ test('workspace: tabs, undo and the autosave snapshot', () => {
   const throwing = /** @type {Storage} */ (/** @type {unknown} */ ({ setItem: () => { throw new Error('quota'); }, getItem: () => { throw new Error('denied'); } }));
   assert.equal(saveSnapshot(ws, throwing), false);
   assert.equal(loadSnapshot(throwing), undefined);
+});
+
+test('clock domains, externals, adapter generics and side band constants survive save and load', () => {
+  const { design } = designWith(cat, ['openwire/owr_core', 'openrmap/omap_core', 'olo/olo_base_chunker', 'openspp/spp_core']);
+  let d = connect(design, checkConnection(cat, design, 'rmap0.M_Pkt', 'spw0.S_Pkt'));
+  d = connect(d, checkConnection(cat, d, 'chunk0.Out', 'spp0.S_Tx[0]'));
+  d = setSideband(d, 'c2', 'apid', 0x123);
+  const dom = addDomain(d, { name: 'Fast', frequencyHz: 150e6, box: { x: 10, y: 20, w: 400, h: 300 } });
+  d = moveToDomain(dom.design, cat, 'rmap0', dom.id);
+  d = setAdapterGeneric(d, 'c1', 'cdc', 'Depth_g', 64);
+  d = setExternal(d, 'rmap0.M_Axi', 'Mem_');
+  const text = toText(d, cat);
+  const back = fromText(text, cat);
+  assert.deepEqual(back.warnings, []);
+  assert.deepEqual(back.design, d);
+  assert.equal(toText(back.design, cat), text);
+  const doc = JSON.parse(text);
+  assert.deepEqual(doc.connections[0].adapters, { cdc: { Depth_g: 64 } });
+  assert.deepEqual(doc.connections[1].sideband, { apid: 0x123, shi: false, type: false, nameValid: false, name: 0 });
+  assert.deepEqual(doc.layout.domains, { clk1: { x: 10, y: 20, w: 400, h: 300 } });
+});
+
+test('a file without clock domains gets the default domain', () => {
+  const doc = structuredClone(toDocument(spwRmapNode(), cat));
+  doc.clockDomains = [];
+  for (const i of doc.instances) i.clocks = {};
+  const { design, warnings } = fromDocument(doc, cat);
+  assert.deepEqual(design.clockDomains.map((c) => c.id), ['sys']);
+  assert.deepEqual(design.instances[0].clocks, { UserClk: 'sys', LinkClk: 'sys', MgmtClk: 'sys' });
+  assert.ok(warnings.some((w) => /no clock domains/.test(w)));
+});
+
+test('invalid clock domains and adapter settings are rejected', () => {
+  const good = toDocument(spwRmapNode(), cat);
+  const bad = (/** @type {(d: any) => void} */ fn) => {
+    const x = structuredClone(good);
+    fn(x);
+    return () => fromDocument(x, cat);
+  };
+  assert.throws(bad((x) => { x.clockDomains.push({ id: 'pa', name: 'PA', frequencyHz: 1e8, source: { kind: 'block', instance: 'spw0', port: 'UserClk' } }); }), /source must be a clock output/);
+  assert.throws(bad((x) => { x.clockDomains[0].frequencyHz = 0; }), /positive frequencyHz/);
+  assert.throws(bad((x) => { x.instances[0].clocks.UserClk = 'nope'; }), /unknown clock domain/);
+  assert.throws(bad((x) => { x.connections[0].adapters = { fifo: { Depth_g: 4 } }; }), /unknown adapter "fifo"/);
+  assert.throws(bad((x) => { x.connections[0].adapters = { cdc: { Depth_g: 'x' } }; }), /not a generic value/);
 });

@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "741c709aa7d8",
+ "id": "64f98d4e6233",
  "sources": [
   {
    "id": "openwire",
@@ -361,6 +361,7 @@
    "name": "Space Packet errors",
    "family": "Space Packets",
    "kind": "event",
+   "cdc": "valid",
    "color": "#C92A2A",
    "description": "One-cycle event for every rejected SDU and every discarded packet, with code, port and APID.",
    "signals": {
@@ -397,6 +398,7 @@
    "name": "SpaceFibre physical adapter",
    "family": "SpaceFibre",
    "kind": "bus",
+   "cdc": "none",
    "color": "#364FC7",
    "description": "Symbol streams, control and status of every lane between the core and its physical adapter.",
    "fields": "mixed"
@@ -492,6 +494,7 @@
    "name": "RMAP authorisation",
    "family": "RMAP",
    "kind": "bus",
+   "cdc": "none",
    "color": "#5F3DC4",
    "description": "External authorisation of RMAP commands; the request is held until the response.",
    "signals": {
@@ -512,6 +515,7 @@
    "name": "RMAP indications",
    "family": "RMAP",
    "kind": "event",
+   "cdc": "valid",
    "color": "#6741D9",
    "description": "One-cycle indication of every RMAP command with an intact header, with its header fields and status.",
    "signals": {
@@ -628,6 +632,7 @@
    "name": "AXI4 memory bus",
    "family": "Buses",
    "kind": "bus",
+   "cdc": "none",
    "color": "#0E1A2B",
    "description": "AXI4 memory-mapped bus (bursts), for example the memory access of an RMAP target.",
    "signals": {
@@ -737,6 +742,7 @@
    "name": "AXI4-Lite register bus",
    "family": "Buses",
    "kind": "bus",
+   "cdc": "none",
    "color": "#5A6B80",
    "description": "AXI4-Lite register access (32 bit data), for example the register file of a core.",
    "accepts": [
@@ -805,6 +811,7 @@
    "name": "Interrupt",
    "family": "Events",
    "kind": "event",
+   "cdc": "level",
    "color": "#C2255C",
    "description": "Level interrupt of a register file.",
    "signals": {
@@ -818,6 +825,7 @@
    "name": "EDAC events",
    "family": "Events",
    "kind": "event",
+   "cdc": "pulse",
    "color": "#8F6B00",
    "description": "Corrected single and detected double bit errors of SECDED-protected memories (pulses or vectors).",
    "signals": {
@@ -838,6 +846,7 @@
    "name": "EDAC error injection",
    "family": "Events",
    "kind": "event",
+   "cdc": "valid",
    "color": "#7A6A00",
    "description": "Error injection into SECDED-protected memories, for tests.",
    "fields": "out"
@@ -847,6 +856,7 @@
    "name": "Reset",
    "family": "Events",
    "kind": "event",
+   "cdc": "none",
    "color": "#343A40",
    "description": "Synchronous high-active reset of a clock domain.",
    "signals": {
@@ -860,6 +870,7 @@
    "name": "Status signals",
    "family": "Events",
    "kind": "event",
+   "cdc": "level",
    "color": "#808891",
    "description": "Status outputs of a block (levels, flags), for monitoring.",
    "fields": "out"
@@ -869,6 +880,7 @@
    "name": "Control signals",
    "family": "Events",
    "kind": "event",
+   "cdc": "level",
    "color": "#808891",
    "description": "Static or slow control inputs of a block.",
    "fields": "out"
@@ -903,6 +915,16 @@
    },
    "fields": "out",
    "generic": true
+  },
+  {
+   "id": "event.any",
+   "name": "Generic event",
+   "family": "Generic",
+   "kind": "event",
+   "color": "#6C757D",
+   "description": "Untyped Open Logic signals of a clock crossing; they take the type of the first interface they are connected to.",
+   "fields": "out",
+   "generic": true
   }
  ],
  "blocks": [
@@ -927,8 +949,15 @@
      "max": 2147483647,
      "required": true,
      "label": "Width",
-     "description": "Data width.",
+     "description": "Data width; follows the connected stream.",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     },
      "example": 32
     },
     {
@@ -1233,8 +1262,8 @@
    "constraints": [
     {
      "kind": "vendor_scoped",
-     "file": "tcl/olo_base_fifo_async.tcl",
-     "note": "Scoped timing constraints of the Open Logic clock crossing."
+     "file": "tools/vivado/all_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
     }
    ],
    "generics": [
@@ -1246,8 +1275,15 @@
      "max": 2147483647,
      "required": true,
      "label": "Width",
-     "description": "Data width.",
+     "description": "Data width; follows the connected stream.",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     },
      "example": 32
     },
     {
@@ -1682,8 +1718,15 @@
      "max": 2147483647,
      "required": true,
      "label": "Width",
-     "description": "Data width.",
+     "description": "Data width; follows the connected stream.",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     },
      "example": 32
     },
     {
@@ -2012,6 +2055,716 @@
    ]
   },
   {
+   "id": "olo/olo_base_fifo_async",
+   "kind": "olo",
+   "name": "Asynchronous FIFO",
+   "group": "olo-fifo",
+   "source": "olo",
+   "library": "olo",
+   "entity": "olo_base_fifo_async",
+   "path": "src/base/vhdl/olo_base_fifo_async.vhd",
+   "summary": "FIFO between two clock domains without memory protection; optionally triplicated synchronisers.",
+   "idPrefix": "afifo",
+   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_fifo_async.html",
+   "constraints": [
+    {
+     "kind": "vendor_scoped",
+     "file": "tools/vivado/all_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
+    }
+   ],
+   "generics": [
+    {
+     "name": "Width_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "required": true,
+     "label": "Width",
+     "description": "Data width; follows the connected stream.",
+     "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     },
+     "example": 32
+    },
+    {
+     "name": "Depth_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "required": true,
+     "label": "Depth",
+     "description": "Number of entries (power of 2).",
+     "check": "pow2",
+     "unit": "words",
+     "example": 32
+    },
+    {
+     "name": "AlmFullOn_g",
+     "vhdlType": "boolean",
+     "kind": "boolean",
+     "defaultText": "false",
+     "default": false,
+     "label": "Almost full flag",
+     "advanced": true
+    },
+    {
+     "name": "AlmFullLevel_g",
+     "vhdlType": "natural",
+     "kind": "integer",
+     "min": 0,
+     "max": 2147483647,
+     "defaultText": "0",
+     "default": 0,
+     "label": "Almost full level",
+     "advanced": true
+    },
+    {
+     "name": "AlmEmptyOn_g",
+     "vhdlType": "boolean",
+     "kind": "boolean",
+     "defaultText": "false",
+     "default": false,
+     "label": "Almost empty flag",
+     "advanced": true
+    },
+    {
+     "name": "AlmEmptyLevel_g",
+     "vhdlType": "natural",
+     "kind": "integer",
+     "min": 0,
+     "max": 2147483647,
+     "defaultText": "0",
+     "default": 0,
+     "label": "Almost empty level",
+     "advanced": true
+    },
+    {
+     "name": "RamStyle_g",
+     "vhdlType": "string",
+     "kind": "string",
+     "defaultText": "\"auto\"",
+     "default": "auto",
+     "label": "RAM style",
+     "advanced": true
+    },
+    {
+     "name": "RamBehavior_g",
+     "vhdlType": "string",
+     "kind": "string",
+     "defaultText": "\"RBW\"",
+     "default": "RBW",
+     "label": "RAM behaviour",
+     "choices": [
+      "RBW",
+      "WBR"
+     ],
+     "advanced": true
+    },
+    {
+     "name": "ReadyRstState_g",
+     "vhdlType": "std_logic",
+     "kind": "std_logic",
+     "defaultText": "'1'",
+     "default": "1",
+     "label": "Ready during reset",
+     "advanced": true
+    },
+    {
+     "name": "Optimization_g",
+     "vhdlType": "string",
+     "kind": "string",
+     "defaultText": "\"SPEED\"",
+     "default": "SPEED",
+     "label": "Optimisation",
+     "choices": [
+      "SPEED",
+      "LATENCY"
+     ],
+     "advanced": true
+    },
+    {
+     "name": "SyncStages_g",
+     "vhdlType": "positive range 2 to 4",
+     "kind": "integer",
+     "min": 2,
+     "max": 4,
+     "defaultText": "2",
+     "default": 2,
+     "label": "Synchroniser stages"
+    },
+    {
+     "name": "SyncTmr_g",
+     "vhdlType": "boolean",
+     "kind": "boolean",
+     "defaultText": "false",
+     "default": false,
+     "label": "Triplicated synchronisers"
+    }
+   ],
+   "clocks": [
+    {
+     "port": "In_Clk",
+     "primary": true,
+     "label": "Input clock"
+    },
+    {
+     "port": "Out_Clk",
+     "label": "Output clock"
+    }
+   ],
+   "resets": [
+    {
+     "port": "In_Rst",
+     "active": "high",
+     "sync": "sync",
+     "clock": "In_Clk"
+    },
+    {
+     "port": "Out_Rst",
+     "active": "high",
+     "sync": "sync",
+     "clock": "Out_Clk"
+    },
+    {
+     "port": "In_RstOut",
+     "dir": "out",
+     "active": "high",
+     "clock": "In_Clk"
+    },
+    {
+     "port": "Out_RstOut",
+     "dir": "out",
+     "active": "high",
+     "clock": "Out_Clk"
+    }
+   ],
+   "interfaces": [
+    {
+     "name": "In",
+     "type": "axis.any",
+     "role": "sink",
+     "clock": "In_Clk",
+     "label": "Input",
+     "signals": {
+      "data": "In_Data",
+      "valid": "In_Valid",
+      "ready": "In_Ready"
+     },
+     "widths": {
+      "data": "Width_g"
+     }
+    },
+    {
+     "name": "Out",
+     "type": "axis.any",
+     "role": "source",
+     "clock": "Out_Clk",
+     "label": "Output",
+     "signals": {
+      "data": "Out_Data",
+      "valid": "Out_Valid",
+      "ready": "Out_Ready"
+     },
+     "widths": {
+      "data": "Width_g"
+     }
+    },
+    {
+     "name": "InStatus",
+     "type": "sig.status",
+     "role": "event_out",
+     "clock": "In_Clk",
+     "label": "Input fill status",
+     "tieOff": "open",
+     "signals": {
+      "full": "In_Full",
+      "empty": "In_Empty",
+      "alm_full": "In_AlmFull",
+      "alm_empty": "In_AlmEmpty",
+      "level": "In_Level"
+     }
+    },
+    {
+     "name": "OutStatus",
+     "type": "sig.status",
+     "role": "event_out",
+     "clock": "Out_Clk",
+     "label": "Output fill status",
+     "tieOff": "open",
+     "signals": {
+      "full": "Out_Full",
+      "empty": "Out_Empty",
+      "alm_full": "Out_AlmFull",
+      "alm_empty": "Out_AlmEmpty",
+      "level": "Out_Level"
+     }
+    }
+   ],
+   "ports": [
+    {
+     "name": "In_Clk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "In_Rst",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "In_RstOut",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "In_Data",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(Width_g-1 downto 0)",
+     "width": "Width_g"
+    },
+    {
+     "name": "In_Valid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'1'"
+    },
+    {
+     "name": "In_Ready",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "In_Full",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "In_Empty",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "In_AlmFull",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "In_AlmEmpty",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "In_Level",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(log2ceil(Depth_g+1)-1 downto 0)",
+     "width": "log2ceil(Depth_g+1)"
+    },
+    {
+     "name": "Out_Clk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Out_Rst",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Out_RstOut",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Out_Data",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(Width_g-1 downto 0)",
+     "width": "Width_g"
+    },
+    {
+     "name": "Out_Valid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Out_Ready",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'1'"
+    },
+    {
+     "name": "Out_Full",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Out_Empty",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Out_AlmFull",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Out_AlmEmpty",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Out_Level",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(log2ceil(Depth_g+1)-1 downto 0)",
+     "width": "log2ceil(Depth_g+1)"
+    }
+   ]
+  },
+  {
+   "id": "olo/olo_base_cc_bits",
+   "kind": "olo",
+   "name": "Clock crossing of levels",
+   "group": "olo-cc",
+   "source": "olo",
+   "library": "olo",
+   "entity": "olo_base_cc_bits",
+   "path": "src/base/vhdl/olo_base_cc_bits.vhd",
+   "summary": "Synchronises independent level signals into another clock domain.",
+   "idPrefix": "ccbits",
+   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_bits.html",
+   "constraints": [
+    {
+     "kind": "vendor_scoped",
+     "file": "tools/vivado/all_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
+    }
+   ],
+   "generics": [
+    {
+     "name": "Width_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "1",
+     "default": 1,
+     "label": "Width",
+     "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     }
+    },
+    {
+     "name": "SyncStages_g",
+     "vhdlType": "positive range 2 to 4",
+     "kind": "integer",
+     "min": 2,
+     "max": 4,
+     "defaultText": "2",
+     "default": 2,
+     "label": "Synchroniser stages"
+    },
+    {
+     "name": "SyncTmr_g",
+     "vhdlType": "boolean",
+     "kind": "boolean",
+     "defaultText": "false",
+     "default": false,
+     "label": "Triplicated synchronisers"
+    }
+   ],
+   "clocks": [
+    {
+     "port": "In_Clk",
+     "primary": true,
+     "label": "Input clock"
+    },
+    {
+     "port": "Out_Clk",
+     "label": "Output clock"
+    }
+   ],
+   "resets": [
+    {
+     "port": "In_Rst",
+     "active": "high",
+     "sync": "sync",
+     "clock": "In_Clk"
+    },
+    {
+     "port": "Out_Rst",
+     "active": "high",
+     "sync": "sync",
+     "clock": "Out_Clk"
+    }
+   ],
+   "interfaces": [
+    {
+     "name": "In",
+     "type": "event.any",
+     "role": "event_in",
+     "clock": "In_Clk",
+     "label": "Input",
+     "signals": {
+      "data": "In_Data"
+     },
+     "widths": {
+      "data": "Width_g"
+     }
+    },
+    {
+     "name": "Out",
+     "type": "event.any",
+     "role": "event_out",
+     "clock": "Out_Clk",
+     "label": "Output",
+     "signals": {
+      "data": "Out_Data"
+     },
+     "widths": {
+      "data": "Width_g"
+     }
+    }
+   ],
+   "ports": [
+    {
+     "name": "In_Clk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "In_Rst",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
+    },
+    {
+     "name": "In_Data",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(Width_g - 1 downto 0)",
+     "width": "Width_g"
+    },
+    {
+     "name": "Out_Clk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Out_Rst",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
+    },
+    {
+     "name": "Out_Data",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(Width_g - 1 downto 0)",
+     "width": "Width_g"
+    }
+   ]
+  },
+  {
+   "id": "olo/olo_base_cc_pulse",
+   "kind": "olo",
+   "name": "Clock crossing of pulses",
+   "group": "olo-cc",
+   "source": "olo",
+   "library": "olo",
+   "entity": "olo_base_cc_pulse",
+   "path": "src/base/vhdl/olo_base_cc_pulse.vhd",
+   "summary": "Passes single-cycle pulses into another clock domain.",
+   "idPrefix": "ccpulse",
+   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_pulse.html",
+   "constraints": [
+    {
+     "kind": "vendor_scoped",
+     "file": "tools/vivado/all_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
+    }
+   ],
+   "generics": [
+    {
+     "name": "NumPulses_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "1",
+     "default": 1,
+     "label": "Pulses",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     }
+    },
+    {
+     "name": "SyncStages_g",
+     "vhdlType": "positive range 2 to 4",
+     "kind": "integer",
+     "min": 2,
+     "max": 4,
+     "defaultText": "2",
+     "default": 2,
+     "label": "Synchroniser stages"
+    },
+    {
+     "name": "SyncTmr_g",
+     "vhdlType": "boolean",
+     "kind": "boolean",
+     "defaultText": "false",
+     "default": false,
+     "label": "Triplicated synchronisers"
+    }
+   ],
+   "clocks": [
+    {
+     "port": "In_Clk",
+     "primary": true,
+     "label": "Input clock"
+    },
+    {
+     "port": "Out_Clk",
+     "label": "Output clock"
+    }
+   ],
+   "resets": [
+    {
+     "port": "In_RstIn",
+     "active": "high",
+     "sync": "sync",
+     "clock": "In_Clk"
+    },
+    {
+     "port": "Out_RstIn",
+     "active": "high",
+     "sync": "sync",
+     "clock": "Out_Clk"
+    },
+    {
+     "port": "In_RstOut",
+     "dir": "out",
+     "active": "high",
+     "clock": "In_Clk"
+    },
+    {
+     "port": "Out_RstOut",
+     "dir": "out",
+     "active": "high",
+     "clock": "Out_Clk"
+    }
+   ],
+   "interfaces": [
+    {
+     "name": "In",
+     "type": "event.any",
+     "role": "event_in",
+     "clock": "In_Clk",
+     "label": "Input",
+     "signals": {
+      "pulse": "In_Pulse"
+     }
+    },
+    {
+     "name": "Out",
+     "type": "event.any",
+     "role": "event_out",
+     "clock": "Out_Clk",
+     "label": "Output",
+     "signals": {
+      "pulse": "Out_Pulse"
+     }
+    }
+   ],
+   "ports": [
+    {
+     "name": "In_Clk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "In_RstIn",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
+    },
+    {
+     "name": "In_RstOut",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "In_Pulse",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumPulses_g - 1 downto 0)",
+     "width": "NumPulses_g"
+    },
+    {
+     "name": "Out_Clk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Out_RstIn",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
+    },
+    {
+     "name": "Out_RstOut",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Out_Pulse",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumPulses_g - 1 downto 0)",
+     "width": "NumPulses_g"
+    }
+   ]
+  },
+  {
    "id": "olo/olo_base_wconv_n2xn",
    "kind": "olo",
    "name": "Width converter 1:N",
@@ -2036,6 +2789,12 @@
      "required": true,
      "label": "Input width",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In"
+      ],
+      "measure": "data"
+     },
      "example": 8
     },
     {
@@ -2048,6 +2807,12 @@
      "label": "Output width",
      "description": "An integer multiple of the input width.",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "Out"
+      ],
+      "measure": "data"
+     },
      "example": 32
     }
    ],
@@ -2073,6 +2838,7 @@
      "role": "sink",
      "clock": "Clk",
      "label": "Input",
+     "carry": "native",
      "signals": {
       "data": "In_Data",
       "valid": "In_Valid",
@@ -2089,6 +2855,7 @@
      "role": "source",
      "clock": "Clk",
      "label": "Output",
+     "carry": "native",
      "signals": {
       "data": "Out_Data",
       "valid": "Out_Valid",
@@ -2196,6 +2963,12 @@
      "label": "Input width",
      "description": "An integer multiple of the output width.",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In"
+      ],
+      "measure": "data"
+     },
      "example": 32
     },
     {
@@ -2207,6 +2980,12 @@
      "required": true,
      "label": "Output width",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "Out"
+      ],
+      "measure": "data"
+     },
      "example": 8
     }
    ],
@@ -2232,6 +3011,7 @@
      "role": "sink",
      "clock": "Clk",
      "label": "Input",
+     "carry": "native",
      "signals": {
       "data": "In_Data",
       "valid": "In_Valid",
@@ -2249,6 +3029,7 @@
      "role": "source",
      "clock": "Clk",
      "label": "Output",
+     "carry": "native",
      "signals": {
       "data": "Out_Data",
       "valid": "Out_Valid",
@@ -2354,7 +3135,13 @@
      "defaultText": "16",
      "default": 16,
      "label": "Input width",
-     "unit": "bits"
+     "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In"
+      ],
+      "measure": "data"
+     }
     },
     {
      "name": "OutWidth_g",
@@ -2365,7 +3152,13 @@
      "defaultText": "24",
      "default": 24,
      "label": "Output width",
-     "unit": "bits"
+     "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "Out"
+      ],
+      "measure": "data"
+     }
     },
     {
      "name": "UseBe_g",
@@ -2399,6 +3192,7 @@
      "role": "sink",
      "clock": "Clk",
      "label": "Input",
+     "carry": "native",
      "signals": {
       "data": "In_Data",
       "keep": "In_Be",
@@ -2417,6 +3211,7 @@
      "role": "source",
      "clock": "Clk",
      "label": "Output",
+     "carry": "native",
      "signals": {
       "data": "Out_Data",
       "keep": "Out_Be",
@@ -2524,7 +3319,8 @@
    "constraints": [
     {
      "kind": "vendor_scoped",
-     "file": "tcl/olo_base_cc_handshake.tcl"
+     "file": "tools/vivado/all_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
     }
    ],
    "generics": [
@@ -2537,6 +3333,13 @@
      "required": true,
      "label": "Width",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     },
      "example": 32
     },
     {
@@ -2730,7 +3533,8 @@
    "constraints": [
     {
      "kind": "vendor_scoped",
-     "file": "tcl/olo_base_cc_simple.tcl"
+     "file": "tools/vivado/all_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
     }
    ],
    "generics": [
@@ -2743,7 +3547,14 @@
      "defaultText": "1",
      "default": 1,
      "label": "Width",
-     "unit": "bits"
+     "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     }
     },
     {
      "name": "SyncStages_g",
@@ -2927,7 +3738,14 @@
      "defaultText": "8",
      "default": 8,
      "label": "Width",
-     "unit": "bits"
+     "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     }
     },
     {
      "name": "SyncStages_g",
@@ -3127,6 +3945,13 @@
      "required": true,
      "label": "Width",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     },
      "example": 32
     },
     {
@@ -3425,6 +4250,13 @@
      "required": true,
      "label": "Width",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     },
      "example": 32
     },
     {
@@ -3569,6 +4401,13 @@
      "required": true,
      "label": "Width",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "packed"
+     },
      "example": 32
     },
     {
@@ -3771,6 +4610,13 @@
      "required": true,
      "label": "Width",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "data"
+     },
      "example": 8
     },
     {
@@ -3853,6 +4699,7 @@
      "role": "sink",
      "clock": "Clk",
      "label": "Input",
+     "carry": "native",
      "signals": {
       "data": "In_Data",
       "valid": "In_Valid",
@@ -3869,6 +4716,7 @@
      "role": "source",
      "clock": "Clk",
      "label": "Output",
+     "carry": "native",
      "signals": {
       "data": "Out_Data",
       "valid": "Out_Valid",
@@ -3967,6 +4815,13 @@
      "required": true,
      "label": "Width",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "data"
+     },
      "example": 8
     },
     {
@@ -4094,6 +4949,7 @@
      "role": "sink",
      "clock": "Clk",
      "label": "Input",
+     "carry": "native",
      "signals": {
       "data": "In_Data",
       "valid": "In_Valid",
@@ -4110,6 +4966,7 @@
      "role": "source",
      "clock": "Clk",
      "label": "Output",
+     "carry": "native",
      "signals": {
       "data": "Out_Data",
       "valid": "Out_Valid",
@@ -4215,6 +5072,13 @@
      "required": true,
      "label": "Width",
      "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "In",
+       "Out"
+      ],
+      "measure": "data"
+     },
      "example": 32
     },
     {
@@ -4252,6 +5116,7 @@
      "role": "sink",
      "clock": "Clk",
      "label": "Input",
+     "carry": "native",
      "signals": {
       "data": "In_Data",
       "keep": "In_Be",
@@ -4270,6 +5135,7 @@
      "role": "source",
      "clock": "Clk",
      "label": "Chunks",
+     "carry": "native",
      "signals": {
       "data": "Out_Data",
       "keep": "Out_Be",
@@ -5248,6 +6114,14 @@
      "kind": "mutual_initiator",
      "generic": "Transactions_g",
      "message": "Two nodes that are initiator and target of each other on one link need Transactions_g = 1."
+    },
+    {
+     "kind": "same_domain",
+     "interfaces": [
+      "S_Pkt",
+      "M_Pkt"
+     ],
+     "message": "The RMAP node normally runs on the user clock of its SpaceWire port; an asynchronous FIFO was inserted instead."
     }
    ],
    "generics": [
@@ -7236,9 +8110,16 @@
      "defaultText": "32",
      "default": 32,
      "label": "Link width",
-     "description": "Width of the link streams; equal to the width of the connected link.",
+     "description": "Width of the link streams; follows the connected link.",
      "check": "multiple8",
-     "unit": "bits"
+     "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "S_Link",
+       "M_Link"
+      ],
+      "measure": "data"
+     }
     }
    ],
    "clocks": [
@@ -7491,11 +8372,6 @@
      "clock": "LinkClk",
      "multipleHz": "10.0e6",
      "tolerance": 0.1
-    },
-    {
-     "kind": "generic_matches_clock",
-     "generic": "LinkClkFreq_g",
-     "clock": "LinkClk"
     }
    ],
    "constraints": [

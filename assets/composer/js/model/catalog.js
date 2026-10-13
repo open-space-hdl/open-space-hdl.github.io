@@ -25,6 +25,7 @@ export const CATALOG_VERSION = 1;
  * @property {{type: string, sideband?: string, condition?: string, note?: string}[]} [accepts]
  * @property {{type: string, via: string}[]} [bridges]
  * @property {boolean} [generic]
+ * @property {'level' | 'pulse' | 'valid' | 'none'} [cdc]
  */
 
 /**
@@ -54,6 +55,7 @@ export const CATALOG_VERSION = 1;
  * @property {Record<string, string>} [widths]
  * @property {Record<string, string>} signals
  * @property {{signal: string, description?: string, fields: SidebandField[]}} [sideband]
+ * @property {'native' | 'packed'} [carry]
  */
 
 /**
@@ -74,7 +76,7 @@ export const CATALOG_VERSION = 1;
  * @property {Record<string, unknown>[]} [rules]
  * @property {Record<string, unknown>[]} [constraints]
  * @property {GenericDef[]} generics
- * @property {{port: string, primary?: boolean, label?: string, description?: string, freqGeneric?: string}[]} clocks
+ * @property {{port: string, primary?: boolean, output?: boolean, frequency?: string | number, label?: string, description?: string, freqGeneric?: string}[]} clocks
  * @property {{port: string, dir?: string, active?: string, sync?: string, clock?: string}[]} resets
  * @property {InterfaceDef[]} interfaces
  * @property {{name: string, dir: string, vhdlType: string, width: string|null, default?: string}[]} ports

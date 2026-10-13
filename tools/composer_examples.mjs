@@ -5,7 +5,9 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { Catalog } from '../assets/composer/js/model/catalog.js';
 import { checkConnection } from '../assets/composer/js/model/compat.js';
-import { addConnection, addInstance, createDesign, setGeneric, setSystem } from '../assets/composer/js/model/design.js';
+import {
+  addConnection, addDomain, addInstance, assignClock, createDesign, renameDomain, setGeneric, setSystem,
+} from '../assets/composer/js/model/design.js';
 import { toText } from '../assets/composer/js/model/serialize.js';
 
 const cat = new Catalog(JSON.parse(readFileSync(new URL('../assets/composer/catalog.json', import.meta.url), 'utf-8')));
@@ -35,6 +37,17 @@ function base(name, description, blocks) {
 /** @type {[string, string, import('../assets/composer/js/model/design.js').Design][]} */
 const examples = [];
 
+/**
+ * Puts the link clock of a SpaceWire port into its own clock domain.
+ * @param {import('../assets/composer/js/model/design.js').Design} d
+ * @param {string} spw
+ * @param {number} hz
+ */
+function linkDomain(d, spw, hz) {
+  const r = addDomain(d, { name: 'Link clock', frequencyHz: hz });
+  return renameDomain(assignClock(r.design, cat, spw, 'LinkClk', r.id), r.id, 'link');
+}
+
 {
   let d = base('spw_rmap_node', 'SpaceWire RMAP target: an OpenWire port and an OpenRMAP target with its memory interface.', [
     ['openwire/owr_core', undefined, 480, 96],
@@ -42,6 +55,7 @@ const examples = [];
   ]);
   d = link(d, 'rmap0.M_Pkt', 'spw0.S_Pkt');
   d = link(d, 'spw0.M_Pkt', 'rmap0.S_Pkt');
+  d = linkDomain(d, 'spw0', 200e6);
   examples.push(['spw-rmap-node', 'SpaceWire RMAP target', d]);
 }
 
@@ -63,6 +77,7 @@ const examples = [];
   d = link(d, 'spp0.M_Link', 'nchar0.S_Link');
   d = link(d, 'nchar0.M_Link', 'spp0.S_Link');
   d = setGeneric(d, cat, 'spp0', 'NumTx_g', 2).design;
+  d = linkDomain(d, 'spw0', 200e6);
   examples.push(['spp-over-spw', 'Space Packets over SpaceWire', d]);
 }
 

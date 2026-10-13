@@ -5,7 +5,7 @@
   "generator": {
     "name": "Open Space Composer",
     "version": "0.1.0-beta",
-    "catalog": "741c709aa7d8"
+    "catalog": "64f98d4e6233"
   },
   "system": {
     "name": "spw_rmap_node",
@@ -44,20 +44,43 @@
       "fileListFormat": "files"
     }
   ],
-  "clockDomains": [],
+  "clockDomains": [
+    {
+      "id": "sys",
+      "name": "System clock",
+      "frequencyHz": 100000000,
+      "source": {
+        "kind": "external"
+      }
+    },
+    {
+      "id": "link",
+      "name": "Link clock",
+      "frequencyHz": 200000000,
+      "source": {
+        "kind": "external"
+      }
+    }
+  ],
   "instances": [
     {
       "id": "spw0",
       "block": "openwire/owr_core",
       "generics": {},
-      "clocks": {}
+      "clocks": {
+        "UserClk": "sys",
+        "LinkClk": "link",
+        "MgmtClk": "sys"
+      }
     },
     {
       "id": "rmap0",
       "block": "openrmap/omap_core",
       "preset": "target",
       "generics": {},
-      "clocks": {}
+      "clocks": {
+        "Clk": "sys"
+      }
     }
   ],
   "connections": [
@@ -84,6 +107,7 @@
         "y": 96
       }
     },
+    "domains": {},
     "viewport": {
       "x": 0,
       "y": 0,

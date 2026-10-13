@@ -4,29 +4,57 @@
   "title": "Open Space Composer system, format version 1",
   "description": "One FPGA system built from Open Space HDL cores and Open Logic blocks: what the user designed (system, instances, connections, externals, layout) and, optionally, what the Composer derived from it (resolved, checks, agent). The format reference is https://openspacehdl.org/composer/format/.",
   "type": "object",
-  "required": ["format", "formatVersion", "system", "instances", "connections"],
+  "required": [
+    "format",
+    "formatVersion",
+    "system",
+    "instances",
+    "connections"
+  ],
   "additionalProperties": false,
   "properties": {
-    "$schema": { "type": "string" },
-    "format": { "const": "open-space-composer-system" },
-    "formatVersion": { "const": 1 },
+    "$schema": {
+      "type": "string"
+    },
+    "format": {
+      "const": "open-space-composer-system"
+    },
+    "formatVersion": {
+      "const": 1
+    },
     "generator": {
       "type": "object",
       "description": "Tool that wrote the file and the identifier of the block catalog it used.",
-      "required": ["name", "version"],
+      "required": [
+        "name",
+        "version"
+      ],
       "properties": {
-        "name": { "type": "string" },
-        "version": { "type": "string" },
-        "catalog": { "type": "string" }
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "catalog": {
+          "type": "string"
+        }
       }
     },
     "system": {
       "type": "object",
-      "required": ["name"],
+      "required": [
+        "name"
+      ],
       "additionalProperties": false,
       "properties": {
-        "name": { "$ref": "#/$defs/identifier", "description": "Name of the top-level entity." },
-        "description": { "type": "string" },
+        "name": {
+          "$ref": "#/$defs/identifier",
+          "description": "Name of the top-level entity."
+        },
+        "description": {
+          "type": "string"
+        },
         "faultTolerance": {
           "type": "boolean",
           "description": "Adapters the Composer inserts use the fault-tolerant Open Logic entities and triplicated synchronisers."
@@ -38,20 +66,50 @@
       "description": "Repositories of the blocks used, pinned to the commit the catalog was checked against.",
       "items": {
         "type": "object",
-        "required": ["id", "url", "commit", "library", "fileList"],
+        "required": [
+          "id",
+          "url",
+          "commit",
+          "library",
+          "fileList"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "url": { "type": "string", "format": "uri" },
-          "tag": { "type": "string" },
-          "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-          "library": { "$ref": "#/$defs/vhdlName", "description": "VHDL library the sources are compiled into." },
-          "fileList": { "type": "string", "description": "File of the repository with the sources in compile order." },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "tag": {
+            "type": "string"
+          },
+          "commit": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "library": {
+            "$ref": "#/$defs/vhdlName",
+            "description": "VHDL library the sources are compiled into."
+          },
+          "fileList": {
+            "type": "string",
+            "description": "File of the repository with the sources in compile order."
+          },
           "fileListFormat": {
-            "enum": ["modules", "files"],
+            "enum": [
+              "modules",
+              "files"
+            ],
             "description": "modules: one module directory per line, sources in <module>/src/*.vhd; files: one VHDL file per line."
           },
-          "requires": { "type": "string", "description": "Open Logic FT tag the repository is verified with." }
+          "requires": {
+            "type": "string",
+            "description": "Open Logic FT tag the repository is verified with."
+          }
         }
       }
     },
@@ -59,60 +117,109 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "name", "frequencyHz", "source"],
+        "required": [
+          "id",
+          "name",
+          "frequencyHz",
+          "source"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": { "$ref": "#/$defs/identifier" },
-          "name": { "type": "string" },
-          "frequencyHz": { "type": "number", "exclusiveMinimum": 0 },
+          "id": {
+            "$ref": "#/$defs/identifier"
+          },
+          "name": {
+            "type": "string"
+          },
+          "frequencyHz": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
           "source": {
             "oneOf": [
               {
                 "type": "object",
-                "required": ["kind"],
+                "required": [
+                  "kind"
+                ],
                 "additionalProperties": false,
-                "properties": { "kind": { "const": "external" } }
+                "properties": {
+                  "kind": {
+                    "const": "external"
+                  }
+                }
               },
               {
                 "type": "object",
-                "required": ["kind", "instance", "port"],
+                "required": [
+                  "kind",
+                  "instance",
+                  "port"
+                ],
                 "additionalProperties": false,
                 "properties": {
-                  "kind": { "const": "block" },
-                  "instance": { "$ref": "#/$defs/identifier" },
-                  "port": { "$ref": "#/$defs/vhdlName" }
+                  "kind": {
+                    "const": "block"
+                  },
+                  "instance": {
+                    "$ref": "#/$defs/identifier"
+                  },
+                  "port": {
+                    "$ref": "#/$defs/vhdlName"
+                  }
                 }
               }
             ]
           }
         }
-      }
+      },
+      "description": "Clock domains: external clocks (a top-level clock port Clk_<id>) or the clock output of a block. Every clock input of every instance is assigned to one domain; the Composer inserts clock crossings between domains and one reset generator per domain."
     },
     "instances": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "block"],
+        "required": [
+          "id",
+          "block"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": { "$ref": "#/$defs/identifier", "description": "Instance label in the top level." },
+          "id": {
+            "$ref": "#/$defs/identifier",
+            "description": "Instance label in the top level."
+          },
           "block": {
             "type": "string",
             "pattern": "^[a-z][a-z0-9-]*/[a-z][a-z0-9_]*$",
             "description": "Catalog block id <source>/<entity>."
           },
-          "preset": { "type": "string" },
+          "preset": {
+            "type": "string"
+          },
           "generics": {
             "type": "object",
             "description": "Generic values that differ from the catalog default and the preset. std_logic as \"0\" or \"1\", std_logic_vector and integer_vector as VHDL literals, string generics without quotes.",
-            "propertyNames": { "$ref": "#/$defs/vhdlName" },
-            "additionalProperties": { "type": ["boolean", "number", "string"] }
+            "propertyNames": {
+              "$ref": "#/$defs/vhdlName"
+            },
+            "additionalProperties": {
+              "type": [
+                "boolean",
+                "number",
+                "string"
+              ]
+            }
           },
           "clocks": {
             "type": "object",
             "description": "Clock port of the block -> clock domain id.",
-            "propertyNames": { "$ref": "#/$defs/vhdlName" },
-            "additionalProperties": { "$ref": "#/$defs/identifier" }
+            "propertyNames": {
+              "$ref": "#/$defs/vhdlName"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/identifier"
+            }
           }
         }
       }
@@ -121,16 +228,65 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "from", "to"],
+        "required": [
+          "id",
+          "from",
+          "to"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]*$" },
-          "from": { "$ref": "#/$defs/endpoint", "description": "Driving interface (source, master, event output)." },
-          "to": { "$ref": "#/$defs/endpoint", "description": "Receiving interface (sink, slave, event input)." },
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+          },
+          "from": {
+            "$ref": "#/$defs/endpoint",
+            "description": "Driving interface (source, master, event output)."
+          },
+          "to": {
+            "$ref": "#/$defs/endpoint",
+            "description": "Receiving interface (sink, slave, event input)."
+          },
           "sideband": {
             "type": "object",
             "description": "Constants of a side band the receiving interface needs, for example the APID of an OpenSPP send port.",
-            "additionalProperties": { "type": ["boolean", "integer"] }
+            "additionalProperties": {
+              "type": [
+                "boolean",
+                "integer"
+              ]
+            }
+          },
+          "adapters": {
+            "type": "object",
+            "description": "Generic values of the adapters the Composer inserts on the connection: cdc (clock crossing, for example Depth_g of an asynchronous FIFO) and wconv (width converter).",
+            "additionalProperties": false,
+            "properties": {
+              "cdc": {
+                "type": "object",
+                "propertyNames": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_]*_g$"
+                },
+                "additionalProperties": {
+                  "type": [
+                    "number",
+                    "boolean"
+                  ]
+                }
+              },
+              "wconv": {
+                "type": "object",
+                "propertyNames": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_]*_g$"
+                },
+                "additionalProperties": {
+                  "type": [
+                    "number",
+                    "boolean"
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -140,11 +296,19 @@
       "description": "Interfaces that become ports of the top level.",
       "items": {
         "type": "object",
-        "required": ["interface", "prefix"],
+        "required": [
+          "interface",
+          "prefix"
+        ],
         "additionalProperties": false,
         "properties": {
-          "interface": { "$ref": "#/$defs/endpoint" },
-          "prefix": { "type": "string", "pattern": "^[A-Za-z](?:_?[A-Za-z0-9])*_?$" }
+          "interface": {
+            "$ref": "#/$defs/endpoint"
+          },
+          "prefix": {
+            "type": "string",
+            "pattern": "^[A-Za-z](?:_?[A-Za-z0-9])*_?$"
+          }
         }
       }
     },
@@ -156,13 +320,61 @@
           "type": "object",
           "additionalProperties": {
             "type": "object",
-            "required": ["x", "y"],
-            "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
+            "required": [
+              "x",
+              "y"
+            ],
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            }
           }
         },
         "viewport": {
           "type": "object",
-          "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "zoom": { "type": "number", "exclusiveMinimum": 0 } }
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "zoom": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "domains": {
+          "type": "object",
+          "description": "Placeholder boxes of clock domains without blocks.",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "x",
+              "y",
+              "w",
+              "h"
+            ],
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "w": {
+                "type": "number"
+              },
+              "h": {
+                "type": "number"
+              }
+            }
+          }
         }
       }
     },
@@ -175,12 +387,27 @@
       "description": "Derived by the Composer: results of the design rule checks.",
       "items": {
         "type": "object",
-        "required": ["severity", "message"],
+        "required": [
+          "severity",
+          "message"
+        ],
         "properties": {
-          "severity": { "enum": ["error", "warning", "info"] },
-          "rule": { "type": "string" },
-          "message": { "type": "string" },
-          "instance": { "type": "string" }
+          "severity": {
+            "enum": [
+              "error",
+              "warning",
+              "info"
+            ]
+          },
+          "rule": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          }
         }
       }
     },
@@ -196,7 +423,10 @@
       "maxLength": 40,
       "description": "Lower-case VHDL basic identifier without double or trailing underscore."
     },
-    "vhdlName": { "type": "string", "pattern": "^[A-Za-z](?:_?[A-Za-z0-9])*$" },
+    "vhdlName": {
+      "type": "string",
+      "pattern": "^[A-Za-z](?:_?[A-Za-z0-9])*$"
+    },
     "endpoint": {
       "type": "string",
       "pattern": "^[a-z](?:_?[a-z0-9])*\\.[A-Za-z][A-Za-z0-9_]*(?:\\[[0-9]+\\])?$",

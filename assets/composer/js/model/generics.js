@@ -23,6 +23,7 @@
  * @property {string} [unit]
  * @property {string} [fromClock]
  * @property {boolean} [advanced]
+ * @property {{ interfaces: string[], measure: 'data' | 'packed' }} [follow]   width that follows a connected interface
  */
 
 /** @typedef {{ ok: true, value: unknown } | { ok: false, message: string }} Validation */

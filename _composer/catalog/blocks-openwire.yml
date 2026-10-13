@@ -127,7 +127,6 @@ blocks:
         signals: { d_out: Spw_DOut, s_out: Spw_SOut, d_in: Spw_DIn, s_in: Spw_SIn, tx_en: Phy_TxEn, rx_en: Phy_RxEn }
     rules:
       - { kind: clock_freq_multiple, clock: LinkClk, multipleHz: 10.0e6, tolerance: 0.1 }
-      - { kind: generic_matches_clock, generic: LinkClkFreq_g, clock: LinkClk }
     constraints:
       - { kind: false_path, fromPorts: [Spw_DIn, Spw_SIn, Rst] }
       - { kind: async_clock_groups, clocks: [UserClk, LinkClk, MgmtClk] }

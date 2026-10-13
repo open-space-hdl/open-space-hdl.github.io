@@ -5,6 +5,7 @@
  */
 
 import { splitEndpoint } from './catalog.js';
+import { tryEvaluate } from './expr.js';
 import { validateValue, sameValue } from './generics.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
@@ -24,6 +25,7 @@ import { validateValue, sameValue } from './generics.js';
  * @property {string} from                driving endpoint "instance.Interface[index]"
  * @property {string} to                  receiving endpoint
  * @property {Record<string, number | boolean>} [sideband]   constants of a required side band
+ * @property {{ cdc?: Record<string, unknown>, wconv?: Record<string, unknown> }} [adapters]  generics of inserted adapters
  */
 
 /**
@@ -49,7 +51,7 @@ import { validateValue, sameValue } from './generics.js';
  * @property {Instance[]} instances
  * @property {Connection[]} connections
  * @property {External[]} externals
- * @property {{ instances: Record<string, {x: number, y: number}>, viewport: {x: number, y: number, zoom: number} }} layout
+ * @property {{ instances: Record<string, {x: number, y: number}>, domains: Record<string, {x: number, y: number, w: number, h: number}>, viewport: {x: number, y: number, zoom: number} }} layout
  */
 
 export class DesignError extends Error {
@@ -102,7 +104,7 @@ export function createDesign(name = 'system') {
     instances: [],
     connections: [],
     externals: [],
-    layout: { instances: {}, viewport: { x: 0, y: 0, zoom: 1 } },
+    layout: { instances: {}, domains: {}, viewport: { x: 0, y: 0, zoom: 1 } },
   };
 }
 
@@ -134,35 +136,98 @@ export function getInstance(d, id) {
   return d.instances.find((i) => i.id === id);
 }
 
+/** The clock domain of a new system (external clock). */
+export const DEFAULT_DOMAIN = Object.freeze({ id: 'sys', name: 'System clock', frequencyHz: 100e6 });
+
 /**
+ * Identifier derived from a text, unique among the given ones.
+ * @param {string} text
+ * @param {Set<string>} used
+ */
+export function uniqueIdentifier(text, used) {
+  let base = text.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').replace(/_+/g, '_');
+  if (!/^[a-z]/.test(base)) base = `d_${base}`.replace(/_+$/, '');
+  base = base.slice(0, 36).replace(/_+$/, '');
+  if (!used.has(base) && !identifierProblem(base)) return base;
+  for (let n = 1; ; n += 1) {
+    const id = `${base}${n}`;
+    if (!used.has(id) && !identifierProblem(id)) return id;
+  }
+}
+
+/**
+ * The design with at least one clock domain.
+ * @param {Design} d
+ */
+function withDefaultDomain(d) {
+  if (d.clockDomains.length > 0) return d;
+  /** @type {ClockDomain} */
+  const dom = { ...DEFAULT_DOMAIN, source: { kind: 'external' } };
+  return { ...d, clockDomains: [dom] };
+}
+
+/**
+ * Clock domain of the primary clock of an instance.
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {string} id
+ */
+export function primaryDomain(d, cat, id) {
+  const inst = getInstance(d, id);
+  const b = inst && cat.blocks.get(inst.block);
+  const primary = b?.clocks.find((c) => c.primary);
+  return primary && inst ? inst.clocks[primary.port] : undefined;
+}
+
+/**
+ * Adds an instance. Its clock inputs join the given domain (default: the first one; a new system gets the default
+ * domain); each clock output of the block becomes a new domain with the block as source.
  * @param {Design} d
  * @param {Catalog} cat
  * @param {string} blockId
  * @param {{x: number, y: number}} pos
  * @param {string} [presetId]
+ * @param {{ domain?: string }} [opts]
  * @returns {{ design: Design, id: string }}
  */
-export function addInstance(d, cat, blockId, pos, presetId) {
+export function addInstance(d, cat, blockId, pos, presetId, opts = {}) {
   const b = cat.block(blockId);
   if (presetId && !(b.presets ?? []).some((p) => p.id === presetId)) {
     throw new DesignError(`Block ${blockId} has no preset "${presetId}".`);
   }
-  const id = nextInstanceId(d, b.idPrefix);
+  const base = withDefaultDomain(d);
+  const domain = opts.domain && base.clockDomains.some((c) => c.id === opts.domain) ? opts.domain : base.clockDomains[0].id;
+  const id = nextInstanceId(base, b.idPrefix);
   /** @type {Instance} */
   const inst = { id, block: blockId, generics: {}, clocks: {} };
   if (presetId) inst.preset = presetId;
+  const domains = [...base.clockDomains];
+  const used = new Set(domains.map((c) => c.id));
+  for (const c of b.clocks) {
+    if (!c.output) {
+      inst.clocks[c.port] = domain;
+      continue;
+    }
+    const values = cat.genericValues(b, {}, presetId);
+    const freq = tryEvaluate(String(c.frequency), cat.envFor(b, values)) ?? 100e6;
+    const did = uniqueIdentifier(`${id}_${c.port}`, used);
+    used.add(did);
+    domains.push({ id: did, name: `${id} ${c.label ?? c.port}`, frequencyHz: freq, source: { kind: 'block', instance: id, port: c.port } });
+  }
   return {
     id,
     design: {
-      ...d,
-      instances: [...d.instances, inst],
-      layout: { ...d.layout, instances: { ...d.layout.instances, [id]: { x: Math.round(pos.x), y: Math.round(pos.y) } } },
+      ...base,
+      clockDomains: domains,
+      instances: [...base.instances, inst],
+      layout: { ...base.layout, instances: { ...base.layout.instances, [id]: { x: Math.round(pos.x), y: Math.round(pos.y) } } },
     },
   };
 }
 
 /**
- * Removes instances with their connections and externals.
+ * Removes instances with their connections and externals; domains sourced by them are removed and their members
+ * join the first remaining domain.
  * @param {Design} d
  * @param {string[]} ids
  */
@@ -171,12 +236,213 @@ export function removeInstances(d, ids) {
   const touches = (/** @type {string} */ ref) => gone.has(ref.split('.')[0]);
   const layout = { ...d.layout.instances };
   for (const id of ids) delete layout[id];
+  const goneDomains = new Set(
+    d.clockDomains.filter((c) => c.source.kind === 'block' && gone.has(c.source.instance)).map((c) => c.id),
+  );
+  const domains = d.clockDomains.filter((c) => !goneDomains.has(c.id));
+  const fallback = domains[0]?.id;
+  const domainBoxes = { ...(d.layout.domains ?? {}) };
+  for (const id of goneDomains) delete domainBoxes[id];
   return {
     ...d,
-    instances: d.instances.filter((i) => !gone.has(i.id)),
+    clockDomains: domains,
+    instances: d.instances
+      .filter((i) => !gone.has(i.id))
+      .map((i) => (Object.values(i.clocks).some((c) => goneDomains.has(c))
+        ? { ...i, clocks: Object.fromEntries(Object.entries(i.clocks).map(([p, c]) => [p, goneDomains.has(c) ? fallback : c]).filter(([, c]) => c)) }
+        : i)),
     connections: d.connections.filter((c) => !touches(c.from) && !touches(c.to)),
     externals: d.externals.filter((e) => !touches(e.interface)),
-    layout: { ...d.layout, instances: layout },
+    layout: { ...d.layout, instances: layout, domains: domainBoxes },
+  };
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// Clock domains
+// --------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Adds an external clock domain.
+ * @param {Design} d
+ * @param {{ name?: string, frequencyHz?: number, box?: {x: number, y: number, w: number, h: number} }} [props]
+ * @returns {{ design: Design, id: string }}
+ */
+export function addDomain(d, props = {}) {
+  const base = withDefaultDomain(d);
+  const used = new Set(base.clockDomains.map((c) => c.id));
+  let n = 1;
+  while (used.has(`clk${n}`)) n += 1;
+  const id = `clk${n}`;
+  const freq = props.frequencyHz ?? 100e6;
+  if (!(freq > 0)) throw new DesignError('The frequency must be positive.');
+  /** @type {ClockDomain} */
+  const dom = { id, name: props.name ?? `Clock ${n}`, frequencyHz: freq, source: { kind: 'external' } };
+  const boxes = { ...(base.layout.domains ?? {}) };
+  if (props.box) boxes[id] = { ...props.box };
+  return { id, design: { ...base, clockDomains: [...base.clockDomains, dom], layout: { ...base.layout, domains: boxes } } };
+}
+
+/**
+ * Changes name or frequency of a domain (the frequency of a domain with a block as source follows the block).
+ * @param {Design} d
+ * @param {string} id
+ * @param {{ name?: string, frequencyHz?: number }} props
+ */
+export function updateDomain(d, id, props) {
+  const dom = d.clockDomains.find((c) => c.id === id);
+  if (!dom) throw new DesignError(`Unknown clock domain "${id}".`);
+  if (props.name !== undefined && !props.name.trim()) throw new DesignError('The name must not be empty.');
+  if (props.frequencyHz !== undefined) {
+    if (!(props.frequencyHz > 0) || !Number.isFinite(props.frequencyHz)) throw new DesignError('The frequency must be a positive number.');
+    if (dom.source.kind === 'block') throw new DesignError('The frequency of this domain is given by its source block.');
+  }
+  return { ...d, clockDomains: d.clockDomains.map((c) => (c.id === id ? { ...c, ...props, name: props.name?.trim() ?? c.name } : c)) };
+}
+
+/**
+ * Renames the identifier of a domain (it names the clock port of the top level).
+ * @param {Design} d
+ * @param {string} oldId
+ * @param {string} newId
+ */
+export function renameDomain(d, oldId, newId) {
+  if (oldId === newId) return d;
+  const problem = identifierProblem(newId);
+  if (problem) throw new DesignError(problem);
+  if (d.clockDomains.some((c) => c.id === newId)) throw new DesignError(`A clock domain "${newId}" exists already.`);
+  if (!d.clockDomains.some((c) => c.id === oldId)) throw new DesignError(`Unknown clock domain "${oldId}".`);
+  const boxes = {};
+  for (const [k, v] of Object.entries(d.layout.domains ?? {})) boxes[k === oldId ? newId : k] = v;
+  return {
+    ...d,
+    clockDomains: d.clockDomains.map((c) => (c.id === oldId ? { ...c, id: newId } : c)),
+    instances: d.instances.map((i) => ({ ...i, clocks: Object.fromEntries(Object.entries(i.clocks).map(([p, c]) => [p, c === oldId ? newId : c])) })),
+    layout: { ...d.layout, domains: boxes },
+  };
+}
+
+/**
+ * Removes a domain; its members join the target domain (merging the two).
+ * @param {Design} d
+ * @param {string} id
+ * @param {string} target
+ */
+export function removeDomain(d, id, target) {
+  const dom = d.clockDomains.find((c) => c.id === id);
+  if (!dom) throw new DesignError(`Unknown clock domain "${id}".`);
+  if (dom.source.kind === 'block') throw new DesignError('This domain belongs to its source block; remove the block instead.');
+  if (id === target || !d.clockDomains.some((c) => c.id === target)) throw new DesignError('Choose another clock domain for the blocks.');
+  const boxes = { ...(d.layout.domains ?? {}) };
+  delete boxes[id];
+  return {
+    ...d,
+    clockDomains: d.clockDomains.filter((c) => c.id !== id),
+    instances: d.instances.map((i) => ({ ...i, clocks: Object.fromEntries(Object.entries(i.clocks).map(([p, c]) => [p, c === id ? target : c])) })),
+    layout: { ...d.layout, domains: boxes },
+  };
+}
+
+/**
+ * Assigns one clock port of an instance to a domain.
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {string} instId
+ * @param {string} port
+ * @param {string} domain
+ */
+export function assignClock(d, cat, instId, port, domain) {
+  const inst = getInstance(d, instId);
+  if (!inst) throw new DesignError(`Unknown instance "${instId}".`);
+  const b = cat.block(inst.block);
+  if (!b.clocks.some((c) => c.port === port && !c.output)) throw new DesignError(`${b.entity} has no clock input ${port}.`);
+  if (!d.clockDomains.some((c) => c.id === domain)) throw new DesignError(`Unknown clock domain "${domain}".`);
+  if (inst.clocks[port] === domain) return d;
+  return { ...d, instances: d.instances.map((i) => (i.id === instId ? { ...i, clocks: { ...i.clocks, [port]: domain } } : i)) };
+}
+
+/**
+ * Moves an instance into a domain: its primary clock and the clocks that share the domain of the primary clock.
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {string} instId
+ * @param {string} domain
+ */
+export function moveToDomain(d, cat, instId, domain) {
+  const inst = getInstance(d, instId);
+  if (!inst) throw new DesignError(`Unknown instance "${instId}".`);
+  if (!d.clockDomains.some((c) => c.id === domain)) throw new DesignError(`Unknown clock domain "${domain}".`);
+  const b = cat.block(inst.block);
+  const primary = b.clocks.find((c) => c.primary);
+  if (!primary) return d;
+  const old = inst.clocks[primary.port];
+  if (old === domain) return d;
+  const clocks = { ...inst.clocks };
+  for (const c of b.clocks) {
+    if (c.output) continue;
+    if (c.port === primary.port || clocks[c.port] === old || clocks[c.port] === undefined) clocks[c.port] = domain;
+  }
+  return { ...d, instances: d.instances.map((i) => (i.id === instId ? { ...i, clocks } : i)) };
+}
+
+/**
+ * Stores the placeholder box of a domain (shown while the domain has no blocks).
+ * @param {Design} d
+ * @param {string} id
+ * @param {{x: number, y: number, w: number, h: number}} box
+ */
+export function setDomainBox(d, id, box) {
+  return { ...d, layout: { ...d.layout, domains: { ...(d.layout.domains ?? {}), [id]: { x: Math.round(box.x), y: Math.round(box.y), w: Math.round(box.w), h: Math.round(box.h) } } } };
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// Externals and adapter settings
+// --------------------------------------------------------------------------------------------------------------------
+
+export const PREFIX_RE = /^[A-Za-z](?:_?[A-Za-z0-9])*_?$/;
+
+/**
+ * Makes an interface a set of top-level ports with a name prefix, or (prefix null) internal again.
+ * @param {Design} d
+ * @param {string} ref
+ * @param {string | null} prefix
+ */
+export function setExternal(d, ref, prefix) {
+  if (prefix !== null && !PREFIX_RE.test(prefix)) {
+    throw new DesignError('The prefix must start with a letter and contain letters, digits and single underscores.');
+  }
+  const rest = d.externals.filter((e) => e.interface !== ref);
+  if (prefix === null) return rest.length === d.externals.length ? d : { ...d, externals: rest };
+  if (d.connections.some((c) => c.from === ref || c.to === ref)) throw new DesignError('A connected interface cannot be external.');
+  const k = d.externals.findIndex((e) => e.interface === ref);
+  const next = k >= 0 ? d.externals.map((e, j) => (j === k ? { interface: ref, prefix } : e)) : [...d.externals, { interface: ref, prefix }];
+  return { ...d, externals: next };
+}
+
+/**
+ * Sets (value undefined: resets) a generic of an adapter that the Composer inserts on a connection.
+ * @param {Design} d
+ * @param {string} connId
+ * @param {'cdc' | 'wconv'} kind
+ * @param {string} name
+ * @param {unknown} value
+ */
+export function setAdapterGeneric(d, connId, kind, name, value) {
+  return {
+    ...d,
+    connections: d.connections.map((c) => {
+      if (c.id !== connId) return c;
+      /** @type {Record<string, Record<string, unknown>>} */
+      const adapters = { ...(c.adapters ?? {}) };
+      const gen = { ...(adapters[kind] ?? {}) };
+      if (value === undefined) delete gen[name];
+      else gen[name] = value;
+      if (Object.keys(gen).length) adapters[kind] = gen;
+      else delete adapters[kind];
+      /** @type {Connection} */
+      const out = { ...c, adapters };
+      if (Object.keys(adapters).length === 0) delete out.adapters;
+      return out;
+    }),
   };
 }
 
@@ -260,13 +526,43 @@ export function setGeneric(d, cat, id, name, value) {
   if (!res.ok) throw new DesignError(`${name}: ${res.message}`);
   const base = cat.genericValues(b, {}, inst.preset);
   const generics = { ...inst.generics };
-  if (sameValue(res.value, base[name])) delete generics[name];
+  // a width that follows a connection stays fixed once set, even to the default value
+  if (sameValue(res.value, base[name]) && !g.follow) delete generics[name];
   else generics[name] = res.value;
   const next = { ...d, instances: d.instances.map((i) => (i.id === id ? { ...i, generics } : i)) };
   const removed = danglingConnections(next, cat);
   if (removed.length === 0) return { design: next, removed };
   const gone = new Set(removed.map((c) => c.id));
   return { design: { ...next, connections: next.connections.filter((c) => !gone.has(c.id)) }, removed };
+}
+
+/**
+ * Removes the value of a generic: it takes the catalog default again, or follows its connection or clock domain.
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {string} id
+ * @param {string} name
+ * @returns {{ design: Design, removed: Connection[] }}
+ */
+export function clearGeneric(d, cat, id, name) {
+  const inst = getInstance(d, id);
+  if (!inst) throw new DesignError(`Unknown instance "${id}".`);
+  if (!(name in inst.generics)) return { design: d, removed: [] };
+  const generics = { ...inst.generics };
+  delete generics[name];
+  const next = { ...d, instances: d.instances.map((i) => (i.id === id ? { ...i, generics } : i)) };
+  const removed = danglingConnections(next, cat);
+  const gone = new Set(removed.map((c) => c.id));
+  return { design: removed.length ? { ...next, connections: next.connections.filter((c) => !gone.has(c.id)) } : next, removed };
+}
+
+/**
+ * Default constants of a side band (catalog defaults, else false or 0).
+ * @param {import('./catalog.js').SidebandField[]} fields
+ * @returns {Record<string, number | boolean>}
+ */
+export function sidebandDefaults(fields) {
+  return Object.fromEntries(fields.map((f) => [f.name, f.default ?? (f.kind === 'boolean' ? false : 0)]));
 }
 
 /**
