@@ -12,7 +12,7 @@
 
 import { candidates, checkConnection, effectiveType, resolveEndpoint } from '../model/compat.js';
 import { connectionsAt, getInstance, PREFIX_RE } from '../model/design.js';
-import { formatReal, formatValue, isEditable, parseInput } from '../model/generics.js';
+import { formatReal, formatValue, isEditable, isEnabled, parseInput } from '../model/generics.js';
 import { formatHz } from '../model/rules.js';
 import { glyphPath, h, replace, s } from './dom.js';
 
@@ -25,6 +25,7 @@ export class InspectorView {
     this.app = app;
     this.root = h('aside', { class: 'cmp-inspector', 'aria-label': 'Inspector', tabindex: '-1' });
     this.signature = '';
+    this.subject = '';
     /** @type {Record<string, string>} invalid input texts kept across renders */
     this.pending = {};
     /** @type {Set<string>} interfaces whose prefix field is open */
@@ -36,6 +37,10 @@ export class InspectorView {
     const sig = JSON.stringify([this.app.tabId, [...sel.instances], [...sel.connections], sel.port ?? '', sel.auto ?? '', sel.domain ?? '', this.app.designVersion, [...this.prefixOpen]]);
     if (sig === this.signature) return;
     this.signature = sig;
+    // another subject starts at the top; the same subject keeps its scroll position across edits
+    const subject = JSON.stringify([this.app.tabId, [...sel.instances], [...sel.connections], sel.auto ?? '', sel.domain ?? '']);
+    const scroll = subject === this.subject ? this.root.scrollTop : 0;
+    this.subject = subject;
     const focusId = document.activeElement && this.root.contains(document.activeElement) ? document.activeElement.id : '';
     const n = sel.instances.size + sel.connections.size;
     if (sel.auto) replace(this.root, this.autoPanel(sel.auto));
@@ -44,6 +49,7 @@ export class InspectorView {
     else if (n > 1) replace(this.root, this.multiPanel());
     else if (sel.instances.size === 1) replace(this.root, this.instancePanel([...sel.instances][0]));
     else replace(this.root, this.connectionPanel([...sel.connections][0]));
+    this.root.scrollTop = scroll;
     if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
     if (sel.port) {
       const row = this.root.querySelector(`[data-itf="${CSS.escape(sel.port)}"]`);
@@ -103,7 +109,7 @@ export class InspectorView {
       onchange: () => this.app.setSystem({ faultTolerance: ft.checked }),
     });
     return [
-      h('h2', { class: 'cmp-insp-title' }, 'System'),
+      h('h2', { class: 'cmp-insp-title cmp-insp-bar' }, 'System'),
       h('div', { class: 'cmp-field' },
         h('label', { for: 'cmp-sys-name' }, 'Name'),
         name,
@@ -139,7 +145,7 @@ export class InspectorView {
     if (sel.instances.size) parts.push(`${sel.instances.size} block${sel.instances.size > 1 ? 's' : ''}`);
     if (sel.connections.size) parts.push(`${sel.connections.size} connection${sel.connections.size > 1 ? 's' : ''}`);
     return [
-      h('h2', { class: 'cmp-insp-title' }, 'Selection'),
+      h('h2', { class: 'cmp-insp-title cmp-insp-bar' }, 'Selection'),
       h('p', {}, `${parts.join(' and ')} selected.`),
       h('button', { type: 'button', class: 'cmp-btn cmp-btn-danger', onclick: () => this.app.deleteSelection() }, 'Delete selection'),
     ];
@@ -175,12 +181,13 @@ export class InspectorView {
     const adv = b.generics.filter((g) => g.advanced);
     const ports = cat.ports(b, values);
     return [
-      h('div', { class: 'cmp-insp-head' },
+      h('div', { class: 'cmp-insp-bar' },
         idInput, idErr.el,
         h('p', { class: 'cmp-insp-meta' },
           h('span', {}, preset ? `${preset.name} (${b.name})` : b.name),
           h('span', { class: 'cmp-mono' }, b.entity),
-          b.project ? h('span', {}, b.project) : null),
+          b.project ? h('span', {}, b.project) : null)),
+      h('div', { class: 'cmp-insp-head' },
         h('p', { class: 'cmp-insp-summary' }, preset?.summary ?? b.summary),
         b.doc ? h('a', { class: 'cmp-doc-link', href: b.doc, target: '_blank', rel: 'noopener' }, 'Documentation') : null),
       h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-generics' },
@@ -256,6 +263,7 @@ export class InspectorView {
       control.setAttribute('aria-invalid', msg ? 'true' : 'false');
     };
     const apply = (/** @type {unknown} */ v) => showError(this.app.setGeneric(instId, g.name, v));
+    const enabled = isEnabled(g, rec.generics);
     if (g.fromClock || automatic) {
       control = h('input', { id: fid, class: 'cmp-input cmp-mono cmp-auto-value', value: formatValue(g, value), readonly: true, 'aria-describedby': helpId });
     } else if (!isEditable(g)) {
@@ -315,6 +323,14 @@ export class InspectorView {
         facts.length ? h('span', { class: 'cmp-facts' }, facts.join(', ')) : null),
       notes,
       err);
+    if (!enabled) {
+      // the generic has no effect without its enabling generic: shown, but not editable
+      const dep = this.app.catalog.blocks.get(rec.block)?.generics.find((x) => x.name === g.enabledBy);
+      if ('disabled' in control) /** @type {HTMLInputElement} */ (control).disabled = true;
+      field.classList.add('is-disabled');
+      field.append(h('p', { class: 'cmp-help cmp-dep-note', id: `${fid}-dep` }, `Takes effect only with ${dep?.label ?? g.enabledBy} on.`));
+      control.setAttribute('aria-describedby', `${control.getAttribute('aria-describedby') ?? ''} ${fid}-dep`.trim());
+    }
     if (this.pending[fid]) {
       const res = parseInput(g, this.pending[fid]);
       if (!res.ok) queueMicrotask(() => showError(res.message));
@@ -439,7 +455,7 @@ export class InspectorView {
     const adapters = (chain?.adapters ?? []).map((a) => res.byId.get(a)).filter((x) => x !== undefined);
     const checks = res.checks.filter((x) => x.connection === c.id);
     return [
-      h('h2', { class: 'cmp-insp-title' }, 'Connection'),
+      h('h2', { class: 'cmp-insp-title cmp-insp-bar' }, 'Connection'),
       h('dl', { class: 'cmp-facts-list' },
         h('dt', {}, 'From'), h('dd', {}, end(c.from)),
         h('dt', {}, 'To'), h('dd', {}, end(c.to)),
@@ -459,7 +475,7 @@ export class InspectorView {
         ? h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-sb' },
           h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-sb' }, 'Side band constants'),
           h('p', { class: 'cmp-help' }, `${c.from} has no ${sb.signal} signal; ${c.to} gets these constants. ${sb.description ?? ''}`),
-          sb.fields.map((f) => this.sidebandField(c.id, f, c.sideband?.[f.name])))
+          sb.fields.map((f) => this.sidebandField(c.id, f, c.sideband?.[f.name], c.sideband ?? {}, sb.fields)))
         : null,
       h('button', { type: 'button', class: 'cmp-btn cmp-btn-danger', onclick: () => this.app.removeConnections([c.id]) }, 'Disconnect'),
     ];
@@ -469,12 +485,17 @@ export class InspectorView {
    * @param {string} connId
    * @param {import('../model/catalog.js').SidebandField} f
    * @param {number | boolean | undefined} value
+   * @param {Record<string, number | boolean>} values all constants of the connection
+   * @param {import('../model/catalog.js').SidebandField[]} fields
    */
-  sidebandField(connId, f, value) {
+  sidebandField(connId, f, value, values, fields) {
     const fid = `cmp-sb-${connId}-${f.name}`;
+    const enabled = isEnabled(f, values);
+    const dep = enabled ? null : fields.find((x) => x.name === f.enabledBy);
+    const depNote = dep ? h('p', { class: 'cmp-help cmp-dep-note', id: `${fid}-dep` }, `Takes effect only with "${dep.label}" on.`) : null;
     if (f.kind === 'boolean') {
-      const cb = h('input', { id: fid, type: 'checkbox', checked: value === true, onchange: () => this.app.setSideband(connId, f.name, cb.checked) });
-      return h('div', { class: 'cmp-field cmp-check' }, cb, h('label', { for: fid }, f.label));
+      const cb = h('input', { id: fid, type: 'checkbox', checked: value === true, disabled: !enabled, 'aria-describedby': depNote ? `${fid}-dep` : undefined, onchange: () => this.app.setSideband(connId, f.name, cb.checked) });
+      return h('div', { class: `cmp-field cmp-check${enabled ? '' : ' is-disabled'}` }, cb, h('label', { for: fid }, f.label), depNote);
     }
     const max = 2 ** f.bits - 1;
     const inp = h('input', {
@@ -482,7 +503,8 @@ export class InspectorView {
       class: 'cmp-input cmp-mono',
       value: String(value ?? 0),
       inputmode: 'numeric',
-      'aria-describedby': `${fid}-err`,
+      disabled: !enabled,
+      'aria-describedby': depNote ? `${fid}-err ${fid}-dep` : `${fid}-err`,
       onchange: () => {
         const text = inp.value.trim();
         const hex = /^0x[0-9a-f]+$/i.test(text);
@@ -493,7 +515,7 @@ export class InspectorView {
       },
     });
     const err = this.errorLine(`${fid}-err`, inp);
-    return h('div', { class: 'cmp-field' }, h('label', { for: fid }, f.label, h('span', { class: 'cmp-facts' }, ` 0 to ${max}`)), inp, err.el);
+    return h('div', { class: `cmp-field${enabled ? '' : ' is-disabled'}` }, h('label', { for: fid }, f.label, h('span', { class: 'cmp-facts' }, ` 0 to ${max}`)), inp, depNote, err.el);
   }
 
   // ------------------------------------------------------------------------------------------------------------------
@@ -532,7 +554,7 @@ export class InspectorView {
     const pack = rec.packing.In;
     const shown = b ? b.generics.filter((g) => g.name in rec.generics && (rec.auto.includes(g.name) || g.name === 'Depth_g')) : [];
     return [
-      h('h2', { class: 'cmp-insp-title' }, 'Inserted block'),
+      h('h2', { class: 'cmp-insp-title cmp-insp-bar' }, 'Inserted block'),
       h('p', { class: 'cmp-insp-meta' }, h('span', { class: 'cmp-mono' }, rec.entity), h('span', { class: 'cmp-auto-tag' }, 'auto'), h('span', { class: 'cmp-mono' }, rec.id)),
       h('p', { class: 'cmp-insp-summary' }, rec.reason ?? ''),
       h('p', { class: 'cmp-help' }, 'The Composer inserts this block because of the connection and removes it when the reason goes away.'),
@@ -595,7 +617,7 @@ export class InspectorView {
     const target = h('select', { id: 'cmp-dom-merge', class: 'cmp-input' }, others.map((x) => h('option', { value: x.id }, x.name)));
     const mergeErr = this.errorLine('cmp-dom-merge-err', target);
     return [
-      h('h2', { class: 'cmp-insp-title' }, 'Clock domain'),
+      h('h2', { class: 'cmp-insp-title cmp-insp-bar' }, 'Clock domain'),
       h('div', { class: 'cmp-field' }, h('label', { for: 'cmp-dom-name' }, 'Name'), name, nameErr.el),
       h('div', { class: 'cmp-field' }, h('label', { for: 'cmp-dom-id' }, 'Identifier'), ident,
         h('p', { class: 'cmp-help', id: 'cmp-dom-id-help' }, block ? `The clock is the output ${rdom.clock}.` : `The clock port of the top level is ${rdom.clock}.`), idErr.el),

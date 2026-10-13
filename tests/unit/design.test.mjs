@@ -7,7 +7,7 @@ import {
   renameInstance, setGeneric, setSideband, setSystem,
 } from '../../assets/composer/js/model/design.js';
 import { History } from '../../assets/composer/js/model/history.js';
-import { blockGeometry, connectionPath, fitViewport, isBackward, snap } from '../../assets/composer/js/model/layout.js';
+import { blockGeometry, fitViewport, snap } from '../../assets/composer/js/model/layout.js';
 import { connect, designWith, loadCatalog } from './helpers.mjs';
 
 const cat = loadCatalog();
@@ -104,13 +104,6 @@ test('layout geometry', () => {
   assert.equal(mPkt?.x, g.width);
   assert.equal(spw?.side, 'bottom');
   assert.equal(spw?.y, g.height);
-  assert.match(connectionPath({ x: 0, y: 0, side: 'right' }, { x: 200, y: 50, side: 'left' }), /^M0,0 C\d/);
-  // a backward connection runs below the blocks at the detour line
-  assert.equal(isBackward({ x: 500, side: 'right' }, { x: 100, side: 'left' }), true);
-  assert.equal(isBackward({ x: 100, side: 'right' }, { x: 500, side: 'left' }), false);
-  const loop = connectionPath({ x: 500, y: 100, side: 'right' }, { x: 100, y: 120, side: 'left' }, 300);
-  assert.match(loop, / L100,300 /);
-  assert.ok(!/ L/.test(connectionPath({ x: 100, y: 100, side: 'right' }, { x: 500, y: 120, side: 'left' }, 300)));
   assert.equal(snap(23), 16);
   assert.equal(snap(25), 32);
   const v = fitViewport({ x: 0, y: 0, width: 400, height: 200 }, 800, 600);

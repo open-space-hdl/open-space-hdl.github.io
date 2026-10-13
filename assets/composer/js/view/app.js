@@ -4,6 +4,7 @@
  * commands on the design (each one undoable).
  */
 
+import { arrange, DOMAIN_GAP, placeBetween, tidy } from '../model/arrange.js';
 import { isDriver } from '../model/catalog.js';
 import { checkConnection, resolveEndpoint } from '../model/compat.js';
 import {
@@ -12,7 +13,7 @@ import {
   setAdapterGeneric, setDomainBox, setExternal, setGeneric, setSideband, setSystem, setViewport, sidebandDefaults,
   updateDomain,
 } from '../model/design.js';
-import { ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, boundsOf, fitViewport, freeSpot, snap } from '../model/layout.js';
+import { ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, freeSpot, snap } from '../model/layout.js';
 import { resolve } from '../model/resolver.js';
 import { FormatError, fromText, toText } from '../model/serialize.js';
 import { loadSnapshot, saveSnapshot, Workspace } from '../model/workspace.js';
@@ -20,6 +21,7 @@ import { CanvasView } from './canvas.js';
 import { ChecksView } from './checks.js';
 import { h, replace } from './dom.js';
 import { InspectorView } from './inspector.js';
+import { LegendView } from './legend.js';
 import { PaletteView } from './palette.js';
 import { TabsView } from './tabs.js';
 
@@ -66,6 +68,8 @@ export class App {
 
     /** @type {number | undefined} */
     this.toastTimer = undefined;
+    /** @type {HTMLButtonElement} */
+    this.btnLegend = /** @type {any} */ (null);
     /** @type {WeakMap<Design, Resolved>} */
     this.resolvedCache = new WeakMap();
 
@@ -89,27 +93,44 @@ export class App {
         h('div', { class: 'cmp-menu-wrap' }, this.btnExamples, this.examplesMenu)),
       h('div', { class: 'cmp-toolgroup' }, this.btnUndo, this.btnRedo, this.btnDelete),
       h('div', { class: 'cmp-toolgroup' },
-        btn('Clock domain', () => this.addDomain(), { title: 'Add a clock domain; drag blocks into its box' })),
+        btn('Clock domain', () => this.addDomain(), { title: 'Add a clock domain; drag blocks into its box' }),
+        btn('Arrange', () => this.arrange(), { title: 'Arrange the system: data from left to right, clock domains as groups (Alt+A)' })),
       h('div', { class: 'cmp-toolgroup' },
         btn('−', () => this.canvas.zoomBy(1 / 1.25), { 'aria-label': 'Zoom out', title: 'Zoom out (-)' }),
         btn('+', () => this.canvas.zoomBy(1.25), { 'aria-label': 'Zoom in', title: 'Zoom in (+)' }),
         btn('Fit', () => this.fit(), { title: 'Fit the system into the view (0)' })),
+      h('div', { class: 'cmp-toolgroup cmp-toolgroup-end' },
+        this.btnLegend = btn('Legend', () => this.toggleLegend(), { 'aria-pressed': 'false', title: 'Colours and symbols of the interface types (L)' }),
+        btn('Keys', () => this.showShortcuts(), { title: 'Keyboard shortcuts (?)' })),
       this.fileInput);
     this.tabs = new TabsView(this);
     this.palette = new PaletteView(this);
     this.canvas = new CanvasView(this);
     this.inspector = new InspectorView(this);
     this.checks = new ChecksView(this);
+    this.legend = new LegendView(this);
+    this.canvas.wrap.append(this.legend.root);
     this.live = h('div', { class: 'cmp-sr', role: 'status', 'aria-live': 'polite' });
     this.toast = h('div', { class: 'cmp-toast', role: 'alert', hidden: true });
     this.dialog = /** @type {HTMLDialogElement} */ (h('dialog', { class: 'cmp-dialog' }));
-    const side = h('div', { class: 'cmp-side' }, this.inspector.root, this.checks.root);
+    this.split = h('div', {
+      class: 'cmp-split',
+      role: 'separator',
+      tabindex: '0',
+      'aria-orientation': 'horizontal',
+      'aria-label': 'Height of the checks panel',
+      'aria-controls': 'cmp-checks-list',
+      title: 'Drag to resize the checks panel (arrow keys)',
+    });
+    const side = h('div', { class: 'cmp-side' }, this.inspector.root, this.split, this.checks.root);
+    this.side = side;
     const work = h('div', { class: 'cmp-work', id: 'cmp-workarea', role: 'tabpanel' }, this.palette.root, this.canvas.wrap, side);
     const narrow = h('div', { class: 'cmp-narrow' },
       h('p', {}, 'The Composer is an editor for larger screens. On this screen the canvas is small, but all functions work.'),
       h('button', { type: 'button', class: 'cmp-btn', onclick: () => document.body.classList.add('cmp-narrow-ok') }, 'Continue'));
     replace(this.root, toolbar, this.tabs.root, work, narrow, this.live, this.toast, this.dialog);
     this.root.classList.add('is-ready');
+    this.initSplit();
     document.addEventListener('pointerdown', (e) => {
       if (!this.examplesMenu.hidden && !(/** @type {Element} */ (e.target)).closest('.cmp-menu-wrap')) this.toggleExamples(false);
     });
@@ -119,6 +140,7 @@ export class App {
     if (restored.skipped.length > 0) this.notify('A system of the last session could not be restored.', 'error');
     this.ws.subscribe((reason) => this.onWorkspace(reason));
     this.render();
+    if (this.readPref('cmp.legend') === '1') this.toggleLegend(true);
     this.loadExamples();
     document.addEventListener('keydown', (e) => this.onKey(e));
     window.addEventListener('beforeunload', () => saveSnapshot(this.ws, this.storage));
@@ -191,6 +213,7 @@ export class App {
     this.canvas.render();
     this.inspector.render();
     this.checks.render();
+    this.legend.render();
     this.btnUndo.disabled = !tab?.history.canUndo;
     this.btnRedo.disabled = !tab?.history.canRedo;
     this.btnUndo.title = tab?.history.canUndo ? `Undo ${tab.history.undoLabel} (Ctrl+Z)` : 'Undo (Ctrl+Z)';
@@ -345,7 +368,7 @@ export class App {
     this.ws.apply('add block', (d) => {
       const r = addInstance(d, this.catalog, blockId, { x: snap(world.x - BLOCK_WIDTH / 2), y: snap(world.y - 28) }, preset, { domain });
       newId = r.id;
-      return r.design;
+      return this.tidy(r.design, { dropped: [r.id], anchorsOf: [r.id] });
     });
     const b = this.catalog.block(blockId);
     this.selectInstances([newId]);
@@ -371,12 +394,14 @@ export class App {
    * Moves blocks; blocks dropped into the box of another clock domain join it (one undo step).
    * @param {Record<string, {x: number, y: number}>} moves
    * @param {Record<string, string>} [domains] block id -> new clock domain
+   * @param {{ keyboard?: boolean }} [opts] keyboard: a step of the arrow keys (the block may pass over others)
    */
-  moveInstances(moves, domains = {}) {
+  moveInstances(moves, domains = {}, opts = {}) {
+    const ids = Object.keys(moves);
     this.ws.apply(Object.keys(domains).length ? 'move to clock domain' : 'move', (d) => {
       let next = moveInstances(d, moves);
       for (const [id, dom] of Object.entries(domains)) next = moveToDomain(next, this.catalog, id, dom);
-      return next;
+      return this.tidy(next, { dropped: opts.keyboard ? [] : ids, anchorsOf: ids });
     });
     for (const [id, dom] of Object.entries(domains)) {
       this.notify(`${id} now runs in ${this.design.clockDomains.find((c) => c.id === dom)?.name ?? dom}.`);
@@ -392,23 +417,31 @@ export class App {
   moveDomain(id, moves, box) {
     this.ws.apply('move clock domain', (d) => {
       const next = moveInstances(d, moves);
-      return Object.keys(moves).length === 0 ? setDomainBox(next, id, box) : next;
+      return this.tidy(Object.keys(moves).length === 0 ? setDomainBox(next, id, box) : next, { anchors: [id] });
     });
   }
 
-  /** Adds a clock domain with a placeholder box in the visible area. */
+  /**
+   * Adds a clock domain with a placeholder box: to the right of the system, level with its first domain box (in the
+   * middle of the view when the system is empty), and shows it.
+   */
   addDomain() {
-    const c = this.canvas.visibleCenter();
     const size = { width: 360, height: 260 };
-    const taken = [...this.canvas.blockRects().values(), ...[...this.canvas.domBoxes.values()].map((b) => ({ x: b.x, y: b.y, width: b.w, height: b.h }))];
-    const spot = freeSpot(taken, { x: c.x - size.width / 2, y: c.y - size.height / 2 }, size);
+    const boxes = [...this.canvas.domainBoxes().values()];
+    const taken = [...this.canvas.blockRects().values(), ...boxes.map((b) => ({ x: b.x, y: b.y, width: b.w, height: b.h }))];
+    const c = this.canvas.visibleCenter();
+    const wish = taken.length > 0
+      ? { x: Math.max(...taken.map((r) => r.x + r.width)) + DOMAIN_GAP + 32, y: boxes.length > 0 ? Math.min(...boxes.map((b) => b.y)) : Math.min(...taken.map((r) => r.y)) }
+      : { x: c.x - size.width / 2, y: c.y - size.height / 2 };
+    const spot = freeSpot(taken, wish, size);
     let id = '';
     this.ws.apply('add clock domain', (d) => {
       const r = addDomain(d, { box: { x: spot.x, y: spot.y, w: size.width, h: size.height } });
       id = r.id;
-      return r.design;
+      return this.tidy(r.design, { anchors: d.clockDomains.map((c) => c.id) });
     });
     this.selectDomain(id);
+    if (taken.length > 0) this.canvas.fit();
     this.notify(`Added clock domain ${id}. Drag blocks into its box.`);
   }
 
@@ -439,7 +472,7 @@ export class App {
    * @returns {string | null}
    */
   mergeDomain(id, target) {
-    const err = this.tryApply('merge clock domains', (d) => removeDomain(d, id, target));
+    const err = this.tryApply('merge clock domains', (d) => this.tidy(removeDomain(d, id, target), { anchors: [target] }));
     if (!err) {
       this.selectDomain(target);
       this.notify(`Clock domain ${id} merged into ${target}.`);
@@ -454,7 +487,7 @@ export class App {
    * @returns {string | null}
    */
   assignClock(instId, port, domain) {
-    return this.tryApply('clock domain of a clock', (d) => assignClock(d, this.catalog, instId, port, domain));
+    return this.tryApply('clock domain of a clock', (d) => this.tidy(assignClock(d, this.catalog, instId, port, domain), { anchorsOf: [instId] }));
   }
 
   /**
@@ -490,10 +523,131 @@ export class App {
     this.ws.apply('make a normal block', (d) => {
       const r = adoptAdapter(d, this.catalog, rec, pos);
       newId = r.id;
-      return r.design;
+      return this.tidy(r.design, { dropped: [r.id], anchorsOf: [r.id] });
     });
     this.selectInstances([newId], undefined, { focusCanvas: true });
     this.notify(`${rec.entity} is now the block ${newId}.`);
+  }
+
+  /**
+   * Tidies the layout of a design inside a command (same undo step): blocks dropped on others move to a free place,
+   * domain boxes that overlap move apart; the anchors stay.
+   * @param {Design} d
+   * @param {{ anchors?: string[], anchorsOf?: string[], dropped?: string[] }} opts anchorsOf: the domains of these blocks
+   */
+  tidy(d, opts) {
+    const anchors = [...(opts.anchors ?? [])];
+    if (opts.anchorsOf?.length) {
+      const res = resolve(this.catalog, d);
+      for (const id of opts.anchorsOf) {
+        const dom = res.byId.get(id)?.domain;
+        if (dom && !anchors.includes(dom)) anchors.push(dom);
+      }
+    }
+    return tidy(this.catalog, d, { anchors, dropped: opts.dropped });
+  }
+
+  /** Arranges the whole system (one undo step) and fits it into the view. */
+  arrange() {
+    if (this.design.instances.length === 0) return;
+    const changed = this.ws.apply('arrange', (d) => {
+      const next = arrange(this.catalog, d);
+      return JSON.stringify(next.layout) === JSON.stringify(d.layout) ? d : next;
+    });
+    this.canvas.fit();
+    this.notify(changed ? 'Arranged the system. Undo restores the previous layout.' : 'The system is already arranged.');
+  }
+
+  /**
+   * Shows or hides the legend of the interface types.
+   * @param {boolean} [show]
+   */
+  toggleLegend(show) {
+    const open = show ?? !this.legend.open;
+    this.legend.show(open);
+    this.btnLegend.setAttribute('aria-pressed', open ? 'true' : 'false');
+    this.writePref('cmp.legend', open ? '1' : '0');
+  }
+
+  /** Lists the keyboard shortcuts. */
+  showShortcuts() {
+    this.ask('Keyboard shortcuts', [
+      'Tab and Shift+Tab: palette, canvas, blocks, clock domains, inserted adapters, inspector and checks.',
+      'Enter on a palette entry: add the block in the middle of the view.',
+      'Arrow keys on a block or a clock domain header: move it (Shift: four steps). Enter on a block: open the inspector.',
+      'Arrow keys on the empty canvas: pan the view. Space and drag: pan. + and -: zoom. 0: fit the system.',
+      'Connect, disconnect and make interfaces external in the Interfaces section of the inspector.',
+      'Delete: delete the selection. Escape: clear the selection or close a menu.',
+      'Ctrl+Z and Ctrl+Y: undo and redo. Ctrl+S: save. Ctrl+O: open. Alt+N: new system.',
+      'Alt+A: arrange the system. L: legend of the interface types. ?: this list.',
+      'Arrow keys on the separator above the checks: resize the checks panel.',
+    ], [{ label: 'Close', value: 'ok', primary: true }]);
+  }
+
+  /** @param {string} key */
+  readPref(key) {
+    try {
+      return this.storage?.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * @param {string} key
+   * @param {string} value
+   */
+  writePref(key, value) {
+    try {
+      this.storage?.setItem(key, value);
+    } catch {
+      // preferences are a convenience only
+    }
+  }
+
+  /** Splitter between inspector and checks: drag or arrow keys set the height of the checks panel. */
+  initSplit() {
+    const MIN = 72;
+    const max = () => Math.max(MIN, this.side.getBoundingClientRect().height - 200);
+    const set = (/** @type {number} */ px, /** @type {boolean} */ store) => {
+      const v = Math.round(Math.min(max(), Math.max(MIN, px)));
+      this.side.style.setProperty('--cmp-checks-h', `${v}px`);
+      this.split.setAttribute('aria-valuemin', String(MIN));
+      this.split.setAttribute('aria-valuemax', String(Math.round(max())));
+      this.split.setAttribute('aria-valuenow', String(v));
+      if (store) this.writePref('cmp.checksHeight', String(v));
+    };
+    const stored = Number(this.readPref('cmp.checksHeight'));
+    set(Number.isFinite(stored) && stored > 0 ? stored : 220, false);
+    /** @type {{ y: number, h: number } | null} */
+    let drag = null;
+    this.split.addEventListener('pointerdown', (e) => {
+      drag = { y: e.clientY, h: this.checks.root.getBoundingClientRect().height };
+      this.split.setPointerCapture(e.pointerId);
+      this.side.classList.add('is-resizing');
+    });
+    this.split.addEventListener('pointermove', (e) => {
+      if (drag) set(drag.h + (drag.y - e.clientY), false);
+    });
+    const end = () => {
+      if (!drag) return;
+      drag = null;
+      this.side.classList.remove('is-resizing');
+      set(this.checks.root.getBoundingClientRect().height, true);
+    };
+    this.split.addEventListener('pointerup', end);
+    this.split.addEventListener('pointercancel', end);
+    this.split.addEventListener('keydown', (e) => {
+      const cur = Number(this.split.getAttribute('aria-valuenow')) || 220;
+      const step = e.shiftKey ? 96 : 24;
+      if (e.key === 'ArrowUp') set(cur + step, true);
+      else if (e.key === 'ArrowDown') set(cur - step, true);
+      else if (e.key === 'Home') set(MIN, true);
+      else if (e.key === 'End') set(max(), true);
+      else return;
+      e.preventDefault();
+    });
+    window.addEventListener('resize', () => set(Number(this.split.getAttribute('aria-valuenow')) || 220, false));
   }
 
   /**
@@ -573,7 +727,7 @@ export class App {
 
   /**
    * Connects two interfaces through a bridge block: an existing one between the two blocks with free interfaces, or a
-   * new one placed between them. One undo step.
+   * new one placed between them (the blocks beyond it move aside when there is no room). One undo step.
    * @param {string} a
    * @param {string} b
    * @param {string} via catalog block id of the bridge
@@ -597,6 +751,7 @@ export class App {
       // reuse a bridge that already serves one of the two blocks
       let d = d0;
       let id = d.instances.find((i) => i.block === via && d.connections.some((c) => ends.includes(c.from.split('.')[0]) && c.to.startsWith(`${i.id}.`) || ends.includes(c.to.split('.')[0]) && c.from.startsWith(`${i.id}.`)) && free(d, i.id))?.id;
+      let fresh = false;
       if (!id) {
         const pa = this.canvas.blockCenter(ends[0]) ?? { x: 0, y: 0 };
         const pb = this.canvas.blockCenter(ends[1]) ?? { x: 0, y: 0 };
@@ -608,15 +763,18 @@ export class App {
         });
         d = r.design;
         id = r.id;
+        fresh = true;
       }
       const ports = free(d, id);
       if (!ports) return d0;
+      if (fresh) d = placeBetween(this.catalog, d, drv, rcv, id, ports.sink.slice(id.length + 1)) ?? d;
       used = id;
       d = addConnection(d, drv, ports.sink).design;
-      return addConnection(d, ports.source, rcv).design;
+      d = addConnection(d, ports.source, rcv).design;
+      return this.tidy(d, { dropped: [id], anchorsOf: [id] });
     });
     if (used) {
-      this.selectInstances([used], undefined, { focusCanvas: true });
+      this.selectInstances([used]);
       this.notify(`Connected ${drv} to ${rcv} through ${used}.`);
     } else {
       this.notify('The adapter could not be connected.', 'error');
@@ -655,7 +813,7 @@ export class App {
       this.ws.apply(`set ${name}`, (d) => {
         const r = setGeneric(d, this.catalog, id, name, value);
         removed = r.removed;
-        return r.design;
+        return this.tidy(r.design, { anchorsOf: [id] });
       });
       if (removed.length > 0) {
         this.notify(`${removed.length} connection${removed.length > 1 ? 's' : ''} removed: the interface no longer exists.`, 'error');
@@ -677,7 +835,7 @@ export class App {
     this.ws.apply(`reset ${name}`, (d) => {
       const r = clearGeneric(d, this.catalog, id, name);
       removed = r.removed;
-      return r.design;
+      return this.tidy(r.design, { anchorsOf: [id] });
     });
     if (removed.length > 0) this.notify(`${removed.length} connection${removed.length > 1 ? 's' : ''} removed: the interface no longer exists.`, 'error');
   }
@@ -731,8 +889,7 @@ export class App {
   }
 
   fit() {
-    const size = this.canvas.size();
-    this.canvas.setView(fitViewport(boundsOf(this.canvas.boxes()), size.width, size.height));
+    this.canvas.fit();
   }
 
   // ------------------------------------------------------------------------------------------------------------------
@@ -805,7 +962,15 @@ export class App {
    */
   async openText(text, source) {
     try {
-      const { design, warnings } = fromText(text, this.catalog);
+      const read = fromText(text, this.catalog);
+      const warnings = [...read.warnings];
+      let design = read.design;
+      if (read.unplaced.length > 0) {
+        design = arrange(this.catalog, design);
+        warnings.push(read.unplaced.length === design.instances.length
+          ? 'The file has no layout; the Composer arranged the system.'
+          : `${read.unplaced.join(', ')} had no position; the Composer arranged the system.`);
+      }
       const cur = this.ws.active;
       this.ws.addTab(design);
       // an untouched empty tab is replaced by the opened system
@@ -813,7 +978,10 @@ export class App {
         this.selections.delete(cur.id);
         this.ws.closeTab(cur.id);
       }
-      requestAnimationFrame(() => this.fit());
+      requestAnimationFrame(() => {
+        this.canvas.settleNow();
+        this.fit();
+      });
       this.notify(`Opened ${design.name} from ${source}.`);
       if (warnings.length > 0) {
         await this.ask(`Opened ${design.name} with remarks`, warnings, [{ label: 'Close', value: 'ok', primary: true }]);
@@ -838,6 +1006,29 @@ export class App {
         h('span', { class: 'cmp-menu-title' }, ex.title),
         h('span', { class: 'cmp-menu-desc' }, ex.description))));
     this.btnExamples.disabled = this.examples.length === 0;
+    if (!this.examplesMenu.dataset.keys) {
+      this.examplesMenu.dataset.keys = '1';
+      this.examplesMenu.addEventListener('keydown', (e) => {
+        const items = /** @type {HTMLElement[]} */ ([...this.examplesMenu.querySelectorAll('.cmp-menu-item')]);
+        const k = items.indexOf(/** @type {HTMLElement} */ (document.activeElement));
+        let next = -1;
+        if (e.key === 'ArrowDown') next = (k + 1) % items.length;
+        else if (e.key === 'ArrowUp') next = (k - 1 + items.length) % items.length;
+        else if (e.key === 'Home') next = 0;
+        else if (e.key === 'End') next = items.length - 1;
+        else if (e.key === 'Escape' || e.key === 'Tab') {
+          this.toggleExamples(false);
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            this.btnExamples.focus();
+          }
+          return;
+        }
+        if (next < 0) return;
+        e.preventDefault();
+        items[next]?.focus();
+      });
+    }
     this.canvas.empty.replaceChildren();
     this.canvas.renderEmpty();
   }
@@ -917,13 +1108,15 @@ export class App {
     if (this.dialog.open) return;
     const t = /** @type {HTMLElement} */ (e.target);
     const typing = t.closest('input, textarea, select, [contenteditable]') !== null;
+    // text fields have their own undo; on a checkbox, a list or a button Ctrl+Z undoes the last change of the design
+    const textEntry = t.closest('textarea, [contenteditable], input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="file"])') !== null;
     const mod = e.ctrlKey || e.metaKey;
     const key = e.key.toLowerCase();
-    if (mod && key === 'z' && !typing) {
+    if (mod && key === 'z' && !textEntry) {
       e.preventDefault();
       if (e.shiftKey) this.ws.redo();
       else this.ws.undo();
-    } else if (mod && key === 'y' && !typing) {
+    } else if (mod && key === 'y' && !textEntry) {
       e.preventDefault();
       this.ws.redo();
     } else if (mod && key === 's') {
@@ -932,9 +1125,12 @@ export class App {
     } else if (mod && key === 'o') {
       e.preventDefault();
       this.fileInput.click();
-    } else if (e.altKey && key === 'n') {
+    } else if (e.altKey && (key === 'n' || e.code === 'KeyN')) {
       e.preventDefault();
       this.newSystem();
+    } else if (e.altKey && (key === 'a' || e.code === 'KeyA')) {
+      e.preventDefault();
+      this.arrange();
     } else if (typing) {
       // keys below belong to the canvas
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -956,6 +1152,10 @@ export class App {
       this.canvas.zoomBy(1 / 1.25);
     } else if (e.key === '0' && !mod) {
       this.fit();
+    } else if (key === 'l' && !mod && !e.altKey) {
+      this.toggleLegend();
+    } else if (e.key === '?') {
+      this.showShortcuts();
     }
   }
 }

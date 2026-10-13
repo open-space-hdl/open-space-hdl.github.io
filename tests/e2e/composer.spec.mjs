@@ -133,7 +133,7 @@ test('inspector: generics are validated and connections can be made without a po
 test('an example opens in its own tab', async ({ page }) => {
   await open(page);
   await page.getByRole('button', { name: 'Examples' }).click();
-  await page.getByRole('menuitem', { name: /Space Packets over SpaceWire/ }).click();
+  await page.getByRole('menuitem', { name: /^Space Packets over SpaceWire Space Packets over SpaceWire: OpenSPP/ }).click();
   await expect(page.locator('.cmp-edge')).toHaveCount(6);
   const d = await design(page);
   expect(d.name).toBe('spp_over_spw');

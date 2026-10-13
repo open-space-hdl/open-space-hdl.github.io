@@ -1,7 +1,8 @@
 // @ts-check
 /**
  * The palette: the blocks of the catalog in two categories (Open Space HDL cores, Open Logic), with search.
- * A block is added by dragging it onto the canvas, by double click, or with Enter on the focused entry.
+ * A block is added by dragging it onto the canvas, by double click, or with Enter on the focused entry. While dragged,
+ * the entry follows the pointer as a card that tilts with the motion and straightens when it stops.
  */
 
 import { h, replace } from './dom.js';
@@ -127,7 +128,7 @@ export class PaletteView {
    */
   startDrag(e, b, preset, name) {
     if (e.button !== 0) return;
-    this.drag = { block: b.id, preset, name, entity: b.entity, x: e.clientX, y: e.clientY, active: false, pointerId: e.pointerId };
+    this.drag = { block: b.id, preset, name, entity: b.entity, x: e.clientX, y: e.clientY, active: false, pointerId: e.pointerId, lastX: e.clientX, lastT: performance.now(), tilt: 0, rest: 0 };
   }
 
   /** @param {PointerEvent} e */
@@ -143,8 +144,29 @@ export class PaletteView {
       document.body.classList.add('cmp-dragging');
     }
     e.preventDefault();
-    this.ghost.style.transform = `translate(${e.clientX + 12}px, ${e.clientY + 8}px)`;
+    this.ghost.style.left = `${e.clientX + 12}px`;
+    this.ghost.style.top = `${e.clientY + 8}px`;
     this.ghost.classList.toggle('is-over-canvas', this.app.canvas.isInside(e.clientX, e.clientY));
+    // tilt with the horizontal speed, back to straight when the pointer rests
+    const now = performance.now();
+    const vx = (e.clientX - dr.lastX) / Math.max(8, now - dr.lastT);
+    dr.lastX = e.clientX;
+    dr.lastT = now;
+    this.tiltTo(Math.max(-9, Math.min(9, vx * 9)));
+    window.clearTimeout(dr.rest);
+    dr.rest = window.setTimeout(() => this.tiltTo(0), 90);
+  }
+
+  /**
+   * Turns the dragged card on a spring.
+   * @param {number} deg
+   */
+  tiltTo(deg) {
+    const motion = this.app.canvas.motion;
+    const cur = motion.values('ghost') ?? { r: 0 };
+    motion.spring('ghost', cur, { r: deg }, (v) => {
+      this.ghost.style.transform = `rotate(${v.r.toFixed(2)}deg)`;
+    }, { response: 0.32, damping: 0.6, precision: 0.05 });
   }
 
   /** @param {PointerEvent} e */
@@ -158,6 +180,9 @@ export class PaletteView {
   }
 
   endDrag() {
+    if (this.drag) window.clearTimeout(this.drag.rest);
+    this.app.canvas.motion.stop('ghost');
+    this.ghost.style.transform = '';
     this.drag = null;
     this.ghost.hidden = true;
     document.body.classList.remove('cmp-dragging');

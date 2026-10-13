@@ -2,7 +2,7 @@
 // external interfaces and the checks panel.
 import { test } from '@playwright/test';
 import {
-  addBlock, canvasPoint, design, dragTo, dragWire, expect, open, saveText, shot, watch,
+  addBlock, canvasPoint, design, dragTo, dragWire, expect, open, saveText, settled, shot, watch,
 } from './helpers.mjs';
 
 /** @type {string[]} */
@@ -53,6 +53,7 @@ test('blocks in different clock domains get an asynchronous FIFO that disappears
   expect(d.instances.find((/** @type {any} */ i) => i.id === 'rmap0').clocks).toEqual({ Clk: 'clk1' });
   await expect(page.locator('.cmp-auto').first()).toContainText('Async FIFO');
   await page.getByRole('button', { name: 'Fit' }).click();
+  await settled(page);
   await page.mouse.click(...Object.values(await canvasPoint(page, 0.97, 0.97)));
   await shot(page, info, '01-domains-auto-fifo');
 
@@ -77,6 +78,7 @@ test('SPP over SpaceWire: the N-Char adapter is inserted with one click and serv
   await addBlock(page, 'SpaceWire port');
   await addBlock(page, 'Space Packet node');
   await page.getByRole('button', { name: 'Fit' }).click();
+  await settled(page);
   await dragWire(page, 'spp0.M_Link', 'spw0.S_Pkt', false);
   await expect(page.locator('.cmp-tip')).toContainText('connect through N-Char adapter');
   await page.mouse.up();
@@ -89,6 +91,7 @@ test('SPP over SpaceWire: the N-Char adapter is inserted with one click and serv
   expect(d.connections.map((/** @type {any} */ c) => [c.from, c.to])).toEqual([['spp0.M_Link', 'nchar0.S_Link'], ['nchar0.M_NChar', 'spw0.S_Pkt']]);
   // the other direction reuses the adapter
   await page.getByRole('button', { name: 'Fit' }).click();
+  await settled(page);
   await dragWire(page, 'spw0.M_Pkt', 'spp0.S_Link');
   await page.getByRole('dialog').getByRole('button', { name: 'Insert N-Char adapter' }).click();
   d = await design(page);
@@ -107,6 +110,7 @@ test('the RMAP pass-through port connects directly to the N-Char adapter', async
   await addBlock(page, 'RMAP node');
   await addBlock(page, 'N-Char adapter');
   await page.getByRole('button', { name: 'Fit' }).click();
+  await settled(page);
   await dragWire(page, 'rmap0.M_User', 'nchar0.S_NChar');
   await dragWire(page, 'nchar0.M_NChar', 'rmap0.S_User');
   const d = await design(page);
@@ -119,6 +123,7 @@ test('a side band constant survives save and load', async ({ page, browser }, in
   await addBlock(page, 'Chunker');
   await addBlock(page, 'Space Packet node');
   await page.getByRole('button', { name: 'Fit' }).click();
+  await settled(page);
   await dragWire(page, 'chunk0.Out', 'spp0.S_Tx[0]');
   // the connection is selected and asks for the constants
   await expect(page.locator('.cmp-inspector')).toContainText('Side band constants');
@@ -153,6 +158,7 @@ test('checks: a must-serve interface is reported and a click shows the block; ex
   await open(page);
   await addBlock(page, 'SpaceWire port');
   await page.getByRole('button', { name: 'Fit' }).click();
+  await settled(page);
   const checks = page.locator('.cmp-checks');
   await expect(checks).toContainText('spw0.M_Pkt must be served');
   await page.mouse.click(...Object.values(await canvasPoint(page, 0.95, 0.95)));

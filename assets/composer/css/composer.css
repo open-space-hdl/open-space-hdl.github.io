@@ -97,6 +97,12 @@
   display: flex;
   gap: 6px;
 }
+.cmp-toolgroup-end { margin-left: auto; }
+.cmp-tool[aria-pressed="true"] {
+  color: #FFFFFF;
+  background: var(--navy);
+  border-color: var(--navy);
+}
 .cmp-tool,
 .cmp-btn {
   font: inherit;
@@ -333,13 +339,14 @@
   border: 1px solid var(--orange);
   border-left-width: 4px;
   border-radius: 10px;
-  box-shadow: var(--shadow-lift);
+  box-shadow: 0 14px 28px rgba(14, 26, 43, 0.22), 0 3px 8px rgba(14, 26, 43, 0.12);
   pointer-events: none;
-  opacity: 0.92;
-  rotate: -2deg;
+  opacity: 0.94;
+  transform-origin: 30% 0;
+  will-change: transform;
 }
 .cmp-ghost-olo { border-color: var(--navy); }
-.cmp-ghost.is-over-canvas { rotate: 0deg; opacity: 1; }
+.cmp-ghost.is-over-canvas { opacity: 1; }
 body.cmp-dragging,
 body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
 
@@ -349,12 +356,19 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  /* never scrolled, not even by focus: the SVG reaches beyond the visible area */
+  overflow: clip;
   background: var(--cmp-canvas-bg);
 }
+/* twice the visible area, centred on it: a pan moves the whole SVG (see CanvasView.applyView) */
 .cmp-canvas {
+  position: absolute;
+  left: -50%;
+  top: -50%;
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 200%;
+  height: 200%;
+  will-change: transform;
   touch-action: none;
   user-select: none;
   font-family: var(--font-sans);
@@ -363,6 +377,17 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
 .cmp-grid-dot { fill: var(--cmp-grid-dot); }
 
 .cmp-block { cursor: move; }
+.cmp-block-shadow {
+  fill: rgba(14, 26, 43, 0.16);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.cmp-block.is-lifted .cmp-block-shadow { opacity: 1; }
+.cmp-block.is-lifted .cmp-block-body { stroke: var(--orange); }
+.cmp-block.is-leaving,
+.cmp-auto.is-leaving { pointer-events: none; }
+.cmp-canvas.is-moving { cursor: grabbing; }
 .cmp-block:focus { outline: none; }
 .cmp-block-body {
   fill: #FFFFFF;
@@ -419,6 +444,23 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
 }
 .cmp-canvas.is-zoomed-out .cmp-port-label { display: none; }
 
+.cmp-port-ring {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 2;
+  opacity: 0;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.cmp-canvas.is-connecting .cmp-port.is-target .cmp-port-ring { animation: cmp-ring 1.25s ease-out infinite; }
+.cmp-canvas.is-connecting .cmp-port.is-snap .cmp-port-ring { animation: none; opacity: 0.9; transform: scale(1.5); }
+.cmp-canvas.is-connecting .cmp-port.is-snap .cmp-port-glyph { fill: var(--c); transform: scale(1.7); animation: none; }
+@keyframes cmp-ring {
+  from { opacity: 0.75; transform: scale(0.8); }
+  to { opacity: 0; transform: scale(2.1); }
+}
+.cmp-canvas.is-connecting .cmp-port { transition: opacity 0.18s ease; }
 .cmp-canvas.is-connecting .cmp-port.is-dimmed { opacity: 0.22; }
 .cmp-canvas.is-connecting .cmp-port.is-origin .cmp-port-glyph { fill: var(--c); transform: scale(1.3); }
 .cmp-canvas.is-connecting .cmp-port.is-target .cmp-port-glyph {
@@ -457,6 +499,31 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
   pointer-events: none;
 }
 .cmp-band.is-invalid { stroke: var(--cmp-danger); }
+.cmp-band.is-snapped { stroke-dasharray: none; stroke-width: 3; }
+.cmp-flash {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 2.5;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.cmp-edge-flow {
+  fill: none;
+  stroke: #FFFFFF;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 0 18;
+  opacity: 0;
+  pointer-events: none;
+}
+.cmp-edge.is-flowing .cmp-edge-flow {
+  opacity: 0.95;
+  animation: cmp-flow 0.7s linear infinite;
+}
+@keyframes cmp-flow {
+  to { stroke-dashoffset: -36; }
+}
 
 .cmp-tip {
   position: absolute;
@@ -499,7 +566,7 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
   margin-top: 16px;
 }
 
-/* Right column: inspector and checks */
+/* Right column: inspector, separator, checks; each part scrolls on its own */
 .cmp-side {
   display: flex;
   flex-direction: column;
@@ -507,15 +574,52 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
   background: #FFFFFF;
   border-left: 1px solid var(--border);
 }
+.cmp-split {
+  position: relative;
+  flex: 0 0 10px;
+  margin: -5px 0;
+  z-index: 4;
+  cursor: row-resize;
+  touch-action: none;
+}
+.cmp-split::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  transform: translateX(-50%);
+  transition: background-color 0.15s ease;
+}
+.cmp-split:hover::after,
+.cmp-split:focus-visible::after,
+.cmp-side.is-resizing .cmp-split::after { background: var(--navy); }
+.cmp-split:focus-visible { outline-offset: -2px; }
+.cmp-side.is-checks-closed .cmp-split { display: none; }
+.cmp-side.is-resizing { user-select: none; }
 
 /* Inspector */
 .cmp-inspector {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 120px;
   overflow-y: auto;
-  padding: 16px 18px 28px;
+  padding: 0 18px 28px;
   background: #FFFFFF;
 }
+.cmp-insp-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: 0 -18px 12px;
+  padding: 14px 18px 10px;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border);
+}
+.cmp-insp-bar .cmp-insp-meta { margin-top: 6px; }
+h2.cmp-insp-bar { margin: 0 -18px 14px; }
 .cmp-inspector:focus { outline: none; }
 .cmp-insp-title {
   margin: 0 0 14px;
@@ -531,6 +635,7 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
   color: var(--text-muted);
 }
 .cmp-insp-head { margin-bottom: 4px; }
+.cmp-insp-head > .cmp-insp-summary:first-child { margin-top: 0; }
 .cmp-input-title {
   font-size: 1.05rem !important;
   font-weight: 650;
@@ -574,6 +679,12 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
 .cmp-input.cmp-mono { font-family: var(--font-mono); font-size: 0.8rem; }
 textarea.cmp-input { resize: vertical; }
 .cmp-input[readonly] { color: var(--text-muted); background: var(--light); }
+.cmp-input:disabled,
+.cmp-check input:disabled { cursor: not-allowed; opacity: 0.55; }
+.cmp-input:disabled { background: var(--light); }
+.cmp-field.is-disabled > label,
+.cmp-field.is-disabled .cmp-g-label { color: var(--text-muted); }
+.cmp-dep-note { color: var(--text-muted); }
 .cmp-input[aria-invalid="true"] { border-color: var(--cmp-danger); background: var(--cmp-danger-bg); }
 .cmp-check {
   display: grid;
@@ -735,19 +846,27 @@ textarea.cmp-input { resize: vertical; }
   .cmp-ghost { rotate: 0deg; }
 }
 
-/* The canvas takes focus on a click (keyboard focus goes to the blocks) */
+/* The canvas takes focus on a click; with the keyboard its frame shows the focus */
 .cmp-canvas:focus { outline: none; }
+.cmp-canvas-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.cmp-canvas-wrap:has(.cmp-canvas:focus-visible)::after { box-shadow: inset 0 0 0 3px var(--cmp-focus); }
 .cmp-block-id,
 .cmp-block-name { pointer-events: none; }
 
 /* Checks panel ----------------------------------------------------------------------------------------------------- */
 .cmp-checks {
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 0 var(--cmp-checks-h, 220px);
   flex-direction: column;
-  max-height: 40%;
+  min-height: 0;
   border-top: 1px solid var(--border);
 }
+.cmp-side.is-checks-closed .cmp-checks { flex-basis: auto; }
 .cmp-checks-toggle {
   display: flex;
   align-items: center;
@@ -849,8 +968,11 @@ textarea.cmp-input { resize: vertical; }
 /* Inserted adapters, clock chips, external interfaces -------------------------------------------------------------- */
 .cmp-auto { cursor: pointer; }
 .cmp-auto:focus { outline: none; }
+.cmp-auto-base { fill: #FFFFFF; }
+.cmp-auto-half { fill: var(--t); fill-opacity: 0.14; }
+.cmp-auto-border { stroke: #6C757D; stroke-width: 1.5; }
 .cmp-auto-body {
-  fill: #FFFFFF;
+  fill: none;
   stroke: #6C757D;
   stroke-width: 1.5;
   stroke-dasharray: 5 4;
@@ -871,7 +993,8 @@ textarea.cmp-input { resize: vertical; }
 .cmp-chip-text { font-family: var(--font-mono); font-size: 10.5px; fill: var(--cmp-label); pointer-events: none; }
 .cmp-port.is-external .cmp-port-glyph { fill: var(--c); }
 .cmp-external-line { stroke: var(--navy); stroke-width: 1.5; stroke-dasharray: 3 3; }
-.cmp-external-label { font-family: var(--font-mono); font-size: 10px; fill: var(--navy); }
+.cmp-external-tag { fill: #FFFFFF; stroke: var(--navy); stroke-width: 1; }
+.cmp-external-label { font-family: var(--font-mono); font-size: 10.5px; fill: var(--navy); pointer-events: none; }
 .cmp-canvas.is-connecting .cmp-port.is-bridge .cmp-port-glyph {
   fill: #FFFFFF;
   stroke-dasharray: 2 2;
@@ -913,3 +1036,73 @@ textarea.cmp-input { resize: vertical; }
 .cmp-ext-actions { display: flex; gap: 14px; margin-top: 4px; }
 .cmp-notes li.cmp-sev-error { color: var(--cmp-danger); }
 .cmp-notes li.cmp-sev-warning { color: #9A5B00; }
+
+/* Legend ----------------------------------------------------------------------------------------------------------- */
+.cmp-legend {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  width: min(300px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lift);
+}
+.cmp-legend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 0 14px;
+}
+.cmp-legend-title { margin: 0; font-size: 0.95rem; }
+.cmp-legend-close {
+  padding: 2px 9px;
+  font: inherit;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--text-muted);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cmp-legend-close:hover { color: var(--navy); background: var(--light); }
+.cmp-legend-note { margin: 4px 14px 8px; font-size: 0.74rem; line-height: 1.4; color: var(--text-muted); }
+.cmp-legend-symbols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0 14px 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.cmp-legend-symbol { display: inline-flex; align-items: center; gap: 4px; }
+.cmp-legend-body { min-height: 0; overflow-y: auto; padding: 0 14px 12px; }
+.cmp-legend-family h3 {
+  margin: 10px 0 4px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.cmp-legend-family ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.cmp-legend-family li {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  border-radius: 6px;
+}
+.cmp-legend-family li.is-used { color: var(--text); font-weight: 600; background: var(--light); }
+.cmp-legend-glyph path { fill: #FFFFFF; stroke: var(--c); stroke-width: 2.2; }
+.cmp-legend-family li.is-used .cmp-legend-glyph path { fill: var(--c); }
+.cmp-legend-id { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 400; color: var(--text-muted); }

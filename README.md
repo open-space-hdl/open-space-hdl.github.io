@@ -51,9 +51,9 @@ The Composer is a browser editor for systems built from the cores and from Open 
 |---|---|
 | `_composer/catalog/` | Catalog source: interface types, pinned source repositories, palette, block descriptions |
 | `tools/composer_catalog.py` | Builds `assets/composer/catalog.json` from the catalog source and the VHDL entities at the pinned commits, and checks them |
-| `tools/composer_examples.mjs` | Writes the example systems in `assets/composer/examples/` |
-| `assets/composer/js/model/` | Catalog access, design model, connection rules, resolver (adapters, clock domains, resets, top level), design rules, file format (no DOM, unit tested) |
-| `assets/composer/js/view/` | Editor: palette, canvas with clock domains, inspector, checks, tabs |
+| `tools/composer_examples.mjs` | Writes the example systems in `assets/composer/examples/` (laid out by Arrange) |
+| `assets/composer/js/model/` | Catalog access, design model, connection rules, resolver (adapters, clock domains, resets, top level), design rules, file format, scene and router (placement and orthogonal routes), Arrange and tidy, scene differences and springs for the animations (no DOM, unit tested) |
+| `assets/composer/js/view/` | Editor: palette, canvas with clock domains and animations, inspector, checks, legend, tabs |
 | `composer/schema/system-1.json` | JSON schema of the `.composer.json` files |
 | `tests/` | Unit tests (`node --test`), type check (TypeScript) and browser tests (Playwright) |
 
@@ -72,6 +72,7 @@ Tests (from `tests/`, after `npm install` and `npx playwright install chromium f
 npm run unit
 npm run typecheck
 npm run e2e        # against the built site in ../_site (COMPOSER_SITE selects another directory)
+                   # COMPOSER_SCREENS=<directory> also writes review screenshots and a screen recording
 ```
 
 ## Local preview (optional)

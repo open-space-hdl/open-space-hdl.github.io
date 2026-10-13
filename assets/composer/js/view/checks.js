@@ -44,6 +44,8 @@ export class ChecksView {
     const warnings = count('warning');
     const notes = count('info');
     this.root.classList.toggle('has-errors', errors > 0);
+    this.root.classList.toggle('is-open', this.open);
+    this.app.side?.classList.toggle('is-checks-closed', !this.open);
     this.toggle.setAttribute('aria-expanded', this.open ? 'true' : 'false');
     replace(this.toggle,
       h('span', { class: 'cmp-checks-title' }, 'Checks'),
