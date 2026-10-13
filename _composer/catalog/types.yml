@@ -12,7 +12,8 @@
 # signals: logical signal names with their direction seen from the source (stream), master (bus) or the driving side
 #          (event); sinks, slaves and event inputs see the flipped direction. Optional signals may be missing.
 # fields:  direction of additional, interface-specific signals (descriptor fields), or absent if none are allowed.
-# accepts: further source types a sink of this type accepts, with the condition.
+# accepts: further source types a sink of this type accepts, with the condition; sideband: required gives the sink
+#          the side band constants of the connection even where the source has a signal of the same name.
 # bridges: types that can be reached through a bridge block.
 # Colours: contrast of at least 3:1 against the canvas (checked by the unit tests).
 # cdc:     how an interface of this type crosses clock domains: streams use an asynchronous FIFO when the source
@@ -121,6 +122,8 @@ types:
     accepts:
       - type: spp.rx
         note: The side band of the receive port (APID, flags) is not passed on.
+      - type: gcm.msg
+        note: The messages of the AES-GCM core are a byte stream with its dense output (DenseOutput_g = true); the section and error bits are not passed on.
 
   # Space Packet Protocol ---------------------------------------------------------------------------------------------
   - id: spp.tx
@@ -142,6 +145,9 @@ types:
       - type: byte.stream
         sideband: required
         note: The side band of the send port is set to constants on the connection.
+      - type: gcm.msg
+        sideband: required
+        note: "One encrypted message per SDU (with the dense output of the core: IV, AAD, ciphertext, tag); the side band of the send port is set to constants on the connection."
 
   - id: spp.rx
     name: Space Packet receive port
@@ -295,6 +301,10 @@ types:
       user: { dir: out }
       valid: { dir: out }
       ready: { dir: in, optional: true }
+    accepts:
+      - type: byte.stream
+        sideband: required
+        note: Every packet is one message; the section of its beats is a constant on the connection.
 
   - id: gcm.sts
     name: AES-GCM status

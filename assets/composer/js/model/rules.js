@@ -9,8 +9,11 @@
  *   generic_requires     generic = value requires another generic = value
  *   mutual_initiator     reminder for nodes that are initiator and target of each other
  *   same_domain          the interfaces should share the clock domain of their partner (no crossing inserted)
+ *   partner_requires     an interface that feeds one of the given types needs generic = value
+ *   chain_fits           messages of bytes bytes leaving through the via block must fit into the buffer of the sink
  */
 
+import { typedEndpoint } from './compat.js';
 import { evaluate, ExprError } from './expr.js';
 
 /** @typedef {import('./resolver.js').Resolution} Resolution */
@@ -41,6 +44,32 @@ export function nearMultiple(f, base, tolerance) {
 /** @param {number} n */
 function isPow2(n) {
   return Number.isInteger(n) && n > 0 && (n & (n - 1)) === 0;
+}
+
+/**
+ * Typed interface at the other end of the connection of an endpoint, looking through untyped Open Logic blocks.
+ * @param {Resolution} res
+ * @param {string} ref
+ * @returns {{ ref: string, type: import('./catalog.js').TypeDef, connection: string } | null}
+ */
+function farEnd(res, ref) {
+  const conn = res.d.connections.find((c) => c.from === ref || c.to === ref);
+  if (!conn) return null;
+  const te = typedEndpoint(res.cat, res.d, conn.from === ref ? conn.to : conn.from, conn.id);
+  return te ? { ref: te.ref, type: te.type, connection: conn.id } : null;
+}
+
+/** @param {string} ref */
+function instanceOf(ref) {
+  return ref.slice(0, ref.indexOf('.'));
+}
+
+/**
+ * Interface name of an endpoint (without the index of a vector element).
+ * @param {string} ref
+ */
+function interfaceOf(ref) {
+  return ref.slice(ref.indexOf('.') + 1).replace(/\[\d+\]$/, '');
 }
 
 /**
@@ -122,6 +151,44 @@ export function runRules(res) {
             const at = rule.interfaces.some((/** @type {string} */ i) => chain.from === `${inst.id}.${i}` || chain.to === `${inst.id}.${i}`);
             if (at && chain.adapters.some((a) => res.byId.get(a)?.role === 'cdc')) {
               res.check('warning', rule.kind, `${inst.id}: ${rule.message} (${chain.connection})`, { ...where, connection: chain.connection });
+            }
+          }
+          break;
+        case 'partner_requires':
+          for (const p of res.portsOf(inst.id).filter((x) => x.itf.name === rule.interface)) {
+            const ref = `${inst.id}.${p.ref}`;
+            const far = farEnd(res, ref);
+            if (far && rule.types.includes(far.type.id) && rec.generics[rule.generic] !== rule.value) {
+              res.check('error', rule.kind, `${ref} feeds ${far.ref} (${far.type.name}). ${rule.message}`, { ...where, connection: far.connection });
+            }
+          }
+          break;
+        case 'chain_fits':
+          for (const p of res.portsOf(inst.id).filter((x) => x.itf.name === rule.interface)) {
+            const a = farEnd(res, `${inst.id}.${p.ref}`);
+            const via = a && res.byId.get(instanceOf(a.ref));
+            if (!a || !via || via.block !== rule.via.block || interfaceOf(a.ref) !== rule.via.in) continue;
+            for (const q of res.portsOf(via.id).filter((x) => x.itf.name === rule.via.out)) {
+              const b = farEnd(res, `${via.id}.${q.ref}`);
+              const sink = b && res.byId.get(instanceOf(b.ref));
+              if (!b || !sink || sink.block !== rule.sink.block || interfaceOf(b.ref) !== rule.sink.interface) continue;
+              let bytes;
+              try {
+                bytes = evaluate(rule.bytes, env());
+              } catch (e) {
+                if (!(e instanceof ExprError)) throw e;
+                continue;
+              }
+              const have = sink.generics[rule.sink.generic];
+              const what = `every message of ${inst.id} leaves ${via.id} with ${rule.bytes} = ${bytes} bytes`;
+              if (typeof rule.max === 'number' && bytes > rule.max) {
+                res.check('error', rule.kind, `${inst.id}: ${what}, more than the ${rule.max} bytes ${b.ref} can carry in one packet.`, { ...where, connection: b.connection });
+              }
+              if (typeof have === 'number' && have < bytes) {
+                res.check('error', rule.kind,
+                  `${inst.id}: ${what}; ${b.ref} must hold one: set ${rule.sink.generic} of ${sink.id} to at least ${bytes} (now ${have}).`,
+                  { instance: sink.id, connection: b.connection });
+              }
             }
           }
           break;

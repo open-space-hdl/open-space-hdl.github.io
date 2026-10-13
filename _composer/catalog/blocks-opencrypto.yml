@@ -1,0 +1,178 @@
+# OpenCrypto blocks. Ports and generics come from the VHDL entity at the pinned commit (sources.yml).
+
+blocks:
+  - id: opencrypto/ocr_core
+    kind: core
+    name: AES-GCM core
+    group: opencrypto
+    project: OpenCrypto
+    source: opencrypto
+    entity: ocr_core
+    path: hdl/ocr_core/src/ocr_core.vhd
+    packages: [hdl/ocr_pkg/src/ocr_pkg.vhd]
+    idPrefix: ocr
+    doc: https://openspacehdl.org/opencrypto/docs/user_guide.html
+    summary: >-
+      AES-GCM authenticated encryption and decryption (FIPS 197, NIST SP 800-38D, CCSDS 352.0-B-2) with a key table,
+      IV generation per key slot and a register file; one message per context, one status per message.
+    clocks:
+      - { port: Clk, primary: true, label: Clock, description: All of the core; one beat per cycle on every stream. }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: DataWidth_g, label: Stream width, unit: bits, choices: [16, 32, 64, 128], description: Width of the message streams. }
+      - { name: KeyBits_g, label: Key length, unit: bits, choices: [128, 192, 256], description: One key length per core; CCSDS 352.0-B-2 uses 256 bits for new missions. }
+      - { name: NumKeys_g, label: Key slots, description: Slots of the key table; the slot fields have max(1, ceil(log2(NumKeys_g))) bits. }
+      - { name: AesUnits_g, label: AES round units, advanced: true, description: Round units of the AES engine; 0 selects the default of the width. }
+      - { name: GhashDigit_g, label: GHASH digit, unit: bits, advanced: true, description: Bits per cycle of the GHASH multiplier, DataWidth_g to 128; 0 selects the default of the width. }
+      - { name: LenBits_g, label: Length bits, advanced: true, description: Width of the byte counts of the AAD and DATA sections. }
+      - { name: ReleaseBuffer_g, label: Release buffer, description: A message leaves the core only when its status is OK (plaintext only after the tag is verified). }
+      - { name: ReleaseBytes_g, label: Release buffer size, unit: bytes, enabledBy: ReleaseBuffer_g, description: "Power of two of at least 16 beats; longer messages are dropped with OVERFLOW." }
+      - { name: DenseOutput_g, label: Dense output, description: "Every output message leaves as one gapless byte string IV, AAD, DATA, TAG; needed where the output is a byte stream (for example a send port of OpenSPP)." }
+      - { name: ClkFreqHz_g, label: Clock frequency, unit: Hz, fromClock: Clk, advanced: true, description: Clock frequency for the pacer of the key table scrubbers. }
+      - { name: ScrubPeriod_g, label: Scrub period, unit: s, advanced: true, description: Scrub period of the key table; 0 scrubs in every cycle without access. }
+    interfaces:
+      - name: S_Ctx
+        label: Contexts
+        type: gcm.ctx
+        role: sink
+        clock: Clk
+        tieOff: zero
+        description: One context per message, in the order of the messages (direction, key slot, IV source, IV).
+        signals: { valid: S_Ctx_Valid, ready: S_Ctx_Ready, decrypt: S_Ctx_Decrypt, slot: S_Ctx_Slot, iv_gen: S_Ctx_IvGen, iv: S_Ctx_Iv }
+      - name: S_In
+        label: Messages in
+        type: gcm.msg
+        role: sink
+        clock: Clk
+        tieOff: zero
+        description: "One message per packet; user is the section of the beat: 11 IV, 01 AAD, 00 DATA, 10 TAG."
+        signals: { data: S_In_Data, keep: S_In_Keep, last: S_In_Last, user: S_In_User, valid: S_In_Valid, ready: S_In_Ready }
+        sideband:
+          signal: user
+          description: "Section of every beat when the input is a plain byte stream: 0 DATA (encrypt the whole packet), 1 AAD (authenticate only)."
+          fields:
+            - { name: section, label: Section (0 DATA, 1 AAD), lsb: 0, bits: 2, kind: integer, default: 0 }
+      - name: M_Out
+        label: Messages out
+        type: gcm.msg
+        role: source
+        clock: Clk
+        tieOff: default
+        description: "user(1:0) is the section of the beat (dense output: of its first byte), user(2) the error flag on the last beat."
+        signals: { data: M_Out_Data, keep: M_Out_Keep, last: M_Out_Last, user: M_Out_User, valid: M_Out_Valid, ready: M_Out_Ready }
+      - name: M_Sts
+        label: Status
+        type: gcm.sts
+        role: source
+        clock: Clk
+        tieOff: default
+        description: One status per message; ready may stay '1' when the status is not used.
+        signals: { valid: M_Sts_Valid, ready: M_Sts_Ready, code: M_Sts_Code, decrypt: M_Sts_Decrypt, slot: M_Sts_Slot, iv: M_Sts_Iv, aad_bytes: M_Sts_AadBytes, data_bytes: M_Sts_DataBytes }
+      - name: S_AxiLite
+        label: Registers
+        type: axi4lite
+        role: slave
+        clock: Clk
+        prefix: S_AxiLite_
+        params: { addrWidth: 8 }
+      - name: Irq
+        label: Interrupt
+        type: irq
+        role: event_out
+        clock: Clk
+        tieOff: open
+        signals: { irq: Irq }
+    rules:
+      - kind: partner_requires
+        interface: M_Out
+        types: [byte.stream, spp.tx]
+        generic: DenseOutput_g
+        value: true
+        message: >-
+          Set DenseOutput_g = true, so that every message leaves as one gapless byte string (IV, AAD, ciphertext,
+          tag); the sectioned output is for the input of a second core (decryption).
+    notes:
+      - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen with SyncTmr_g = true.
+      - After the reset the key table erases every slot (NumKeys_g cycles, STATUS.BUSY = '1'); no key survives a reset.
+      - One context per message, in the order of the messages; the core pairs the n-th context with the n-th message.
+      - Load every key slot in use through the registers before sending contexts (programming sequence of the user guide).
+      - Without the release buffer, discard every decrypted message whose last beat carries the error flag or whose status is not OK.
+      - Save the invocation counter of every slot with generated IVs regularly ahead of the operational value (GCM 9.1).
+
+  - id: opencrypto/ocr_framer
+    kind: module
+    name: Chunk framer
+    group: opencrypto
+    project: OpenCrypto
+    source: opencrypto
+    entity: ocr_framer
+    path: hdl/ocr_framer/src/ocr_framer.vhd
+    packages: [hdl/ocr_pkg/src/ocr_pkg.vhd]
+    idPrefix: frm
+    doc: https://openspacehdl.org/opencrypto/docs/user_guide.html
+    summary: >-
+      Cuts packets of any length into chunks of ChunkBytes_g bytes and hands every chunk to the AES-GCM core as one
+      encryption with a generated IV and a 4-byte AAD with the position of the chunk in its packet.
+    clocks:
+      - { port: Clk, primary: true, label: Clock, description: The clock of the core. }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: DataWidth_g, label: Stream width, unit: bits, description: The DataWidth_g of the core; follows the connected core., follow: { interfaces: [M_Out, S_In], measure: data, rank: 1 } }
+      - { name: NumKeys_g, label: Key slots, description: The NumKeys_g of the core (width of the slot); follows the connected core., follow: { interfaces: [M_Ctx], measure: generic, generic: NumKeys_g } }
+      - { name: ChunkBytes_g, label: Chunk size, unit: bytes, check: multiple16, description: "Bytes of a chunk; the last chunk of a packet has the remaining bytes. A chunk leaves the core as ChunkBytes_g + 32 bytes (IV 12, AAD 4, tag 16)." }
+      - { name: BufferChunks_g, label: Buffered chunks, description: Chunks that the chunk buffer holds; it takes the next chunk while one leaves. }
+      - { name: RamStyle_g, label: RAM style, advanced: true, description: RAM style of the chunk buffer. }
+    interfaces:
+      - name: Cfg
+        label: Key slot
+        type: sig.control
+        role: event_in
+        clock: Clk
+        tieOff: constant
+        description: "Key slot of the contexts: loaded for generated IVs (IV_GEN = '1') and unchanged while the framer holds chunks."
+        signals: { slot: Cfg_Slot }
+        sideband:
+          signal: slot
+          description: Static key slot of the contexts, set as a constant of the instance.
+          fields:
+            - { name: slot, label: Key slot, lsb: 0, bits: 8, kind: integer, default: 0, below: NumKeys_g }
+      - name: S_In
+        label: Packets in
+        type: byte.stream
+        role: sink
+        clock: Clk
+        tieOff: zero
+        description: Packets of any length (for example one compressed image each); last is the end of the packet.
+        signals: { data: S_In_Data, keep: S_In_Keep, last: S_In_Last, valid: S_In_Valid, ready: S_In_Ready }
+      - name: M_Ctx
+        label: Contexts
+        type: gcm.ctx
+        role: source
+        clock: Clk
+        mustServe: true
+        description: One encryption context per chunk, to S_Ctx of the core.
+        signals: { valid: M_Ctx_Valid, ready: M_Ctx_Ready, decrypt: M_Ctx_Decrypt, slot: M_Ctx_Slot, iv_gen: M_Ctx_IvGen, iv: M_Ctx_Iv }
+      - name: M_Out
+        label: Messages out
+        type: gcm.msg
+        role: source
+        clock: Clk
+        mustServe: true
+        description: AAD section with the position of the chunk, then the chunk as DATA section, to S_In of the core.
+        signals: { data: M_Out_Data, keep: M_Out_Keep, last: M_Out_Last, user: M_Out_User, valid: M_Out_Valid, ready: M_Out_Ready }
+      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, vector: "2", tieOff: open, description: "Element 0 the chunk buffer, element 1 the position FIFO.", signals: { sec: Ecc_Sec, ded: Ecc_Ded } }
+      - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, description: Tests only., signals: { sel: ErrInj_Sel, bitflip: ErrInj_BitFlip, valid: ErrInj_Valid } }
+    rules:
+      - { kind: same_domain, interfaces: [M_Ctx, M_Out], message: "The framer and the core share clock and reset; a reset of only one of them leaves contexts or messages without partner." }
+      - kind: chain_fits
+        interface: M_Out
+        via: { block: opencrypto/ocr_core, in: S_In, out: M_Out }
+        sink: { block: openspp/spp_core, interface: S_Tx, generic: TxBufferBytes_g }
+        bytes: ChunkBytes_g + 32
+        max: 65536
+    notes:
+      - The slot Cfg_Slot is loaded for generated IVs and stays unchanged while the framer holds chunks.
+      - Every chunk consumes one invocation of the slot; save the counter regularly (GCM 9.1).
+      - A receiver decrypts every chunk on its own (IV bytes 0 to 11, AAD bytes 12 to 15, tag the last 16 bytes), orders the chunks by the invocation counter and finds the packet boundaries in the positions.

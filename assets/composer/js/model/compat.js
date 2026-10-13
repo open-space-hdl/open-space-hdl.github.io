@@ -165,6 +165,7 @@ export function checkConnection(cat, d, a, b, opts = {}) {
   const tRcv = effectiveType(cat, d, to, opts.ignoreConnection) ?? rcv.port.type;
   /** @type {Check} */
   const result = { ok: true, from, to, notes };
+  let sidebandRequired = false;
   if (tDrv.id !== tRcv.id) {
     if (tDrv.generic || tRcv.generic) {
       const typed = tDrv.generic ? tRcv : tDrv;
@@ -189,6 +190,7 @@ export function checkConnection(cat, d, a, b, opts = {}) {
           }
         }
         if (acc.note) notes.push(acc.note);
+        sidebandRequired = acc.sideband === 'required';
       } else {
         const bridge = (tDrv.bridges ?? []).find((x) => x.type === tRcv.id);
         if (bridge) {
@@ -207,7 +209,7 @@ export function checkConnection(cat, d, a, b, opts = {}) {
 
   // a receiver with a side band that the driver does not provide gets constants on the connection
   const sb = rcv.port.itf.sideband;
-  if (sb && !(sb.signal in drv.port.itf.signals)) result.sideband = sb.fields;
+  if (sb && (sidebandRequired || !(sb.signal in drv.port.itf.signals))) result.sideband = sb.fields;
   return result;
 }
 

@@ -16,15 +16,16 @@
  * @property {unknown} [example]
  * @property {number} [min]
  * @property {number} [max]
- * @property {string[]} [choices]
+ * @property {(string | number)[]} [choices]
  * @property {string} [check]
  * @property {string} [label]
  * @property {string} [description]
  * @property {string} [unit]
  * @property {string} [fromClock]
  * @property {boolean} [advanced]
- * @property {{ interfaces: string[], measure: 'data' | 'packed', rank?: number }} [follow]   width that follows a
- *           connected interface; when both ends follow each other, the lower rank follows the higher one
+ * @property {{ interfaces: string[], measure: 'data' | 'packed' | 'generic', generic?: string, rank?: number }} [follow]
+ *           value that follows a connected interface: its data width, its width packed into a data word, or a generic
+ *           of the block behind it; when both ends follow each other, the lower rank follows the higher one
  * @property {string} [enabledBy]   boolean generic without which this generic has no effect
  */
 
@@ -84,6 +85,8 @@ export function validateValue(g, value) {
       if (g.max !== undefined && value > g.max) return { ok: false, message: `The maximum is ${g.max}.` };
       if (g.check === 'pow2' && !isPow2(value)) return { ok: false, message: 'Must be a power of 2.' };
       if (g.check === 'multiple8' && value % 8 !== 0) return { ok: false, message: 'Must be a multiple of 8.' };
+      if (g.check === 'multiple16' && value % 16 !== 0) return { ok: false, message: 'Must be a multiple of 16.' };
+      if (g.choices && !g.choices.includes(value)) return { ok: false, message: `Expected one of ${g.choices.join(', ')}.` };
       return { ok: true, value };
     }
     case 'real':

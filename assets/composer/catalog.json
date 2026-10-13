@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "103b413e327c",
+ "id": "22fe96cb3252",
  "sources": [
   {
    "id": "openwire",
@@ -13,7 +13,8 @@
    "library": "openwire",
    "fileList": "component_list.txt",
    "fileListFormat": "modules",
-   "requires": "4.7.0-ft.2"
+   "requires": "4.7.0-ft.2",
+   "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer."
   },
   {
    "id": "openrmap",
@@ -25,7 +26,8 @@
    "library": "openrmap",
    "fileList": "component_list.txt",
    "fileListFormat": "modules",
-   "requires": "4.7.0-ft.2"
+   "requires": "4.7.0-ft.2",
+   "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer."
   },
   {
    "id": "openspp",
@@ -37,7 +39,21 @@
    "library": "openspp",
    "fileList": "component_list.txt",
    "fileListFormat": "modules",
-   "requires": "4.7.0-ft.2"
+   "requires": "4.7.0-ft.2",
+   "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer."
+  },
+  {
+   "id": "opencrypto",
+   "name": "OpenCrypto",
+   "repo": "opencrypto",
+   "url": "https://github.com/open-space-hdl/opencrypto",
+   "doc": "https://openspacehdl.org/opencrypto/",
+   "commit": "4e62f89dd25f55bfa3942040c7f41d9f421f4abf",
+   "library": "opencrypto",
+   "fileList": "component_list.txt",
+   "fileListFormat": "modules",
+   "requires": "4.7.0-ft.3",
+   "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer."
   },
   {
    "id": "olo",
@@ -49,6 +65,7 @@
    "library": "olo",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
+   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files.",
    "commit": "a3c86207790fa91d89e5f02a657f6345de31656e"
   }
  ],
@@ -69,6 +86,10 @@
     {
      "id": "openspp",
      "name": "OpenSPP"
+    },
+    {
+     "id": "opencrypto",
+     "name": "OpenCrypto"
     }
    ]
   },
@@ -290,6 +311,10 @@
     {
      "type": "spp.rx",
      "note": "The side band of the receive port (APID, flags) is not passed on."
+    },
+    {
+     "type": "gcm.msg",
+     "note": "The messages of the AES-GCM core are a byte stream with its dense output (DenseOutput_g = true); the section and error bits are not passed on."
     }
    ]
   },
@@ -325,6 +350,11 @@
      "type": "byte.stream",
      "sideband": "required",
      "note": "The side band of the send port is set to constants on the connection."
+    },
+    {
+     "type": "gcm.msg",
+     "sideband": "required",
+     "note": "One encrypted message per SDU (with the dense output of the core: IV, AAD, ciphertext, tag); the side band of the send port is set to constants on the connection."
     }
    ]
   },
@@ -569,7 +599,14 @@
      "dir": "in",
      "optional": true
     }
-   }
+   },
+   "accepts": [
+    {
+     "type": "byte.stream",
+     "sideband": "required",
+     "note": "Every packet is one message; the section of its beats is a constant on the connection."
+    }
+   ]
   },
   {
    "id": "gcm.sts",
@@ -6079,6 +6116,1020 @@
      "dir": "out",
      "vhdlType": "std_logic_vector(Ports_g - 1 downto 0)",
      "width": "Ports_g"
+    }
+   ]
+  },
+  {
+   "id": "opencrypto/ocr_core",
+   "kind": "core",
+   "name": "AES-GCM core",
+   "group": "opencrypto",
+   "source": "opencrypto",
+   "library": "opencrypto",
+   "entity": "ocr_core",
+   "path": "hdl/ocr_core/src/ocr_core.vhd",
+   "summary": "AES-GCM authenticated encryption and decryption (FIPS 197, NIST SP 800-38D, CCSDS 352.0-B-2) with a key table, IV generation per key slot and a register file; one message per context, one status per message.",
+   "idPrefix": "ocr",
+   "doc": "https://openspacehdl.org/opencrypto/docs/user_guide.html",
+   "project": "OpenCrypto",
+   "notes": [
+    "Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen with SyncTmr_g = true.",
+    "After the reset the key table erases every slot (NumKeys_g cycles, STATUS.BUSY = '1'); no key survives a reset.",
+    "One context per message, in the order of the messages; the core pairs the n-th context with the n-th message.",
+    "Load every key slot in use through the registers before sending contexts (programming sequence of the user guide).",
+    "Without the release buffer, discard every decrypted message whose last beat carries the error flag or whose status is not OK.",
+    "Save the invocation counter of every slot with generated IVs regularly ahead of the operational value (GCM 9.1)."
+   ],
+   "rules": [
+    {
+     "kind": "partner_requires",
+     "interface": "M_Out",
+     "types": [
+      "byte.stream",
+      "spp.tx"
+     ],
+     "generic": "DenseOutput_g",
+     "value": true,
+     "message": "Set DenseOutput_g = true, so that every message leaves as one gapless byte string (IV, AAD, ciphertext, tag); the sectioned output is for the input of a second core (decryption)."
+    }
+   ],
+   "generics": [
+    {
+     "name": "DataWidth_g",
+     "vhdlType": "positive range 16 to 128",
+     "kind": "integer",
+     "min": 16,
+     "max": 128,
+     "defaultText": "32",
+     "default": 32,
+     "label": "Stream width",
+     "description": "Width of the message streams.",
+     "choices": [
+      16,
+      32,
+      64,
+      128
+     ],
+     "unit": "bits"
+    },
+    {
+     "name": "KeyBits_g",
+     "vhdlType": "positive range 128 to 256",
+     "kind": "integer",
+     "min": 128,
+     "max": 256,
+     "defaultText": "256",
+     "default": 256,
+     "label": "Key length",
+     "description": "One key length per core; CCSDS 352.0-B-2 uses 256 bits for new missions.",
+     "choices": [
+      128,
+      192,
+      256
+     ],
+     "unit": "bits"
+    },
+    {
+     "name": "NumKeys_g",
+     "vhdlType": "positive range 1 to 256",
+     "kind": "integer",
+     "min": 1,
+     "max": 256,
+     "defaultText": "4",
+     "default": 4,
+     "label": "Key slots",
+     "description": "Slots of the key table; the slot fields have max(1"
+    },
+    {
+     "name": "AesUnits_g",
+     "vhdlType": "natural range 0 to 14",
+     "kind": "integer",
+     "min": 0,
+     "max": 14,
+     "defaultText": "0",
+     "default": 0,
+     "label": "AES round units",
+     "description": "Round units of the AES engine; 0 selects the default of the width.",
+     "advanced": true
+    },
+    {
+     "name": "GhashDigit_g",
+     "vhdlType": "natural range 0 to 128",
+     "kind": "integer",
+     "min": 0,
+     "max": 128,
+     "defaultText": "0",
+     "default": 0,
+     "label": "GHASH digit",
+     "description": "Bits per cycle of the GHASH multiplier",
+     "advanced": true,
+     "unit": "bits"
+    },
+    {
+     "name": "LenBits_g",
+     "vhdlType": "positive range 8 to 32",
+     "kind": "integer",
+     "min": 8,
+     "max": 32,
+     "defaultText": "32",
+     "default": 32,
+     "label": "Length bits",
+     "description": "Width of the byte counts of the AAD and DATA sections.",
+     "advanced": true
+    },
+    {
+     "name": "ReleaseBuffer_g",
+     "vhdlType": "boolean",
+     "kind": "boolean",
+     "defaultText": "false",
+     "default": false,
+     "label": "Release buffer",
+     "description": "A message leaves the core only when its status is OK (plaintext only after the tag is verified)."
+    },
+    {
+     "name": "ReleaseBytes_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "4096",
+     "default": 4096,
+     "label": "Release buffer size",
+     "description": "Power of two of at least 16 beats; longer messages are dropped with OVERFLOW.",
+     "unit": "bytes",
+     "enabledBy": "ReleaseBuffer_g"
+    },
+    {
+     "name": "DenseOutput_g",
+     "vhdlType": "boolean",
+     "kind": "boolean",
+     "defaultText": "false",
+     "default": false,
+     "label": "Dense output",
+     "description": "Every output message leaves as one gapless byte string IV, AAD, DATA, TAG; needed where the output is a byte stream (for example a send port of OpenSPP)."
+    },
+    {
+     "name": "ClkFreqHz_g",
+     "vhdlType": "real",
+     "kind": "real",
+     "defaultText": "100.0e6",
+     "default": 100000000.0,
+     "label": "Clock frequency",
+     "description": "Clock frequency for the pacer of the key table scrubbers.",
+     "advanced": true,
+     "fromClock": "Clk",
+     "unit": "Hz"
+    },
+    {
+     "name": "ScrubPeriod_g",
+     "vhdlType": "real",
+     "kind": "real",
+     "defaultText": "0.0",
+     "default": 0.0,
+     "label": "Scrub period",
+     "description": "Scrub period of the key table; 0 scrubs in every cycle without access.",
+     "advanced": true,
+     "unit": "s"
+    }
+   ],
+   "clocks": [
+    {
+     "port": "Clk",
+     "primary": true,
+     "label": "Clock",
+     "description": "All of the core; one beat per cycle on every stream."
+    }
+   ],
+   "resets": [
+    {
+     "port": "Rst",
+     "active": "high",
+     "sync": "sync",
+     "clock": "Clk"
+    }
+   ],
+   "interfaces": [
+    {
+     "name": "S_Ctx",
+     "type": "gcm.ctx",
+     "role": "sink",
+     "clock": "Clk",
+     "label": "Contexts",
+     "description": "One context per message, in the order of the messages (direction, key slot, IV source, IV).",
+     "tieOff": "zero",
+     "signals": {
+      "valid": "S_Ctx_Valid",
+      "ready": "S_Ctx_Ready",
+      "decrypt": "S_Ctx_Decrypt",
+      "slot": "S_Ctx_Slot",
+      "iv_gen": "S_Ctx_IvGen",
+      "iv": "S_Ctx_Iv"
+     }
+    },
+    {
+     "name": "S_In",
+     "type": "gcm.msg",
+     "role": "sink",
+     "clock": "Clk",
+     "label": "Messages in",
+     "description": "One message per packet; user is the section of the beat: 11 IV, 01 AAD, 00 DATA, 10 TAG.",
+     "sideband": {
+      "signal": "user",
+      "description": "Section of every beat when the input is a plain byte stream: 0 DATA (encrypt the whole packet), 1 AAD (authenticate only).",
+      "fields": [
+       {
+        "name": "section",
+        "label": "Section (0 DATA",
+        "1 AAD)": null,
+        "lsb": 0,
+        "bits": 2,
+        "kind": "integer",
+        "default": 0
+       }
+      ]
+     },
+     "tieOff": "zero",
+     "signals": {
+      "data": "S_In_Data",
+      "keep": "S_In_Keep",
+      "last": "S_In_Last",
+      "user": "S_In_User",
+      "valid": "S_In_Valid",
+      "ready": "S_In_Ready"
+     },
+     "widths": {
+      "data": "DataWidth_g",
+      "keep": "DataWidth_g / 8",
+      "user": "2"
+     }
+    },
+    {
+     "name": "M_Out",
+     "type": "gcm.msg",
+     "role": "source",
+     "clock": "Clk",
+     "label": "Messages out",
+     "description": "user(1:0) is the section of the beat (dense output: of its first byte), user(2) the error flag on the last beat.",
+     "tieOff": "default",
+     "signals": {
+      "data": "M_Out_Data",
+      "keep": "M_Out_Keep",
+      "last": "M_Out_Last",
+      "user": "M_Out_User",
+      "valid": "M_Out_Valid",
+      "ready": "M_Out_Ready"
+     },
+     "widths": {
+      "data": "DataWidth_g",
+      "keep": "DataWidth_g / 8",
+      "user": "3"
+     }
+    },
+    {
+     "name": "M_Sts",
+     "type": "gcm.sts",
+     "role": "source",
+     "clock": "Clk",
+     "label": "Status",
+     "description": "One status per message; ready may stay '1' when the status is not used.",
+     "tieOff": "default",
+     "signals": {
+      "valid": "M_Sts_Valid",
+      "ready": "M_Sts_Ready",
+      "code": "M_Sts_Code",
+      "decrypt": "M_Sts_Decrypt",
+      "slot": "M_Sts_Slot",
+      "iv": "M_Sts_Iv",
+      "aad_bytes": "M_Sts_AadBytes",
+      "data_bytes": "M_Sts_DataBytes"
+     }
+    },
+    {
+     "name": "S_AxiLite",
+     "type": "axi4lite",
+     "role": "slave",
+     "clock": "Clk",
+     "label": "Registers",
+     "params": {
+      "addrWidth": 8
+     },
+     "signals": {
+      "AwAddr": "S_AxiLite_AwAddr",
+      "AwValid": "S_AxiLite_AwValid",
+      "AwReady": "S_AxiLite_AwReady",
+      "WData": "S_AxiLite_WData",
+      "WStrb": "S_AxiLite_WStrb",
+      "WValid": "S_AxiLite_WValid",
+      "WReady": "S_AxiLite_WReady",
+      "BResp": "S_AxiLite_BResp",
+      "BValid": "S_AxiLite_BValid",
+      "BReady": "S_AxiLite_BReady",
+      "ArAddr": "S_AxiLite_ArAddr",
+      "ArValid": "S_AxiLite_ArValid",
+      "ArReady": "S_AxiLite_ArReady",
+      "RData": "S_AxiLite_RData",
+      "RResp": "S_AxiLite_RResp",
+      "RValid": "S_AxiLite_RValid",
+      "RReady": "S_AxiLite_RReady"
+     }
+    },
+    {
+     "name": "Irq",
+     "type": "irq",
+     "role": "event_out",
+     "clock": "Clk",
+     "label": "Interrupt",
+     "tieOff": "open",
+     "signals": {
+      "irq": "Irq"
+     }
+    }
+   ],
+   "ports": [
+    {
+     "name": "Clk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Rst",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Ctx_Valid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Ctx_Ready",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Ctx_Decrypt",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Ctx_Slot",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(slotBits(NumKeys_g) - 1 downto 0)",
+     "width": "slotBits(NumKeys_g)"
+    },
+    {
+     "name": "S_Ctx_IvGen",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Ctx_Iv",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(95 downto 0)",
+     "width": "96"
+    },
+    {
+     "name": "S_In_Valid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_In_Ready",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_In_Data",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(DataWidth_g - 1 downto 0)",
+     "width": "DataWidth_g"
+    },
+    {
+     "name": "S_In_Keep",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(DataWidth_g / 8 - 1 downto 0)",
+     "width": "DataWidth_g / 8"
+    },
+    {
+     "name": "S_In_Last",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_In_User",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "M_Out_Valid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Out_Ready",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'1'"
+    },
+    {
+     "name": "M_Out_Data",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(DataWidth_g - 1 downto 0)",
+     "width": "DataWidth_g"
+    },
+    {
+     "name": "M_Out_Keep",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(DataWidth_g / 8 - 1 downto 0)",
+     "width": "DataWidth_g / 8"
+    },
+    {
+     "name": "M_Out_Last",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Out_User",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(2 downto 0)",
+     "width": "3"
+    },
+    {
+     "name": "M_Sts_Valid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Sts_Ready",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'1'"
+    },
+    {
+     "name": "M_Sts_Code",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(3 downto 0)",
+     "width": "4"
+    },
+    {
+     "name": "M_Sts_Decrypt",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Sts_Slot",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(slotBits(NumKeys_g) - 1 downto 0)",
+     "width": "slotBits(NumKeys_g)"
+    },
+    {
+     "name": "M_Sts_Iv",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(95 downto 0)",
+     "width": "96"
+    },
+    {
+     "name": "M_Sts_AadBytes",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(LenBits_g - 1 downto 0)",
+     "width": "LenBits_g"
+    },
+    {
+     "name": "M_Sts_DataBytes",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(LenBits_g - 1 downto 0)",
+     "width": "LenBits_g"
+    },
+    {
+     "name": "S_AxiLite_ArAddr",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(7 downto 0)",
+     "width": "8"
+    },
+    {
+     "name": "S_AxiLite_ArValid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_ArReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_AwAddr",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(7 downto 0)",
+     "width": "8"
+    },
+    {
+     "name": "S_AxiLite_AwValid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_AwReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_WData",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(31 downto 0)",
+     "width": "32"
+    },
+    {
+     "name": "S_AxiLite_WStrb",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(3 downto 0)",
+     "width": "4"
+    },
+    {
+     "name": "S_AxiLite_WValid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_WReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_BResp",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "S_AxiLite_BValid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_BReady",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_RData",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(31 downto 0)",
+     "width": "32"
+    },
+    {
+     "name": "S_AxiLite_RResp",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "S_AxiLite_RValid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_RReady",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Irq",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    }
+   ]
+  },
+  {
+   "id": "opencrypto/ocr_framer",
+   "kind": "module",
+   "name": "Chunk framer",
+   "group": "opencrypto",
+   "source": "opencrypto",
+   "library": "opencrypto",
+   "entity": "ocr_framer",
+   "path": "hdl/ocr_framer/src/ocr_framer.vhd",
+   "summary": "Cuts packets of any length into chunks of ChunkBytes_g bytes and hands every chunk to the AES-GCM core as one encryption with a generated IV and a 4-byte AAD with the position of the chunk in its packet.",
+   "idPrefix": "frm",
+   "doc": "https://openspacehdl.org/opencrypto/docs/user_guide.html",
+   "project": "OpenCrypto",
+   "notes": [
+    "The slot Cfg_Slot is loaded for generated IVs and stays unchanged while the framer holds chunks.",
+    "Every chunk consumes one invocation of the slot; save the counter regularly (GCM 9.1).",
+    "A receiver decrypts every chunk on its own (IV bytes 0 to 11, AAD bytes 12 to 15, tag the last 16 bytes), orders the chunks by the invocation counter and finds the packet boundaries in the positions."
+   ],
+   "rules": [
+    {
+     "kind": "same_domain",
+     "interfaces": [
+      "M_Ctx",
+      "M_Out"
+     ],
+     "message": "The framer and the core share clock and reset; a reset of only one of them leaves contexts or messages without partner."
+    },
+    {
+     "kind": "chain_fits",
+     "interface": "M_Out",
+     "via": {
+      "block": "opencrypto/ocr_core",
+      "in": "S_In",
+      "out": "M_Out"
+     },
+     "sink": {
+      "block": "openspp/spp_core",
+      "interface": "S_Tx",
+      "generic": "TxBufferBytes_g"
+     },
+     "bytes": "ChunkBytes_g + 32",
+     "max": 65536
+    }
+   ],
+   "generics": [
+    {
+     "name": "DataWidth_g",
+     "vhdlType": "positive range 16 to 128",
+     "kind": "integer",
+     "min": 16,
+     "max": 128,
+     "defaultText": "32",
+     "default": 32,
+     "label": "Stream width",
+     "description": "The DataWidth_g of the core; follows the connected core.",
+     "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "M_Out",
+       "S_In"
+      ],
+      "measure": "data",
+      "rank": 1
+     }
+    },
+    {
+     "name": "NumKeys_g",
+     "vhdlType": "positive range 1 to 256",
+     "kind": "integer",
+     "min": 1,
+     "max": 256,
+     "defaultText": "4",
+     "default": 4,
+     "label": "Key slots",
+     "description": "The NumKeys_g of the core (width of the slot); follows the connected core.",
+     "follow": {
+      "interfaces": [
+       "M_Ctx"
+      ],
+      "measure": "generic",
+      "generic": "NumKeys_g"
+     }
+    },
+    {
+     "name": "ChunkBytes_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "4096",
+     "default": 4096,
+     "label": "Chunk size",
+     "description": "Bytes of a chunk; the last chunk of a packet has the remaining bytes. A chunk leaves the core as ChunkBytes_g + 32 bytes (IV 12, AAD 4, tag 16).",
+     "check": "multiple16",
+     "unit": "bytes"
+    },
+    {
+     "name": "BufferChunks_g",
+     "vhdlType": "positive range 2 to 64",
+     "kind": "integer",
+     "min": 2,
+     "max": 64,
+     "defaultText": "2",
+     "default": 2,
+     "label": "Buffered chunks",
+     "description": "Chunks that the chunk buffer holds; it takes the next chunk while one leaves."
+    },
+    {
+     "name": "RamStyle_g",
+     "vhdlType": "string",
+     "kind": "string",
+     "defaultText": "\"auto\"",
+     "default": "auto",
+     "label": "RAM style",
+     "description": "RAM style of the chunk buffer.",
+     "advanced": true
+    }
+   ],
+   "clocks": [
+    {
+     "port": "Clk",
+     "primary": true,
+     "label": "Clock",
+     "description": "The clock of the core."
+    }
+   ],
+   "resets": [
+    {
+     "port": "Rst",
+     "active": "high",
+     "sync": "sync",
+     "clock": "Clk"
+    }
+   ],
+   "interfaces": [
+    {
+     "name": "Cfg",
+     "type": "sig.control",
+     "role": "event_in",
+     "clock": "Clk",
+     "label": "Key slot",
+     "description": "Key slot of the contexts: loaded for generated IVs (IV_GEN = '1') and unchanged while the framer holds chunks.",
+     "sideband": {
+      "signal": "slot",
+      "description": "Static key slot of the contexts, set as a constant of the instance.",
+      "fields": [
+       {
+        "name": "slot",
+        "label": "Key slot",
+        "lsb": 0,
+        "bits": 8,
+        "kind": "integer",
+        "default": 0,
+        "below": "NumKeys_g"
+       }
+      ]
+     },
+     "tieOff": "constant",
+     "signals": {
+      "slot": "Cfg_Slot"
+     }
+    },
+    {
+     "name": "S_In",
+     "type": "byte.stream",
+     "role": "sink",
+     "clock": "Clk",
+     "label": "Packets in",
+     "description": "Packets of any length (for example one compressed image each); last is the end of the packet.",
+     "tieOff": "zero",
+     "signals": {
+      "data": "S_In_Data",
+      "keep": "S_In_Keep",
+      "last": "S_In_Last",
+      "valid": "S_In_Valid",
+      "ready": "S_In_Ready"
+     },
+     "widths": {
+      "data": "DataWidth_g",
+      "keep": "DataWidth_g / 8"
+     }
+    },
+    {
+     "name": "M_Ctx",
+     "type": "gcm.ctx",
+     "role": "source",
+     "clock": "Clk",
+     "label": "Contexts",
+     "description": "One encryption context per chunk, to S_Ctx of the core.",
+     "mustServe": true,
+     "signals": {
+      "valid": "M_Ctx_Valid",
+      "ready": "M_Ctx_Ready",
+      "decrypt": "M_Ctx_Decrypt",
+      "slot": "M_Ctx_Slot",
+      "iv_gen": "M_Ctx_IvGen",
+      "iv": "M_Ctx_Iv"
+     }
+    },
+    {
+     "name": "M_Out",
+     "type": "gcm.msg",
+     "role": "source",
+     "clock": "Clk",
+     "label": "Messages out",
+     "description": "AAD section with the position of the chunk, then the chunk as DATA section, to S_In of the core.",
+     "mustServe": true,
+     "signals": {
+      "data": "M_Out_Data",
+      "keep": "M_Out_Keep",
+      "last": "M_Out_Last",
+      "user": "M_Out_User",
+      "valid": "M_Out_Valid",
+      "ready": "M_Out_Ready"
+     },
+     "widths": {
+      "data": "DataWidth_g",
+      "keep": "DataWidth_g / 8",
+      "user": "2"
+     }
+    },
+    {
+     "name": "Ecc",
+     "type": "ecc.event",
+     "role": "event_out",
+     "clock": "Clk",
+     "label": "EDAC events",
+     "description": "Element 0 the chunk buffer, element 1 the position FIFO.",
+     "vector": "2",
+     "tieOff": "open",
+     "signals": {
+      "sec": "Ecc_Sec",
+      "ded": "Ecc_Ded"
+     }
+    },
+    {
+     "name": "ErrInj",
+     "type": "ecc.inject",
+     "role": "event_in",
+     "clock": "Clk",
+     "label": "Error injection",
+     "description": "Tests only.",
+     "tieOff": "default",
+     "signals": {
+      "sel": "ErrInj_Sel",
+      "bitflip": "ErrInj_BitFlip",
+      "valid": "ErrInj_Valid"
+     }
+    }
+   ],
+   "ports": [
+    {
+     "name": "Clk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Rst",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Cfg_Slot",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(slotBits(NumKeys_g) - 1 downto 0)",
+     "width": "slotBits(NumKeys_g)",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "S_In_Valid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_In_Ready",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_In_Data",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(DataWidth_g - 1 downto 0)",
+     "width": "DataWidth_g"
+    },
+    {
+     "name": "S_In_Keep",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(DataWidth_g / 8 - 1 downto 0)",
+     "width": "DataWidth_g / 8"
+    },
+    {
+     "name": "S_In_Last",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Ctx_Valid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Ctx_Ready",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Ctx_Decrypt",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Ctx_Slot",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(slotBits(NumKeys_g) - 1 downto 0)",
+     "width": "slotBits(NumKeys_g)"
+    },
+    {
+     "name": "M_Ctx_IvGen",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Ctx_Iv",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(95 downto 0)",
+     "width": "96"
+    },
+    {
+     "name": "M_Out_Valid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Out_Ready",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Out_Data",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(DataWidth_g - 1 downto 0)",
+     "width": "DataWidth_g"
+    },
+    {
+     "name": "M_Out_Keep",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(DataWidth_g / 8 - 1 downto 0)",
+     "width": "DataWidth_g / 8"
+    },
+    {
+     "name": "M_Out_Last",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Out_User",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "Ecc_Sec",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "Ecc_Ded",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "ErrInj_Sel",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
+    },
+    {
+     "name": "ErrInj_BitFlip",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "ErrInj_Valid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
     }
    ]
   },

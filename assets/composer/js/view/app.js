@@ -10,8 +10,8 @@ import { checkConnection, resolveEndpoint } from '../model/compat.js';
 import {
   addConnection, addDomain, addInstance, adoptAdapter, assignClock, clearGeneric, DesignError, getInstance,
   moveInstances, moveToDomain, removeConnections, removeDomain, removeInstances, renameDomain, renameInstance,
-  setAdapterGeneric, setDomainBox, setExternal, setGeneric, setSideband, setSystem, setViewport, sidebandDefaults,
-  updateDomain,
+  setAdapterGeneric, setConstant, setDomainBox, setExternal, setGeneric, setSideband, setSystem, setViewport,
+  sidebandDefaults, updateDomain,
 } from '../model/design.js';
 import { ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, freeSpot, snap } from '../model/layout.js';
 import { resolve } from '../model/resolver.js';
@@ -497,6 +497,18 @@ export class App {
    */
   setExternal(ref, prefix) {
     return this.tryApply(prefix === null ? 'internal interface' : 'external interface', (d) => setExternal(d, ref, prefix));
+  }
+
+  /**
+   * Sets a constant of an unconnected interface of an instance.
+   * @param {string} instId
+   * @param {string} itfRef
+   * @param {string} field
+   * @param {number | boolean} value
+   * @returns {string | null}
+   */
+  setConstant(instId, itfRef, field, value) {
+    return this.tryApply('constant', (d) => setConstant(d, this.catalog, instId, itfRef, field, value));
   }
 
   /**

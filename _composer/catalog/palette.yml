@@ -8,6 +8,7 @@ categories:
       - { id: openwire, name: OpenWire }
       - { id: openrmap, name: OpenRMAP }
       - { id: openspp, name: OpenSPP }
+      - { id: opencrypto, name: OpenCrypto }
 
   - id: olo
     name: Open Logic

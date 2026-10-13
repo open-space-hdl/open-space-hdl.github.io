@@ -17,6 +17,8 @@ import { validateValue, sameValue } from './generics.js';
  * @property {string} [preset]            preset id of the block
  * @property {Record<string, unknown>} generics   values that differ from the catalog and the preset
  * @property {Record<string, string>} clocks      clock port -> clock domain id (from M2 on)
+ * @property {Record<string, Record<string, number | boolean>>} [constants]  interface -> field values of an unconnected
+ *           interface whose inputs are constants of the instance (catalog tieOff "constant")
  */
 
 /**
@@ -395,8 +397,32 @@ export function setDomainBox(d, id, box) {
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-// Externals and adapter settings
+// Externals, constants and adapter settings
 // --------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Sets a field of the constants of an interface of an instance (an interface with tieOff "constant").
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {string} instId
+ * @param {string} itfRef interface reference within the instance
+ * @param {string} field
+ * @param {number | boolean} value
+ */
+export function setConstant(d, cat, instId, itfRef, field, value) {
+  const inst = getInstance(d, instId);
+  if (!inst) throw new DesignError(`Unknown instance ${instId}.`);
+  const b = cat.block(inst.block);
+  const itf = b.interfaces.find((i) => i.name === itfRef.replace(/\[\d+\]$/, ''));
+  const f = itf?.tieOff === 'constant' ? itf.sideband?.fields.find((x) => x.name === field) : undefined;
+  if (!itf || !f) throw new DesignError(`${instId}.${itfRef} has no constant ${field}.`);
+  if (f.kind === 'boolean' ? typeof value !== 'boolean' : !(Number.isInteger(value) && Number(value) >= 0 && Number(value) < 2 ** f.bits)) {
+    throw new DesignError(f.kind === 'boolean' ? 'Expected true or false.' : `Enter an integer from 0 to ${2 ** f.bits - 1}.`);
+  }
+  const constants = { ...(inst.constants ?? {}) };
+  constants[itfRef] = { ...(constants[itfRef] ?? {}), [field]: value };
+  return { ...d, instances: d.instances.map((i) => (i.id === instId ? { ...i, constants } : i)) };
+}
 
 export const PREFIX_RE = /^[A-Za-z](?:_?[A-Za-z0-9])*_?$/;
 

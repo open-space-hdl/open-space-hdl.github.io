@@ -7,6 +7,7 @@
 #   file_list_format: modules (one module directory per line, sources in <module>/src/*.vhd)
 #                     or files (one VHDL file per line)
 #   requires:         Open Logic FT tag the repository is verified with (its open-logic submodule)
+#   note:             what a build of a system needs to know about the repository (shown in the brief)
 
 sources:
   - id: openwire
@@ -19,6 +20,7 @@ sources:
     file_list: component_list.txt
     file_list_format: modules
     requires: 4.7.0-ft.2
+    note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
   - id: openrmap
     name: OpenRMAP
@@ -30,6 +32,7 @@ sources:
     file_list: component_list.txt
     file_list_format: modules
     requires: 4.7.0-ft.2
+    note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
   - id: openspp
     name: OpenSPP
@@ -41,6 +44,19 @@ sources:
     file_list: component_list.txt
     file_list_format: modules
     requires: 4.7.0-ft.2
+    note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
+
+  - id: opencrypto
+    name: OpenCrypto
+    repo: opencrypto
+    url: https://github.com/open-space-hdl/opencrypto
+    doc: https://openspacehdl.org/opencrypto/
+    commit: 4e62f89dd25f55bfa3942040c7f41d9f421f4abf
+    library: opencrypto
+    file_list: component_list.txt
+    file_list_format: modules
+    requires: 4.7.0-ft.3
+    note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
   - id: olo
     name: Open Logic FT
@@ -51,3 +67,4 @@ sources:
     library: olo
     file_list: compile_order.txt
     file_list_format: files
+    note: Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files.

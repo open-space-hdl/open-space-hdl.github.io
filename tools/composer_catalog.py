@@ -61,7 +61,11 @@ RULE_KINDS = {
     "generic_requires": ("generic", "value", "requires"),
     "mutual_initiator": ("generic",),
     "same_domain": ("interfaces",),
+    "partner_requires": ("interface", "types", "generic", "value", "message"),
+    "chain_fits": ("interface", "via", "sink", "bytes"),
 }
+GENERIC_CHECKS = {"pow2", "multiple8", "multiple16"}
+FOLLOW_MEASURES = {"data", "packed", "generic"}
 CDC_MODES = {"level", "pulse", "valid", "none"}
 INT_MAX = 2**31 - 1
 
@@ -572,6 +576,9 @@ class Context:
     repos: Path
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    # rules that refer to other blocks, checked when all blocks are built
+    chain_rules: list[tuple[str, dict]] = field(default_factory=list)
+    type_ids: set[str] = field(default_factory=set)
 
     def err(self, where: str, msg: str) -> None:
         self.errors.append(f"{where}: {msg}")
@@ -728,18 +735,22 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 gen[key] = m[key]
         if "follow" in m:
             fol = m["follow"]
-            if kind != "integer" or not isinstance(fol, dict) or fol.get("measure") not in ("data", "packed") \
+            if kind != "integer" or not isinstance(fol, dict) or fol.get("measure") not in FOLLOW_MEASURES \
                     or not isinstance(fol.get("interfaces"), list) or not fol["interfaces"]:
-                ctx.err(where, f"generic {g.name}: follow needs an integer generic, interfaces and measure data or packed")
+                ctx.err(where, f"generic {g.name}: follow needs an integer generic, interfaces and measure data, packed or generic")
+            elif fol.get("measure") == "generic" and not isinstance(fol.get("generic"), str):
+                ctx.err(where, f"generic {g.name}: follow with measure generic names the generic of the partner")
             elif not isinstance(fol.get("rank", 0), int) or isinstance(fol.get("rank", 0), bool):
                 ctx.err(where, f"generic {g.name}: follow rank must be an integer")
         if "min" in m and kind == "integer" and m["min"] < lo:
             ctx.err(where, f"generic {g.name}: min {m['min']} below the VHDL range {lo}")
         if "max" in m and kind == "integer" and m["max"] > hi:
             ctx.err(where, f"generic {g.name}: max {m['max']} above the VHDL range {hi}")
+        if "check" in m and m["check"] not in GENERIC_CHECKS:
+            ctx.err(where, f"generic {g.name}: unknown check {m['check']}")
         if "choices" in m:
-            if kind != "string":
-                ctx.err(where, f"generic {g.name}: choices only for string generics")
+            if kind not in ("string", "integer"):
+                ctx.err(where, f"generic {g.name}: choices only for string and integer generics")
             elif representable and default is not None and default not in m["choices"]:
                 ctx.err(where, f"generic {g.name}: default '{default}' not in choices")
         if g.default is None and "example" in m:
@@ -920,8 +931,11 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             elif tie == "open":
                 if inputs:
                     ctx.err(iwhere, f"tieOff open, but the interface has inputs ({', '.join(inputs)})")
+            elif tie == "constant":
+                if "sideband" not in itf or inputs != list(signals.values()):
+                    ctx.err(iwhere, "tieOff constant needs inputs only and a sideband with the fields of the constant")
             elif tie != "zero":
-                ctx.err(iwhere, f"tieOff must be default, open or zero, not {tie}")
+                ctx.err(iwhere, f"tieOff must be default, open, zero or constant, not {tie}")
         for key, val in (itf.get("params") or {}).items():
             if key == "liteWhen":
                 for cond in val:
@@ -938,6 +952,10 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 for key in ("name", "label", "lsb", "bits"):
                     if key not in f:
                         ctx.err(iwhere, f"sideband field needs '{key}'")
+                below = f.get("below")
+                if below is not None and (f.get("kind") == "boolean"
+                                          or next((g["kind"] for g in generics if g["name"] == below), None) != "integer"):
+                    ctx.err(iwhere, f"sideband field {f.get('name')}: below must name an integer generic of the block")
                 dep = f.get("enabledBy")
                 if dep is not None:
                     target = next((x for x in fields if x.get("name") == dep), None)
@@ -986,9 +1004,15 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         for gname in [r.get("generic")] + list(r.get("generics") or []):
             if gname and gname not in gen_names:
                 ctx.err(where, f"rule {kind}: unknown generic {gname}")
-        for iname in r.get("interfaces") or []:
+        for iname in list(r.get("interfaces") or []) + ([r["interface"]] if r.get("interface") else []):
             if iname not in itf_names:
                 ctx.err(where, f"rule {kind}: unknown interface {iname}")
+        if kind == "chain_fits":
+            ctx.chain_rules.append((where, r))
+        if kind == "partner_requires":
+            for tid in r.get("types") or []:
+                if tid not in ctx.type_ids:
+                    ctx.err(where, f"rule {kind}: unknown type {tid}")
 
     # Presets
     presets = []
@@ -1049,6 +1073,7 @@ def build_catalog(ctx: Context) -> dict:
         for g in require(cat, "groups", "palette.yml"):
             groups[g["id"]] = {"id": g["id"], "name": g["name"], "category": cat["id"]}
     blocks = []
+    ctx.type_ids = set(types)
     files = sorted(p for p in CATALOG_DIR.glob("blocks-*.yml"))
     seen = set()
     for f in files:
@@ -1065,6 +1090,20 @@ def build_catalog(ctx: Context) -> dict:
                 ctx.err(f.name, f"duplicate block id {blk['id']}")
             seen.add(blk["id"])
             blocks.append(blk)
+    by_id = {blk["id"]: blk for blk in blocks}
+    for where, r in ctx.chain_rules:
+        for key, need in (("via", ("in", "out")), ("sink", ("interface",))):
+            ref = r.get(key) or {}
+            other = by_id.get(ref.get("block"))
+            if other is None:
+                ctx.err(where, f"rule chain_fits: {key} names an unknown block {ref.get('block')}")
+                continue
+            names = {i["name"] for i in other["interfaces"]}
+            for k in need:
+                if ref.get(k) not in names:
+                    ctx.err(where, f"rule chain_fits: {other['id']} has no interface {ref.get(k)}")
+            if key == "sink" and ref.get("generic") not in {g["name"] for g in other["generics"]}:
+                ctx.err(where, f"rule chain_fits: {other['id']} has no generic {ref.get('generic')}")
     for t in types.values():
         t.pop("_", None)
     catalog = {

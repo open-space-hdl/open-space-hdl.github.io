@@ -37,6 +37,7 @@ export const CATALOG_VERSION = 1;
  * @property {'integer'|'boolean'} kind
  * @property {number|boolean} [default]
  * @property {string} [enabledBy]   boolean field without which this field has no effect
+ * @property {string} [below]       integer generic of the block: the value lies below it (a constant of the instance)
  */
 
 /**
@@ -50,7 +51,7 @@ export const CATALOG_VERSION = 1;
  * @property {boolean} [mustServe]
  * @property {boolean} [externalOnly]
  * @property {string} [enabledBy]
- * @property {'default'|'open'|'zero'} [tieOff]
+ * @property {'default'|'open'|'zero'|'constant'} [tieOff]   constant: the side band fields are constants of the instance
  * @property {string} [vector]
  * @property {Record<string, unknown>} [params]
  * @property {Record<string, string>} [widths]

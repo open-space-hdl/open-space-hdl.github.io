@@ -284,7 +284,7 @@ test('top level: clock and reset ports, pins external by default, external inter
   assert.deepEqual(r.topPorts.find((p) => p.name === 'spw0_Spw_DIn'), { name: 'spw0_Spw_DIn', dir: 'in', vhdlType: 'std_logic', kind: 'interface', ref: 'spw0.Spw', port: 'spw0.Spw_DIn' });
   assert.equal(r.topPorts.find((p) => p.name === 'Mem_M_Axi_AwAddr')?.vhdlType, 'std_logic_vector(31 downto 0)');
   assert.deepEqual(r.externals.map((e) => [e.interface, e.prefix, e.implicit]), [['rmap0.M_Axi', 'Mem_', false], ['spw0.Spw', 'spw0_', true]]);
-  assert.deepEqual(r.constraints.find((k) => k.kind === 'async_clock_groups'), { kind: 'async_clock_groups', clocks: ['Clk_sys', 'Clk_clk1'] });
+  assert.deepEqual(r.constraints.find((k) => k.kind === 'async_clock_groups'), { kind: 'async_clock_groups', clocks: ['Clk_clk1', 'Clk_sys'] });
   // the same prefix twice
   const dup = resolve(cat, setExternal(d, 'rmap0.S_AxiLite', 'spw0_Spw_DOut_x'));
   assert.deepEqual(checksOf(dup, 'external'), []);

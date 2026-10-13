@@ -122,6 +122,34 @@ export function vhdlType(width, vhdlType) {
 }
 
 /**
+ * Value of side band fields packed into a word (field values at their lsb, booleans as one bit).
+ * @param {import('./catalog.js').SidebandField[]} fields
+ * @param {Record<string, number | boolean>} values
+ */
+export function packFields(fields, values) {
+  let v = 0;
+  for (const f of fields) {
+    const raw = values[f.name] ?? f.default ?? 0;
+    const n = typeof raw === 'boolean' ? (raw ? 1 : 0) : Number(raw);
+    v += (n % 2 ** f.bits) * 2 ** f.lsb;
+  }
+  return v;
+}
+
+/**
+ * VHDL literal of a value of a port: '0' or '1' for std_logic, a bit string for vectors.
+ * @param {number} v
+ * @param {number} width
+ * @param {string} vhdlTypeText declared type
+ */
+export function vhdlBits(v, width, vhdlTypeText) {
+  if (/^std_u?logic$/i.test(vhdlTypeText.trim())) return `'${v % 2}'`;
+  let s = '';
+  for (let k = width - 1; k >= 0; k -= 1) s += Math.floor(v / 2 ** k) % 2 ? '1' : '0';
+  return `"${s}"`;
+}
+
+/**
  * Packing of a format into the data word of a carrier interface: every signal the carrier has no own port for, data
  * first and least significant.
  * @param {Format} f
@@ -392,11 +420,11 @@ export class Resolution {
   }
 
   /**
-   * Value of a width generic that follows a connected interface: the width of the typed interface at the other end
-   * (looking through untyped Open Logic blocks). When that interface follows back, the lower rank follows the higher
-   * one; with equal ranks neither follows.
+   * Value of a generic that follows a connected interface: the width of the typed interface at the other end
+   * (looking through untyped Open Logic blocks), or a generic of the block behind it. When that interface follows
+   * back, the lower rank follows the higher one; with equal ranks neither follows.
    * @param {ResolvedInstance} rec
-   * @param {{ interfaces: string[], measure: 'data' | 'packed', rank?: number }} follow
+   * @param {{ interfaces: string[], measure: 'data' | 'packed' | 'generic', generic?: string, rank?: number }} follow
    * @returns {number | undefined}
    */
   followValue(rec, follow) {
@@ -409,6 +437,11 @@ export class Resolution {
         if (!te || te.ref === ref) continue;
         const back = this.followRank(te.ref);
         if (back !== null && back <= (follow.rank ?? 0)) continue;
+        if (follow.measure === 'generic') {
+          const v = this.byId.get(instanceOf(te.ref))?.generics[follow.generic ?? ''];
+          if (typeof v === 'number') return v;
+          continue;
+        }
         const f = this.formatOf(te.ref);
         if (!f) continue;
         if (follow.measure === 'data') {
@@ -696,9 +729,11 @@ export class Resolution {
    */
   signalMismatch(c, drv, rcv, fd, fr, chain) {
     if (rcv.port.type.generic) return;
-    const provided = new Set(fd.sigs.map((s) => s.name));
-    const needed = new Set(fr.sigs.map((s) => s.name));
     const sb = rcv.port.itf.sideband;
+    const acc = fd.type.id !== fr.type.id ? (fr.type.accepts ?? []).find((a) => a.type === fd.type.id) : undefined;
+    const replaced = acc?.sideband === 'required' && sb ? sb.signal : null;
+    const provided = new Set(fd.sigs.map((s) => s.name).filter((n) => n !== replaced));
+    const needed = new Set(fr.sigs.map((s) => s.name).filter((n) => n !== replaced));
     /** @type {Record<string, 'zero' | 'ones' | 'sideband'>} */
     const constants = {};
     for (const s of fr.sigs) {
@@ -718,13 +753,17 @@ export class Resolution {
     if (Object.keys(constants).length) chain.constants = constants;
     if (fd.type.generic) return;
     for (const s of fd.sigs) {
+      if (s.name === replaced) {
+        this.check('info', 'signals', `${c.from} has ${s.name}; ${c.to} gets the side band constants of ${c.id} instead.`, { connection: c.id });
+        continue;
+      }
       if (needed.has(s.name)) continue;
       const sev = s.name === 'last' || s.name === 'keep' ? 'warning' : 'info';
       this.check(sev, 'signals', `${c.from} has ${s.name}, ${c.to} does not: it is not passed on.`, { connection: c.id });
     }
     const ud = fd.sigs.find((s) => s.name === 'user')?.width;
     const ur = fr.sigs.find((s) => s.name === 'user')?.width;
-    if (ud !== undefined && ur !== undefined && ud !== ur) {
+    if (ud !== undefined && ur !== undefined && ud !== ur && replaced !== 'user') {
       this.check('info', 'signals', `The user signals on ${c.id} have ${ud} and ${ur} bit: bits ${Math.min(ud, ur) - 1} to 0 are connected.`, { connection: c.id });
     }
   }
@@ -821,7 +860,8 @@ export class Resolution {
             this.topPorts.push({
               name,
               dir: /** @type {'in'|'out'} */ (port?.dir ?? 'in'),
-              vhdlType: vhdlType(w, port?.vhdlType ?? 'std_logic'),
+              // one bit of a vector interface element is a std_logic port
+              vhdlType: p.index !== null && w === 1 ? 'std_logic' : vhdlType(w, port?.vhdlType ?? 'std_logic'),
               kind: 'interface',
               ref,
               port: `${inst.id}.${pname}${slice(pname).sel}`,
@@ -834,10 +874,23 @@ export class Resolution {
           this.check('error', 'must_serve', `${ref} must be served: connect it or make it external.`, { instance: inst.id });
         }
         const mode = p.itf.tieOff;
+        const sb = p.itf.sideband;
         for (const pname of Object.values(p.itf.signals)) {
-          const { port, sel } = slice(pname);
+          const { port, sel, w } = slice(pname);
           if (!port) continue;
           const target = `${inst.id}.${pname}${sel}`;
+          if (mode === 'constant' && sb && p.itf.signals[sb.signal] === pname) {
+            const values = { ...Object.fromEntries(sb.fields.map((fl) => [fl.name, fl.default ?? 0])), ...(inst.constants?.[p.ref] ?? {}) };
+            const bits = packFields(sb.fields, values);
+            const over = sb.fields.find((fl) => fl.below && Number(values[fl.name]) >= Number(rec.generics[fl.below]));
+            if (over?.below) {
+              this.check('error', 'constant', `${ref}: ${over.label} ${String(values[over.name])} does not exist: ${over.below} = ${String(rec.generics[over.below])} allows 0 to ${Number(rec.generics[over.below]) - 1}.`, { instance: inst.id });
+            } else if (bits >= 2 ** w) {
+              this.check('error', 'constant', `${ref}: the constant ${bits} does not fit into ${w} bit of ${pname}.`, { instance: inst.id });
+            }
+            this.tieOffs.push({ port: target, value: vhdlBits(bits, w, port.vhdlType), reason: `Constant of ${ref}: ${sb.fields.map((fl) => `${fl.label} ${String(values[fl.name])}`).join(', ')}.` });
+            continue;
+          }
           if (port.dir === 'out') {
             this.tieOffs.push({ port: target, value: 'open', reason: `${ref} is not connected.` });
           } else if (mode === 'default' && port.default !== undefined && p.index === null) {
@@ -846,6 +899,7 @@ export class Resolution {
             this.tieOffs.push({ port: target, value: '0', reason: `${ref} is not connected.` });
           }
         }
+        if (mode === 'constant') continue;
         if (!mode && !p.itf.mustServe && p.itf.role === 'slave') {
           this.check('info', 'unconnected', `${ref} is not connected: the registers are not accessible, the block runs with its reset values.`, { instance: inst.id });
         } else if (!mode && !p.itf.mustServe && isDriver(p.itf.role) === false) {
@@ -869,14 +923,46 @@ export class Resolution {
     }
     // constraints
     const external = d.clockDomains.filter((c) => c.source.kind === 'external' && this.topPorts.some((p) => p.domain === c.id));
-    if (external.length > 1) this.constraints.push({ kind: 'async_clock_groups', clocks: external.map((c) => `Clk_${c.id}`) });
-    if (d.instances.length > 0) this.constraints.push({ kind: 'false_path', from: RESET_PORT });
+    const clockNames = (/** @type {string[]} */ ids) => [...new Set(ids)].sort().map((id) => {
+      const dom = this.domainMap.get(id);
+      return dom?.source.kind === 'block' ? `${dom.source.instance}.${dom.source.port}` : `Clk_${id}`;
+    });
+    if (external.length > 1) this.constraints.push({ kind: 'async_clock_groups', clocks: external.map((c) => `Clk_${c.id}`).sort() });
+    if (d.instances.length > 0) this.constraints.push({ kind: 'false_path', from: [RESET_PORT], note: 'Asynchronous reset input; the reset generators synchronise its release.' });
+    // the constraints of the blocks in terms of the top level: ports of external interfaces by their top-level name,
+    // clocks by their clock domain
+    const topOf = (/** @type {string} */ inst, /** @type {string} */ port) => this.topPorts.find((tp) => tp.port === `${inst}.${port}`)?.name ?? `${inst}.${port}`;
+    /** @type {Set<string>} */
+    const seenConstraints = new Set(this.constraints.map((c) => JSON.stringify(c)));
+    const add = (/** @type {Record<string, unknown>} */ c) => {
+      const key = JSON.stringify(c);
+      if (seenConstraints.has(key)) return;
+      seenConstraints.add(key);
+      this.constraints.push(c);
+    };
     for (const inst of d.instances) {
       const b = this.cat.blocks.get(inst.block);
-      for (const k of b?.constraints ?? []) this.constraints.push({ ...k, instance: inst.id });
+      const rec = this.byId.get(inst.id);
+      if (!b || !rec) continue;
+      const resetPorts = new Set(b.resets.map((r) => r.port));
+      for (const k of /** @type {any[]} */ (b.constraints ?? [])) {
+        if (k.kind === 'false_path') {
+          const from = (k.fromPorts ?? []).filter((/** @type {string} */ p) => !resetPorts.has(p)).map((/** @type {string} */ p) => topOf(inst.id, p));
+          if (from.length) add({ kind: 'false_path', from, instance: inst.id, note: k.note ?? `Inputs that ${inst.id} synchronises itself.` });
+        } else if (k.kind === 'async_clock_groups') {
+          const clocks = clockNames((k.clocks ?? []).map((/** @type {string} */ c) => rec.clocks[c]).filter(Boolean));
+          if (clocks.length > 1) add({ kind: 'async_clock_groups', clocks });
+        } else if (Array.isArray(k.ports)) {
+          add({ ...k, ports: k.ports.map((/** @type {string} */ p) => topOf(inst.id, p)), instance: inst.id });
+        } else if (k.kind === 'vendor_scoped') {
+          add({ kind: 'vendor_scoped', file: k.file, note: 'AMD Vivado: source the script of Open Logic once for the scoped constraints of its clock crossings.' });
+        } else {
+          add({ ...k, instance: inst.id });
+        }
+      }
     }
     if (this.autos.some((a) => a.role === 'cdc' || a.role === 'reset')) {
-      this.constraints.push({ kind: 'vendor_scoped', file: 'tools/vivado/all_constraints_amd.tcl', note: 'AMD Vivado: source the script of Open Logic once for the scoped constraints of its clock crossings.' });
+      add({ kind: 'vendor_scoped', file: 'tools/vivado/all_constraints_amd.tcl', note: 'AMD Vivado: source the script of Open Logic once for the scoped constraints of its clock crossings.' });
     }
   }
 

@@ -273,8 +273,8 @@ export class InspectorView {
       control = cb;
     } else if (g.choices || g.kind === 'std_logic') {
       const opts = g.choices ?? ['0', '1'];
-      const sel = h('select', { id: fid, class: 'cmp-input', 'aria-describedby': helpId, onchange: () => apply(sel.value) },
-        opts.map((o) => h('option', { value: o, selected: o === value }, g.kind === 'std_logic' ? `'${o}'` : o)));
+      const sel = h('select', { id: fid, class: 'cmp-input', 'aria-describedby': helpId, onchange: () => apply(g.kind === 'integer' ? Number(sel.value) : sel.value) },
+        opts.map((o) => h('option', { value: String(o), selected: String(o) === String(value) }, g.kind === 'std_logic' ? `'${o}'` : String(o))));
       control = sel;
     } else {
       const inp = h('input', {
@@ -386,7 +386,14 @@ export class InspectorView {
         });
         body.push(sel);
       }
-      if (conns.length === 0) {
+      if (conns.length === 0 && p.itf.tieOff === 'constant' && p.itf.sideband) {
+        // the inputs are constants of the instance
+        const inst = getInstance(d, instId);
+        const values = { ...Object.fromEntries(p.itf.sideband.fields.map((f) => [f.name, f.default ?? 0])), ...(inst?.constants?.[p.ref] ?? {}) };
+        body.push(h('div', { class: 'cmp-constants' },
+          p.itf.sideband.fields.map((f) => this.constantField(instId, p.ref, f, values[f.name], values, p.itf.sideband?.fields ?? []))),
+        h('p', { class: 'cmp-help' }, `Unconnected: the inputs are these constants. ${p.itf.sideband.description ?? ''}`));
+      } else if (conns.length === 0) {
         const hint = p.itf.mustServe
           ? 'Must be connected or external.'
           : p.itf.tieOff === 'default' || p.itf.tieOff === 'zero' ? 'Unconnected: inputs keep their defaults.'
@@ -512,6 +519,46 @@ export class InspectorView {
         const ok = (hex || /^\d+$/.test(text)) && v <= max;
         err.show(ok ? null : `Enter an integer from 0 to ${max} (decimal or 0x hexadecimal).`);
         if (ok) this.app.setSideband(connId, f.name, v);
+      },
+    });
+    const err = this.errorLine(`${fid}-err`, inp);
+    return h('div', { class: `cmp-field${enabled ? '' : ' is-disabled'}` }, h('label', { for: fid }, f.label, h('span', { class: 'cmp-facts' }, ` 0 to ${max}`)), inp, depNote, err.el);
+  }
+
+  /**
+   * A constant of an unconnected interface of an instance.
+   * @param {string} instId
+   * @param {string} itfRef
+   * @param {import('../model/catalog.js').SidebandField} f
+   * @param {number | boolean | undefined} value
+   * @param {Record<string, number | boolean>} values
+   * @param {import('../model/catalog.js').SidebandField[]} fields
+   */
+  constantField(instId, itfRef, f, value, values, fields) {
+    const fid = `cmp-const-${instId}-${itfRef.replace(/[[\]]/g, '-')}-${f.name}`;
+    const enabled = isEnabled(f, values);
+    const dep = enabled ? null : fields.find((x) => x.name === f.enabledBy);
+    const depNote = dep ? h('p', { class: 'cmp-help cmp-dep-note', id: `${fid}-dep` }, `Takes effect only with "${dep.label}" on.`) : null;
+    if (f.kind === 'boolean') {
+      const cb = h('input', { id: fid, type: 'checkbox', checked: value === true, disabled: !enabled, onchange: () => this.app.setConstant(instId, itfRef, f.name, cb.checked) });
+      return h('div', { class: `cmp-field cmp-check${enabled ? '' : ' is-disabled'}` }, cb, h('label', { for: fid }, f.label), depNote);
+    }
+    // a field limited by a generic of the instance (a key slot below NumKeys_g)
+    const limit = f.below ? Number(this.app.resolved.byId.get(instId)?.generics[f.below]) : NaN;
+    const max = Number.isInteger(limit) && limit > 0 ? Math.min(2 ** f.bits, limit) - 1 : 2 ** f.bits - 1;
+    const inp = h('input', {
+      id: fid,
+      class: 'cmp-input cmp-mono',
+      value: String(value ?? 0),
+      inputmode: 'numeric',
+      disabled: !enabled,
+      'aria-describedby': `${fid}-err`,
+      onchange: () => {
+        const text = inp.value.trim();
+        const hex = /^0x[0-9a-f]+$/i.test(text);
+        const v = hex ? parseInt(text.slice(2), 16) : Number(text);
+        const ok = (hex || /^\d+$/.test(text)) && v <= max;
+        err.show(ok ? this.app.setConstant(instId, itfRef, f.name, v) : `Enter an integer from 0 to ${max} (decimal or 0x hexadecimal).`);
       },
     });
     const err = this.errorLine(`${fid}-err`, inp);
