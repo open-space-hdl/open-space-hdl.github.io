@@ -722,7 +722,8 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             gen["defaultText"] = g.default
             if representable:
                 gen["default"] = default
-        for key in ("label", "description", "choices", "check", "advanced", "fromClock", "unit", "min", "max", "follow"):
+        for key in ("label", "description", "choices", "check", "advanced", "fromClock", "unit", "min", "max", "follow",
+                    "enabledBy"):
             if key in m:
                 gen[key] = m[key]
         if "follow" in m:
@@ -730,6 +731,8 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             if kind != "integer" or not isinstance(fol, dict) or fol.get("measure") not in ("data", "packed") \
                     or not isinstance(fol.get("interfaces"), list) or not fol["interfaces"]:
                 ctx.err(where, f"generic {g.name}: follow needs an integer generic, interfaces and measure data or packed")
+            elif not isinstance(fol.get("rank", 0), int) or isinstance(fol.get("rank", 0), bool):
+                ctx.err(where, f"generic {g.name}: follow rank must be an integer")
         if "min" in m and kind == "integer" and m["min"] < lo:
             ctx.err(where, f"generic {g.name}: min {m['min']} below the VHDL range {lo}")
         if "max" in m and kind == "integer" and m["max"] > hi:
@@ -749,6 +752,12 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         elif "example" in m and kind in ("integer", "real"):
             defaults_env[g.name.lower()] = Num(m["example"], kind == "real")
     gen_names = {g["name"] for g in generics}
+    for g in generics:
+        dep = g.get("enabledBy")
+        if dep is not None:
+            target = next((x for x in generics if x["name"] == dep), None)
+            if target is None or target["kind"] != "boolean" or dep == g["name"]:
+                ctx.err(where, f"generic {g['name']}: enabledBy must name another boolean generic")
 
     # Ports
     ports = []
@@ -924,10 +933,16 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             sb = itf["sideband"]
             if sb.get("signal") not in signals:
                 ctx.err(iwhere, f"sideband signal {sb.get('signal')} not mapped")
-            for f in sb.get("fields") or []:
+            fields = sb.get("fields") or []
+            for f in fields:
                 for key in ("name", "label", "lsb", "bits"):
                     if key not in f:
                         ctx.err(iwhere, f"sideband field needs '{key}'")
+                dep = f.get("enabledBy")
+                if dep is not None:
+                    target = next((x for x in fields if x.get("name") == dep), None)
+                    if target is None or target.get("kind") != "boolean" or dep == f.get("name"):
+                        ctx.err(iwhere, f"sideband field {f.get('name')}: enabledBy must name another boolean field")
         interfaces.append(out)
 
     # Tie-offs: ports deliberately not part of an interface

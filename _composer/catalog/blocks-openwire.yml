@@ -35,7 +35,7 @@ blocks:
       - { name: RxFifoDepth_g, label: Receive FIFO depth, check: pow2, description: Depth of the receive FIFO in N-Chars (power of 2); 64 or more allows seven outstanding FCTs. }
       - { name: TimeCodes_g, label: Time-code service, description: Enables the time-code service and its ports. }
       - { name: Interrupts_g, label: Interrupt service, description: Enables the distributed interrupt service and its ports. }
-      - { name: IntTimerWidth_g, label: Interrupt timer width, advanced: true, description: Width of the minimum interval and acknowledgement delay of the interrupt service, in ticks. }
+      - { name: IntTimerWidth_g, label: Interrupt timer width, advanced: true, enabledBy: Interrupts_g, description: Width of the minimum interval and acknowledgement delay of the interrupt service, in ticks. }
       - { name: LinkDisabled_g, label: Link disabled after reset, advanced: true, description: Reset value of LinkDisabled. }
       - { name: LinkStart_g, label: Link start after reset, description: Reset value of LinkStart; the port starts the link without software. }
       - { name: AutoStart_g, label: Auto start after reset, description: Reset value of AutoStart; the port starts the link when the far end does. }

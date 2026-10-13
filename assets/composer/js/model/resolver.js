@@ -392,9 +392,11 @@ export class Resolution {
   }
 
   /**
-   * Value of a width generic that follows a connected interface.
+   * Value of a width generic that follows a connected interface: the width of the typed interface at the other end
+   * (looking through untyped Open Logic blocks). When that interface follows back, the lower rank follows the higher
+   * one; with equal ranks neither follows.
    * @param {ResolvedInstance} rec
-   * @param {{ interfaces: string[], measure: 'data' | 'packed' }} follow
+   * @param {{ interfaces: string[], measure: 'data' | 'packed', rank?: number }} follow
    * @returns {number | undefined}
    */
   followValue(rec, follow) {
@@ -403,7 +405,11 @@ export class Resolution {
         const ref = `${rec.id}.${p.ref}`;
         const conn = this.d.connections.find((c) => c.from === ref || c.to === ref);
         if (!conn) continue;
-        const f = this.carriedFormat(conn.from === ref ? conn.to : conn.from);
+        const te = typedEndpoint(this.cat, this.d, conn.from === ref ? conn.to : conn.from, conn.id);
+        if (!te || te.ref === ref) continue;
+        const back = this.followRank(te.ref);
+        if (back !== null && back <= (follow.rank ?? 0)) continue;
+        const f = this.formatOf(te.ref);
         if (!f) continue;
         if (follow.measure === 'data') {
           const w = f.sigs.find((s) => s.name === 'data')?.width;
@@ -415,6 +421,20 @@ export class Resolution {
       }
     }
     return undefined;
+  }
+
+  /**
+   * Rank of the width generic that makes an interface follow its partner, or null when it does not follow (no such
+   * generic, or the user set it).
+   * @param {string} ref
+   * @returns {number | null}
+   */
+  followRank(ref) {
+    const ep = this.endpoint(ref);
+    const inst = this.d.instances.find((i) => i.id === instanceOf(ref));
+    if (!ep || !inst) return null;
+    const g = ep.block.generics.find((x) => x.follow && x.follow.interfaces.includes(ep.port.itf.name) && !(x.name in inst.generics));
+    return g?.follow ? g.follow.rank ?? 0 : null;
   }
 
   // ------------------------------------------------------------------------------------------------------------------

@@ -5,6 +5,7 @@ import {
   addDomain, addInstance, adoptAdapter, assignClock, createDesign, moveToDomain, removeDomain, removeInstances, renameInstance,
   setAdapterGeneric, setExternal, setGeneric, setSideband, setSystem,
 } from '../../assets/composer/js/model/design.js';
+import { isEnabled } from '../../assets/composer/js/model/generics.js';
 import { packAll, packing, resolve } from '../../assets/composer/js/model/resolver.js';
 import { catalogWith, connect, designWith, loadCatalog, streamBlock } from './helpers.mjs';
 
@@ -67,6 +68,63 @@ test('the width of the N-Char adapter follows the connected link', () => {
   assert.equal(checksOf(fixed, 'width_conversion').length, 1);
   assert.match(checksOf(fixed, 'width_conversion')[0].message, /64 bit and nchar0\.S_Link 32 bit/);
   assert.deepEqual(fixed.chainOf.get('c1')?.adapters, []);
+});
+
+test('the Space Packet node follows the width of a packet link that does not follow back; ranks decide between two followers', () => {
+  const c = catalogWith([
+    streamBlock('test/vc_src', { name: 'Out', type: 'pkt.link', role: 'source', widths: { data: 'W_g', keep: 'W_g / 8', last: 1, user: 1 }, ready: true, generics: { W_g: 64 } }),
+    streamBlock('test/vc_snk', { name: 'In', type: 'pkt.link', role: 'sink', widths: { data: 'W_g', keep: 'W_g / 8', last: 1, user: 1 }, ready: true, generics: { W_g: 64 } }),
+  ]);
+  let d = addInstance(createDesign('t'), c, 'test/vc_src', { x: 0, y: 0 }).design;
+  d = addInstance(d, c, 'openspp/spp_core', { x: 0, y: 0 }).design;
+  d = link(c, d, 'vc_src0.Out', 'spp0.S_Link');
+  let r = resolve(c, d);
+  assert.equal(r.byId.get('spp0')?.generics.DataWidth_g, 64, 'like a SpaceFibre virtual channel of two lanes');
+  assert.ok(r.byId.get('spp0')?.auto.includes('DataWidth_g'));
+  assert.deepEqual(checksOf(r, 'width_conversion'), []);
+  // a width set by hand stays and a real mismatch is reported (no glue logic)
+  r = resolve(c, setGeneric(d, c, 'spp0', 'DataWidth_g', 32).design);
+  assert.equal(r.byId.get('spp0')?.generics.DataWidth_g, 32);
+  assert.equal(checksOf(r, 'width_conversion').length, 1);
+  // node and N-Char adapter follow each other: the adapter (lower rank) follows the node, in either instance order
+  for (const order of [['openspp/spp_core', 'openspp/spp_nchar'], ['openspp/spp_nchar', 'openspp/spp_core']]) {
+    let e = createDesign('t');
+    for (const b of order) e = addInstance(e, cat, b, { x: 0, y: 0 }).design;
+    e = setGeneric(e, cat, 'spp0', 'DataWidth_g', 64).design;
+    e = link(cat, e, 'nchar0.M_Link', 'spp0.S_Link');
+    const rr = resolve(cat, e);
+    assert.equal(rr.byId.get('nchar0')?.generics.DataWidth_g, 64);
+    assert.equal(rr.byId.get('spp0')?.generics.DataWidth_g, 64);
+  }
+  // with the node at its default the adapter takes the default width of the node, not the other way round
+  let f = designWith(cat, ['openspp/spp_nchar', 'openspp/spp_core']).design;
+  f = link(cat, f, 'spp0.M_Link', 'nchar0.S_Link');
+  const rf = resolve(cat, f);
+  assert.equal(rf.byId.get('spp0')?.generics.DataWidth_g, 32);
+  assert.equal(rf.byId.get('nchar0')?.generics.DataWidth_g, 32);
+  assert.ok(!rf.byId.get('spp0')?.auto.includes('DataWidth_g'));
+});
+
+test('a follower looks through an Open Logic FIFO to the core behind it', () => {
+  let { design: d } = designWith(cat, ['openspp/spp_core', 'olo/olo_ft_fifo_sync', 'openspp/spp_nchar']);
+  d = setGeneric(d, cat, 'spp0', 'DataWidth_g', 64).design;
+  d = link(cat, d, 'spp0.M_Link', 'fifo0.In');
+  d = link(cat, d, 'fifo0.Out', 'nchar0.S_Link');
+  const r = resolve(cat, d);
+  assert.equal(r.byId.get('nchar0')?.generics.DataWidth_g, 64);
+  assert.equal(r.byId.get('fifo0')?.generics.Width_g, 64 + 8 + 1 + 5);
+});
+
+test('generics and side band fields with an enabling switch', () => {
+  const spp = cat.block('openspp/spp_core');
+  const g = spp.generics.find((x) => x.name === 'NumDest_g');
+  assert.equal(g?.enabledBy, 'Encapsulation_g');
+  assert.equal(isEnabled(/** @type {any} */ (g), { Encapsulation_g: true }), true);
+  assert.equal(isEnabled(/** @type {any} */ (g), { Encapsulation_g: false }), false);
+  const name = spp.interfaces.find((i) => i.name === 'S_Tx')?.sideband?.fields.find((f) => f.name === 'name');
+  assert.equal(name?.enabledBy, 'nameValid');
+  assert.equal(isEnabled(/** @type {any} */ (name), { nameValid: false }), false);
+  assert.equal(isEnabled({}, {}), true);
 });
 
 test('an Open Logic FIFO between two cores takes the width of the packed stream', () => {

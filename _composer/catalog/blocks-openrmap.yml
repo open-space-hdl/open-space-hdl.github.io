@@ -28,10 +28,10 @@ blocks:
       - { name: AxiMaxBeats_g, label: Maximum burst length, description: Maximum burst length of the memory interface; 1 makes the memory master usable as AXI4-Lite master. }
       - { name: BufferBytes_g, label: Write buffer, unit: bytes, description: Maximum Data Length of a verified write. }
       - { name: ChunkBytes_g, label: Write chunk, unit: bytes, description: Chunk of a non-verified write that is written to memory once it is complete in the buffer. }
-      - { name: Windows_g, label: Address windows, description: Address windows of the target. }
+      - { name: Windows_g, label: Address windows, enabledBy: Target_g, description: Address windows of the target. }
       - { name: ExtAuth_g, label: External authorisation, description: Every command that passes the internal checks is presented for authorisation. }
-      - { name: TgtAddrBytes_g, label: Target address bytes, advanced: true, description: Maximum length of the target SpaceWire address of a request. }
-      - { name: Transactions_g, label: Transactions, description: Entries of the transaction table of the initiator; 0 without table and timeout. }
+      - { name: TgtAddrBytes_g, label: Target address bytes, advanced: true, enabledBy: Initiator_g, description: Maximum length of the target SpaceWire address of a request. }
+      - { name: Transactions_g, label: Transactions, enabledBy: Initiator_g, description: Entries of the transaction table of the initiator; 0 without table and timeout. }
       - { name: La0_g, label: Logical address 0, description: Reset value of logical address 0 of the target (enabled after reset). }
       - { name: La1_g, label: Logical address 1, advanced: true, description: Reset value of logical address 1 of the target (disabled after reset). }
       - { name: DefLaEn_g, label: Default address enabled, advanced: true, description: Reset value of the enable of the default logical address 0xFE. }

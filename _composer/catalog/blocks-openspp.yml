@@ -19,8 +19,9 @@ blocks:
       - { port: Clk, primary: true, label: Clock, description: All of the core; one beat per cycle on every path. }
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
+    # follow.rank: when the generics at both ends of a connection follow each other, the lower rank follows the higher
     generics:
-      - { name: DataWidth_g, label: Stream width, unit: bits, check: multiple8, description: Width of all streams. }
+      - { name: DataWidth_g, label: Stream width, unit: bits, check: multiple8, description: Width of all streams; follows the connected packet link unless set by hand., follow: { interfaces: [S_Link, M_Link], measure: data, rank: 2 } }
       - { name: NumTx_g, label: Send ports, description: Number of send ports. }
       - { name: NumRx_g, label: Receive ports, description: Number of receive ports. }
       - { name: TxOctetString_g, label: Send port services, advanced: true, description: "Bit p for send port p: '1' Octet String Service, '0' Packet Service." }
@@ -30,8 +31,8 @@ blocks:
       - { name: RxBufferBytes_g, label: Receive buffer, unit: bytes, description: Receive buffer shared by all receive ports; holds the longest Space Packet. DataWidth_g / 8 times a power of two. }
       - { name: RxMaxPackets_g, label: Receive buffer packets, min: 2, description: Packets the receive buffer holds. }
       - { name: Encapsulation_g, label: CPTP layer, description: CPTP layer of ECSS-E-ST-50-53C; false removes it. }
-      - { name: NumDest_g, label: Destinations, description: Destinations of the CPTP layer. }
-      - { name: SpwAddrBytes_g, label: SpaceWire address bytes, advanced: true, description: Maximum target SpaceWire address of a destination in bytes. }
+      - { name: NumDest_g, label: Destinations, enabledBy: Encapsulation_g, description: Destinations of the CPTP layer. }
+      - { name: SpwAddrBytes_g, label: SpaceWire address bytes, advanced: true, enabledBy: Encapsulation_g, description: Maximum target SpaceWire address of a destination in bytes. }
       - { name: MaxLength_g, label: Maximum packet length, unit: bytes, advanced: true, description: Reset value of the maximum packet length. }
       - { name: RoundRobin_g, label: Round robin, advanced: true, description: "Reset value of the multiplexing scheme: '0' fixed priority (port 0 first), '1' round robin." }
       - { name: Tla_g, label: Target logical address, description: Reset value of the own target logical address of the receive filter. }
@@ -55,7 +56,7 @@ blocks:
             - { name: shi, label: Secondary header flag, lsb: 11, bits: 1, kind: boolean, default: false }
             - { name: type, label: Packet type (telecommand), lsb: 12, bits: 1, kind: boolean, default: false }
             - { name: nameValid, label: Packet name instead of sequence count, lsb: 13, bits: 1, kind: boolean, default: false }
-            - { name: name, label: Packet name, lsb: 14, bits: 14, kind: integer, default: 0 }
+            - { name: name, label: Packet name, lsb: 14, bits: 14, kind: integer, default: 0, enabledBy: nameValid }
       - name: M_Rx
         label: Receive port
         type: spp.rx
@@ -131,7 +132,7 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: DataWidth_g, label: Link width, unit: bits, check: multiple8, description: Width of the link streams; follows the connected link., follow: { interfaces: [S_Link, M_Link], measure: data } }
+      - { name: DataWidth_g, label: Link width, unit: bits, check: multiple8, description: Width of the link streams; follows the connected link., follow: { interfaces: [S_Link, M_Link], measure: data, rank: 1 } }
     interfaces:
       - name: S_Link
         label: Link in

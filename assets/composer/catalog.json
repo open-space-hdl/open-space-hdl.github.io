@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "64f98d4e6233",
+ "id": "103b413e327c",
  "sources": [
   {
    "id": "openwire",
@@ -33,7 +33,7 @@
    "repo": "openspp",
    "url": "https://github.com/open-space-hdl/openspp",
    "doc": "https://openspacehdl.org/openspp/",
-   "commit": "7d35e226a167e065954f0a884f11e11587f0f05a",
+   "commit": "8060076a91ac4f73406ce932c08dcda9515d3e6f",
    "library": "openspp",
    "fileList": "component_list.txt",
    "fileListFormat": "modules",
@@ -6219,7 +6219,8 @@
      "defaultText": "4",
      "default": 4,
      "label": "Address windows",
-     "description": "Address windows of the target."
+     "description": "Address windows of the target.",
+     "enabledBy": "Target_g"
     },
     {
      "name": "ExtAuth_g",
@@ -6240,7 +6241,8 @@
      "default": 8,
      "label": "Target address bytes",
      "description": "Maximum length of the target SpaceWire address of a request.",
-     "advanced": true
+     "advanced": true,
+     "enabledBy": "Initiator_g"
     },
     {
      "name": "Transactions_g",
@@ -6251,7 +6253,8 @@
      "defaultText": "8",
      "default": 8,
      "label": "Transactions",
-     "description": "Entries of the transaction table of the initiator; 0 without table and timeout."
+     "description": "Entries of the transaction table of the initiator; 0 without table and timeout.",
+     "enabledBy": "Initiator_g"
     },
     {
      "name": "La0_g",
@@ -7400,9 +7403,17 @@
      "defaultText": "32",
      "default": 32,
      "label": "Stream width",
-     "description": "Width of all streams.",
+     "description": "Width of all streams; follows the connected packet link unless set by hand.",
      "check": "multiple8",
-     "unit": "bits"
+     "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "S_Link",
+       "M_Link"
+      ],
+      "measure": "data",
+      "rank": 2
+     }
     },
     {
      "name": "NumTx_g",
@@ -7510,7 +7521,8 @@
      "defaultText": "1",
      "default": 1,
      "label": "Destinations",
-     "description": "Destinations of the CPTP layer."
+     "description": "Destinations of the CPTP layer.",
+     "enabledBy": "Encapsulation_g"
     },
     {
      "name": "SpwAddrBytes_g",
@@ -7522,7 +7534,8 @@
      "default": 4,
      "label": "SpaceWire address bytes",
      "description": "Maximum target SpaceWire address of a destination in bytes.",
-     "advanced": true
+     "advanced": true,
+     "enabledBy": "Encapsulation_g"
     },
     {
      "name": "MaxLength_g",
@@ -7652,7 +7665,8 @@
         "lsb": 14,
         "bits": 14,
         "kind": "integer",
-        "default": 0
+        "default": 0,
+        "enabledBy": "nameValid"
        }
       ]
      },
@@ -8118,7 +8132,8 @@
        "S_Link",
        "M_Link"
       ],
-      "measure": "data"
+      "measure": "data",
+      "rank": 1
      }
     }
    ],
@@ -8464,7 +8479,8 @@
      "default": 16,
      "label": "Interrupt timer width",
      "description": "Width of the minimum interval and acknowledgement delay of the interrupt service",
-     "advanced": true
+     "advanced": true,
+     "enabledBy": "Interrupts_g"
     },
     {
      "name": "LinkDisabled_g",

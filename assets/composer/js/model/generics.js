@@ -23,7 +23,9 @@
  * @property {string} [unit]
  * @property {string} [fromClock]
  * @property {boolean} [advanced]
- * @property {{ interfaces: string[], measure: 'data' | 'packed' }} [follow]   width that follows a connected interface
+ * @property {{ interfaces: string[], measure: 'data' | 'packed', rank?: number }} [follow]   width that follows a
+ *           connected interface; when both ends follow each other, the lower rank follows the higher one
+ * @property {string} [enabledBy]   boolean generic without which this generic has no effect
  */
 
 /** @typedef {{ ok: true, value: unknown } | { ok: false, message: string }} Validation */
@@ -42,7 +44,19 @@ export function initialValue(g) {
   return undefined;
 }
 
-/** @param {GenericDef} g */
+/**
+ * Whether a generic has an effect with the given generic values (its enabling generic is true, or it has none).
+ * @param {{ enabledBy?: string }} g   a generic or a side band field
+ * @param {Record<string, unknown>} values
+ */
+export function isEnabled(g, values) {
+  return !g.enabledBy || values[g.enabledBy] === true;
+}
+
+/**
+ * Whether the inspector offers an input for a generic.
+ * @param {GenericDef} g
+ */
 export function isEditable(g) {
   return g.kind !== 'opaque';
 }
