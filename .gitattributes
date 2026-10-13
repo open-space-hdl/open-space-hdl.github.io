@@ -1,0 +1,6 @@
+# Generated and test-compared files keep LF on every platform
+assets/composer/** text eol=lf
+composer/** text eol=lf
+_composer/** text eol=lf
+tests/** text eol=lf
+tools/composer_* text eol=lf
