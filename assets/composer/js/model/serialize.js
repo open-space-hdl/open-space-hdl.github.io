@@ -132,7 +132,7 @@ function isFiniteNumber(v) {
  * Reads a design from the text of a file.
  * @param {string} text
  * @param {Catalog} cat
- * @returns {{ design: Design, warnings: string[] }}
+ * @returns {{ design: Design, warnings: string[], unplaced: string[] }}   unplaced: blocks without a position
  */
 export function fromText(text, cat) {
   /** @type {unknown} */
@@ -149,7 +149,7 @@ export function fromText(text, cat) {
  * Reads a design from a document object, checking structure, identifiers, generics and connections.
  * @param {unknown} doc
  * @param {Catalog} cat
- * @returns {{ design: Design, warnings: string[] }}
+ * @returns {{ design: Design, warnings: string[], unplaced: string[] }}   unplaced: blocks without a position
  */
 export function fromDocument(doc, cat) {
   /** @type {string[]} */
@@ -265,12 +265,15 @@ export function fromDocument(doc, cat) {
   // layout
   const lay = isObject(o.layout) ? o.layout : {};
   const pos = isObject(lay.instances) ? lay.instances : {};
+  /** @type {string[]} */
+  const unplaced = [];
   d.instances.forEach((inst, k) => {
     const p = pos[inst.id];
     if (isObject(p) && isFiniteNumber(p.x) && isFiniteNumber(p.y)) d.layout.instances[inst.id] = { x: Math.round(p.x), y: Math.round(p.y) };
     else {
+      // a grid for now; the editor arranges a system with unplaced blocks
       d.layout.instances[inst.id] = { x: 80 + (k % 4) * 320, y: 80 + Math.floor(k / 4) * 260 };
-      warnings.push(`${inst.id}: no position in the layout; placed automatically.`);
+      unplaced.push(inst.id);
     }
   });
   const boxes = isObject(lay.domains) ? lay.domains : {};
@@ -352,5 +355,5 @@ export function fromDocument(doc, cat) {
   }
 
   if (errors.length > 0) throw new FormatError(errors);
-  return { design: d, warnings };
+  return { design: d, warnings, unplaced };
 }

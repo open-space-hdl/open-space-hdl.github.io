@@ -5,7 +5,7 @@
   "generator": {
     "name": "Open Space Composer",
     "version": "0.1.0-beta",
-    "catalog": "64f98d4e6233"
+    "catalog": "103b413e327c"
   },
   "system": {
     "name": "spw_rmap_node",
@@ -86,25 +86,25 @@
   "connections": [
     {
       "id": "c1",
-      "from": "rmap0.M_Pkt",
-      "to": "spw0.S_Pkt"
+      "from": "spw0.M_Pkt",
+      "to": "rmap0.S_Pkt"
     },
     {
       "id": "c2",
-      "from": "spw0.M_Pkt",
-      "to": "rmap0.S_Pkt"
+      "from": "rmap0.M_Pkt",
+      "to": "spw0.S_Pkt"
     }
   ],
   "externals": [],
   "layout": {
     "instances": {
       "spw0": {
-        "x": 480,
-        "y": 96
+        "x": 92,
+        "y": 126
       },
       "rmap0": {
-        "x": 96,
-        "y": 96
+        "x": 444,
+        "y": 126
       }
     },
     "domains": {},

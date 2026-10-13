@@ -82,10 +82,12 @@ test('tolerated deviations are warnings', () => {
   const t = doc.connections[0].from;
   doc.connections[0].from = doc.connections[0].to;
   doc.connections[0].to = t;
-  const { design, warnings } = fromDocument(doc, cat);
-  assert.equal(warnings.length, 4, warnings.join('\n'));
+  const { design, warnings, unplaced } = fromDocument(doc, cat);
+  assert.equal(warnings.length, 3, warnings.join('\n'));
   assert.equal(design.connections[0].from, 'rmap0.M_Pkt');
+  // a block without a position gets one and is reported, so that the editor can arrange the system
   assert.ok(design.layout.instances.rmap0);
+  assert.deepEqual(unplaced, ['rmap0']);
 });
 
 test('side band constants are completed and checked', () => {

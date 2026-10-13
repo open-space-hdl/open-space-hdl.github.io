@@ -5,7 +5,7 @@
   "generator": {
     "name": "Open Space Composer",
     "version": "0.1.0-beta",
-    "catalog": "64f98d4e6233"
+    "catalog": "103b413e327c"
   },
   "system": {
     "name": "spp_over_spw",
@@ -37,7 +37,7 @@
       "id": "openspp",
       "name": "OpenSPP",
       "url": "https://github.com/open-space-hdl/openspp",
-      "commit": "7d35e226a167e065954f0a884f11e11587f0f05a",
+      "commit": "8060076a91ac4f73406ce932c08dcda9515d3e6f",
       "library": "openspp",
       "fileList": "component_list.txt",
       "fileListFormat": "modules",
@@ -114,13 +114,13 @@
   "connections": [
     {
       "id": "c1",
-      "from": "rmap0.M_Pkt",
-      "to": "spw0.S_Pkt"
+      "from": "spw0.M_Pkt",
+      "to": "rmap0.S_Pkt"
     },
     {
       "id": "c2",
-      "from": "spw0.M_Pkt",
-      "to": "rmap0.S_Pkt"
+      "from": "rmap0.M_Pkt",
+      "to": "spw0.S_Pkt"
     },
     {
       "id": "c3",
@@ -134,33 +134,33 @@
     },
     {
       "id": "c5",
-      "from": "spp0.M_Link",
-      "to": "nchar0.S_Link"
+      "from": "nchar0.M_Link",
+      "to": "spp0.S_Link"
     },
     {
       "id": "c6",
-      "from": "nchar0.M_Link",
-      "to": "spp0.S_Link"
+      "from": "spp0.M_Link",
+      "to": "nchar0.S_Link"
     }
   ],
   "externals": [],
   "layout": {
     "instances": {
       "spw0": {
-        "x": 864,
-        "y": 96
+        "x": 92,
+        "y": 152
       },
       "rmap0": {
-        "x": 480,
-        "y": 96
+        "x": 444,
+        "y": 152
       },
       "nchar0": {
-        "x": 96,
-        "y": 512
+        "x": 796,
+        "y": 152
       },
       "spp0": {
-        "x": 96,
-        "y": 96
+        "x": 1148,
+        "y": 126
       }
     },
     "domains": {},
