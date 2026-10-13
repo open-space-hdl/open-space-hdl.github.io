@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
 import {
-  addDomain, addInstance, assignClock, createDesign, moveToDomain, removeDomain, removeInstances, renameInstance,
+  addDomain, addInstance, adoptAdapter, assignClock, createDesign, moveToDomain, removeDomain, removeInstances, renameInstance,
   setAdapterGeneric, setExternal, setGeneric, setSideband, setSystem,
 } from '../../assets/composer/js/model/design.js';
 import { packAll, packing, resolve } from '../../assets/composer/js/model/resolver.js';
@@ -294,4 +294,24 @@ test('packing helpers', () => {
   assert.deepEqual(packAll(f).width, 42);
   const carrier = /** @type {any} */ ({ signals: { data: 'D', valid: 'V', ready: 'R', last: 'L' } });
   assert.deepEqual(packing(f, carrier), { width: 41, fields: [{ signal: 'data', lsb: 0, width: 32 }, { signal: 'keep', lsb: 32, width: 4 }, { signal: 'user', lsb: 36, width: 5 }] });
+});
+
+test('an inserted adapter becomes a normal block and the resolver no longer inserts one', () => {
+  let d = spwRmap();
+  const dom = addDomain(d, {});
+  d = moveToDomain(dom.design, cat, 'rmap0', dom.id);
+  const r = resolve(cat, d);
+  const fifo = r.byId.get(r.chainOf.get('c1')?.adapters[0] ?? '');
+  assert.ok(fifo);
+  const adopted = adoptAdapter(d, cat, fifo, { x: 300, y: 400 });
+  assert.equal(adopted.id, 'afifo0');
+  const inst = adopted.design.instances.find((i) => i.id === 'afifo0');
+  assert.deepEqual(inst?.generics, { Depth_g: 32, SyncTmr_g: true });
+  assert.deepEqual(inst?.clocks, { In_Clk: 'clk1', Out_Clk: 'sys' });
+  assert.deepEqual(adopted.design.connections.map((c) => [c.from, c.to]), [
+    ['spw0.M_Pkt', 'rmap0.S_Pkt'], ['rmap0.M_Pkt', 'afifo0.In'], ['afifo0.Out', 'spw0.S_Pkt'],
+  ]);
+  const r2 = resolve(cat, adopted.design);
+  assert.equal(r2.instances.filter((i) => i.role === 'cdc').length, 1, 'only the other direction still needs one');
+  assert.equal(r2.byId.get('afifo0')?.generics.Width_g, 9);
 });
