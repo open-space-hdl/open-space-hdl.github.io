@@ -1,0 +1,161 @@
+# OpenSPP blocks. Ports and generics come from the VHDL entity at the pinned commit (sources.yml).
+
+blocks:
+  - id: openspp/spp_core
+    kind: core
+    name: Space Packet node
+    group: openspp
+    project: OpenSPP
+    source: openspp
+    entity: spp_core
+    path: hdl/spp_core/src/spp_core.vhd
+    packages: [hdl/spp_pkg/src/spp_pkg.vhd]
+    idPrefix: spp
+    doc: https://openspacehdl.org/openspp/docs/user_guide.html
+    summary: >-
+      Space Packet Protocol (CCSDS 133.0-B-2) with the CPTP layer of ECSS-E-ST-50-53C: send and receive ports with
+      Octet String or Packet Service, APID routing and a register file.
+    clocks:
+      - { port: Clk, primary: true, label: Clock, description: All of the core; one beat per cycle on every path. }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: DataWidth_g, label: Stream width, unit: bits, check: multiple8, description: Width of all streams. }
+      - { name: NumTx_g, label: Send ports, description: Number of send ports. }
+      - { name: NumRx_g, label: Receive ports, description: Number of receive ports. }
+      - { name: TxOctetString_g, label: Send port services, advanced: true, description: "Bit p for send port p: '1' Octet String Service, '0' Packet Service." }
+      - { name: RxOctetString_g, label: Receive port services, advanced: true, description: "Bit p for receive port p: '1' Octet String Service, '0' Packet Service." }
+      - { name: TxBufferBytes_g, label: Send buffer, unit: bytes, description: Buffer of each send port; holds the longest SDU of the port. DataWidth_g / 8 times a power of two. }
+      - { name: TxMaxPackets_g, label: Send buffer SDUs, min: 2, description: SDUs a send buffer holds. }
+      - { name: RxBufferBytes_g, label: Receive buffer, unit: bytes, description: Receive buffer shared by all receive ports; holds the longest Space Packet. DataWidth_g / 8 times a power of two. }
+      - { name: RxMaxPackets_g, label: Receive buffer packets, min: 2, description: Packets the receive buffer holds. }
+      - { name: Encapsulation_g, label: CPTP layer, description: CPTP layer of ECSS-E-ST-50-53C; false removes it. }
+      - { name: NumDest_g, label: Destinations, description: Destinations of the CPTP layer. }
+      - { name: SpwAddrBytes_g, label: SpaceWire address bytes, advanced: true, description: Maximum target SpaceWire address of a destination in bytes. }
+      - { name: MaxLength_g, label: Maximum packet length, unit: bytes, advanced: true, description: Reset value of the maximum packet length. }
+      - { name: RoundRobin_g, label: Round robin, advanced: true, description: "Reset value of the multiplexing scheme: '0' fixed priority (port 0 first), '1' round robin." }
+      - { name: Tla_g, label: Target logical address, description: Reset value of the own target logical address of the receive filter. }
+      - { name: TxPathDefault_g, label: Send paths enabled, description: Every APID has an enabled path to destination 0 after reset. A flight configuration enables the paths by software. }
+      - { name: RxPathDefault_g, label: Receive paths enabled, description: Every APID has an enabled path to receive port 0 after reset. A flight configuration enables the paths by software. }
+      - { name: ClkFreqHz_g, label: Clock frequency, unit: Hz, fromClock: Clk, advanced: true, description: Clock frequency for the scrubbers of the APID tables. }
+    interfaces:
+      - name: S_Tx
+        label: Send port
+        type: spp.tx
+        role: sink
+        clock: Clk
+        vector: NumTx_g
+        tieOff: zero
+        signals: { data: S_Tx_Data, keep: S_Tx_Keep, last: S_Tx_Last, user: S_Tx_User, valid: S_Tx_Valid, ready: S_Tx_Ready }
+        sideband:
+          signal: user
+          description: Parameters of the SDU, held constant during the SDU.
+          fields:
+            - { name: apid, label: APID, lsb: 0, bits: 11, kind: integer, default: 0 }
+            - { name: shi, label: Secondary header flag, lsb: 11, bits: 1, kind: boolean, default: false }
+            - { name: type, label: Packet type (telecommand), lsb: 12, bits: 1, kind: boolean, default: false }
+            - { name: nameValid, label: Packet name instead of sequence count, lsb: 13, bits: 1, kind: boolean, default: false }
+            - { name: name, label: Packet name, lsb: 14, bits: 14, kind: integer, default: 0 }
+      - name: M_Rx
+        label: Receive port
+        type: spp.rx
+        role: source
+        clock: Clk
+        vector: NumRx_g
+        mustServe: true
+        description: Must be served; all receive ports share one receive buffer.
+        signals: { data: M_Rx_Data, keep: M_Rx_Keep, last: M_Rx_Last, user: M_Rx_User, valid: M_Rx_Valid, ready: M_Rx_Ready }
+      - name: M_Link
+        label: Link out
+        type: pkt.link
+        role: source
+        clock: Clk
+        mustServe: true
+        description: "Transmitted packets; user bit 0 is the error end of packet, bits 4:1 the destination index."
+        signals: { data: M_Link_Data, keep: M_Link_Keep, last: M_Link_Last, user: M_Link_User, valid: M_Link_Valid, ready: M_Link_Ready }
+      - name: S_Link
+        label: Link in
+        type: pkt.link
+        role: sink
+        clock: Clk
+        description: "Received packets; user bit 0 is the error end of packet."
+        signals: { data: S_Link_Data, keep: S_Link_Keep, last: S_Link_Last, user: S_Link_User, valid: S_Link_Valid, ready: S_Link_Ready }
+      - name: S_AxiLite
+        label: Registers
+        type: axi4lite
+        role: slave
+        clock: Clk
+        prefix: S_AxiLite_
+        params: { addrWidth: 11 }
+      - name: Irq
+        label: Interrupt
+        type: irq
+        role: event_out
+        clock: Clk
+        tieOff: open
+        signals: { irq: Irq }
+      - name: Err
+        label: Errors
+        type: spp.err
+        role: event_out
+        clock: Clk
+        tieOff: open
+        signals: { valid: Err_Valid, code: Err_Code, port: Err_Port, apid: Err_Apid }
+    rules:
+      - { kind: generic_multiple, generic: TxBufferBytes_g, of: DataWidth_g / 8, pow2Ratio: true }
+      - { kind: generic_multiple, generic: RxBufferBytes_g, of: DataWidth_g / 8, pow2Ratio: true }
+    notes:
+      - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.
+      - After the reset the core initialises both APID tables (2048 clock cycles); packets are sent and delivered once the tables are ready.
+      - Serve every receive port, or place a buffer behind a port whose user can stall for long.
+      - TxBufferBytes_g holds the longest SDU of a port, RxBufferBytes_g the longest Space Packet.
+      - Hold the side band (TUser) of a send port constant during an SDU.
+      - The user supplies the packet secondary header at the start of the Octet String and keeps the secondary header flag of an APID static.
+
+  - id: openspp/spp_nchar
+    kind: module
+    name: N-Char adapter
+    group: openspp
+    project: OpenSPP
+    source: openspp
+    entity: spp_nchar
+    path: hdl/spp_nchar/src/spp_nchar.vhd
+    packages: [hdl/spp_pkg/src/spp_pkg.vhd]
+    idPrefix: nchar
+    doc: https://openspacehdl.org/openspp/docs/user_guide.html
+    summary: >-
+      Converts a packet link stream to the N-Char stream of a SpaceWire port (one character per beat, end of packet
+      marker beat) and back.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: DataWidth_g, label: Link width, unit: bits, check: multiple8, description: Width of the link streams; equal to the width of the connected link. }
+    interfaces:
+      - name: S_Link
+        label: Link in
+        type: pkt.link
+        role: sink
+        clock: Clk
+        signals: { data: S_Link_Data, keep: S_Link_Keep, last: S_Link_Last, user: S_Link_User, valid: S_Link_Valid, ready: S_Link_Ready }
+      - name: M_NChar
+        label: N-Chars out
+        type: spw.nchar
+        role: source
+        clock: Clk
+        signals: { data: M_NChar_Data, last: M_NChar_Last, valid: M_NChar_Valid, ready: M_NChar_Ready }
+      - name: S_NChar
+        label: N-Chars in
+        type: spw.nchar
+        role: sink
+        clock: Clk
+        signals: { data: S_NChar_Data, last: S_NChar_Last, valid: S_NChar_Valid, ready: S_NChar_Ready }
+      - name: M_Link
+        label: Link out
+        type: pkt.link
+        role: source
+        clock: Clk
+        signals: { data: M_Link_Data, keep: M_Link_Keep, last: M_Link_Last, user: M_Link_User, valid: M_Link_Valid, ready: M_Link_Ready }
+    notes:
+      - A received end of packet marker without data characters is discarded.

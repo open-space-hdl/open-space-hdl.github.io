@@ -1,0 +1,140 @@
+# OpenWire blocks. Ports and generics come from the VHDL entity at the pinned commit (sources.yml).
+
+blocks:
+  - id: openwire/owr_core
+    kind: core
+    name: SpaceWire port
+    group: openwire
+    project: OpenWire
+    source: openwire
+    entity: owr_core
+    path: hdl/owr_core/src/owr_core.vhd
+    idPrefix: spw
+    doc: https://openspacehdl.org/openwire/docs/user_guide.html
+    summary: >-
+      SpaceWire port according to ECSS-E-ST-50-12C Rev.1: encoding, data link and network services (packets,
+      time-codes, distributed interrupts) with a register file.
+    clocks:
+      - { port: UserClk, primary: true, label: User, description: Packet and broadcast service ports (any frequency). }
+      - port: LinkClk
+        label: Link
+        freqGeneric: LinkClkFreq_g
+        description: Encoding and data link layers; the transmit bit period is n LinkClk periods (n = 1 to 255).
+      - { port: MgmtClk, label: Management, description: Register file and interrupt (any frequency). }
+    resets:
+      - { port: Rst, active: high, sync: async, description: Asynchronous reset; the core synchronises its release in every domain. }
+    generics:
+      - name: LinkClkFreq_g
+        label: Link clock frequency
+        unit: Hz
+        fromClock: LinkClk
+        description: >-
+          Frequency of LinkClk. It must lie within 10 % of a multiple of 10 MHz, so that 10 Mb/s +/- 10 % can be
+          reached with an integer divider.
+      - { name: TxFifoDepth_g, label: Transmit FIFO depth, check: pow2, description: Depth of the transmit FIFO in N-Chars (power of 2). }
+      - { name: RxFifoDepth_g, label: Receive FIFO depth, check: pow2, description: Depth of the receive FIFO in N-Chars (power of 2); 64 or more allows seven outstanding FCTs. }
+      - { name: TimeCodes_g, label: Time-code service, description: Enables the time-code service and its ports. }
+      - { name: Interrupts_g, label: Interrupt service, description: Enables the distributed interrupt service and its ports. }
+      - { name: IntTimerWidth_g, label: Interrupt timer width, advanced: true, description: Width of the minimum interval and acknowledgement delay of the interrupt service, in ticks. }
+      - { name: LinkDisabled_g, label: Link disabled after reset, advanced: true, description: Reset value of LinkDisabled. }
+      - { name: LinkStart_g, label: Link start after reset, description: Reset value of LinkStart; the port starts the link without software. }
+      - { name: AutoStart_g, label: Auto start after reset, description: Reset value of AutoStart; the port starts the link when the far end does. }
+      - { name: RunDiv_g, label: Run divider, advanced: true, description: Reset value of the bit period in the Run state in LinkClk cycles. }
+      - { name: SyncStages_g, label: Synchroniser stages, advanced: true, description: Synchroniser stages of data and strobe. }
+    interfaces:
+      - name: S_Pkt
+        label: Packets to send
+        type: spw.nchar
+        role: sink
+        clock: UserClk
+        signals: { data: S_Pkt_TData, last: S_Pkt_TLast, valid: S_Pkt_TValid, ready: S_Pkt_TReady }
+      - name: M_Pkt
+        label: Received packets
+        type: spw.nchar
+        role: source
+        clock: UserClk
+        mustServe: true
+        description: Must be served; the port gives credit only for free places of the receive FIFO.
+        signals: { data: M_Pkt_TData, last: M_Pkt_TLast, valid: M_Pkt_TValid, ready: M_Pkt_TReady }
+      - name: S_Tc
+        label: Time-codes to send
+        type: spw.timecode
+        role: sink
+        clock: UserClk
+        enabledBy: TimeCodes_g
+        tieOff: default
+        signals: { data: S_Tc_TData, valid: S_Tc_TValid, ready: S_Tc_TReady }
+      - name: M_Tc
+        label: Received time-codes
+        type: spw.timecode
+        role: source
+        clock: UserClk
+        enabledBy: TimeCodes_g
+        tieOff: default
+        signals: { data: M_Tc_TData, valid: M_Tc_TValid, ready: M_Tc_TReady }
+      - name: S_Int
+        label: Interrupts to send
+        type: spw.int
+        role: sink
+        clock: UserClk
+        enabledBy: Interrupts_g
+        tieOff: default
+        signals: { data: S_Int_TData, valid: S_Int_TValid, ready: S_Int_TReady }
+      - name: S_IntAck
+        label: Acknowledgements to send
+        type: spw.intack
+        role: sink
+        clock: UserClk
+        enabledBy: Interrupts_g
+        tieOff: default
+        signals: { data: S_IntAck_TData, valid: S_IntAck_TValid, ready: S_IntAck_TReady }
+      - name: M_Int
+        label: Received interrupts
+        type: spw.int
+        role: source
+        clock: UserClk
+        enabledBy: Interrupts_g
+        tieOff: default
+        signals: { data: M_Int_TData, valid: M_Int_TValid, ready: M_Int_TReady }
+      - name: M_IntAck
+        label: Received acknowledgements
+        type: spw.intack
+        role: source
+        clock: UserClk
+        enabledBy: Interrupts_g
+        tieOff: default
+        signals: { data: M_IntAck_TData, valid: M_IntAck_TValid, ready: M_IntAck_TReady }
+      - name: S_AxiLite
+        label: Registers
+        type: axi4lite
+        role: slave
+        clock: MgmtClk
+        prefix: S_AxiLite_
+        params: { addrWidth: 8 }
+      - name: Irq
+        label: Interrupt
+        type: irq
+        role: event_out
+        clock: MgmtClk
+        tieOff: open
+        signals: { irq: Irq }
+      - name: Spw
+        label: SpaceWire line
+        type: spw.ds
+        role: pins
+        clock: LinkClk
+        externalOnly: true
+        signals: { d_out: Spw_DOut, s_out: Spw_SOut, d_in: Spw_DIn, s_in: Spw_SIn, tx_en: Phy_TxEn, rx_en: Phy_RxEn }
+    rules:
+      - { kind: clock_freq_multiple, clock: LinkClk, multipleHz: 10.0e6, tolerance: 0.1 }
+      - { kind: generic_matches_clock, generic: LinkClkFreq_g, clock: LinkClk }
+    constraints:
+      - { kind: false_path, fromPorts: [Spw_DIn, Spw_SIn, Rst] }
+      - { kind: async_clock_groups, clocks: [UserClk, LinkClk, MgmtClk] }
+      - { kind: io_register, ports: [Spw_DOut, Spw_SOut], note: Place the output flip-flops of data and strobe in the I/O blocks with matched routing. }
+    notes:
+      - LVDS output buffers for data and strobe and LVDS input buffers with fail-safe biasing belong to the top level; the core contains no I/O buffer.
+      - Enable the safe implementation of state machines in the synthesis tool.
+      - Set INT_HOLDOFF and INT_ACK_DELAY for the network before distributed interrupts are used.
+      - Serve the indication ports before the indication FIFO (16 entries) fills.
+      - Write registers as 32-bit words; a read that depends on a write waits for the write response.

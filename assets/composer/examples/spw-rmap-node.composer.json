@@ -1,0 +1,93 @@
+{
+  "$schema": "https://openspacehdl.org/composer/schema/system-1.json",
+  "format": "open-space-composer-system",
+  "formatVersion": 1,
+  "generator": {
+    "name": "Open Space Composer",
+    "version": "0.1.0-beta",
+    "catalog": "741c709aa7d8"
+  },
+  "system": {
+    "name": "spw_rmap_node",
+    "description": "SpaceWire RMAP target: an OpenWire port and an OpenRMAP target with its memory interface.",
+    "faultTolerance": true
+  },
+  "sources": [
+    {
+      "id": "openwire",
+      "name": "OpenWire",
+      "url": "https://github.com/open-space-hdl/openwire",
+      "commit": "e9f8aa2d1cf73a577d520a0b34c57c2a09cf2366",
+      "library": "openwire",
+      "fileList": "component_list.txt",
+      "fileListFormat": "modules",
+      "requires": "4.7.0-ft.2"
+    },
+    {
+      "id": "openrmap",
+      "name": "OpenRMAP",
+      "url": "https://github.com/open-space-hdl/openrmap",
+      "commit": "e337a6d315519aa8cbd467a72fa62b8c0577923b",
+      "library": "openrmap",
+      "fileList": "component_list.txt",
+      "fileListFormat": "modules",
+      "requires": "4.7.0-ft.2"
+    },
+    {
+      "id": "olo",
+      "name": "Open Logic FT",
+      "url": "https://github.com/open-space-hdl/open-logic-ft",
+      "tag": "4.7.0-ft.3",
+      "commit": "a3c86207790fa91d89e5f02a657f6345de31656e",
+      "library": "olo",
+      "fileList": "compile_order.txt",
+      "fileListFormat": "files"
+    }
+  ],
+  "clockDomains": [],
+  "instances": [
+    {
+      "id": "spw0",
+      "block": "openwire/owr_core",
+      "generics": {},
+      "clocks": {}
+    },
+    {
+      "id": "rmap0",
+      "block": "openrmap/omap_core",
+      "preset": "target",
+      "generics": {},
+      "clocks": {}
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "rmap0.M_Pkt",
+      "to": "spw0.S_Pkt"
+    },
+    {
+      "id": "c2",
+      "from": "spw0.M_Pkt",
+      "to": "rmap0.S_Pkt"
+    }
+  ],
+  "externals": [],
+  "layout": {
+    "instances": {
+      "spw0": {
+        "x": 480,
+        "y": 96
+      },
+      "rmap0": {
+        "x": 96,
+        "y": 96
+      }
+    },
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "zoom": 1
+    }
+  }
+}

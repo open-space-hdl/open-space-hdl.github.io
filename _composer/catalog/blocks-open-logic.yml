@@ -1,0 +1,550 @@
+# Curated Open Logic FT blocks. Ports and generics come from the VHDL entity at the pinned tag (sources.yml).
+# Data streams of Open Logic are untyped (axis.any): they take the type of the interface they are connected to.
+
+blocks:
+  # FIFOs -------------------------------------------------------------------------------------------------------------
+  - id: olo/olo_ft_fifo_sync
+    kind: olo
+    name: FIFO (SECDED)
+    group: olo-fifo
+    source: olo
+    entity: olo_ft_fifo_sync
+    path: src/ft/vhdl/olo_ft_fifo_sync.vhd
+    idPrefix: fifo
+    doc: https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_fifo_sync.html
+    summary: Synchronous FIFO whose memory is protected by a SECDED code.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: Width_g, label: Width, unit: bits, example: 32, description: Data width. }
+      - { name: Depth_g, label: Depth, unit: words, example: 512, description: Number of entries. }
+      - { name: AlmFullOn_g, label: Almost full flag, advanced: true }
+      - { name: AlmFullLevel_g, label: Almost full level, advanced: true }
+      - { name: AlmEmptyOn_g, label: Almost empty flag, advanced: true }
+      - { name: AlmEmptyLevel_g, label: Almost empty level, advanced: true }
+      - { name: RamStyle_g, label: RAM style, advanced: true, description: Vendor RAM style attribute ("auto" lets the tool choose). }
+      - { name: RamBehavior_g, label: RAM behaviour, choices: [RBW, WBR], advanced: true }
+      - { name: ReadyRstState_g, label: Ready during reset, advanced: true }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready } }
+      - name: Status
+        label: Fill status
+        type: sig.status
+        role: event_out
+        clock: Clk
+        tieOff: open
+        signals: { in_level: In_Level, out_level: Out_Level, full: Full, alm_full: AlmFull, empty: Empty, alm_empty: AlmEmpty }
+      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, signals: { sec: Out_EccSec, ded: Out_EccDed } }
+      - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, signals: { bitflip: In_ErrInj_BitFlip, valid: In_ErrInj_Valid } }
+
+  - id: olo/olo_ft_fifo_async
+    kind: olo
+    name: Asynchronous FIFO (SECDED)
+    group: olo-fifo
+    source: olo
+    entity: olo_ft_fifo_async
+    path: src/ft/vhdl/olo_ft_fifo_async.vhd
+    idPrefix: afifo
+    doc: https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_fifo_async.html
+    summary: FIFO between two clock domains whose memory is protected by a SECDED code; optionally triplicated synchronisers.
+    clocks:
+      - { port: In_Clk, primary: true, label: Input clock }
+      - { port: Out_Clk, label: Output clock }
+    resets:
+      - { port: In_Rst, active: high, sync: sync, clock: In_Clk }
+      - { port: Out_Rst, active: high, sync: sync, clock: Out_Clk }
+      - { port: In_RstOut, dir: out, active: high, clock: In_Clk, description: Reset of the input side, active while either side is in reset. }
+      - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk, description: Reset of the output side, active while either side is in reset. }
+    generics:
+      - { name: Width_g, label: Width, unit: bits, example: 32, description: Data width. }
+      - { name: Depth_g, label: Depth, unit: words, check: pow2, example: 512, description: Number of entries (power of 2). }
+      - { name: AlmFullOn_g, label: Almost full flag, advanced: true }
+      - { name: AlmFullLevel_g, label: Almost full level, advanced: true }
+      - { name: AlmEmptyOn_g, label: Almost empty flag, advanced: true }
+      - { name: AlmEmptyLevel_g, label: Almost empty level, advanced: true }
+      - { name: RamStyle_g, label: RAM style, advanced: true, description: Vendor RAM style attribute ("auto" lets the tool choose). }
+      - { name: RamBehavior_g, label: RAM behaviour, choices: [RBW, WBR], advanced: true }
+      - { name: ReadyRstState_g, label: Ready during reset, advanced: true }
+      - { name: Optimization_g, label: Optimisation, choices: [SPEED, LATENCY], advanced: true }
+      - { name: SyncStages_g, label: Synchroniser stages }
+      - { name: SyncTmr_g, label: Triplicated synchronisers, description: Implements every synchroniser three times with a majority voter. }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: In_Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Out_Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready } }
+      - name: InStatus
+        label: Input fill status
+        type: sig.status
+        role: event_out
+        clock: In_Clk
+        tieOff: open
+        signals: { full: In_Full, empty: In_Empty, alm_full: In_AlmFull, alm_empty: In_AlmEmpty, level: In_Level }
+      - name: OutStatus
+        label: Output fill status
+        type: sig.status
+        role: event_out
+        clock: Out_Clk
+        tieOff: open
+        signals: { full: Out_Full, empty: Out_Empty, alm_full: Out_AlmFull, alm_empty: Out_AlmEmpty, level: Out_Level }
+      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Out_Clk, tieOff: open, signals: { sec: Out_EccSec, ded: Out_EccDed } }
+      - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: In_Clk, tieOff: default, signals: { bitflip: In_ErrInj_BitFlip, valid: In_ErrInj_Valid } }
+    constraints:
+      - { kind: vendor_scoped, file: tcl/olo_base_fifo_async.tcl, note: Scoped timing constraints of the Open Logic clock crossing. }
+
+  - id: olo/olo_ft_fifo_packet
+    kind: olo
+    name: Packet FIFO (SECDED)
+    group: olo-fifo
+    source: olo
+    entity: olo_ft_fifo_packet
+    path: src/ft/vhdl/olo_ft_fifo_packet.vhd
+    idPrefix: pfifo
+    doc: https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_fifo_packet.html
+    summary: Store-and-forward packet FIFO with drop, skip and repeat, memory protected by a SECDED code.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: Width_g, label: Width, unit: bits, example: 32, description: Data width. }
+      - { name: Depth_g, label: Depth, unit: words, example: 1024, description: Number of entries. }
+      - { name: FeatureSet_g, label: Feature set, choices: [FULL, DROP_SKIP_ONLY], advanced: true }
+      - { name: RamStyle_g, label: RAM style, advanced: true }
+      - { name: RamBehavior_g, label: RAM behaviour, choices: [RBW, WBR], advanced: true }
+      - { name: SmallRamStyle_g, label: Boundary RAM style, advanced: true, description: Keep "registers" so that the packet boundaries can be covered by vendor TMR. }
+      - { name: SmallRamBehavior_g, label: Boundary RAM behaviour, advanced: true }
+      - { name: MaxPackets_g, label: Maximum packets, description: Packets the FIFO holds at the same time. }
+    interfaces:
+      - name: In
+        label: Input
+        type: axis.any
+        role: sink
+        clock: Clk
+        signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last, drop: In_Drop }
+      - { name: InDropped, label: Drop status, type: sig.status, role: event_out, clock: Clk, tieOff: open, signals: { is_dropped: In_IsDropped } }
+      - name: Out
+        label: Output
+        type: axis.any
+        role: source
+        clock: Clk
+        signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, size: Out_Size }
+      - { name: OutCtrl, label: Skip and repeat, type: sig.control, role: event_in, clock: Clk, tieOff: default, signals: { next: Out_Next, repeat: Out_Repeat } }
+      - { name: Status, label: Fill status, type: sig.status, role: event_out, clock: Clk, tieOff: open, signals: { packet_level: PacketLevel, free_words: FreeWords } }
+      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, signals: { sec: Out_EccSec, ded: Out_EccDed } }
+      - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, signals: { bitflip: In_ErrInj_BitFlip, valid: In_ErrInj_Valid } }
+    notes:
+      - In_Drop on any beat of a packet discards the packet (for example the error end of packet flag of a link on the last beat).
+
+  # Width conversion --------------------------------------------------------------------------------------------------
+  - id: olo/olo_base_wconv_n2xn
+    kind: olo
+    name: Width converter 1:N
+    group: olo-width
+    source: olo
+    entity: olo_base_wconv_n2xn
+    path: src/base/vhdl/olo_base_wconv_n2xn.vhd
+    idPrefix: wconv
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_wconv_n2xn.html
+    summary: Packs N input words into one output word; the first input word goes to the lowest bits.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: InWidth_g, label: Input width, unit: bits, example: 8 }
+      - { name: OutWidth_g, label: Output width, unit: bits, example: 32, description: An integer multiple of the input width. }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, wordena: Out_WordEna } }
+    notes:
+      - A partially filled output word leaves only with In_Last; a source without last strands its final words.
+
+  - id: olo/olo_base_wconv_xn2n
+    kind: olo
+    name: Width converter N:1
+    group: olo-width
+    source: olo
+    entity: olo_base_wconv_xn2n
+    path: src/base/vhdl/olo_base_wconv_xn2n.vhd
+    idPrefix: wconv
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_wconv_xn2n.html
+    summary: Splits one input word into N output words, lowest bits first.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: InWidth_g, label: Input width, unit: bits, example: 32, description: An integer multiple of the output width. }
+      - { name: OutWidth_g, label: Output width, unit: bits, example: 8 }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last, wordena: In_WordEna } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
+
+  - id: olo/olo_base_wconv_n2m
+    kind: olo
+    name: Width converter N:M
+    group: olo-width
+    source: olo
+    entity: olo_base_wconv_n2m
+    path: src/base/vhdl/olo_base_wconv_n2m.vhd
+    idPrefix: wconv
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_wconv_n2m.html
+    summary: Converts between any two widths, optionally with byte enables.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: InWidth_g, label: Input width, unit: bits }
+      - { name: OutWidth_g, label: Output width, unit: bits }
+      - { name: UseBe_g, label: Byte enables, description: Handles byte enables (both widths a multiple of 8). }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, keep: In_Be, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, keep: Out_Be, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
+
+  # Clock crossings ---------------------------------------------------------------------------------------------------
+  - id: olo/olo_base_cc_handshake
+    kind: olo
+    name: Clock crossing with handshake
+    group: olo-cc
+    source: olo
+    entity: olo_base_cc_handshake
+    path: src/base/vhdl/olo_base_cc_handshake.vhd
+    idPrefix: cc
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_handshake.html
+    summary: Passes data words with valid and ready between two clock domains (low throughput, no RAM).
+    clocks:
+      - { port: In_Clk, primary: true, label: Input clock }
+      - { port: Out_Clk, label: Output clock }
+    resets:
+      - { port: In_RstIn, active: high, sync: sync, clock: In_Clk }
+      - { port: Out_RstIn, active: high, sync: sync, clock: Out_Clk }
+      - { port: In_RstOut, dir: out, active: high, clock: In_Clk }
+      - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk }
+    generics:
+      - { name: Width_g, label: Width, unit: bits, example: 32 }
+      - { name: ReadyRstState_g, label: Ready during reset, advanced: true }
+      - { name: SyncStages_g, label: Synchroniser stages }
+      - { name: SyncTmr_g, label: Triplicated synchronisers }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: In_Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Out_Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready } }
+    constraints:
+      - { kind: vendor_scoped, file: tcl/olo_base_cc_handshake.tcl }
+
+  - id: olo/olo_base_cc_simple
+    kind: olo
+    name: Clock crossing without handshake
+    group: olo-cc
+    source: olo
+    entity: olo_base_cc_simple
+    path: src/base/vhdl/olo_base_cc_simple.vhd
+    idPrefix: cc
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_simple.html
+    summary: Passes valid-only data words between two clock domains; no back-pressure, the input rate must be low.
+    clocks:
+      - { port: In_Clk, primary: true, label: Input clock }
+      - { port: Out_Clk, label: Output clock }
+    resets:
+      - { port: In_RstIn, active: high, sync: sync, clock: In_Clk }
+      - { port: Out_RstIn, active: high, sync: sync, clock: Out_Clk }
+      - { port: In_RstOut, dir: out, active: high, clock: In_Clk }
+      - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk }
+    generics:
+      - { name: Width_g, label: Width, unit: bits }
+      - { name: SyncStages_g, label: Synchroniser stages }
+      - { name: SyncTmr_g, label: Triplicated synchronisers }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: In_Clk, signals: { data: In_Data, valid: In_Valid } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Out_Clk, signals: { data: Out_Data, valid: Out_Valid } }
+    constraints:
+      - { kind: vendor_scoped, file: tcl/olo_base_cc_simple.tcl }
+
+  - id: olo/olo_base_cc_n2xn
+    kind: olo
+    name: Clock crossing to a faster clock
+    group: olo-cc
+    source: olo
+    entity: olo_base_cc_n2xn
+    path: src/base/vhdl/olo_base_cc_n2xn.vhd
+    idPrefix: cc
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_n2xn.html
+    summary: Passes data with valid and ready to a clock that is an integer multiple of the input clock and phase aligned.
+    clocks:
+      - { port: In_Clk, primary: true, label: Input clock }
+      - { port: Out_Clk, label: Output clock }
+    resets:
+      - { port: In_RstIn, active: high, sync: sync, clock: In_Clk }
+      - { port: Out_RstIn, active: high, sync: sync, clock: Out_Clk }
+      - { port: In_RstOut, dir: out, active: high, clock: In_Clk }
+      - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk }
+    generics:
+      - { name: Width_g, label: Width, unit: bits }
+      - { name: SyncStages_g, label: Synchroniser stages }
+      - { name: SyncTmr_g, label: Triplicated synchronisers }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: In_Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Out_Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready } }
+    rules:
+      - { kind: clock_relation, faster: Out_Clk, slower: In_Clk, integer: true, message: Out_Clk must be an integer multiple of In_Clk and phase aligned. }
+
+  - id: olo/olo_base_cc_xn2n
+    kind: olo
+    name: Clock crossing to a slower clock
+    group: olo-cc
+    source: olo
+    entity: olo_base_cc_xn2n
+    path: src/base/vhdl/olo_base_cc_xn2n.vhd
+    idPrefix: cc
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_xn2n.html
+    summary: Passes data with valid and ready to a clock that is an integer fraction of the input clock and phase aligned.
+    clocks:
+      - { port: In_Clk, primary: true, label: Input clock }
+      - { port: Out_Clk, label: Output clock }
+    resets:
+      - { port: In_RstIn, active: high, sync: sync, clock: In_Clk }
+      - { port: Out_RstIn, active: high, sync: sync, clock: Out_Clk }
+      - { port: In_RstOut, dir: out, active: high, clock: In_Clk }
+      - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk }
+    generics:
+      - { name: Width_g, label: Width, unit: bits, example: 32 }
+      - { name: SyncStages_g, label: Synchroniser stages }
+      - { name: SyncTmr_g, label: Triplicated synchronisers }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: In_Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Out_Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready } }
+    rules:
+      - { kind: clock_relation, faster: In_Clk, slower: Out_Clk, integer: true, message: In_Clk must be an integer multiple of Out_Clk and phase aligned. }
+
+  # Reset -------------------------------------------------------------------------------------------------------------
+  - id: olo/olo_base_reset_gen
+    kind: olo
+    name: Reset generator
+    group: olo-reset
+    source: olo
+    entity: olo_base_reset_gen
+    path: src/base/vhdl/olo_base_reset_gen.vhd
+    idPrefix: rst
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_reset_gen.html
+    summary: Synchronises an asynchronous reset to a clock and stretches it; optionally triplicated synchronisers.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: RstIn, active: high, sync: async, description: Asynchronous reset input (polarity from RstInPolarity_g). }
+    generics:
+      - { name: RstPulseCycles_g, label: Reset pulse cycles }
+      - { name: RstInPolarity_g, label: Reset input polarity, advanced: true }
+      - { name: AsyncResetOutput_g, label: Asynchronous assertion, advanced: true }
+      - { name: SyncStages_g, label: Synchroniser stages }
+      - { name: SyncTmr_g, label: Triplicated synchronisers }
+    interfaces:
+      - { name: RstOut, label: Reset, type: reset, role: event_out, clock: Clk, signals: { rst: RstOut } }
+
+  # Flow --------------------------------------------------------------------------------------------------------------
+  - id: olo/olo_base_pl_stage
+    kind: olo
+    name: Pipeline stage
+    group: olo-flow
+    source: olo
+    entity: olo_base_pl_stage
+    path: src/base/vhdl/olo_base_pl_stage.vhd
+    idPrefix: pl
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_pl_stage.html
+    summary: Register stages with full throughput and registered ready, for timing.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: Width_g, label: Width, unit: bits, example: 32 }
+      - { name: UseReady_g, label: Use ready, advanced: true }
+      - { name: Stages_g, label: Stages }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready } }
+
+  - id: olo/olo_base_rate_limit
+    kind: olo
+    name: Rate limiter
+    group: olo-flow
+    source: olo
+    entity: olo_base_rate_limit
+    path: src/base/vhdl/olo_base_rate_limit.vhd
+    idPrefix: rate
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_rate_limit.html
+    summary: Limits a stream to MaxSamples_g beats per Period_g cycles.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: Width_g, label: Width, unit: bits, example: 32 }
+      - { name: RegisterReady_g, label: Registered ready, advanced: true }
+      - { name: Mode_g, label: Mode, choices: [SMOOTH, BLOCK] }
+      - { name: Period_g, label: Period, unit: cycles, example: 10 }
+      - { name: MaxSamples_g, label: Beats per period }
+      - { name: RuntimeCfg_g, label: Runtime configuration, advanced: true }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready } }
+      - { name: Cfg, label: Runtime configuration, type: sig.control, role: event_in, clock: Clk, tieOff: default, signals: { period: Cfg_Period, max_samples: Cfg_MaxSamples } }
+
+  - id: olo/olo_base_crc_append
+    kind: olo
+    name: CRC append
+    group: olo-flow
+    source: olo
+    entity: olo_base_crc_append
+    path: src/base/vhdl/olo_base_crc_append.vhd
+    idPrefix: crc
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_crc_append.html
+    summary: Appends a CRC to every packet of a stream.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: DataWidth_g, label: Width, unit: bits, example: 8 }
+      - { name: CrcPolynomial_g, label: Polynomial, example: 'x"07"' }
+      - { name: CrcInitialValue_g, label: Initial value }
+      - { name: CrcBitOrder_g, label: Bit order, choices: [MSB_FIRST, LSB_FIRST] }
+      - { name: CrcByteOrder_g, label: Byte order, choices: [NONE, MSB_FIRST, LSB_FIRST] }
+      - { name: CrcBitflipOutput_g, label: Reflect output }
+      - { name: CrcXorOutput_g, label: Output XOR }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
+
+  - id: olo/olo_base_crc_check
+    kind: olo
+    name: CRC check
+    group: olo-flow
+    source: olo
+    entity: olo_base_crc_check
+    path: src/base/vhdl/olo_base_crc_check.vhd
+    idPrefix: crc
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_crc_check.html
+    summary: Checks the CRC at the end of every packet and drops or flags packets with an error.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: DataWidth_g, label: Width, unit: bits, example: 8 }
+      - { name: FifoDepth_g, label: FIFO depth, unit: words }
+      - { name: FifoRamStyle_g, label: FIFO RAM style, advanced: true }
+      - { name: FifoRamBehavior_g, label: FIFO RAM behaviour, choices: [RBW, WBR], advanced: true }
+      - { name: Mode_g, label: Mode, choices: [DROP, FLAG] }
+      - { name: CrcPolynomial_g, label: Polynomial, example: 'x"07"' }
+      - { name: CrcInitialValue_g, label: Initial value }
+      - { name: CrcBitOrder_g, label: Bit order, choices: [MSB_FIRST, LSB_FIRST] }
+      - { name: CrcByteOrder_g, label: Byte order, choices: [NONE, MSB_FIRST, LSB_FIRST] }
+      - { name: CrcBitflipOutput_g, label: Reflect output }
+      - { name: CrcXorOutput_g, label: Output XOR }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, crc_err: Out_CrcErr } }
+
+  - id: olo/olo_base_chunker
+    kind: olo
+    name: Chunker
+    group: olo-flow
+    source: olo
+    entity: olo_base_chunker
+    path: src/base/vhdl/olo_base_chunker.vhd
+    idPrefix: chunk
+    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_chunker.html
+    summary: Splits every packet into chunks of a fixed number of beats (no padding) and marks the end of the input packet.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: Width_g, label: Width, unit: bits, example: 32 }
+      - { name: ChunkBeats_g, label: Chunk size, unit: beats, example: 128, description: Beats of a chunk; the last chunk of a packet may be shorter. }
+    interfaces:
+      - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, keep: In_Be, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: Out, label: Chunks, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, keep: Out_Be, valid: Out_Valid, ready: Out_Ready, last: Out_Last, in_last: Out_InLast } }
+
+  # EDAC --------------------------------------------------------------------------------------------------------------
+  - id: olo/olo_ft_ecc_monitor
+    kind: olo
+    name: EDAC monitor
+    group: olo-edac
+    source: olo
+    entity: olo_ft_ecc_monitor
+    path: src/ft/vhdl/olo_ft_ecc_monitor.vhd
+    idPrefix: edac
+    doc: https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor.html
+    summary: Counts the EDAC events of several memories and keeps a sticky double error flag per channel.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: Channels_g, label: Channels, example: 4 }
+      - { name: CounterWidth_g, label: Counter width, unit: bits }
+    interfaces:
+      - { name: In, label: EDAC events, type: ecc.event, role: event_in, clock: Clk, vector: Channels_g, signals: { sec: In_EccSec, ded: In_EccDed, valid: In_Valid } }
+      - { name: Evt, label: Summary events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, signals: { sec: Evt_Sec, ded: Evt_Ded } }
+      - { name: Sticky, label: Double error flags, type: sig.status, role: event_out, clock: Clk, tieOff: open, signals: { ded_sticky: DedSticky } }
+      - { name: Clr, label: Clear, type: sig.control, role: event_in, clock: Clk, tieOff: default, signals: { clr: Clr } }
+      - { name: RdCtrl, label: Counter read, type: sig.control, role: event_in, clock: Clk, tieOff: default, signals: { channel: Rd_Channel, ena: Rd_Ena, clr: Rd_Clr } }
+      - { name: RdData, label: Counter values, type: sig.status, role: event_out, clock: Clk, tieOff: open, signals: { sec_cnt: Rd_SecCnt, ded_cnt: Rd_DedCnt, valid: Rd_Valid } }
+
+  - id: olo/olo_ft_ecc_monitor_axi
+    kind: olo
+    name: EDAC monitor with registers
+    group: olo-edac
+    source: olo
+    entity: olo_ft_ecc_monitor_axi
+    path: src/ft/vhdl/olo_ft_ecc_monitor_axi.vhd
+    idPrefix: edac
+    doc: https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor_axi.html
+    summary: EDAC monitor with an AXI4-Lite register file and an interrupt.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: Channels_g, label: Channels, example: 4 }
+      - { name: CounterWidth_g, label: Counter width, unit: bits }
+      - { name: AxiAddrWidth_g, label: Register address width, unit: bits }
+      - { name: ReadTimeoutClks_g, label: Read timeout, unit: cycles, advanced: true }
+    interfaces:
+      - { name: S_AxiLite, label: Registers, type: axi4lite, role: slave, clock: Clk, prefix: S_AxiLite_, params: { addrWidth: AxiAddrWidth_g } }
+      - { name: In, label: EDAC events, type: ecc.event, role: event_in, clock: Clk, vector: Channels_g, signals: { sec: In_EccSec, ded: In_EccDed, valid: In_Valid } }
+      - { name: Irq, label: Interrupt, type: irq, role: event_out, clock: Clk, tieOff: open, signals: { irq: Irq } }
+
+  # AXI ---------------------------------------------------------------------------------------------------------------
+  - id: olo/olo_axi_lite_decoder
+    kind: olo
+    name: AXI4-Lite decoder
+    group: olo-axi
+    source: olo
+    entity: olo_axi_lite_decoder
+    path: src/axi/vhdl/olo_axi_lite_decoder.vhd
+    idPrefix: dec
+    doc: https://openspacehdl.org/open-logic-ft/doc/axi/olo_axi_lite_decoder.html
+    summary: Connects one AXI4-Lite master to several register files, each in an equal address window.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: AxiAddrWidth_g, label: Address width, unit: bits }
+      - { name: AxiDataWidth_g, label: Data width, unit: bits }
+      - { name: Ports_g, label: Slave ports }
+      - { name: PortAddrWidth_g, label: Window address width, unit: bits, description: Every port owns a window of 2**PortAddrWidth_g bytes. }
+    interfaces:
+      - { name: S_AxiLite, label: Master in, type: axi4lite, role: slave, clock: Clk, prefix: S_AxiLite_, params: { addrWidth: AxiAddrWidth_g } }
+      - name: M_AxiLite
+        label: Register file
+        type: axi4lite
+        role: master
+        clock: Clk
+        vector: Ports_g
+        prefix: M_AxiLite_
+        params: { addrWidth: PortAddrWidth_g, window: PortAddrWidth_g }

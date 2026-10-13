@@ -1,0 +1,53 @@
+# Source repositories of the blocks, pinned to the commit (or tag) the catalog was checked against.
+#
+# Updating a core: set the new commit of main here, run "python tools/composer_catalog.py build" and
+# "python tools/composer_catalog.py check"; the check reads every entity at the pinned commit.
+#
+#   file_list:        file of the repository that lists the sources in compile order
+#   file_list_format: modules (one module directory per line, sources in <module>/src/*.vhd)
+#                     or files (one VHDL file per line)
+#   requires:         Open Logic FT tag the repository is verified with (its open-logic submodule)
+
+sources:
+  - id: openwire
+    name: OpenWire
+    repo: openwire
+    url: https://github.com/open-space-hdl/openwire
+    doc: https://openspacehdl.org/openwire/
+    commit: e9f8aa2d1cf73a577d520a0b34c57c2a09cf2366
+    library: openwire
+    file_list: component_list.txt
+    file_list_format: modules
+    requires: 4.7.0-ft.2
+
+  - id: openrmap
+    name: OpenRMAP
+    repo: openrmap
+    url: https://github.com/open-space-hdl/openrmap
+    doc: https://openspacehdl.org/openrmap/
+    commit: e337a6d315519aa8cbd467a72fa62b8c0577923b
+    library: openrmap
+    file_list: component_list.txt
+    file_list_format: modules
+    requires: 4.7.0-ft.2
+
+  - id: openspp
+    name: OpenSPP
+    repo: openspp
+    url: https://github.com/open-space-hdl/openspp
+    doc: https://openspacehdl.org/openspp/
+    commit: 7d35e226a167e065954f0a884f11e11587f0f05a
+    library: openspp
+    file_list: component_list.txt
+    file_list_format: modules
+    requires: 4.7.0-ft.2
+
+  - id: olo
+    name: Open Logic FT
+    repo: open-logic-ft
+    url: https://github.com/open-space-hdl/open-logic-ft
+    doc: https://openspacehdl.org/open-logic-ft/
+    tag: 4.7.0-ft.3
+    library: olo
+    file_list: compile_order.txt
+    file_list_format: files
