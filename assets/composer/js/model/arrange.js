@@ -25,11 +25,16 @@ import { ADAPTER_OFFSET, boxAround, sceneBlocks, sceneDomains } from './scene.js
 export const DOMAIN_GAP = 64;
 /** Distances of the arranged layout. */
 export const ARRANGE = {
-  colGap: 104,
+  colGap: 88,
   rowGap: 56,
   domainGapX: 96,
   domainGapY: 72,
   origin: { x: 64, y: 64 },
+  // a row of blocks wider than this wraps and clock domains side by side wider than this are stacked, so that the
+  // system stays readable at the zoom of Fit
+  stackWidth: 1100,
+  // vertical distance between the runs of a wrapped row (room for the connections from one run to the next)
+  wrapGap: 96,
 };
 
 /** @param {string} ref */
@@ -363,6 +368,29 @@ export function arrange(cat, d) {
       for (const [m, v] of stack(items, ARRANGE.rowGap)) y.set(m, v);
     }
     for (let c = 0; c < ncol; c += 1) for (const m of cols[c]) local.set(m, { x: colX[c], y: y.get(m) ?? 0 });
+    // a row too wide for the view wraps like text: the fewest runs of columns that fit, with the columns spread evenly
+    // over them, each run below the previous one
+    const right = (/** @type {number} */ c) => colX[c] + Math.max(BLOCK_WIDTH, ...cols[c].map((m) => blocks.get(m)?.w ?? BLOCK_WIDTH));
+    if (ncol > 1 && right(ncol - 1) > ARRANGE.stackWidth) {
+      /** @type {[number, number][]} */
+      let runs = [];
+      for (let k = 2; k <= ncol; k += 1) {
+        const per = Math.ceil(ncol / k);
+        runs = Array.from({ length: Math.ceil(ncol / per) }, (_, r) => /** @type {[number, number]} */ ([r * per, Math.min(ncol, (r + 1) * per)]));
+        if (runs.every(([a, b]) => right(b - 1) - colX[a] <= ARRANGE.stackWidth)) break;
+      }
+      let top = 0;
+      for (const [a, b] of runs) {
+        const run = cols.slice(a, b).flat();
+        const y0 = Math.min(...run.map((m) => local.get(m)?.y ?? 0));
+        const y1 = Math.max(...run.map((m) => (local.get(m)?.y ?? 0) + (blocks.get(m)?.h ?? 0)));
+        for (const m of run) {
+          const p = local.get(m) ?? { x: 0, y: 0 };
+          local.set(m, { x: p.x - colX[a], y: p.y - y0 + top });
+        }
+        top += y1 - y0 + ARRANGE.wrapGap;
+      }
+    }
     // blocks without connections: a grid below
     let top = connected.length ? Math.max(...connected.map((m) => (local.get(m)?.y ?? 0) + (blocks.get(m)?.h ?? 0))) + ARRANGE.rowGap : 0;
     const minY = connected.length ? Math.min(...connected.map((m) => local.get(m)?.y ?? 0)) : 0;
@@ -440,6 +468,22 @@ export function arrange(cat, d) {
       return { id: g, h: outer(g).h, want: !hasPred && succ.length ? median(succ) : (gPos.get(g)?.y ?? 0) };
     });
     for (const [g, yv] of stack(items, ARRANGE.domainGapY)) gPos.set(g, { x: gPos.get(g)?.x ?? 0, y: yv });
+  }
+  // too wide side by side: one domain per row in the order of the data flow, each starting below the block that
+  // feeds it, so that the connections between domains run down across a horizontal border
+  if (ngcol > 1 && gx - ARRANGE.domainGapX > ARRANGE.stackWidth) {
+    let y = 0;
+    for (const g of gOrder) {
+      const feed = cross.filter((e) => groupOf.get(e.v) === g && gPos.has(/** @type {string} */ (groupOf.get(e.u))) && (gPos.get(/** @type {string} */ (groupOf.get(e.u)))?.y ?? Infinity) < y);
+      let x = 0;
+      if (feed.length > 0) {
+        const src = feed[0].u;
+        const sg = /** @type {string} */ (groupOf.get(src));
+        x = Math.max(0, (gPos.get(sg)?.x ?? 0) + pad(sg).x + (local.get(src)?.x ?? 0) - pad(g).x);
+      }
+      gPos.set(g, { x, y });
+      y += outer(g).h + ARRANGE.domainGapY;
+    }
   }
   const minGy = groups.length ? Math.min(...groups.map((g) => gPos.get(g)?.y ?? 0)) : 0;
 

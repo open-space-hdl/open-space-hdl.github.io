@@ -359,10 +359,10 @@ export function buildScene(cat, d, res, opts = {}) {
   for (const ad of adapters.values()) {
     const blocked = (/** @type {Rect} */ r) => placed.some((q) => overlaps(inflate(q, 6), r)) || blockRects.some((q) => overlaps(q, r)) || heads.some((q) => overlaps(inflate(q, 4), r));
     if (blocked(ad.rect)) {
-      // first along its connection (it stays on its line), then across
+      // first across its connection, so that a clock crossing stays centred on the border, then along it
       const along = ad.orient === 'h' ? ADAPTER_WIDTH + 12 : ADAPTER_HEIGHT + 12;
       const across = ad.orient === 'h' ? ADAPTER_HEIGHT + 12 : ADAPTER_WIDTH + 12;
-      for (const [p, q] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 2], [0, -2], [0, 3], [0, -3], [0, 4], [0, -4]]) {
+      for (const [p, q] of [[0, 1], [0, -1], [0, 2], [0, -2], [0, 3], [0, -3], [1, 0], [-1, 0], [0, 4], [0, -4]]) {
         const x = ad.x + (ad.orient === 'h' ? p * along : q * across);
         const y = ad.y + (ad.orient === 'h' ? q * across : p * along);
         const shape = adapterShape(x, y, ad.orient, ad.reverse);

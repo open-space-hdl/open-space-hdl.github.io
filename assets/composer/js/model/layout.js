@@ -79,19 +79,28 @@ export function snap(v) {
   return Math.round(v / GRID) * GRID;
 }
 
+/** Smallest zoom that Fit uses: below it the labels are hard to read, and a larger system is panned instead. */
+export const READABLE_ZOOM = 0.75;
+
 /**
- * Viewport (pan and zoom) that fits a box into a canvas of the given size.
+ * Viewport (pan and zoom) that fits a box into a canvas of the given size. The zoom does not go below minZoom; a box
+ * that does not fit then shows its left end (where the data flow starts), centred vertically when its height fits and
+ * from its top otherwise.
  * @param {{x: number, y: number, width: number, height: number} | null} box
  * @param {number} cw canvas width
  * @param {number} ch canvas height
+ * @param {number} [minZoom]
  */
-export function fitViewport(box, cw, ch) {
+export function fitViewport(box, cw, ch, minZoom = 0.25) {
   if (!box || cw <= 0 || ch <= 0) return { x: 0, y: 0, zoom: 1 };
   const margin = 48;
-  const zoom = Math.max(0.25, Math.min(1.25, Math.min((cw - 2 * margin) / box.width, (ch - 2 * margin) / box.height)));
+  const fit = Math.min((cw - 2 * margin) / box.width, (ch - 2 * margin) / box.height);
+  const zoom = Math.max(minZoom, Math.max(0.25, Math.min(1.25, fit)));
+  const fitsX = box.width * zoom <= cw - 2 * margin;
+  const fitsY = box.height * zoom <= ch - 2 * margin;
   return {
-    x: Math.round(cw / 2 - (box.x + box.width / 2) * zoom),
-    y: Math.round(ch / 2 - (box.y + box.height / 2) * zoom),
+    x: Math.round(fitsX ? cw / 2 - (box.x + box.width / 2) * zoom : margin - box.x * zoom),
+    y: Math.round(fitsY ? ch / 2 - (box.y + box.height / 2) * zoom : margin - box.y * zoom),
     zoom,
   };
 }

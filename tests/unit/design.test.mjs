@@ -106,6 +106,9 @@ test('layout geometry', () => {
   assert.equal(spw?.y, g.height);
   assert.equal(snap(23), 16);
   assert.equal(snap(25), 32);
+  // a wide box at a readable zoom shows its left end
+  const wide = fitViewport({ x: 100, y: 0, width: 4000, height: 200 }, 800, 600, 0.75);
+  assert.deepEqual(wide, { x: 48 - 75, y: 300 - 75, zoom: 0.75 });
   const v = fitViewport({ x: 0, y: 0, width: 400, height: 200 }, 800, 600);
   assert.ok(v.zoom > 0 && v.zoom <= 1.25);
 });

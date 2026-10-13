@@ -139,6 +139,7 @@ test('an example opens in its own tab', async ({ page }) => {
   expect(d.name).toBe('spp_over_spw');
   expect(d.instances).toHaveLength(4);
   await expect(page.getByRole('tab', { name: /spp_over_spw/ })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.cmp-check-none')).toHaveText('No problems found.');
 });
 
 test('a broken file is rejected with its problems', async ({ page }) => {

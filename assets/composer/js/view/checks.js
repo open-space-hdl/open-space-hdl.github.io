@@ -36,7 +36,8 @@ export class ChecksView {
   /** @param {boolean} [force] */
   render(force = false) {
     const checks = [...this.app.resolved.checks].sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
-    const sig = JSON.stringify([checks, this.open]);
+    // the empty system has its own message: a system without findings is not the same as no system
+    const sig = JSON.stringify([checks, this.open, this.app.design.instances.length > 0]);
     if (!force && sig === this.signature) return;
     this.signature = sig;
     const count = (/** @type {Check['severity']} */ sev) => checks.filter((c) => c.severity === sev).length;

@@ -84,8 +84,9 @@ test('Arrange lays out the system from left to right and is undone in one step',
   expect((await design(page)).layout.instances).toEqual(arranged);
   const blocks = await rects(page, '.cmp-block-body');
   for (let i = 0; i < blocks.length; i += 1) for (let j = i + 1; j < blocks.length; j += 1) expect(overlap(blocks[i], blocks[j])).toBe(false);
-  const x = (/** @type {string} */ id) => arranged[id].x;
-  expect(x('spw0') < x('rmap0') && x('rmap0') < x('nchar0') && x('nchar0') < x('spp0')).toBe(true);
+  // four stages wrap into two runs of two, the data flow from left to right in each
+  const at = (/** @type {string} */ id) => arranged[id];
+  expect(at('spw0').x < at('rmap0').x && at('nchar0').x < at('spp0').x && at('nchar0').y > at('rmap0').y).toBe(true);
   await shot(page, info, '06-arranged-example');
   await page.keyboard.press('Control+z');
   await settled(page);
@@ -194,7 +195,8 @@ test('the legend shows every interface type with its colour and symbol', async (
 test('panels: the inspector title stays visible, the checks panel resizes, dependent inputs are disabled', async ({ page }, info) => {
   await open(page);
   await openExample(page, 'Space Packets over SpaceWire');
-  await page.locator('[data-block="spp0"] .cmp-block-head').click();
+  // the block may lie outside the view at the zoom of Fit: select it with the keyboard
+  await page.locator('[data-block="spp0"]').focus();
   const insp = page.locator('.cmp-inspector');
   await insp.evaluate((el) => { el.scrollTop = el.scrollHeight; });
   const bar = await page.locator('.cmp-insp-bar').boundingBox();
@@ -387,24 +389,20 @@ test('performance: 100 blocks open, pan and drag smoothly', async ({ page }, inf
   await settled(page);
   const openMs = Date.now() - t0;
   await expect(page.locator('.cmp-edge')).toHaveCount(100);
-  const c = await canvasPoint(page, 0.5, 0.5);
-  // panning on the empty canvas (the view is fitted, so there is grid around the blocks)
-  const corner = await canvasPoint(page, 0.98, 0.02);
+  // panning with the middle button (it pans wherever it starts)
+  const corner = await canvasPoint(page, 0.9, 0.1);
   const pan = await frameTimes(page, async () => {
     await page.mouse.move(corner.x, corner.y);
-    await page.mouse.down();
+    await page.mouse.down({ button: 'middle' });
     for (let k = 0; k < 60; k += 1) {
       await page.mouse.move(corner.x - k * 6, corner.y + k * 4);
       await page.waitForTimeout(16);
     }
-    await page.mouse.up();
+    await page.mouse.up({ button: 'middle' });
   });
-  // zoom in and drag a block with its connections
-  await page.mouse.move(c.x, c.y);
-  for (let k = 0; k < 4; k += 1) await page.mouse.wheel(0, -400);
+  // back to the start of the system (Fit shows its top left at a readable zoom) and drag a block with its connections
+  await page.getByRole('button', { name: 'Fit' }).click();
   await settled(page);
-  const blk = page.locator('[data-block="spw0"] .cmp-block-head');
-  await blk.scrollIntoViewIfNeeded();
   const bb = await page.locator('[data-block="spw0"] .cmp-block-head').boundingBox();
   if (!bb) throw new Error('no block');
   const drag = await frameTimes(page, async () => {

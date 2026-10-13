@@ -217,40 +217,87 @@ function sppOverSpw() {
 }
 
 test('arrange lays out the data flow from left to right without overlaps', () => {
-  const d = sppOverSpw();
+  let d = createDesign('t');
+  for (const b of ['openrmap/omap_core', 'openwire/owr_core']) d = addInstance(d, cat, b, { x: 0, y: 0 }, b === 'openrmap/omap_core' ? 'target' : undefined).design;
+  d = link(cat, d, 'rmap0.M_Pkt', 'spw0.S_Pkt');
+  d = link(cat, d, 'spw0.M_Pkt', 'rmap0.S_Pkt');
+  d = addInstance(d, cat, 'openwire/owr_core', { x: 0, y: 0 }).design;
+  d = link(cat, d, 'spw1.M_Pkt', 'rmap0.S_User');
   assert.ok(needsArrange(d));
   const a = arrange(cat, d);
   assert.ok(!needsArrange(a));
   const sc = scene(a);
   const x = (/** @type {string} */ id) => /** @type {any} */ (sc.blocks.get(id)).x;
-  assert.ok(x('spp0') < x('nchar0') && x('nchar0') < x('rmap0') && x('rmap0') < x('spw0'), 'one column per stage');
+  assert.ok(x('spw1') < x('rmap0') && x('rmap0') < x('spw0'), 'one column per stage');
   const bl = [...sc.blocks.values()];
   for (let i = 0; i < bl.length; i += 1) for (let j = i + 1; j < bl.length; j += 1) assert.ok(!overlaps(bl[i], bl[j]));
   assertClean(sc);
   // the forward connections of the chain run straight
   const straight = [...sc.edges.values()].filter((e) => e.hops.length === 1 && e.hops[0].length === 2).length;
-  assert.ok(straight >= 3, `${straight} straight connections`);
+  assert.ok(straight >= 2, `${straight} straight connections`);
+  // deterministic and stable
+  assert.deepEqual(arrange(cat, d).layout, a.layout);
+  assert.deepEqual(arrange(cat, a).layout.instances, a.layout.instances);
+});
+
+test('arrange wraps a row too wide for the view into runs of columns, each below the previous one', () => {
+  const d = sppOverSpw();
+  const a = arrange(cat, d);
+  const sc = scene(a);
+  const b = (/** @type {string} */ id) => /** @type {any} */ (sc.blocks.get(id));
+  // four stages: two runs of two, the data flow from left to right in each
+  assert.ok(b('spp0').x < b('nchar0').x && b('rmap0').x < b('spw0').x);
+  assert.equal(b('spp0').x, b('rmap0').x);
+  assert.ok(b('rmap0').y >= Math.max(b('spp0').y + b('spp0').h, b('nchar0').y + b('nchar0').h) + ARRANGE.wrapGap - 1);
+  const bl = [...sc.blocks.values()];
+  const width = Math.max(...bl.map((r) => r.x + r.w)) - Math.min(...bl.map((r) => r.x));
+  assert.ok(width <= ARRANGE.stackWidth, `${width} wide`);
+  for (let i = 0; i < bl.length; i += 1) for (let j = i + 1; j < bl.length; j += 1) assert.ok(!overlaps(bl[i], bl[j]));
+  assertClean(sc);
   // deterministic and stable
   assert.deepEqual(arrange(cat, d).layout, a.layout);
   assert.deepEqual(arrange(cat, a).layout.instances, a.layout.instances);
 });
 
 test('arrange puts clock domains side by side with room for the clock crossing on the border', () => {
+  let d = pair();
+  const r = addDomain(d, { name: 'Fast', frequencyHz: 150e6 });
+  d = moveToDomain(r.design, cat, 'rmap0', r.id);
+  const sc = scene(arrange(cat, d));
+  const sys = /** @type {any} */ (sc.domains.get('sys')?.box);
+  const fast = /** @type {any} */ (sc.domains.get(r.id)?.box);
+  assert.ok(!overlaps(sys, fast));
+  assert.equal(fast.x - (sys.x + sys.w), ARRANGE.domainGapX);
+  const fifos = [...sc.adapters.values()];
+  assert.equal(fifos.length, 2);
+  for (const f of fifos) {
+    assert.equal(f.orient, 'h');
+    assert.ok(Math.abs(f.x - (sys.x + sys.w + fast.x) / 2) <= 1, 'centred on the border');
+    for (const bl of sc.blocks.values()) assert.ok(!overlaps(f.rect, bl));
+  }
+  assertClean(sc);
+});
+
+test('arrange stacks clock domains that would be too wide side by side', () => {
   let d = sppOverSpw();
   const r = addDomain(d, { name: 'Port', frequencyHz: 50e6 });
   d = r.design;
   for (const id of ['nchar0', 'rmap0', 'spw0']) d = moveToDomain(d, cat, id, r.id);
-  const a = arrange(cat, d);
-  const sc = scene(a);
+  const sc = scene(arrange(cat, d));
   const sys = /** @type {any} */ (sc.domains.get('sys')?.box);
   const port = /** @type {any} */ (sc.domains.get(r.id)?.box);
   assert.ok(!overlaps(sys, port));
-  assert.equal(port.x - (sys.x + sys.w), ARRANGE.domainGapX);
+  // the domains follow the data flow from top to bottom; the node starts below the adapter that feeds it
+  const [upper, lower] = sys.y < port.y ? [sys, port] : [port, sys];
+  assert.equal(lower.y - (upper.y + upper.h), ARRANGE.domainGapY);
+  const width = Math.max(sys.x + sys.w, port.x + port.w) - Math.min(sys.x, port.x);
+  assert.ok(width <= ARRANGE.stackWidth, `${width} wide`);
   const fifos = [...sc.adapters.values()];
   assert.equal(fifos.length, 2);
   for (const f of fifos) {
-    assert.ok(Math.abs(f.x - (sys.x + sys.w + port.x) / 2) <= 1, 'centred on the border');
-    for (const b of sc.blocks.values()) assert.ok(!overlaps(f.rect, b));
+    assert.equal(f.orient, 'v');
+    assert.ok(Math.abs(f.y - (upper.y + upper.h + lower.y) / 2) <= 1, 'centred on the border');
+    for (const bl of sc.blocks.values()) assert.ok(!overlaps(f.rect, bl));
   }
   assertClean(sc);
 });

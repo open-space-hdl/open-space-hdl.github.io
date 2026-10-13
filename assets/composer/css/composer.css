@@ -379,7 +379,6 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
   width: 200%;
   height: 200%;
 }
-.cmp-grid-dot { fill: var(--cmp-grid-dot); }
 
 .cmp-block { cursor: move; }
 .cmp-block-shadow {
@@ -491,10 +490,9 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
   transition: stroke-width 0.12s ease;
 }
 .cmp-edge:hover .cmp-edge-line { stroke-width: 3.6; }
-.cmp-edge.is-selected .cmp-edge-line {
-  stroke-width: 4.5;
-  filter: drop-shadow(0 0 3px rgba(238, 90, 18, 0.55));
-}
+.cmp-edge.is-selected .cmp-edge-line { stroke-width: 4.5; }
+/* a halo without SVG filters (filters are expensive to draw) */
+.cmp-edge.is-selected .cmp-edge-hit { stroke: rgba(238, 90, 18, 0.2); }
 .cmp-band {
   fill: none;
   stroke: var(--c);

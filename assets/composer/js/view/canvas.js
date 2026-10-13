@@ -19,7 +19,7 @@
 import { candidates, effectiveType } from '../model/compat.js';
 import { diffScenes } from '../model/diff.js';
 import {
-  ADAPTER_HEIGHT, ADAPTER_WIDTH, BLOCK_WIDTH, boxAt, CHIP_HEIGHT, DOMAIN_HEAD, fitViewport, GRID, HEADER_HEIGHT, snap,
+  ADAPTER_HEIGHT, ADAPTER_WIDTH, BLOCK_WIDTH, boxAt, CHIP_HEIGHT, DOMAIN_HEAD, fitViewport, GRID, HEADER_HEIGHT, READABLE_ZOOM, snap,
 } from '../model/layout.js';
 import { distanceAlong, pathLength, roundedPath, routePath } from '../model/router.js';
 import { adapterShape, boxAround, buildScene, sceneBounds } from '../model/scene.js';
@@ -109,11 +109,6 @@ export class CanvasView {
       role: 'group',
       'aria-label': 'Blocks and connections of the system. Arrow keys pan the view; Tab moves to the blocks, arrow keys move a block.',
     }));
-    const defs = s('defs', {},
-      s('pattern', { id: 'cmp-grid', width: GRID, height: GRID, patternUnits: 'userSpaceOnUse' },
-        s('circle', { cx: 1, cy: 1, r: 1, class: 'cmp-grid-dot' })),
-    );
-    this.gridRect = s('rect', { class: 'cmp-grid', x: 0, y: 0, width: '100%', height: '100%', fill: 'url(#cmp-grid)' });
     this.world = /** @type {SVGGElement} */ (s('g', { class: 'cmp-world' }));
     this.domainLayer = /** @type {SVGGElement} */ (s('g', { class: 'cmp-domains' }));
     this.edgeLayer = /** @type {SVGGElement} */ (s('g', { class: 'cmp-edges' }));
@@ -122,7 +117,8 @@ export class CanvasView {
     this.blockLayer = /** @type {SVGGElement} */ (s('g', { class: 'cmp-blocks' }));
     this.overlay = /** @type {SVGGElement} */ (s('g', { class: 'cmp-overlay' }));
     this.world.append(this.domainLayer, this.edgeLayer, this.headLayer, this.autoLayer, this.blockLayer, this.overlay);
-    this.svg.append(defs, this.gridRect, this.world);
+    // the dot grid is the background of the canvas area (CSS), not part of the SVG: it costs no SVG drawing
+    this.svg.append(this.world);
 
     this.tip = document.createElement('div');
     this.tip.className = 'cmp-tip';
@@ -252,9 +248,23 @@ export class CanvasView {
     const ox = x + (big ? this.wrap.clientWidth / 2 : 0);
     const oy = y + (big ? this.wrap.clientHeight / 2 : 0);
     this.world.setAttribute('transform', `translate(${ox} ${oy}) scale(${zoom})`);
-    const pattern = this.svg.querySelector('#cmp-grid');
-    pattern?.setAttribute('patternTransform', `translate(${ox} ${oy}) scale(${zoom})`);
+    this.applyGrid(x, y, zoom);
     this.svg.classList.toggle('is-zoomed-out', zoom < 0.6);
+  }
+
+  /**
+   * Dot grid of the canvas area for a view: a dot on every grid point of the world.
+   * @param {number} x
+   * @param {number} y
+   * @param {number} zoom
+   */
+  applyGrid(x, y, zoom) {
+    const size = GRID * zoom;
+    const r = Math.max(0.6, Math.min(1.2, zoom));
+    const st = this.wrap.style;
+    st.backgroundImage = `radial-gradient(circle, var(--cmp-grid-dot) ${r.toFixed(2)}px, transparent ${(r + 0.4).toFixed(2)}px)`;
+    st.backgroundSize = `${size}px ${size}px`;
+    st.backgroundPosition = `${(x + zoom - size / 2).toFixed(1)}px ${(y + zoom - size / 2).toFixed(1)}px`;
   }
 
   /**
@@ -304,11 +314,11 @@ export class CanvasView {
     this.glideView({ x: r.width / 2 - p.x * this.view.zoom, y: r.height / 2 - p.y * this.view.zoom, zoom: this.view.zoom });
   }
 
-  /** Fits the whole system into the view. */
+  /** Fits the system into the view, at a readable zoom (a larger system shows its start and is panned). */
   fit() {
     const r = this.area();
     const b = this.scene ? sceneBounds(this.scene) : null;
-    this.glideView(fitViewport(b ? { x: b.x, y: b.y, width: b.w, height: b.h } : null, r.width, r.height));
+    this.glideView(fitViewport(b ? { x: b.x, y: b.y, width: b.w, height: b.h } : null, r.width, r.height, READABLE_ZOOM));
   }
 
   /** Size of the canvas in pixels. */
@@ -1262,6 +1272,7 @@ export class CanvasView {
       return;
     }
     this.svg.style.transform = `translate(${dx - dr.committed.x}px, ${dy - dr.committed.y}px)`;
+    this.applyGrid(dr.view.x + dx, dr.view.y + dy, dr.view.zoom);
   }
 
   /**
