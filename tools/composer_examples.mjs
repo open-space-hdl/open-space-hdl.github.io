@@ -32,6 +32,7 @@ function base(name, description, blocks) {
   return d;
 }
 
+/** @type {[string, string, import('../assets/composer/js/model/design.js').Design][]} */
 const examples = [];
 
 {
@@ -41,7 +42,7 @@ const examples = [];
   ]);
   d = link(d, 'rmap0.M_Pkt', 'spw0.S_Pkt');
   d = link(d, 'spw0.M_Pkt', 'rmap0.S_Pkt');
-  examples.push(['spw-rmap-node', d]);
+  examples.push(['spw-rmap-node', 'SpaceWire RMAP target', d]);
 }
 
 {
@@ -62,11 +63,18 @@ const examples = [];
   d = link(d, 'spp0.M_Link', 'nchar0.S_Link');
   d = link(d, 'nchar0.M_Link', 'spp0.S_Link');
   d = setGeneric(d, cat, 'spp0', 'NumTx_g', 2).design;
-  examples.push(['spp-over-spw', d]);
+  examples.push(['spp-over-spw', 'Space Packets over SpaceWire', d]);
 }
 
-for (const [file, d] of examples) {
+for (const [file, , d] of examples) {
   const path = new URL(`../assets/composer/examples/${file}.composer.json`, import.meta.url);
-  writeFileSync(path, toText(d, cat).replace(/\r\n/g, '\n'));
+  writeFileSync(path, toText(d, cat));
   console.log(`wrote ${file}.composer.json`);
 }
+
+// Index for the Examples menu of the page
+const index = {
+  examples: examples.map(([file, title, d]) => ({ file: `${file}.composer.json`, name: d.name, title, description: d.description })),
+};
+writeFileSync(new URL('../assets/composer/examples/index.json', import.meta.url), `${JSON.stringify(index, null, 2)}\n`);
+console.log('wrote index.json');

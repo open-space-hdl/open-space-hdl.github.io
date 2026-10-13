@@ -40,11 +40,29 @@ export function blockGeometry(ports) {
 }
 
 /**
- * SVG path of a connection between two port positions (absolute), leaving each port along its normal.
+ * Whether a connection from an output on the right to an input on the left runs backwards (the input lies left of
+ * the output), so that it has to be routed around the blocks.
+ * @param {{x: number, side: string}} a
+ * @param {{x: number, side: string}} b
+ */
+export function isBackward(a, b) {
+  return a.side === 'right' && b.side === 'left' && b.x < a.x + 2 * GRID;
+}
+
+/**
+ * SVG path of a connection between two port positions (absolute), leaving each port along its normal. A backward
+ * connection with a detour line runs out of the output, below both blocks at detourY and into the input.
  * @param {{x: number, y: number, side: string}} a
  * @param {{x: number, y: number, side: string}} b
+ * @param {number} [detourY]
  */
-export function connectionPath(a, b) {
+export function connectionPath(a, b, detourY) {
+  const f = (/** @type {number} */ n) => Math.round(n * 10) / 10;
+  if (detourY !== undefined && isBackward(a, b)) {
+    const r = Math.max(28, Math.min(64, (detourY - Math.max(a.y, b.y)) * 0.8));
+    return `M${f(a.x)},${f(a.y)} C${f(a.x + r)},${f(a.y)} ${f(a.x + r)},${f(detourY)} ${f(a.x)},${f(detourY)}`
+      + ` L${f(b.x)},${f(detourY)} C${f(b.x - r)},${f(detourY)} ${f(b.x - r)},${f(b.y)} ${f(b.x)},${f(b.y)}`;
+  }
   const dist = Math.hypot(b.x - a.x, b.y - a.y);
   const reach = Math.max(36, Math.min(160, dist * 0.45));
   const dir = (/** @type {string} */ side) => (side === 'left' ? [-1, 0] : side === 'right' ? [1, 0] : side === 'bottom' ? [0, 1] : [0, 0]);
@@ -52,7 +70,6 @@ export function connectionPath(a, b) {
   const [bx, by] = dir(b.side);
   const c1 = { x: a.x + ax * reach, y: a.y + ay * reach };
   const c2 = { x: b.x + bx * reach, y: b.y + by * reach };
-  const f = (/** @type {number} */ n) => Math.round(n * 10) / 10;
   return `M${f(a.x)},${f(a.y)} C${f(c1.x)},${f(c1.y)} ${f(c2.x)},${f(c2.y)} ${f(b.x)},${f(b.y)}`;
 }
 

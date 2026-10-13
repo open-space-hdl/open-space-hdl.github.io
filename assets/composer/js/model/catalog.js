@@ -22,7 +22,7 @@ export const CATALOG_VERSION = 1;
  * @property {string} description
  * @property {Record<string, {dir: 'in'|'out', optional?: boolean}>} [signals]
  * @property {'in'|'out'|'mixed'} [fields]
- * @property {{type: string, sideband?: string, note?: string}[]} [accepts]
+ * @property {{type: string, sideband?: string, condition?: string, note?: string}[]} [accepts]
  * @property {{type: string, via: string}[]} [bridges]
  * @property {boolean} [generic]
  */

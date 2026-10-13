@@ -1,0 +1,16 @@
+{
+  "examples": [
+    {
+      "file": "spw-rmap-node.composer.json",
+      "name": "spw_rmap_node",
+      "title": "SpaceWire RMAP target",
+      "description": "SpaceWire RMAP target: an OpenWire port and an OpenRMAP target with its memory interface."
+    },
+    {
+      "file": "spp-over-spw.composer.json",
+      "name": "spp_over_spw",
+      "title": "Space Packets over SpaceWire",
+      "description": "Space Packets over SpaceWire: OpenSPP behind the pass-through port of an OpenRMAP target, which shares one OpenWire port."
+    }
+  ]
+}
