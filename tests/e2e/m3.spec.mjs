@@ -84,9 +84,9 @@ test('Arrange lays out the system from left to right and is undone in one step',
   expect((await design(page)).layout.instances).toEqual(arranged);
   const blocks = await rects(page, '.cmp-block-body');
   for (let i = 0; i < blocks.length; i += 1) for (let j = i + 1; j < blocks.length; j += 1) expect(overlap(blocks[i], blocks[j])).toBe(false);
-  // four stages wrap into two runs of two, the data flow from left to right in each
-  const at = (/** @type {string} */ id) => arranged[id];
-  expect(at('spw0').x < at('rmap0').x && at('nchar0').x < at('spp0').x && at('nchar0').y > at('rmap0').y).toBe(true);
+  // four stages stay one row (the view pans), the data flow from left to right
+  const x = (/** @type {string} */ id) => arranged[id].x;
+  expect(x('spw0') < x('rmap0') && x('rmap0') < x('nchar0') && x('nchar0') < x('spp0')).toBe(true);
   await shot(page, info, '06-arranged-example');
   await page.keyboard.press('Control+z');
   await settled(page);

@@ -240,23 +240,60 @@ test('arrange lays out the data flow from left to right without overlaps', () =>
   assert.deepEqual(arrange(cat, a).layout.instances, a.layout.instances);
 });
 
-test('arrange wraps a row too wide for the view into runs of columns, each below the previous one', () => {
-  const d = sppOverSpw();
-  const a = arrange(cat, d);
-  const sc = scene(a);
+/** Catalog with a synthetic stage: a sample stream in and out. */
+function stageCatalog() {
+  const blk = streamBlock('test/stage', { name: 'In', type: 'c123.samples', role: 'sink', widths: { data: 16 }, ready: true });
+  const out = streamBlock('test/stage', { name: 'Out', type: 'c123.samples', role: 'source', widths: { data: 16 }, ready: true });
+  blk.ports.push(...out.ports.filter((/** @type {any} */ p) => p.name.startsWith('Out_')));
+  blk.interfaces.push(out.interfaces[0]);
+  blk.idPrefix = 'st';
+  return catalogWith([blk]);
+}
+
+/**
+ * A chain of stages, each feeding the next.
+ * @param {any} c
+ * @param {number} n
+ */
+function chainOf(c, n) {
+  let d = createDesign('t');
+  for (let k = 0; k < n; k += 1) d = addInstance(d, c, 'test/stage', { x: 0, y: 0 }).design;
+  for (let k = 0; k + 1 < n; k += 1) d = link(c, d, `st${k}.Out`, `st${k + 1}.In`);
+  return d;
+}
+
+test('arrange keeps a row that the view can pan through in one row', () => {
+  const sc = scene(arrange(cat, sppOverSpw()));
   const b = (/** @type {string} */ id) => /** @type {any} */ (sc.blocks.get(id));
-  // four stages: two runs of two, the data flow from left to right in each
-  assert.ok(b('spp0').x < b('nchar0').x && b('rmap0').x < b('spw0').x);
-  assert.equal(b('spp0').x, b('rmap0').x);
-  assert.ok(b('rmap0').y >= Math.max(b('spp0').y + b('spp0').h, b('nchar0').y + b('nchar0').h) + ARRANGE.wrapGap - 1);
+  assert.ok(b('spp0').x < b('nchar0').x && b('nchar0').x < b('rmap0').x && b('rmap0').x < b('spw0').x);
   const bl = [...sc.blocks.values()];
   const width = Math.max(...bl.map((r) => r.x + r.w)) - Math.min(...bl.map((r) => r.x));
-  assert.ok(width <= ARRANGE.stackWidth, `${width} wide`);
+  assert.ok(width > ARRANGE.viewWidth && width <= ARRANGE.wrapWidth, `${width} wide`);
+});
+
+test('arrange wraps a row much wider than the view into runs that fit, where the connections only run forward', () => {
+  const c = stageCatalog();
+  const d = chainOf(c, 6);
+  const a = arrange(c, d);
+  const sc = scene(a, c);
+  const b = (/** @type {number} */ k) => /** @type {any} */ (sc.blocks.get(`st${k}`));
+  // six stages: two runs of three, the data flow from left to right in each, the second run below the first
+  for (const k of [0, 1, 3, 4]) assert.ok(b(k).x < b(k + 1).x && b(k).y === b(k + 1).y, `st${k} before st${k + 1}`);
+  assert.equal(b(0).x, b(3).x);
+  assert.ok(b(3).y >= b(0).y + b(0).h + ARRANGE.wrapGap - 1);
+  for (const run of [[0, 1, 2], [3, 4, 5]]) {
+    assert.ok(b(run[2]).x + b(run[2]).w - b(run[0]).x <= ARRANGE.viewWidth);
+  }
+  const bl = [...sc.blocks.values()];
   for (let i = 0; i < bl.length; i += 1) for (let j = i + 1; j < bl.length; j += 1) assert.ok(!overlaps(bl[i], bl[j]));
   assertClean(sc);
   // deterministic and stable
-  assert.deepEqual(arrange(cat, d).layout, a.layout);
-  assert.deepEqual(arrange(cat, a).layout.instances, a.layout.instances);
+  assert.deepEqual(arrange(c, d).layout, a.layout);
+  assert.deepEqual(arrange(c, a).layout.instances, a.layout.instances);
+  // a connection back from the end to the start would cross the ones between the runs: the row stays a row
+  const loop = scene(arrange(c, link(c, d, 'st5.Out', 'st0.In')), c);
+  const ys = new Set([...loop.blocks.values()].map((r) => r.y));
+  assert.equal(ys.size, 1, 'one row');
 });
 
 test('arrange puts clock domains side by side with room for the clock crossing on the border', () => {
@@ -279,11 +316,12 @@ test('arrange puts clock domains side by side with room for the clock crossing o
 });
 
 test('arrange stacks clock domains that would be too wide side by side', () => {
-  let d = sppOverSpw();
+  const c = stageCatalog();
+  let d = chainOf(c, 7);
   const r = addDomain(d, { name: 'Port', frequencyHz: 50e6 });
   d = r.design;
-  for (const id of ['nchar0', 'rmap0', 'spw0']) d = moveToDomain(d, cat, id, r.id);
-  const sc = scene(arrange(cat, d));
+  for (const id of ['st4', 'st5', 'st6']) d = moveToDomain(d, c, id, r.id);
+  const sc = scene(arrange(c, d), c);
   const sys = /** @type {any} */ (sc.domains.get('sys')?.box);
   const port = /** @type {any} */ (sc.domains.get(r.id)?.box);
   assert.ok(!overlaps(sys, port));
@@ -291,9 +329,9 @@ test('arrange stacks clock domains that would be too wide side by side', () => {
   const [upper, lower] = sys.y < port.y ? [sys, port] : [port, sys];
   assert.equal(lower.y - (upper.y + upper.h), ARRANGE.domainGapY);
   const width = Math.max(sys.x + sys.w, port.x + port.w) - Math.min(sys.x, port.x);
-  assert.ok(width <= ARRANGE.stackWidth, `${width} wide`);
+  assert.ok(width <= ARRANGE.wrapWidth, `${width} wide`);
   const fifos = [...sc.adapters.values()];
-  assert.equal(fifos.length, 2);
+  assert.equal(fifos.length, 1);
   for (const f of fifos) {
     assert.equal(f.orient, 'v');
     assert.ok(Math.abs(f.y - (upper.y + upper.h + lower.y) / 2) <= 1, 'centred on the border');

@@ -30,9 +30,11 @@ export const ARRANGE = {
   domainGapX: 96,
   domainGapY: 72,
   origin: { x: 64, y: 64 },
-  // a row of blocks wider than this wraps and clock domains side by side wider than this are stacked, so that the
-  // system stays readable at the zoom of Fit
-  stackWidth: 1100,
+  // width that the view shows at the readable zoom of Fit on a 1440 pixel wide window
+  viewWidth: 1100,
+  // a row of blocks up to this width stays a row (the view pans); a wider row wraps into runs of at most one view, and
+  // clock domains side by side wider than this are stacked
+  wrapWidth: 1650,
   // vertical distance between the runs of a wrapped row (room for the connections from one run to the next)
   wrapGap: 96,
 };
@@ -283,6 +285,44 @@ function stack(items, gap) {
 }
 
 /**
+ * Runs of columns for a row that wraps: every run fits into the view, and a run ends only where no connection leads
+ * back to an earlier column, so that the connections from one run to the next all run forward (down and to the left)
+ * and do not cross the ones coming back. Fewest runs first, then fewest connections between runs, then the most even
+ * widths. Null when the row cannot wrap that way (it stays a row, and the view pans).
+ * @param {number} ncol
+ * @param {number[]} colX
+ * @param {(c: number) => number} right right edge of a column
+ * @param {{ u: string, v: string }[]} inner connections inside the group
+ * @param {Map<string, number>} layer column of every block
+ * @returns {[number, number][] | null}
+ */
+function wrapRuns(ncol, colX, right, inner, layer) {
+  const col = (/** @type {string} */ m) => layer.get(m) ?? 0;
+  const back = (/** @type {number} */ c) => inner.some((e) => col(e.u) >= c && col(e.v) < c);
+  const across = (/** @type {number} */ c) => inner.filter((e) => col(e.u) < c && col(e.v) >= c).length;
+  /** @type {({ runs: number, edges: number, widest: number, from: number } | null)[]} */
+  const best = Array.from({ length: ncol + 1 }, () => null);
+  best[0] = { runs: 0, edges: 0, widest: 0, from: -1 };
+  for (let c = 1; c <= ncol; c += 1) {
+    for (let b = 0; b < c; b += 1) {
+      const prev = best[b];
+      const width = right(c - 1) - colX[b];
+      if (!prev || width > ARRANGE.viewWidth || (b > 0 && back(b))) continue;
+      const cand = { runs: prev.runs + 1, edges: prev.edges + (b > 0 ? across(b) : 0), widest: Math.max(prev.widest, width), from: b };
+      const cur = best[c];
+      if (!cur || cand.runs < cur.runs || (cand.runs === cur.runs && (cand.edges < cur.edges || (cand.edges === cur.edges && cand.widest < cur.widest)))) {
+        best[c] = cand;
+      }
+    }
+  }
+  if (!best[ncol]) return null;
+  /** @type {[number, number][]} */
+  const runs = [];
+  for (let c = ncol; c > 0; c = /** @type {any} */ (best[c]).from) runs.unshift([/** @type {any} */ (best[c]).from, c]);
+  return runs.length > 1 ? runs : null;
+}
+
+/**
  * Arranges the whole system.
  * @param {Catalog} cat
  * @param {Design} d
@@ -368,17 +408,10 @@ export function arrange(cat, d) {
       for (const [m, v] of stack(items, ARRANGE.rowGap)) y.set(m, v);
     }
     for (let c = 0; c < ncol; c += 1) for (const m of cols[c]) local.set(m, { x: colX[c], y: y.get(m) ?? 0 });
-    // a row too wide for the view wraps like text: the fewest runs of columns that fit, with the columns spread evenly
-    // over them, each run below the previous one
+    // a row much wider than the view wraps like text into runs of columns, each below the previous one
     const right = (/** @type {number} */ c) => colX[c] + Math.max(BLOCK_WIDTH, ...cols[c].map((m) => blocks.get(m)?.w ?? BLOCK_WIDTH));
-    if (ncol > 1 && right(ncol - 1) > ARRANGE.stackWidth) {
-      /** @type {[number, number][]} */
-      let runs = [];
-      for (let k = 2; k <= ncol; k += 1) {
-        const per = Math.ceil(ncol / k);
-        runs = Array.from({ length: Math.ceil(ncol / per) }, (_, r) => /** @type {[number, number]} */ ([r * per, Math.min(ncol, (r + 1) * per)]));
-        if (runs.every(([a, b]) => right(b - 1) - colX[a] <= ARRANGE.stackWidth)) break;
-      }
+    const runs = ncol > 1 && right(ncol - 1) > ARRANGE.wrapWidth ? wrapRuns(ncol, colX, right, inner, layer) : null;
+    if (runs) {
       let top = 0;
       for (const [a, b] of runs) {
         const run = cols.slice(a, b).flat();
@@ -470,8 +503,10 @@ export function arrange(cat, d) {
     for (const [g, yv] of stack(items, ARRANGE.domainGapY)) gPos.set(g, { x: gPos.get(g)?.x ?? 0, y: yv });
   }
   // too wide side by side: one domain per row in the order of the data flow, each starting below the block that
-  // feeds it, so that the connections between domains run down across a horizontal border
-  if (ngcol > 1 && gx - ARRANGE.domainGapX > ARRANGE.stackWidth) {
+  // feeds it (but not reaching beyond the widest domain), so that the connections between domains run down across a
+  // horizontal border
+  if (ngcol > 1 && gx - ARRANGE.domainGapX > ARRANGE.wrapWidth) {
+    const widest = Math.max(...groups.map((g) => outer(g).w));
     let y = 0;
     for (const g of gOrder) {
       const feed = cross.filter((e) => groupOf.get(e.v) === g && gPos.has(/** @type {string} */ (groupOf.get(e.u))) && (gPos.get(/** @type {string} */ (groupOf.get(e.u)))?.y ?? Infinity) < y);
@@ -479,7 +514,7 @@ export function arrange(cat, d) {
       if (feed.length > 0) {
         const src = feed[0].u;
         const sg = /** @type {string} */ (groupOf.get(src));
-        x = Math.max(0, (gPos.get(sg)?.x ?? 0) + pad(sg).x + (local.get(src)?.x ?? 0) - pad(g).x);
+        x = Math.max(0, Math.min(widest - outer(g).w, (gPos.get(sg)?.x ?? 0) + pad(sg).x + (local.get(src)?.x ?? 0) - pad(g).x));
       }
       gPos.set(g, { x, y });
       y += outer(g).h + ARRANGE.domainGapY;

@@ -400,6 +400,28 @@ export class CanvasView {
     return b ? { x: b.x + b.w / 2, y: b.y + b.h / 2 } : null;
   }
 
+  /**
+   * Brings a block into the view when it lies partly outside (keyboard focus on a block of a large system): the view
+   * glides by the smallest step that shows it, or centres it when it is larger than the view.
+   * @param {string} id
+   */
+  reveal(id) {
+    const b = this.scene?.blocks.get(id);
+    if (!b) return;
+    const r = this.area();
+    const { x, y, zoom } = this.view;
+    const M = 24;
+    const shift = (/** @type {number} */ lo, /** @type {number} */ hi, /** @type {number} */ size) => {
+      if (hi - lo > size - 2 * M) return size / 2 - (lo + hi) / 2;
+      if (lo < M) return M - lo;
+      if (hi > size - M) return size - M - hi;
+      return 0;
+    };
+    const dx = shift(x + b.x * zoom, x + (b.x + b.w) * zoom, r.width);
+    const dy = shift(y + b.y * zoom, y + (b.y + b.h) * zoom, r.height);
+    if (dx !== 0 || dy !== 0) this.glideView({ x: x + dx, y: y + dy, zoom });
+  }
+
   // ------------------------------------------------------------------------------------------------------------------
   // Rendering
   // ------------------------------------------------------------------------------------------------------------------
@@ -1698,6 +1720,8 @@ export class CanvasView {
     if (blockEl) {
       const id = /** @type {string} */ (blockEl.getAttribute('data-block'));
       if (!this.app.selection.instances.has(id)) this.app.selectInstances([id], undefined, { keepFocus: true });
+      // a block reached with the keyboard is shown (a pointer press focuses a block that is visible anyway)
+      this.reveal(id);
     } else if (autoEl) {
       const id = /** @type {string} */ (autoEl.getAttribute('data-auto'));
       if (this.app.selection.auto !== id) this.app.selectAuto(id);

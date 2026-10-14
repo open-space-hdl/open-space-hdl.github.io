@@ -186,7 +186,8 @@ export class InspectorView {
         h('p', { class: 'cmp-insp-meta' },
           h('span', {}, preset ? `${preset.name} (${b.name})` : b.name),
           h('span', { class: 'cmp-mono' }, b.entity),
-          b.project ? h('span', {}, b.project) : null)),
+          b.project ? h('span', {}, b.project) : null,
+          b.vendor ? h('span', { class: 'cmp-vendor' }, `Vendor-specific: ${b.vendor}`) : null)),
       h('div', { class: 'cmp-insp-head' },
         h('p', { class: 'cmp-insp-summary' }, preset?.summary ?? b.summary),
         b.doc ? h('a', { class: 'cmp-doc-link', href: b.doc, target: '_blank', rel: 'noopener' }, 'Documentation') : null),
@@ -360,6 +361,8 @@ export class InspectorView {
       h('span', { class: 'cmp-itf-type' }, `${type.name}${p.widths.data !== undefined ? `, ${p.widths.data} bit` : ''}`));
     /** @type {any[]} */
     const body = [];
+    // the label of the interface, unless a constant field below says the same
+    let label = p.label;
     for (const c of conns) {
       const other = c.from === ref ? c.to : c.from;
       body.push(h('p', { class: 'cmp-itf-conn' },
@@ -390,6 +393,7 @@ export class InspectorView {
         // the inputs are constants of the instance
         const inst = getInstance(d, instId);
         const values = { ...Object.fromEntries(p.itf.sideband.fields.map((f) => [f.name, f.default ?? 0])), ...(inst?.constants?.[p.ref] ?? {}) };
+        if (p.itf.sideband.fields.some((f) => f.label === p.label)) label = '';
         body.push(h('div', { class: 'cmp-constants' },
           p.itf.sideband.fields.map((f) => this.constantField(instId, p.ref, f, values[f.name], values, p.itf.sideband?.fields ?? []))),
         h('p', { class: 'cmp-help' }, `Unconnected: the inputs are these constants. ${p.itf.sideband.description ?? ''}`));
@@ -403,7 +407,7 @@ export class InspectorView {
       }
     }
     return h('li', { class: 'cmp-itf', 'data-itf': ref, title: p.itf.description ?? p.label }, head,
-      h('p', { class: 'cmp-itf-label' }, p.label), body);
+      label ? h('p', { class: 'cmp-itf-label' }, label) : null, body);
   }
 
   /**
