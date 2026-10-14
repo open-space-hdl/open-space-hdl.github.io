@@ -30,14 +30,23 @@ export async function open(page) {
 
 /**
  * Waits until nothing moves on the canvas: the springs rest and every finite animation has ended (the flow of a
- * selected connection runs forever and does not count).
+ * selected connection runs forever and does not count), for several animation frames in a row. A single quiet frame
+ * is not enough: the editor starts some motions in the next frame, for example the view that glides to fit a system
+ * just opened.
  * @param {import('@playwright/test').Page} page
  */
 export async function settled(page) {
+  await page.evaluate(() => {
+    /** @type {any} */ (window).cmpQuietFrames = 0;
+  });
+  // polled once per animation frame
   await page.waitForFunction(() => {
+    const w = /** @type {any} */ (window);
     const c = document.querySelector('.cmp-canvas');
-    if (!c || c.getAttribute('data-motion') !== 'rest') return false;
-    return document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getComputedTiming().endTime === Infinity);
+    const quiet = c?.getAttribute('data-motion') === 'rest'
+      && document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getComputedTiming().endTime === Infinity);
+    w.cmpQuietFrames = quiet ? w.cmpQuietFrames + 1 : 0;
+    return w.cmpQuietFrames >= 5;
   });
 }
 
@@ -228,15 +237,30 @@ export async function openExample(page, title) {
 }
 
 /**
- * Bounding boxes of the elements that match a selector.
+ * Bounding boxes of the elements of several selectors, measured together in one frame and repeated until two
+ * measurements in a row agree: positions to compare are taken while nothing moves, never half way through a motion.
  * @param {import('@playwright/test').Page} page
- * @param {string} selector
+ * @param {...string} selectors
+ * @returns {Promise<{x: number, y: number, w: number, h: number}[][]>} one list per selector
  */
-export async function rects(page, selector) {
-  return page.locator(selector).evaluateAll((els) => els.map((el) => {
-    const r = el.getBoundingClientRect();
-    return { x: r.x, y: r.y, w: r.width, h: r.height };
-  }));
+export async function stableRects(page, ...selectors) {
+  let last = '';
+  /** @type {{x: number, y: number, w: number, h: number}[][]} */
+  let value = [];
+  await expect.poll(async () => {
+    value = await page.evaluate(async (sels) => {
+      await new Promise((done) => { requestAnimationFrame(() => requestAnimationFrame(() => done(undefined))); });
+      return sels.map((sel) => [...document.querySelectorAll(sel)].map((el) => {
+        const r = el.getBoundingClientRect();
+        return { x: r.x, y: r.y, w: r.width, h: r.height };
+      }));
+    }, selectors);
+    const key = JSON.stringify(value);
+    const same = key === last;
+    last = key;
+    return same;
+  }, { message: `positions of ${selectors.join(', ')} come to rest`, timeout: 10_000, intervals: [50] }).toBe(true);
+  return value;
 }
 
 /**
