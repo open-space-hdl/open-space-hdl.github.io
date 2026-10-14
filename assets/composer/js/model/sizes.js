@@ -13,9 +13,10 @@
  *                    source that meets a limit (info), a buffer that cannot hold the longest message (error) or not as
  *                    many as the full rate needs (warning), and what a block sends to the far end (info)
  *
- * The largest packet is propagated over the whole graph, not along the enumerated paths: a chain inside an unfinished
- * system (a block whose input is not connected yet) is checked as well. Every suggested value passes all rules of its
- * generic (suggest.js).
+ * The largest packet is propagated over the whole graph, not along the enumerated paths of the throughput analysis: a
+ * path needs a source and a sink, and an unfinished system often has neither yet (an input not connected, an output not
+ * served). Over the graph, a chain inside such a system (framer, core, send port) is checked as soon as its blocks are
+ * connected. Every suggested value passes all rules of its generic (suggest.js).
  */
 
 import { evaluate } from './expr.js';
@@ -32,7 +33,8 @@ import { smallestValid } from './suggest.js';
  * @property {number} baseValue    its value
  * @property {string} origin       the instance (or source) whose packets these are
  * @property {string} via          the last instance the packets leave before the interface
- * @property {string | null} source   the external input or link of an unbounded packet, else null
+ * @property {string | null} source   where an unbounded packet comes from: an external input, a link, or the output of
+ *                                    a block without rate data (its routes are not known); else null
  */
 
 /**
