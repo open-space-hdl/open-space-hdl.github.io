@@ -287,7 +287,8 @@ a.cmp-tool {
   text-transform: uppercase;
   color: var(--orange-text);
 }
-.cmp-pal-olo .cmp-pal-cat-title { color: var(--navy); }
+.cmp-pal-olo .cmp-pal-cat-title,
+.cmp-pal-subsystem .cmp-pal-cat-title { color: var(--navy); }
 .cmp-pal-group-title {
   display: flex;
   align-items: center;
@@ -322,12 +323,14 @@ a.cmp-tool {
   transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 .cmp-pal-olo .cmp-pal-item { border-left-color: var(--navy); }
+.cmp-pal-subsystem .cmp-pal-item { border-left-color: var(--navy); border-left-style: double; }
 .cmp-pal-item:hover {
   background: #FFFFFF;
   border-color: var(--orange);
   transform: translateX(2px);
 }
-.cmp-pal-olo .cmp-pal-item:hover { border-color: var(--navy); }
+.cmp-pal-olo .cmp-pal-item:hover,
+.cmp-pal-subsystem .cmp-pal-item:hover { border-color: var(--navy); }
 .cmp-pal-name { font-size: 0.86rem; font-weight: 600; }
 .cmp-pal-entity {
   font-family: var(--font-mono);
@@ -368,6 +371,7 @@ a.cmp-tool {
   will-change: transform;
 }
 .cmp-ghost-olo { border-color: var(--navy); }
+.cmp-ghost-subsystem { border-color: var(--navy); border-left-style: double; }
 .cmp-ghost.is-over-canvas { opacity: 1; }
 body.cmp-dragging,
 body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
@@ -435,6 +439,23 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
 .cmp-block-stripe { fill: var(--orange); }
 .cmp-block-olo .cmp-block-head { fill: #F1F4F8; }
 .cmp-block-olo .cmp-block-stripe { fill: var(--navy); }
+/* a subsystem: a system inside, drawn with a double outline */
+.cmp-block-subsystem .cmp-block-head { fill: #EEF1F6; }
+.cmp-block-subsystem .cmp-block-stripe { fill: var(--navy); }
+.cmp-block-subsystem .cmp-block-body { stroke: var(--navy); stroke-width: 1.5; stroke-dasharray: 7 3; }
+.cmp-block-changed text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--orange-text);
+}
+.cmp-subsystem-changed {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--orange);
+  border-radius: 8px;
+  background: #FFF6F0;
+}
 .cmp-block-id {
   font-size: 15px;
   font-weight: 650;

@@ -180,6 +180,7 @@ export class InspectorView {
     const main = b.generics.filter((g) => !g.advanced);
     const adv = b.generics.filter((g) => g.advanced);
     const ports = cat.ports(b, values);
+    if (b.kind === 'subsystem') return this.subsystemPanel(inst, b, rec, idInput, idErr.el, ports);
     return [
       h('div', { class: 'cmp-insp-bar' },
         idInput, idErr.el,
@@ -199,6 +200,44 @@ export class InspectorView {
             h('summary', {}, `Advanced (${adv.length})`),
             adv.map((g) => this.genericField(inst.id, g, values[g.name], inst.generics, rec)))
           : null),
+      this.clocksSection(inst.id, b, rec),
+      h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-itf' },
+        h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-itf' }, 'Interfaces'),
+        h('ul', { class: 'cmp-itf-list', role: 'list' }, ports.map((p) => this.interfaceRow(inst.id, p)))),
+      h('button', { type: 'button', class: 'cmp-btn cmp-btn-danger', onclick: () => this.app.deleteSelection() }, 'Delete block'),
+    ];
+  }
+
+  /**
+   * The inspector of a subsystem: what it contains, its clock inputs and interfaces, and its tab.
+   * @param {import('../model/design.js').Instance} inst
+   * @param {import('../model/catalog.js').BlockDef} b
+   * @param {import('../model/resolver.js').ResolvedInstance} rec
+   * @param {HTMLElement} idInput
+   * @param {HTMLElement} idErr
+   * @param {import('../model/catalog.js').PortView[]} ports
+   */
+  subsystemPanel(inst, b, rec, idInput, idErr, ports) {
+    const d = this.app.design;
+    const name = b.entity;
+    const def = d.subsystems?.[name];
+    const blocks = def ? def.instances.map((i) => i.id) : [];
+    const changed = this.app.changedSubsystems.get(name);
+    return [
+      h('div', { class: 'cmp-insp-bar' },
+        idInput, idErr,
+        h('p', { class: 'cmp-insp-meta' }, h('span', {}, 'Subsystem'), h('span', { class: 'cmp-mono' }, name))),
+      h('div', { class: 'cmp-insp-head' },
+        h('p', { class: 'cmp-insp-summary' }, def?.description || `The system ${name}, defined in this file.`)),
+      h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-subsystem' },
+        h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-subsystem' }, 'Subsystem'),
+        h('p', { class: 'cmp-help' }, `${blocks.length} block${blocks.length === 1 ? '' : 's'} inside: ${blocks.join(', ')}. Its Rst input gets the reset of ${d.name}; it has reset generators of its own.`),
+        changed
+          ? h('div', { class: 'cmp-subsystem-changed' },
+            h('p', { class: 'cmp-help' }, `The tab ${name} holds another version of this subsystem.`),
+            h('button', { type: 'button', class: 'cmp-btn cmp-btn-primary', onclick: () => this.app.updateSubsystem(name) }, `Update to the current version of ${name}`))
+          : null,
+        h('button', { type: 'button', class: 'cmp-btn', onclick: () => this.app.openSubsystem(name) }, 'Open as tab')),
       this.clocksSection(inst.id, b, rec),
       h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-itf' },
         h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-itf' }, 'Interfaces'),
