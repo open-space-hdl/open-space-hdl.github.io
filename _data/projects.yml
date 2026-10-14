@@ -4,7 +4,7 @@
 #   repo:      repository name in github.com/open-space-hdl
 #   group:     id of the group in project_groups.yml (a project without a known group is not shown on the start page)
 #   tagline:   the standards the project implements (without one: its key techniques), shown under the name and
-#              joined with ' · '; a line breaks only between two items
+#              joined with ' · '; a line breaks only after a separator
 #   summary:   one sentence of 100 to 140 characters: what the project is and what it does, without article, without
 #              the word 'open' and without the standard (the tagline names it)
 #   public:    true once the repository is public -> card links to the source
