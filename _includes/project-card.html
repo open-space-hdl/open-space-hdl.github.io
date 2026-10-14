@@ -22,7 +22,7 @@
     {% include trl-badge.html level=p.trl link=true %}
     {%- endif %}
   </div>
-  <p class="card-category">{{ p.category }}</p>
+  <p class="card-tagline">{% include tagline.html items=p.tagline %}</p>
   <p class="card-summary">{{ p.summary }}</p>
   {%- if p.public %}
   <p class="card-links">

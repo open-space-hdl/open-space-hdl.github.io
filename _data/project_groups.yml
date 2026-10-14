@@ -11,8 +11,8 @@
 
 - id: processing-modules
   title: Processing Modules
-  summary: Cores that process the data on board before it is sent, such as image compression and encryption.
+  summary: Cores that process payload data on board, such as image compression and encryption.
 
 - id: building-blocks
   title: Building Blocks
-  summary: The fault-tolerant entities that all cores are built on.
+  summary: The fault-tolerant Open Logic entities that every core is built on.

@@ -224,7 +224,7 @@ h1, h2, h3, h4 { line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; }
   padding: 2px 7px;
 }
 
-.card-category {
+.card-tagline {
   margin: 4px 0 0;
   font-family: var(--font-mono);
   font-size: 0.85rem;
@@ -389,10 +389,9 @@ a.trl:hover .trl-val { background: var(--orange); }
 }
 a.project-name:hover { color: var(--orange-text); }
 .status-table td:first-child { width: 24%; }
-.project-category {
+.project-tagline {
   display: block;
   margin-top: 2px;
-  white-space: nowrap;
   font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--orange-text);

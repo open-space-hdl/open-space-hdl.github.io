@@ -1,5 +1,5 @@
-// The site around the Composer: the entry with the Beta badge in header and footer, the project groups and the
-// teaser on the start page, no external requests on the pages that link to it.
+// The site around the Composer: the entry with the Beta badge in header and footer, the project groups and cards,
+// the teaser on the start page, no external requests on the pages that link to it.
 import { test } from '@playwright/test';
 import { expect, watch } from './helpers.mjs';
 
@@ -43,6 +43,23 @@ test('the start page groups the projects and shows every project exactly once', 
   // a project without a known group would be missing here
   const shown = (await page.locator('#projects .card h4').allTextContents()).map((s) => s.trim());
   expect([...shown].sort()).toEqual([...all].sort());
+});
+
+test('every project card has a tagline and a summary of one sentence', async ({ page }) => {
+  // the rules of _data/projects.yml: the tagline names the standards, the summary is one sentence of 100 to 140 characters
+  await page.goto('/');
+  const cards = page.locator('#projects .card');
+  const n = await cards.count();
+  expect(n).toBeGreaterThan(0);
+  for (let i = 0; i < n; i++) {
+    const card = cards.nth(i);
+    const name = (await card.locator('h4').textContent())?.trim();
+    expect((await card.locator('.card-tagline .nowrap').allTextContents()).length, `${name}: tagline`).toBeGreaterThan(0);
+    const summary = ((await card.locator('.card-summary').textContent()) ?? '').trim();
+    expect(summary, `${name}: one sentence`).toMatch(/^[A-Z][^.]*(\.\d[^.]*)*\.$/);
+    expect(summary.length, `${name}: ${summary.length} characters`).toBeGreaterThanOrEqual(100);
+    expect(summary.length, `${name}: ${summary.length} characters`).toBeLessThanOrEqual(140);
+  }
 });
 
 test('the start page shows the Composer with a picture of the editor', async ({ page }) => {
