@@ -181,3 +181,22 @@ test('the known defect of olo_axi_master_simple is an error of an RMAP target wi
   d = setGeneric(d, cat, 'rmap0', 'Target_g', false).design;
   assert.deepEqual(defect(), []);
 });
+
+test('the known defect of ofb_core is an error with more than one lane and an input VC buffer of one flow control unit', () => {
+  let d = addInstance(createDesign('t'), cat, 'openfibre/ofb_core', { x: 0, y: 0 }).design;
+  const defect = () => resolve(cat, d).checks.filter((c) => c.rule === 'known_defect');
+  assert.deepEqual(defect(), [], 'one lane with the default buffer of 256 words');
+  // lanes, VcInDepth_g, hit: one lane passes at 64; with more lanes one unit of 64 x NumLanes_g stops, two pass
+  for (const [lanes, depth, hit] of /** @type {[number, number, boolean][]} */ ([
+    [1, 64, false], [2, 128, true], [2, 256, false], [4, 256, true], [4, 512, false], [4, 1024, false],
+  ])) {
+    d = setGeneric(setGeneric(d, cat, 'ofb0', 'NumLanes_g', lanes).design, cat, 'ofb0', 'VcInDepth_g', depth).design;
+    const e = defect();
+    assert.equal(e.length, hit ? 1 : 0, `${lanes} lanes, ${depth} words`);
+    if (hit) {
+      assert.equal(e[0].severity, 'error');
+      assert.equal(e[0].instance, 'ofb0');
+      assert.equal(e[0].message, 'ofb0: Known defect of ofb_core: with more than one lane and an input VC buffer of one flow control unit (VcInDepth_g = 64 x NumLanes_g) the traffic can stop permanently. Set VcInDepth_g to at least 128 x NumLanes_g; the reference design uses 256 x NumLanes_g. The cause is under analysis in OpenFibre.');
+    }
+  }
+});

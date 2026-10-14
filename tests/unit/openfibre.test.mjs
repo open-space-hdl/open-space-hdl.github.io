@@ -45,6 +45,8 @@ test('the adapter is the source of the lane clock domain and takes the lanes of 
   assert.equal(cat.block('openfibre/ofb_pa_gty').vendor, 'AMD Versal GTY');
   d = node();
   d = setGeneric(d, cat, 'ofb0', 'NumLanes_g', 4).design;
+  // the input VC buffer of the reference design (256 x NumLanes_g): one flow control unit has a known defect
+  d = setGeneric(d, cat, 'ofb0', 'VcInDepth_g', 1024).design;
   const r = resolve(cat, d);
   assert.equal(r.byId.get('pa0')?.generics.NumLanes_g, 4);
   assert.ok(r.byId.get('pa0')?.auto.includes('NumLanes_g'));

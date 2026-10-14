@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "e1ab05c0b051",
+ "id": "ed274ee300e8",
  "sources": [
   {
    "id": "openwire",
@@ -7895,6 +7895,16 @@
      "generic": "VcInDepth_g",
      "of": "64 * NumLanes_g",
      "pow2Ratio": true
+    },
+    {
+     "kind": "known_defect",
+     "generic": "VcInDepth_g",
+     "below": "128 * NumLanes_g",
+     "when": {
+      "generic": "NumLanes_g",
+      "not": 1
+     },
+     "message": "Known defect of ofb_core: with more than one lane and an input VC buffer of one flow control unit (VcInDepth_g = 64 x NumLanes_g) the traffic can stop permanently. Set VcInDepth_g to at least 128 x NumLanes_g; the reference design uses 256 x NumLanes_g. The cause is under analysis in OpenFibre."
     },
     {
      "kind": "with_block",
