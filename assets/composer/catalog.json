@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "7f69dfab5b09",
+ "id": "9e75fa125583",
  "sources": [
   {
    "id": "openwire",
@@ -7264,6 +7264,12 @@
      "kind": "generic_multiple",
      "generic": "VcInDepth_g",
      "of": "64 * NumLanes_g"
+    },
+    {
+     "kind": "with_block",
+     "block": "openfibre/ofb_pa_gty",
+     "severity": "warning",
+     "message": "ofb_core leaves reset before the transceivers are ready: the lane initialisation can start against a transmitter that is still in reset, and the Composer cannot couple LaneRst of the adapter to the reset of the core yet."
     }
    ],
    "constraints": [

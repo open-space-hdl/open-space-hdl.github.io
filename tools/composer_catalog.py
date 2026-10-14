@@ -66,6 +66,7 @@ RULE_KINDS = {
     "chain_fits": ("interface", "via", "sink", "bytes"),
     "flag_dropped": ("interface", "signal", "bit", "message"),
     "run_rate": ("clock", "divider", "sampling", "message"),
+    "with_block": ("block", "message"),
 }
 # keys of a field of a side band or of a user signal
 FIELD_KEYS = {"name", "label", "lsb", "bits", "kind", "default", "enabledBy", "below", "description"}
@@ -1177,6 +1178,10 @@ def build_catalog(ctx: Context) -> dict:
             seen.add(blk["id"])
             blocks.append(blk)
     by_id = {blk["id"]: blk for blk in blocks}
+    for blk in blocks:
+        for r in blk.get("rules") or []:
+            if r.get("kind") == "with_block" and r.get("block") not in by_id:
+                ctx.err(blk["id"], f"rule with_block: unknown block {r.get('block')}")
     for where, r in ctx.chain_rules:
         for key, need in (("via", ("in", "out")), ("sink", ("interface",))):
             ref = r.get(key) or {}

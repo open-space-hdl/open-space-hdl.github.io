@@ -133,3 +133,13 @@ test('the clock crossings of the core get a maximum delay between every pair of 
   ]);
   assert.ok(!r.constraints.some((c) => c.kind === 'async_clock_groups'), 'no clock groups that would override them');
 });
+
+test('a SpaceFibre port with the GTY adapter warns that the core leaves reset before the transceivers are ready', () => {
+  let d = addInstance(createDesign('t'), cat, 'openfibre/ofb_core', { x: 0, y: 0 }).design;
+  assert.ok(!resolve(cat, d).checks.some((c) => c.rule === 'with_block'), 'no warning without the adapter');
+  d = addInstance(d, cat, 'openfibre/ofb_pa_gty', { x: 300, y: 0 }).design;
+  const w = resolve(cat, d).checks.filter((c) => c.rule === 'with_block');
+  assert.equal(w.length, 1);
+  assert.equal(w[0].severity, 'warning');
+  assert.match(w[0].message, /^ofb0 with pa0: ofb_core leaves reset before the transceivers are ready/);
+});
