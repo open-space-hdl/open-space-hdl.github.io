@@ -13,7 +13,7 @@ import {
   setAdapterGeneric, setConstant, setDomainBox, setExternal, setGeneric, setSideband, setSystem, setViewport,
   sidebandDefaults, updateDomain,
 } from '../model/design.js';
-import { ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, freeSpot, snap } from '../model/layout.js';
+import { ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, freeSpot, freeSpotIn, snap } from '../model/layout.js';
 import { resolve } from '../model/resolver.js';
 import { FormatError, fromText, toText } from '../model/serialize.js';
 import { loadSnapshot, saveSnapshot, Workspace } from '../model/workspace.js';
@@ -436,7 +436,12 @@ export class App {
     const wish = taken.length > 0
       ? { x: Math.max(...taken.map((r) => r.x + r.width)) + DOMAIN_GAP + 32, y: boxes.length > 0 ? Math.min(...boxes.map((b) => b.y)) : Math.min(...taken.map((r) => r.y)) }
       : { x: c.x - size.width / 2, y: c.y - size.height / 2 };
-    const spot = freeSpot(taken, wish, size);
+    // a free place in the view first (clear of the blocks, and of the other domain boxes by the gap between domains),
+    // otherwise right of the system, and the view moves to show the box
+    const margins = [...this.canvas.blockRects().values()].map((r) => ({ ...r, margin: 32 }))
+      .concat(boxes.map((b) => ({ x: b.x, y: b.y, width: b.w, height: b.h, margin: DOMAIN_GAP })));
+    const inView = freeSpotIn(margins, this.canvas.visibleWorldRect(24), wish, size);
+    const spot = inView ?? freeSpot(taken, wish, size);
     let id = '';
     this.ws.apply('add clock domain', (d) => {
       const r = addDomain(d, { box: { x: spot.x, y: spot.y, w: size.width, h: size.height } });
@@ -444,7 +449,9 @@ export class App {
       return this.tidy(r.design, { anchors: d.clockDomains.map((c) => c.id) });
     });
     this.selectDomain(id);
-    if (taken.length > 0) this.canvas.fit();
+    const box = this.design.layout.domains?.[id];
+    if (box && inView) this.canvas.revealRect(box);
+    else if (box) this.canvas.showWith(box);
     this.notify(`Added clock domain ${id}. Drag blocks into its box.`);
   }
 

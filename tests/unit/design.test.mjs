@@ -7,7 +7,7 @@ import {
   renameInstance, setGeneric, setSideband, setSystem,
 } from '../../assets/composer/js/model/design.js';
 import { History } from '../../assets/composer/js/model/history.js';
-import { blockGeometry, fitViewport, snap } from '../../assets/composer/js/model/layout.js';
+import { blockGeometry, fitViewport, freeSpotIn, snap } from '../../assets/composer/js/model/layout.js';
 import { connect, designWith, loadCatalog } from './helpers.mjs';
 
 const cat = loadCatalog();
@@ -159,4 +159,19 @@ test('externals, adapter generics and generics that follow a connection', () => 
   const fixed = setGeneric(design, cat, 'fifo0', 'Width_g', 32).design;
   assert.deepEqual(fixed.instances[2].generics, { Width_g: 32 });
   assert.deepEqual(clearGeneric(fixed, cat, 'fifo0', 'Width_g').design.instances[2].generics, {});
+});
+
+test('a new box finds a free place inside the visible area, or none', () => {
+  const area = { x: 0, y: 0, width: 1100, height: 800 };
+  const size = { width: 360, height: 260 };
+  // a system in the upper left: the box fits below it, inside the area and clear of the margin
+  const sys = [{ x: 64, y: 64, width: 640, height: 374, margin: 64 }];
+  const p = freeSpotIn(sys, area, { x: 800, y: 64 }, size);
+  assert.ok(p, 'a free place exists');
+  assert.ok(p.x >= area.x && p.y >= area.y && p.x + size.width <= area.x + area.width && p.y + size.height <= area.y + area.height);
+  assert.ok(p.y >= 64 + 374 + 64 || p.x >= 64 + 640 + 64, 'clear of the system');
+  // the nearest such place to the wish: the right end of the area
+  assert.equal(p.x + size.width > 700, true);
+  // no room left in the area: none (the caller moves the view instead)
+  assert.equal(freeSpotIn(sys, { x: 0, y: 0, width: 780, height: 600 }, { x: 800, y: 64 }, size), null);
 });

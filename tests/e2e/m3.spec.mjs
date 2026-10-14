@@ -64,7 +64,8 @@ test('a clock crossing sits on the border between the two domain boxes; boxes st
   const head = page.locator('[data-block="spw0"] .cmp-block-head');
   const hb = await head.boundingBox();
   if (!hb) throw new Error('no block');
-  await dragTo(page, head, { x: hb.x + 12 + (right.x - left.x) * 0.5, y: hb.y + 12 });
+  const canvas = await canvasPoint(page, 0.97, 0.5);
+  await dragTo(page, head, { x: Math.min(hb.x + 12 + (right.x - left.x) * 0.5, canvas.x), y: hb.y + 12 });
   const boxes = await rects(page, '.cmp-domain-box');
   expect(boxes).toHaveLength(2);
   expect(overlap(boxes[0], boxes[1])).toBe(false);

@@ -407,10 +407,22 @@ export class CanvasView {
    */
   reveal(id) {
     const b = this.scene?.blocks.get(id);
-    if (!b) return;
+    if (b) this.revealRect(b);
+  }
+
+  /**
+   * Brings a rectangle of the world completely into the view: the smallest step of the view that shows it, and when it
+   * is larger than the view at the current zoom, a zoom that fits it (never below the smallest zoom).
+   * @param {{x: number, y: number, w: number, h: number}} b
+   */
+  revealRect(b) {
     const r = this.area();
-    const { x, y, zoom } = this.view;
     const M = 24;
+    const zoom = Math.max(ZOOM_MIN, Math.min(this.view.zoom, (r.width - 2 * M) / b.w, (r.height - 2 * M) / b.h));
+    const k = zoom / this.view.zoom;
+    // zoom about the centre of the view, then shift
+    const x = r.width / 2 - (r.width / 2 - this.view.x) * k;
+    const y = r.height / 2 - (r.height / 2 - this.view.y) * k;
     const shift = (/** @type {number} */ lo, /** @type {number} */ hi, /** @type {number} */ size) => {
       if (hi - lo > size - 2 * M) return size / 2 - (lo + hi) / 2;
       if (lo < M) return M - lo;
@@ -419,7 +431,38 @@ export class CanvasView {
     };
     const dx = shift(x + b.x * zoom, x + (b.x + b.w) * zoom, r.width);
     const dy = shift(y + b.y * zoom, y + (b.y + b.h) * zoom, r.height);
-    if (dx !== 0 || dy !== 0) this.glideView({ x: x + dx, y: y + dy, zoom });
+    if (dx !== 0 || dy !== 0 || zoom !== this.view.zoom) this.glideView({ x: x + dx, y: y + dy, zoom });
+  }
+
+  /**
+   * Shows the system together with a rectangle (a new clock domain box, so that blocks can be dragged into it): the
+   * view fits both when that needs a zoom of at least minZoom, otherwise it shows the rectangle alone.
+   * @param {{x: number, y: number, w: number, h: number}} b
+   * @param {number} [minZoom]
+   */
+  showWith(b, minZoom = 0.5) {
+    const all = this.scene ? sceneBounds(this.scene) : null;
+    const x0 = Math.min(b.x, all?.x ?? b.x);
+    const y0 = Math.min(b.y, all?.y ?? b.y);
+    const x1 = Math.max(b.x + b.w, all ? all.x + all.w : b.x + b.w);
+    const y1 = Math.max(b.y + b.h, all ? all.y + all.h : b.y + b.h);
+    const r = this.area();
+    const box = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+    const v = fitViewport(box, r.width, r.height, minZoom);
+    const fits = box.width * v.zoom <= r.width && box.height * v.zoom <= r.height;
+    if (fits) this.glideView(v);
+    else this.revealRect(b);
+  }
+
+  /**
+   * The part of the world that the view shows, without a margin of m pixels at the edges.
+   * @param {number} [m]
+   */
+  visibleWorldRect(m = 0) {
+    const r = this.area();
+    const a = this.toWorld(r.left + m, r.top + m);
+    const b = this.toWorld(r.right - m, r.bottom - m);
+    return { x: a.x, y: a.y, width: Math.max(0, b.x - a.x), height: Math.max(0, b.y - a.y) };
   }
 
   // ------------------------------------------------------------------------------------------------------------------

@@ -145,12 +145,57 @@ export async function dragTo(page, loc, to) {
   await settled(page);
   const box = await loc.boundingBox();
   if (!box) throw new Error('nothing to drag');
+  // a drop outside the visible canvas (on a panel) does nothing: such a test would only pass by chance
+  const c = await page.locator('.cmp-canvas-wrap').boundingBox();
+  if (!c || to.x < c.x || to.x > c.x + c.width || to.y < c.y || to.y > c.y + c.height) {
+    throw new Error(`drop point ${Math.round(to.x)}, ${Math.round(to.y)} lies outside the visible canvas`);
+  }
   await page.mouse.move(box.x + 12, box.y + Math.min(12, box.height / 2));
   await page.mouse.down();
   await page.mouse.move(box.x + 30, box.y + 20, { steps: 4 });
   await page.mouse.move(to.x, to.y, { steps: 20 });
   await page.mouse.up();
   await settled(page);
+}
+
+/**
+ * The part of an element that the canvas shows (its box clipped to the visible canvas), or an error when none.
+ * @param {import('@playwright/test').Page} page
+ * @param {import('@playwright/test').Locator} loc
+ */
+export async function visiblePart(page, loc) {
+  const b = await loc.boundingBox();
+  const c = await page.locator('.cmp-canvas-wrap').boundingBox();
+  if (!b || !c) throw new Error('no element or no canvas');
+  const x0 = Math.max(b.x, c.x);
+  const y0 = Math.max(b.y, c.y);
+  const x1 = Math.min(b.x + b.width, c.x + c.width);
+  const y1 = Math.min(b.y + b.height, c.y + c.height);
+  if (x1 <= x0 || y1 <= y0) throw new Error('the element lies outside the visible canvas');
+  return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+}
+
+/**
+ * Drags a block by its head so that its centre lands in the middle of the visible part of a target (a clock domain
+ * box); the pointer stays on the canvas.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} id
+ * @param {import('@playwright/test').Locator} target
+ */
+export async function dropBlockInto(page, id, target) {
+  await settled(page);
+  const t = await visiblePart(page, target);
+  const block = await page.locator(`[data-block="${id}"]`).boundingBox();
+  const c = await page.locator('.cmp-canvas-wrap').boundingBox();
+  if (!block || !c) throw new Error(`no block ${id}`);
+  // dragTo grabs the head 12 px from its top-left corner; the block centre follows the pointer at a fixed offset
+  const off = { x: block.width / 2 - 12, y: block.height / 2 - 12 };
+  const clamp = (/** @type {number} */ v, /** @type {number} */ lo, /** @type {number} */ hi) => Math.min(hi, Math.max(lo, v));
+  const to = {
+    x: clamp(t.x + t.width / 2 - off.x, c.x + 4, c.x + c.width - 4),
+    y: clamp(t.y + t.height / 2 - off.y, c.y + 4, c.y + c.height - 4),
+  };
+  await dragTo(page, page.locator(`[data-block="${id}"] .cmp-block-head`), to);
 }
 
 /** @param {import('@playwright/test').Page} page */

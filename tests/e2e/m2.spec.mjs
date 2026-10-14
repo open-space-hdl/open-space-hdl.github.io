@@ -2,7 +2,7 @@
 // external interfaces and the checks panel.
 import { test } from '@playwright/test';
 import {
-  addBlock, canvasPoint, design, dragTo, dragWire, expect, open, saveText, settled, shot, watch,
+  addBlock, canvasPoint, design, dragWire, dropBlockInto, expect, open, saveText, settled, shot, visiblePart, watch,
 } from './helpers.mjs';
 
 /** @type {string[]} */
@@ -43,11 +43,13 @@ test('blocks in different clock domains get an asynchronous FIFO that disappears
   await page.locator('#cmp-dom-name').press('Enter');
   const box = page.locator('[data-domain="clk1"] .cmp-domain-box');
   await expect(box).toBeVisible();
+  // the whole box lies in the visible canvas, and so does the block to drag into it
+  await settled(page);
+  expect(await visiblePart(page, box)).toEqual(await box.boundingBox());
+  await expect(page.locator('[data-block="rmap0"]')).toBeInViewport({ ratio: 1 });
 
   // drag the RMAP node into the new box: two crossings (one per direction)
-  const target = await box.boundingBox();
-  if (!target) throw new Error('no domain box');
-  await dragTo(page, page.locator('[data-block="rmap0"] .cmp-block-head'), { x: target.x + target.width / 2 - 60, y: target.y + 80 });
+  await dropBlockInto(page, 'rmap0', box);
   await expect(page.locator('.cmp-auto')).toHaveCount(2);
   const d = await design(page);
   expect(d.instances.find((/** @type {any} */ i) => i.id === 'rmap0').clocks).toEqual({ Clk: 'clk1' });

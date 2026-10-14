@@ -106,6 +106,31 @@ export function fitViewport(box, cw, ch, minZoom = 0.25) {
 }
 
 /**
+ * Free position for a box inside an area (the visible part of the canvas): the grid point nearest to the wished
+ * position where the box lies completely inside the area and keeps the margin of every rectangle; null when there is
+ * none.
+ * @param {{x: number, y: number, width: number, height: number, margin: number}[]} rects existing blocks and boxes
+ * @param {{x: number, y: number, width: number, height: number}} area
+ * @param {{x: number, y: number}} wish top-left corner
+ * @param {{width: number, height: number}} size
+ * @returns {{x: number, y: number} | null}
+ */
+export function freeSpotIn(rects, area, wish, size) {
+  const fits = (/** @type {number} */ x, /** @type {number} */ y) => rects.every((r) =>
+    x + size.width + r.margin <= r.x || r.x + r.width + r.margin <= x || y + size.height + r.margin <= r.y || r.y + r.height + r.margin <= y);
+  /** @type {{x: number, y: number, d: number} | null} */
+  let best = null;
+  for (let y = snap(area.y + GRID); y + size.height <= area.y + area.height; y += GRID) {
+    for (let x = snap(area.x + GRID); x + size.width <= area.x + area.width; x += GRID) {
+      if (!fits(x, y)) continue;
+      const d = Math.hypot(x - wish.x, (y - wish.y) * 1.6);
+      if (!best || d < best.d) best = { x, y, d };
+    }
+  }
+  return best ? { x: best.x, y: best.y } : null;
+}
+
+/**
  * Free position for a new block near a wished position: the nearest grid point (in steps of a block plus a margin)
  * where it does not overlap an existing block, to the right before the left.
  * @param {{x: number, y: number, width: number, height: number}[]} rects existing blocks

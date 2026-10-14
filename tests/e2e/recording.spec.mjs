@@ -2,7 +2,7 @@
 // and only when COMPOSER_SCREENS names a directory for the recording.
 import { test } from '@playwright/test';
 import { join } from 'node:path';
-import { canvasPoint, dragBlock, dragTo, open, portCenter, settled } from './helpers.mjs';
+import { canvasPoint, dragBlock, dropBlockInto, open, portCenter, settled } from './helpers.mjs';
 
 const SCREENS = process.env.COMPOSER_SCREENS;
 
@@ -36,11 +36,8 @@ test('building OWR and OMAP with the animations', async ({ page }) => {
   await page.getByRole('button', { name: 'Clock domain', exact: true }).click();
   await settled(page);
   await page.waitForTimeout(500);
-  const box = await page.locator('[data-domain="clk1"] .cmp-domain-box').boundingBox();
-  if (box) {
-    await dragTo(page, page.locator('[data-block="rmap0"] .cmp-block-head'), { x: box.x + box.width / 2 - 90, y: box.y + 70 });
-    await page.waitForTimeout(1200);
-  }
+  await dropBlockInto(page, 'rmap0', page.locator('[data-domain="clk1"] .cmp-domain-box'));
+  await page.waitForTimeout(1200);
   await page.getByRole('button', { name: 'Fit' }).click();
   await page.waitForTimeout(1200);
   await page.getByRole('button', { name: 'Arrange' }).click();
