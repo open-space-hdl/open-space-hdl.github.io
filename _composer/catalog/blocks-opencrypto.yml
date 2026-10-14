@@ -24,10 +24,10 @@ blocks:
       - { name: KeyBits_g, label: Key length, unit: bits, choices: [128, 192, 256], description: One key length per core; CCSDS 352.0-B-2 uses 256 bits for new missions. }
       - { name: NumKeys_g, label: Key slots, description: Slots of the key table; the slot fields have max(1, ceil(log2(NumKeys_g))) bits. }
       - { name: AesUnits_g, label: AES round units, advanced: true, description: Round units of the AES engine; 0 selects the default of the width. }
-      - { name: GhashDigit_g, label: GHASH digit, unit: bits, advanced: true, description: Bits per cycle of the GHASH multiplier, DataWidth_g to 128; 0 selects the default of the width. }
+      - { name: GhashDigit_g, label: GHASH digit, unit: bits, choices: [0, 16, 32, 64, 128], advanced: true, description: Bits per cycle of the GHASH multiplier, DataWidth_g to 128; 0 selects the default of the width. }
       - { name: LenBits_g, label: Length bits, advanced: true, description: Width of the byte counts of the AAD and DATA sections. }
       - { name: ReleaseBuffer_g, label: Release buffer, description: A message leaves the core only when its status is OK (plaintext only after the tag is verified). }
-      - { name: ReleaseBytes_g, label: Release buffer size, unit: bytes, enabledBy: ReleaseBuffer_g, description: "Power of two of at least 16 beats; longer messages are dropped with OVERFLOW." }
+      - { name: ReleaseBytes_g, label: Release buffer size, unit: bytes, enabledBy: ReleaseBuffer_g, description: "Power of two of at least 16 beats that holds the longest message in whole beats (IV, AAD, data and tag each start a new beat); longer messages are dropped with OVERFLOW, two messages give the full rate." }
       - { name: DenseOutput_g, label: Dense output, description: "Every output message leaves as one gapless byte string IV, AAD, DATA, TAG; needed where the output is a byte stream (for example a send port of OpenSPP)." }
       - { name: ClkFreqHz_g, label: Clock frequency, unit: Hz, fromClock: Clk, advanced: true, description: Clock frequency for the pacer of the key table scrubbers. }
       - { name: ScrubPeriod_g, label: Scrub period, unit: s, advanced: true, description: Scrub period of the key table; 0 scrubs in every cycle without access. }
@@ -92,6 +92,16 @@ blocks:
       - { text: "Load every key slot in use: write the key to KEY0 to KEY7 (0x040 + 4 n; key byte 4 n in bits 31:24; 4, 6 or 8 words), for generated IVs the fixed field to IV_FIXED (0x060) and the first invocation counter to IV_COUNT_LO (0x064) and IV_COUNT_HI (0x068), then write KEY_LOAD (0x06C) with START (bit 31), IV_GEN (bit 8) and the slot (bits 7:0), for example 0x80000100 for slot 0 with generated IVs; wait until STATUS.BUSY is 0." }
     endToEnd: "Load the key slot, send a packet and check the output: with generated IVs the first 4 bytes of every message are IV_FIXED, the next 8 the invocation counter; decrypt it with AES-GCM in the test bench (or a second core) and compare."
     rules:
+      # ocr_gcm.vhd and ocr_aes_engine.vhd: ceil(Nr / R) round units sustain one beat per cycle, at most Nr of them
+      - { kind: generic_range, generic: AesUnits_g, min: (KeyBits_g / 32 + 5 + 128 / DataWidth_g) / (128 / DataWidth_g), max: KeyBits_g / 32 + 6, unlessZero: true, message: "the AES engine sustains one beat per cycle with ceil(Nr / R) round units and has Nr rounds" }
+      # ocr_gcm.vhd: the GHASH digit covers a beat
+      - { kind: generic_range, generic: GhashDigit_g, min: DataWidth_g, unlessZero: true }
+      # ocr_gcm.vhd: the depth of the release buffer is a positive number of beats also when the buffer is not used
+      - { kind: generic_range, generic: ReleaseBytes_g, min: DataWidth_g / 8 }
+      # olo_ft_private_scrubber.vhd (key table): a scrub period of at least 1 ms, or 0
+      - { kind: generic_range, generic: ScrubPeriod_g, min: 0.001, unlessZero: true }
+      # hdl/ocr_gcm/src/ocr_gcm.vhd: the release buffer is a power of two of at least 16 beats
+      - { kind: generic_multiple, generic: ReleaseBytes_g, of: 16 * DataWidth_g / 8, pow2Ratio: true, when: ReleaseBuffer_g, message: "the release buffer holds a power of two of at least 16 beats" }
       - kind: partner_requires
         interface: M_Out
         types: [byte.stream, spp.tx]
@@ -109,7 +119,8 @@ blocks:
         message: >-
           The error flag of the messages (user bit 2 on the last beat) is not passed on, so a message that failed (for
           example with KEY) is sent like a good one. Set ReleaseBuffer_g = true (a message leaves the core only when its
-          status is OK) with ReleaseBytes_g of at least the longest message, or consume the status at M_Sts.
+          status is OK) with ReleaseBytes_g a power of two that holds the longest message in whole beats (IV, AAD,
+          data and tag each start a new beat), or consume the status at M_Sts.
     notes:
       - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen with SyncTmr_g = true.
       - After the reset the key table erases every slot (NumKeys_g cycles, STATUS.BUSY = '1'); no key survives a reset.
@@ -137,7 +148,7 @@ blocks:
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
-      - { name: DataWidth_g, label: Stream width, unit: bits, description: The DataWidth_g of the core; follows the connected core., follow: { interfaces: [M_Out, S_In], measure: data, rank: 1 } }
+      - { name: DataWidth_g, label: Stream width, unit: bits, choices: [16, 32, 64, 128], description: The DataWidth_g of the core; follows the connected core., follow: { interfaces: [M_Out, S_In], measure: data, rank: 1 } }
       - { name: NumKeys_g, label: Key slots, description: The NumKeys_g of the core (width of the slot); follows the connected core., follow: { interfaces: [M_Ctx], measure: generic, generic: NumKeys_g } }
       - { name: ChunkBytes_g, label: Chunk size, unit: bytes, check: multiple16, description: "Bytes of a chunk; the last chunk of a packet has the remaining bytes. A chunk leaves the core as ChunkBytes_g + 32 bytes (IV 12, AAD 4, tag 16)." }
       - { name: BufferChunks_g, label: Buffered chunks, description: Chunks that the chunk buffer holds; it takes the next chunk while one leaves. }
@@ -192,7 +203,9 @@ blocks:
         sink: { block: openspp/spp_core, interface: S_Tx, generic: TxBufferBytes_g }
         bytes: ChunkBytes_g + 32
         max: 65536
-        release: { generic: ReleaseBytes_g, enabledBy: ReleaseBuffer_g }
+        # a chunk in the release buffer of the core: IV (generated, 12 bytes), AAD (4), data and tag (16), every section
+        # starting with a new beat of the core (formula of OpenCrypto)
+        release: { generic: ReleaseBytes_g, enabledBy: ReleaseBuffer_g, beat: DataWidth_g / 8, sections: ["12", "4", ChunkBytes_g, "16"] }
         packet: { bytes: ChunkBytes_g + 38, generic: RxBufferBytes_g, what: Space Packets }
     init:
       - { text: "Load the key slot Cfg_Slot of the AES-GCM core for generated IVs (KEY_LOAD with IV_GEN = '1', see the core) before the first packet; without a loaded slot every chunk fails with KEY." }

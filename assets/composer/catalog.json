@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "e00f482bafb1",
+ "id": "40d6faac97bc",
  "sources": [
   {
    "id": "openwire",
@@ -1822,6 +1822,14 @@
    "notes": [
     "In_Drop on any beat of a packet discards the packet (for example the error end of packet flag of a link on the last beat)."
    ],
+   "rules": [
+    {
+     "kind": "generic_multiple",
+     "generic": "Depth_g",
+     "of": 1,
+     "pow2Ratio": true
+    }
+   ],
    "generics": [
     {
      "name": "Width_g",
@@ -1906,6 +1914,11 @@
      "defaultText": "\"same\"",
      "default": "same",
      "label": "Boundary RAM behaviour",
+     "choices": [
+      "same",
+      "RBW",
+      "WBR"
+     ],
      "advanced": true
     },
     {
@@ -2893,6 +2906,13 @@
    "notes": [
     "A partially filled output word leaves only with In_Last; a source without last strands its final words."
    ],
+   "rules": [
+    {
+     "kind": "generic_multiple",
+     "generic": "OutWidth_g",
+     "of": "InWidth_g"
+    }
+   ],
    "generics": [
     {
      "name": "InWidth_g",
@@ -3066,6 +3086,13 @@
    "summary": "Splits one input word into N output words, lowest bits first.",
    "idPrefix": "wconv",
    "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_wconv_xn2n.html",
+   "rules": [
+    {
+     "kind": "generic_multiple",
+     "generic": "InWidth_g",
+     "of": "OutWidth_g"
+    }
+   ],
    "generics": [
     {
      "name": "InWidth_g",
@@ -3239,6 +3266,20 @@
    "summary": "Converts between any two widths, optionally with byte enables.",
    "idPrefix": "wconv",
    "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_wconv_n2m.html",
+   "rules": [
+    {
+     "kind": "generic_multiple",
+     "generic": "InWidth_g",
+     "of": 8,
+     "when": "UseBe_g"
+    },
+    {
+     "kind": "generic_multiple",
+     "generic": "OutWidth_g",
+     "of": 8,
+     "when": "UseBe_g"
+    }
+   ],
    "generics": [
     {
      "name": "InWidth_g",
@@ -4505,6 +4546,13 @@
    "summary": "Limits a stream to MaxSamples_g beats per Period_g cycles.",
    "idPrefix": "rate",
    "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_rate_limit.html",
+   "rules": [
+    {
+     "kind": "generic_range",
+     "generic": "MaxSamples_g",
+     "max": "Period_g"
+    }
+   ],
    "generics": [
     {
      "name": "Width_g",
@@ -4714,6 +4762,23 @@
    "summary": "Appends a CRC to every packet of a stream.",
    "idPrefix": "crc",
    "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_crc_append.html",
+   "rules": [
+    {
+     "kind": "generic_range",
+     "generic": "DataWidth_g",
+     "min": "length(CrcPolynomial_g)",
+     "message": "the CRC is not wider than a beat"
+    },
+    {
+     "kind": "generic_multiple",
+     "generic": "DataWidth_g",
+     "of": 8,
+     "when": {
+      "generic": "CrcByteOrder_g",
+      "not": "NONE"
+     }
+    }
+   ],
    "generics": [
     {
      "name": "DataWidth_g",
@@ -4920,6 +4985,33 @@
    "summary": "Checks the CRC at the end of every packet and drops or flags packets with an error.",
    "idPrefix": "crc",
    "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_crc_check.html",
+   "rules": [
+    {
+     "kind": "generic_multiple",
+     "generic": "FifoDepth_g",
+     "of": 1,
+     "pow2Ratio": true,
+     "when": {
+      "generic": "Mode_g",
+      "is": "DROP"
+     }
+    },
+    {
+     "kind": "generic_range",
+     "generic": "DataWidth_g",
+     "min": "length(CrcPolynomial_g)",
+     "message": "the CRC is not wider than a beat"
+    },
+    {
+     "kind": "generic_multiple",
+     "generic": "DataWidth_g",
+     "of": 8,
+     "when": {
+      "generic": "CrcByteOrder_g",
+      "not": "NONE"
+     }
+    }
+   ],
    "generics": [
     {
      "name": "DataWidth_g",
@@ -5587,6 +5679,13 @@
    "summary": "EDAC monitor with an AXI4-Lite register file and an interrupt.",
    "idPrefix": "edac",
    "doc": "https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor_axi.html",
+   "rules": [
+    {
+     "kind": "generic_range",
+     "generic": "AxiAddrWidth_g",
+     "min": "log2ceil(16 + 4 * Channels_g)"
+    }
+   ],
    "generics": [
     {
      "name": "Channels_g",
@@ -5857,6 +5956,19 @@
    "summary": "Connects one AXI4-Lite master to several register files, each in an equal address window.",
    "idPrefix": "dec",
    "doc": "https://openspacehdl.org/open-logic-ft/doc/axi/olo_axi_lite_decoder.html",
+   "rules": [
+    {
+     "kind": "generic_multiple",
+     "generic": "AxiDataWidth_g",
+     "of": 8
+    },
+    {
+     "kind": "generic_range",
+     "generic": "AxiAddrWidth_g",
+     "min": "PortAddrWidth_g + log2ceil(Ports_g)",
+     "message": "every port owns a window of 2**PortAddrWidth_g bytes"
+    }
+   ],
    "generics": [
     {
      "name": "AxiAddrWidth_g",
@@ -6222,6 +6334,39 @@
    ],
    "rules": [
     {
+     "kind": "generic_range",
+     "generic": "AesUnits_g",
+     "min": "(KeyBits_g / 32 + 5 + 128 / DataWidth_g) / (128 / DataWidth_g)",
+     "max": "KeyBits_g / 32 + 6",
+     "unlessZero": true,
+     "message": "the AES engine sustains one beat per cycle with ceil(Nr / R) round units and has Nr rounds"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "GhashDigit_g",
+     "min": "DataWidth_g",
+     "unlessZero": true
+    },
+    {
+     "kind": "generic_range",
+     "generic": "ReleaseBytes_g",
+     "min": "DataWidth_g / 8"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "ScrubPeriod_g",
+     "min": 0.001,
+     "unlessZero": true
+    },
+    {
+     "kind": "generic_multiple",
+     "generic": "ReleaseBytes_g",
+     "of": "16 * DataWidth_g / 8",
+     "pow2Ratio": true,
+     "when": "ReleaseBuffer_g",
+     "message": "the release buffer holds a power of two of at least 16 beats"
+    },
+    {
      "kind": "partner_requires",
      "interface": "M_Out",
      "types": [
@@ -6239,7 +6384,7 @@
      "bit": 2,
      "unlessGeneric": "ReleaseBuffer_g",
      "unlessInterface": "M_Sts",
-     "message": "The error flag of the messages (user bit 2 on the last beat) is not passed on, so a message that failed (for example with KEY) is sent like a good one. Set ReleaseBuffer_g = true (a message leaves the core only when its status is OK) with ReleaseBytes_g of at least the longest message, or consume the status at M_Sts."
+     "message": "The error flag of the messages (user bit 2 on the last beat) is not passed on, so a message that failed (for example with KEY) is sent like a good one. Set ReleaseBuffer_g = true (a message leaves the core only when its status is OK) with ReleaseBytes_g a power of two that holds the longest message in whole beats (IV, AAD, data and tag each start a new beat), or consume the status at M_Sts."
     }
    ],
    "idRegister": {
@@ -6327,6 +6472,13 @@
      "default": 0,
      "label": "GHASH digit",
      "description": "Bits per cycle of the GHASH multiplier",
+     "choices": [
+      0,
+      16,
+      32,
+      64,
+      128
+     ],
      "advanced": true,
      "unit": "bits"
     },
@@ -6360,7 +6512,7 @@
      "defaultText": "4096",
      "default": 4096,
      "label": "Release buffer size",
-     "description": "Power of two of at least 16 beats; longer messages are dropped with OVERFLOW.",
+     "description": "Power of two of at least 16 beats that holds the longest message in whole beats (IV, AAD, data and tag each start a new beat); longer messages are dropped with OVERFLOW, two messages give the full rate.",
      "unit": "bytes",
      "enabledBy": "ReleaseBuffer_g"
     },
@@ -6888,7 +7040,14 @@
      "max": 65536,
      "release": {
       "generic": "ReleaseBytes_g",
-      "enabledBy": "ReleaseBuffer_g"
+      "enabledBy": "ReleaseBuffer_g",
+      "beat": "DataWidth_g / 8",
+      "sections": [
+       "12",
+       "4",
+       "ChunkBytes_g",
+       "16"
+      ]
      },
      "packet": {
       "bytes": "ChunkBytes_g + 38",
@@ -6916,6 +7075,12 @@
      "default": 32,
      "label": "Stream width",
      "description": "The DataWidth_g of the core; follows the connected core.",
+     "choices": [
+      16,
+      32,
+      64,
+      128
+     ],
      "unit": "bits",
      "follow": {
       "interfaces": [
@@ -7298,6 +7463,18 @@
    ],
    "rules": [
     {
+     "kind": "generic_multiple",
+     "generic": "VcOutDepth_g",
+     "of": 1,
+     "pow2Ratio": true
+    },
+    {
+     "kind": "generic_multiple",
+     "generic": "ErbRows_g",
+     "of": 2,
+     "pow2Ratio": true
+    },
+    {
      "kind": "clock_relation",
      "faster": "CoreClk",
      "slower": "LaneClk",
@@ -7313,7 +7490,8 @@
     {
      "kind": "generic_multiple",
      "generic": "VcInDepth_g",
-     "of": "64 * NumLanes_g"
+     "of": "64 * NumLanes_g",
+     "pow2Ratio": true
     },
     {
      "kind": "with_block",
@@ -8499,6 +8677,13 @@
     "With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'. Known defect of the pinned version (fix in progress in OpenRMAP): with AxiMaxBeats_g < 4, commands longer than one AXI transaction return or write wrong data."
    ],
    "rules": [
+    {
+     "kind": "generic_range",
+     "generic": "AxiAddrWidth_g",
+     "min": "25 + log2(AxiDataWidth_g / 8)",
+     "when": "Target_g",
+     "message": "the memory master of the target takes transfers of up to 24 address bits"
+    },
     {
      "kind": "generic_any_true",
      "generics": [
@@ -9799,6 +9984,11 @@
    "rules": [
     {
      "kind": "generic_multiple",
+     "generic": "DataWidth_g",
+     "of": 8
+    },
+    {
+     "kind": "generic_multiple",
      "generic": "TxBufferBytes_g",
      "of": "DataWidth_g / 8",
      "pow2Ratio": true
@@ -10612,6 +10802,13 @@
    "notes": [
     "A received end of packet marker without data characters is discarded.",
     "A link packet that ends with a beat without valid bytes gets its marker after the bytes of the earlier beats; a link packet without any byte sends nothing."
+   ],
+   "rules": [
+    {
+     "kind": "generic_multiple",
+     "generic": "DataWidth_g",
+     "of": 8
+    }
    ],
    "packages": [
     "spp_pkg"

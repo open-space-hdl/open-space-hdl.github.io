@@ -1,5 +1,5 @@
 {
-  "catalog": "e00f482bafb1",
+  "catalog": "40d6faac97bc",
   "entity": "encrypted_spp_over_spw",
   "ports": [
     {
@@ -971,8 +971,8 @@
         },
         {
           "name": "ReleaseBytes_g",
-          "value": 8192,
-          "vhdl": "8192",
+          "value": 16384,
+          "vhdl": "16384",
           "default": false
         },
         {

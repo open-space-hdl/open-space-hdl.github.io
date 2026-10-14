@@ -119,9 +119,11 @@ test('clock rules: the core clock is not slower than the lane clock, the user cl
   rel = checksOf(resolve(cat, d), 'clock_relation');
   assert.deepEqual(rel.map((c) => c.severity).sort(), ['error', 'warning']);
   assert.ok(rel.some((c) => /CoreClk must run at least as fast as LaneClk/.test(c.message)));
-  // the input VC buffer is a multiple of 64 x NumLanes_g words
+  // the input VC buffer is a power of two times 64 x NumLanes_g words (ofb_dl_vc_in and its asynchronous FIFO)
   d = setGeneric(node(), cat, 'ofb0', 'VcInDepth_g', 96).design;
-  assert.match(checksOf(resolve(cat, d), 'generic_multiple')[0]?.message ?? '', /VcInDepth_g = 96 must be a multiple of 64 \* NumLanes_g = 64/);
+  assert.match(checksOf(resolve(cat, d), 'generic_multiple')[0]?.message ?? '', /VcInDepth_g = 96 must be a power of two times 64 \* NumLanes_g = 64; the next valid value is 128\./);
+  d = setGeneric(node(), cat, 'ofb0', 'VcInDepth_g', 192).design;
+  assert.match(checksOf(resolve(cat, d), 'generic_multiple')[0]?.message ?? '', /VcInDepth_g = 192 must be a power of two times .*; the next valid value is 256\./);
 });
 
 test('the clock crossings of the core get a maximum delay between every pair of its clock domains', () => {

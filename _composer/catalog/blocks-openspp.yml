@@ -114,6 +114,8 @@ blocks:
         tieOff: open
         signals: { valid: Err_Valid, code: Err_Code, port: Err_Port, apid: Err_Apid }
     rules:
+      # spp_header_insert.vhd, spp_header_remove.vhd and the width converters: whole bytes
+      - { kind: generic_multiple, generic: DataWidth_g, of: 8 }
       - { kind: generic_multiple, generic: TxBufferBytes_g, of: DataWidth_g / 8, pow2Ratio: true }
       - { kind: generic_multiple, generic: RxBufferBytes_g, of: DataWidth_g / 8, pow2Ratio: true }
     idRegister: { address: "0x000", value: "0x53505001" }
@@ -151,6 +153,9 @@ blocks:
       - { port: Rst, active: high, sync: sync, clock: Clk }
     generics:
       - { name: DataWidth_g, label: Link width, unit: bits, check: multiple8, description: Width of the link streams; follows the connected link., follow: { interfaces: [S_Link, M_Link], measure: data, rank: 1 } }
+    rules:
+      # spp_header_insert.vhd, spp_header_remove.vhd and the width converters: whole bytes
+      - { kind: generic_multiple, generic: DataWidth_g, of: 8 }
     interfaces:
       - name: S_Link
         label: Link in
