@@ -23,6 +23,12 @@
       "name": "encrypted_spp_over_spw",
       "title": "Encrypted packets over SpaceWire",
       "description": "Encrypted packets over SpaceWire: the OpenCrypto framer cuts every input packet (for example a compressed image) into chunks, the AES-GCM core encrypts every chunk with a generated IV and a 4-byte position in the AAD, and OpenSPP sends every encrypted chunk as one Space Packet through an N-Char adapter and an OpenWire port."
+    },
+    {
+      "file": "spacefibre-node.composer.json",
+      "name": "spacefibre_node",
+      "title": "SpaceFibre node",
+      "description": "SpaceFibre node: an OpenFibre port with its AMD Versal GTY adapter carries RMAP on virtual channel 0 (an OpenRMAP target through an N-Char adapter) and Space Packets on virtual channel 1 (OpenSPP, directly on the channel). The assignment of the channels is a convention of this example, not of the cores: any channel carries any packets, and both ends of the link use the same assignment."
     }
   ]
 }

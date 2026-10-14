@@ -330,6 +330,19 @@ a.cmp-tool {
   font-size: 0.72rem;
   color: var(--text-muted);
 }
+.cmp-pal-vendor,
+.cmp-vendor {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--navy);
+  background: var(--surface);
+}
+.cmp-vendor { margin-top: 0; }
 .cmp-pal-none { color: var(--text-muted); font-size: 0.85rem; }
 
 .cmp-ghost {

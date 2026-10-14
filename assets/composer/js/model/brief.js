@@ -142,6 +142,7 @@ export function agentBrief(cat, d, res, resolved, checks) {
   const list = (/** @type {string[]} */ v) => v.map((x) => `\`${x}\``).join(', ');
   for (const c of resolved.constraints) {
     if (c.kind === 'async_clock_groups') L.push(`- Asynchronous clock groups: ${list(c.clocks)} (no timing paths between them; the crossings are Open Logic blocks).`);
+    else if (c.kind === 'max_delay') L.push(`- Maximum delay from the clock of \`${c.from}\` to the clock of \`${c.to}\`: ${c.ns} ns, data path only (\`set_max_delay -datapath_only\` in Vivado). ${c.note ?? ''}`.trimEnd());
     else if (c.kind === 'false_path') L.push(`- False path from ${list(c.from)}${c.note ? `: ${c.note}` : '.'}`);
     else if (c.kind === 'io_register') L.push(`- Output registers in the I/O blocks for ${list(c.ports)}${c.note ? `: ${c.note}` : '.'}`);
     else if (c.kind === 'vendor_scoped') L.push(`- ${c.note ?? ''} File \`${c.file}\` of Open Logic.`);
@@ -188,5 +189,10 @@ export function agentBrief(cat, d, res, resolved, checks) {
     `With GHDL: analyse the libraries of section 1, then \`ghdl -i --std=08 ${d.name}.vhd ${d.name}_tb.vhd\`, \`ghdl -m --std=08 ${d.name}_tb\` and \`ghdl -r --std=08 ${d.name}_tb --stop-time=100us --assert-level=error\`.`,
     '',
   );
+  // vendor-specific blocks need the simulation libraries of the vendor
+  const vendor = d.instances.map((i) => ({ id: i.id, b: cat.blocks.get(i.block) })).filter((x) => x.b?.vendor);
+  if (vendor.length > 0) {
+    L.push(`Vendor-specific blocks need the simulation libraries of their vendor: ${vendor.map((x) => `\`${x.id}\` (${x.b?.entity}, ${x.b?.vendor})`).join(', ')}; see their notes in section 6.`, '');
+  }
   return `${L.join('\n').replace(/\n{3,}/g, '\n\n').trim()}\n`;
 }

@@ -3,14 +3,15 @@
 // and the brief of every example are also written to tests/golden/, where the unit tests compare them: a change of
 // the resolver shows up as a reviewable difference of these files.
 //
-//   node tools/composer_examples.mjs
+//   node tools/composer_examples.mjs              all examples
+//   node tools/composer_examples.mjs <name> ...   only the named examples (file names without extension)
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { arrange } from '../assets/composer/js/model/arrange.js';
 import { Catalog } from '../assets/composer/js/model/catalog.js';
 import { checkConnection } from '../assets/composer/js/model/compat.js';
 import {
   addConnection, addDomain, addInstance, assignClock, createDesign, moveToDomain, renameDomain, setExternal, setGeneric,
-  setSystem, sidebandDefaults,
+  setSystem, sidebandDefaults, updateDomain,
 } from '../assets/composer/js/model/design.js';
 import { toDocument, toText } from '../assets/composer/js/model/serialize.js';
 
@@ -160,10 +161,47 @@ function linkDomain(d, spw, hz) {
   examples.push(['encrypted-spp-over-spw', 'Encrypted packets over SpaceWire', d]);
 }
 
+{
+  let d = base(
+    'spacefibre_node',
+    'SpaceFibre node: an OpenFibre port with its AMD Versal GTY adapter carries RMAP on virtual channel 0 (an OpenRMAP target through an N-Char adapter) and Space Packets on virtual channel 1 (OpenSPP, directly on the channel). The assignment of the channels is a convention of this example, not of the cores: any channel carries any packets, and both ends of the link use the same assignment.',
+    [
+      ['openrmap/omap_core', 'target'],
+      ['openspp/spp_nchar', undefined],
+      ['openfibre/ofb_core', undefined],
+      ['openfibre/ofb_pa_gty', undefined],
+      ['openspp/spp_core', undefined],
+    ],
+  );
+  // the user side runs at least as fast as the lane clock (156.25 MHz at 6.25 Gbit/s)
+  d = updateDomain(d, 'sys', { frequencyHz: 200e6 });
+  d = setGeneric(d, cat, 'ofb0', 'NumVc_g', 2).design;
+  d = link(d, 'rmap0.M_Pkt', 'nchar0.S_NChar');
+  d = link(d, 'nchar0.M_NChar', 'rmap0.S_Pkt');
+  d = link(d, 'nchar0.M_Link', 'ofb0.S_Vc[0]');
+  d = link(d, 'ofb0.M_Vc[0]', 'nchar0.S_Link');
+  d = link(d, 'spp0.M_Link', 'ofb0.S_Vc[1]');
+  d = link(d, 'ofb0.M_Vc[1]', 'spp0.S_Link');
+  d = link(d, 'ofb0.Phy', 'pa0.Phy');
+  // the lane clock of the adapter drives the lane and core clocks of the port (as the VCK190 reference design)
+  d = renameDomain(d, 'pa0_laneclk', 'lane');
+  d = assignClock(d, cat, 'ofb0', 'LaneClk', 'lane');
+  d = assignClock(d, cat, 'ofb0', 'CoreClk', 'lane');
+  d = external(d, {
+    'spp0.S_Tx[0]': 'tx0_', 'spp0.M_Rx[0]': 'rx0_', 'rmap0.M_Axi': 'mem_',
+    'rmap0.S_AxiLite': 'rmap_reg_', 'ofb0.S_AxiLite': 'ofb_reg_', 'spp0.S_AxiLite': 'spp_reg_',
+  });
+  examples.push(['spacefibre-node', 'SpaceFibre node', d]);
+}
+
+// a subset of the examples by name (the others keep their files)
+const only = process.argv.slice(2);
+for (const name of only) if (!examples.some(([file]) => file === name)) throw new Error(`unknown example ${name}`);
 for (let k = 0; k < examples.length; k += 1) {
   const [file, title, d0] = examples[k];
   const d = arrange(cat, d0);
   examples[k] = [file, title, d];
+  if (only.length > 0 && !only.includes(file)) continue;
   const path = new URL(`../assets/composer/examples/${file}.composer.json`, import.meta.url);
   writeFileSync(path, toText(d, cat));
   const doc = /** @type {any} */ (toDocument(d, cat));

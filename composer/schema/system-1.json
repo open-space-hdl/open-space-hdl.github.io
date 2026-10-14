@@ -760,7 +760,7 @@
         },
         "constraints": {
           "type": "array",
-          "description": "Timing and placement constraints in terms of the top level: async_clock_groups (clocks), false_path (from), io_register (ports), vendor_scoped (file of Open Logic).",
+          "description": "Timing and placement constraints in terms of the top level: async_clock_groups (clocks), max_delay (from, to, ns, datapathOnly: the maximum delay between the clocks of two clock domains, for the clock crossings inside a block), false_path (from), io_register (ports), vendor_scoped (file of Open Logic).",
           "items": {
             "type": "object",
             "required": [

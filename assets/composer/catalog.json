@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "22fe96cb3252",
+ "id": "1b1836436255",
  "sources": [
   {
    "id": "openwire",
@@ -41,6 +41,19 @@
    "fileListFormat": "modules",
    "requires": "4.7.0-ft.2",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer."
+  },
+  {
+   "id": "openfibre",
+   "name": "OpenFibre",
+   "repo": "openfibre",
+   "url": "https://github.com/open-space-hdl/openfibre",
+   "doc": "https://openspacehdl.org/openfibre/",
+   "commit": "35424172bd9761cfbacc2e0449a803ab6c60fe8c",
+   "library": "openfibre",
+   "fileList": "component_list.txt",
+   "fileListFormat": "modules",
+   "requires": "4.7.0-ft.2",
+   "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. component_list.txt lists the technology-independent modules; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes)."
   },
   {
    "id": "opencrypto",
@@ -86,6 +99,10 @@
     {
      "id": "openspp",
      "name": "OpenSPP"
+    },
+    {
+     "id": "openfibre",
+     "name": "OpenFibre"
     },
     {
      "id": "opencrypto",
@@ -422,6 +439,21 @@
      "dir": "in"
     }
    }
+  },
+  {
+   "id": "spfi.sched",
+   "name": "SpaceFibre time-slots",
+   "family": "SpaceFibre",
+   "kind": "event",
+   "cdc": "valid",
+   "color": "#4263EB",
+   "description": "SCHEDULE.request of the SpaceFibre quality of service, a one-cycle pulse with the time-slot (0 to 63) that starts.",
+   "signals": {
+    "valid": {
+     "dir": "out"
+    }
+   },
+   "fields": "out"
   },
   {
    "id": "spfi.phy",
@@ -1470,16 +1502,14 @@
      "dir": "out",
      "active": "high",
      "clock": "In_Clk",
-     "description": "Reset of the input side",
-     "active while either side is in reset.": null
+     "description": "Reset of the input side, active while either side is in reset."
     },
     {
      "port": "Out_RstOut",
      "dir": "out",
      "active": "high",
      "clock": "Out_Clk",
-     "description": "Reset of the output side",
-     "active while either side is in reset.": null
+     "description": "Reset of the output side, active while either side is in reset."
     }
    ],
    "interfaces": [
@@ -7130,6 +7160,1125 @@
      "vhdlType": "std_logic",
      "width": "1",
      "default": "'0'"
+    }
+   ]
+  },
+  {
+   "id": "openfibre/ofb_core",
+   "kind": "core",
+   "name": "SpaceFibre port",
+   "group": "openfibre",
+   "source": "openfibre",
+   "library": "openfibre",
+   "entity": "ofb_core",
+   "path": "hdl/ofb_core/src/ofb_core.vhd",
+   "summary": "SpaceFibre node interface of one port according to ECSS-E-ST-50-11C: virtual channels and broadcast messages, Data Link, Multi-Lane and Lane layers and the Management Information Base, for 1 to 4 lanes. The physical adapter (transceivers) is a separate block.",
+   "idPrefix": "ofb",
+   "doc": "https://openspacehdl.org/openfibre/docs/user_guide.html",
+   "project": "OpenFibre",
+   "notes": [
+    "The VC ports have the link format of OpenSPP: spp_core with DataWidth_g = 32 x NumLanes_g connects to a VC port directly (M_Link_User(0) to S_Vc_TUser); the further user bits of OpenSPP (destination index) do not reach the SpaceFibre port.",
+    "Every VC carries any packets; which VC carries which traffic is a convention of the system that both ends of the link follow.",
+    "Enable the safe implementation of state machines in the synthesis tool (Vivado FSM_SAFE_STATE = default_state on the state registers, Synplify syn_encoding = safe).",
+    "Read ID (0x0FB10007) and GENERICS after the reset; start the link with LANE_CTRL = 0x63 at one end (LaneStart, AutoStart, TxEn, RxEn) and wait for DL_STATUS bits 1:0 = 3 (programming sequence of the user guide).",
+    "All four clocks must run for the reset to complete; CoreClk may be the lane clock (as in the VCK190 reference design)."
+   ],
+   "rules": [
+    {
+     "kind": "clock_relation",
+     "faster": "CoreClk",
+     "slower": "LaneClk",
+     "message": "CoreClk must run at least as fast as LaneClk; a slower CoreClk loses received rows (DL_ERRORS bit 10)."
+    },
+    {
+     "kind": "clock_relation",
+     "faster": "UserClk",
+     "slower": "LaneClk",
+     "severity": "warning",
+     "message": "UserClk slower than LaneClk limits the throughput of the virtual channels (one beat of NumLanes_g words per cycle)."
+    },
+    {
+     "kind": "generic_multiple",
+     "generic": "VcInDepth_g",
+     "of": "64 * NumLanes_g"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "max_delay_pairs",
+     "clocks": [
+      "UserClk",
+      "CoreClk",
+      "LaneClk",
+      "MgmtClk"
+     ],
+     "note": "Clock crossings inside the core (Open Logic): for every pair of its clocks, in both directions, the period of the faster clock."
+    }
+   ],
+   "generics": [
+    {
+     "name": "NumVc_g",
+     "vhdlType": "positive range 1 to 32",
+     "kind": "integer",
+     "min": 1,
+     "max": 32,
+     "defaultText": "8",
+     "default": 8,
+     "label": "Virtual channels",
+     "description": "Number of virtual channels (1 to 32); the VC ports are vectors in ascending order."
+    },
+    {
+     "name": "NumLanes_g",
+     "vhdlType": "positive range 1 to 4",
+     "kind": "integer",
+     "min": 1,
+     "max": 4,
+     "defaultText": "1",
+     "default": 1,
+     "label": "Lanes",
+     "description": "Number of lanes (1 to 4); the VC ports carry 4 x NumLanes_g bytes per beat. The physical adapter takes the same value."
+    },
+    {
+     "name": "LaneClkFreq_g",
+     "vhdlType": "real",
+     "kind": "real",
+     "defaultText": "156.25e6",
+     "default": 156250000.0,
+     "label": "Lane clock frequency",
+     "description": "Frequency of LaneClk (lane timers, alignment timeout).",
+     "fromClock": "LaneClk",
+     "unit": "Hz"
+    },
+    {
+     "name": "CoreClkFreq_g",
+     "vhdlType": "real",
+     "kind": "real",
+     "defaultText": "200.0e6",
+     "default": 200000000.0,
+     "label": "Core clock frequency",
+     "description": "Frequency of CoreClk (scrubber of the error recovery buffer).",
+     "fromClock": "CoreClk",
+     "unit": "Hz"
+    },
+    {
+     "name": "VcOutDepth_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "128",
+     "default": 128,
+     "label": "Output VC buffer",
+     "description": "Output VC buffer of every VC.",
+     "unit": "beats"
+    },
+    {
+     "name": "VcInDepth_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "256",
+     "default": 256,
+     "label": "Input VC buffer",
+     "description": "Input VC buffer of every VC; a multiple of 64 x NumLanes_g.",
+     "unit": "words"
+    },
+    {
+     "name": "ErbRows_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "512",
+     "default": 512,
+     "label": "Error recovery buffer",
+     "description": "Error recovery buffer in data rows of NumLanes_g words.",
+     "advanced": true,
+     "unit": "rows"
+    },
+    {
+     "name": "InitPrbsWords_g",
+     "vhdlType": "natural range 0 to 64",
+     "kind": "integer",
+     "min": 0,
+     "max": 64,
+     "defaultText": "64",
+     "default": 64,
+     "label": "PRBS words at lane start",
+     "description": "PRBS words sent after INIT1 and INIT2 during the lane initialisation.",
+     "advanced": true
+    }
+   ],
+   "clocks": [
+    {
+     "port": "UserClk",
+     "primary": true,
+     "label": "User",
+     "description": "Virtual channel, broadcast and time-slot ports; for full throughput not slower than LaneClk."
+    },
+    {
+     "port": "CoreClk",
+     "label": "Core",
+     "freqGeneric": "CoreClkFreq_g",
+     "description": "Data Link layer; not slower than LaneClk."
+    },
+    {
+     "port": "LaneClk",
+     "label": "Lane",
+     "freqGeneric": "LaneClkFreq_g",
+     "description": "Multi-Lane and Lane layers and the physical adapter ports; the word clock of the lanes (156.25 MHz at 6.25 Gbit/s)."
+    },
+    {
+     "port": "MgmtClk",
+     "label": "Management",
+     "description": "Registers of the MIB and interrupt (any frequency)."
+    }
+   ],
+   "resets": [
+    {
+     "port": "Rst",
+     "active": "high",
+     "sync": "async",
+     "description": "Asynchronous reset; a reset generator per clock domain releases it synchronously, so all four clocks must run for the reset to complete."
+    }
+   ],
+   "interfaces": [
+    {
+     "name": "S_Vc",
+     "type": "pkt.link",
+     "role": "sink",
+     "clock": "UserClk",
+     "label": "Virtual channel in",
+     "description": "Packets to send on the virtual channel: one SpaceFibre packet (destination address and cargo) per stream packet; user with last: '1' ends the packet with an EEP.",
+     "vector": "NumVc_g",
+     "tieOff": "zero",
+     "signals": {
+      "data": "S_Vc_TData",
+      "keep": "S_Vc_TKeep",
+      "last": "S_Vc_TLast",
+      "user": "S_Vc_TUser",
+      "valid": "S_Vc_TValid",
+      "ready": "S_Vc_TReady"
+     },
+     "widths": {
+      "data": "(32*NumLanes_g*NumVc_g) / (NumVc_g)",
+      "keep": "(4*NumLanes_g*NumVc_g) / (NumVc_g)",
+      "user": "(NumVc_g) / (NumVc_g)"
+     }
+    },
+    {
+     "name": "M_Vc",
+     "type": "pkt.link",
+     "role": "source",
+     "clock": "UserClk",
+     "label": "Virtual channel out",
+     "description": "Received packets of the virtual channel; user with last: '1' the packet ended with an EEP. A channel that is not read stops the far end through flow control.",
+     "vector": "NumVc_g",
+     "tieOff": "zero",
+     "signals": {
+      "data": "M_Vc_TData",
+      "keep": "M_Vc_TKeep",
+      "last": "M_Vc_TLast",
+      "user": "M_Vc_TUser",
+      "valid": "M_Vc_TValid",
+      "ready": "M_Vc_TReady"
+     },
+     "widths": {
+      "data": "(32*NumLanes_g*NumVc_g) / (NumVc_g)",
+      "keep": "(4*NumLanes_g*NumVc_g) / (NumVc_g)",
+      "user": "(NumVc_g) / (NumVc_g)"
+     }
+    },
+    {
+     "name": "S_Bc",
+     "type": "spfi.bc",
+     "role": "sink",
+     "clock": "UserClk",
+     "label": "Broadcasts to send",
+     "description": "64-bit broadcast messages; user: channel 7:0, B_TYPE 15:8, DELAYED 16.",
+     "tieOff": "zero",
+     "signals": {
+      "data": "S_Bc_TData",
+      "user": "S_Bc_TUser",
+      "valid": "S_Bc_TValid",
+      "ready": "S_Bc_TReady"
+     },
+     "widths": {
+      "data": "64",
+      "user": "17"
+     }
+    },
+    {
+     "name": "M_Bc",
+     "type": "spfi.bc",
+     "role": "source",
+     "clock": "UserClk",
+     "label": "Received broadcasts",
+     "description": "Received broadcast messages; user: channel 7:0, B_TYPE 15:8, DELAYED 16, LATE 17. Four messages are buffered; further ones are discarded and flagged.",
+     "tieOff": "zero",
+     "signals": {
+      "data": "M_Bc_TData",
+      "user": "M_Bc_TUser",
+      "valid": "M_Bc_TValid",
+      "ready": "M_Bc_TReady"
+     },
+     "widths": {
+      "data": "64",
+      "user": "18"
+     }
+    },
+    {
+     "name": "S_Sched",
+     "type": "spfi.sched",
+     "role": "event_in",
+     "clock": "UserClk",
+     "label": "Time-slots",
+     "description": "SCHEDULE.request; unconnected, the time-slot 0 stays.",
+     "tieOff": "default",
+     "signals": {
+      "valid": "S_Sched_Valid",
+      "slot": "S_Sched_Slot"
+     }
+    },
+    {
+     "name": "S_AxiLite",
+     "type": "axi4lite",
+     "role": "slave",
+     "clock": "MgmtClk",
+     "label": "Registers",
+     "params": {
+      "addrWidth": 12
+     },
+     "signals": {
+      "AwAddr": "S_AxiLite_AwAddr",
+      "AwValid": "S_AxiLite_AwValid",
+      "AwReady": "S_AxiLite_AwReady",
+      "WData": "S_AxiLite_WData",
+      "WStrb": "S_AxiLite_WStrb",
+      "WValid": "S_AxiLite_WValid",
+      "WReady": "S_AxiLite_WReady",
+      "BResp": "S_AxiLite_BResp",
+      "BValid": "S_AxiLite_BValid",
+      "BReady": "S_AxiLite_BReady",
+      "ArAddr": "S_AxiLite_ArAddr",
+      "ArValid": "S_AxiLite_ArValid",
+      "ArReady": "S_AxiLite_ArReady",
+      "RData": "S_AxiLite_RData",
+      "RResp": "S_AxiLite_RResp",
+      "RValid": "S_AxiLite_RValid",
+      "RReady": "S_AxiLite_RReady"
+     }
+    },
+    {
+     "name": "Irq",
+     "type": "irq",
+     "role": "event_out",
+     "clock": "MgmtClk",
+     "label": "Interrupt",
+     "tieOff": "open",
+     "signals": {
+      "irq": "Irq"
+     }
+    },
+    {
+     "name": "Phy",
+     "type": "spfi.phy",
+     "role": "master",
+     "clock": "LaneClk",
+     "label": "Physical adapter",
+     "description": "Symbol streams, control and status of every lane; connect the physical adapter or make the ports external.",
+     "mustServe": true,
+     "signals": {
+      "tx_data": "PhyTx_Data",
+      "tx_k": "PhyTx_K",
+      "rx_data": "PhyRx_Data",
+      "rx_k": "PhyRx_K",
+      "rx_code_err": "PhyRx_CodeErr",
+      "rx_disp_err": "PhyRx_DispErr",
+      "rx_valid": "PhyRx_Valid",
+      "tx_enable": "Phy_TxEnable",
+      "rx_enable": "Phy_RxEnable",
+      "cdr_enable": "Phy_CdrEnable",
+      "rx_invert": "Phy_RxInvert",
+      "no_signal": "Phy_NoSignal",
+      "bit_sync": "Phy_BitSync",
+      "near_loopback": "Phy_SerialNearLoopback",
+      "far_loopback": "Phy_SerialFarLoopback",
+      "prbs_tx_sel": "Phy_PrbsTxSel",
+      "prbs_rx_sel": "Phy_PrbsRxSel",
+      "prbs_force_err": "Phy_PrbsForceErr",
+      "prbs_cnt_reset": "Phy_PrbsCntReset",
+      "prbs_err": "Phy_PrbsErr",
+      "prbs_locked": "Phy_PrbsLocked"
+     }
+    }
+   ],
+   "ports": [
+    {
+     "name": "Rst",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "UserClk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "CoreClk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "LaneClk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "MgmtClk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Vc_TData",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(32*NumLanes_g*NumVc_g-1 downto 0)",
+     "width": "32*NumLanes_g*NumVc_g"
+    },
+    {
+     "name": "S_Vc_TKeep",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(4*NumLanes_g*NumVc_g-1 downto 0)",
+     "width": "4*NumLanes_g*NumVc_g"
+    },
+    {
+     "name": "S_Vc_TLast",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumVc_g-1 downto 0)",
+     "width": "NumVc_g"
+    },
+    {
+     "name": "S_Vc_TUser",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumVc_g-1 downto 0)",
+     "width": "NumVc_g",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "S_Vc_TValid",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumVc_g-1 downto 0)",
+     "width": "NumVc_g"
+    },
+    {
+     "name": "S_Vc_TReady",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumVc_g-1 downto 0)",
+     "width": "NumVc_g"
+    },
+    {
+     "name": "M_Vc_TData",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(32*NumLanes_g*NumVc_g-1 downto 0)",
+     "width": "32*NumLanes_g*NumVc_g"
+    },
+    {
+     "name": "M_Vc_TKeep",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(4*NumLanes_g*NumVc_g-1 downto 0)",
+     "width": "4*NumLanes_g*NumVc_g"
+    },
+    {
+     "name": "M_Vc_TLast",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumVc_g-1 downto 0)",
+     "width": "NumVc_g"
+    },
+    {
+     "name": "M_Vc_TUser",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumVc_g-1 downto 0)",
+     "width": "NumVc_g"
+    },
+    {
+     "name": "M_Vc_TValid",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumVc_g-1 downto 0)",
+     "width": "NumVc_g"
+    },
+    {
+     "name": "M_Vc_TReady",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumVc_g-1 downto 0)",
+     "width": "NumVc_g"
+    },
+    {
+     "name": "S_Bc_TData",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(63 downto 0)",
+     "width": "64"
+    },
+    {
+     "name": "S_Bc_TUser",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(16 downto 0)",
+     "width": "17"
+    },
+    {
+     "name": "S_Bc_TValid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Bc_TReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Bc_TData",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(63 downto 0)",
+     "width": "64"
+    },
+    {
+     "name": "M_Bc_TUser",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(17 downto 0)",
+     "width": "18"
+    },
+    {
+     "name": "M_Bc_TValid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Bc_TReady",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Sched_Slot",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(5 downto 0)",
+     "width": "6",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "S_Sched_Valid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
+    },
+    {
+     "name": "S_AxiLite_ArAddr",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(11 downto 0)",
+     "width": "12"
+    },
+    {
+     "name": "S_AxiLite_ArValid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_ArReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_AwAddr",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(11 downto 0)",
+     "width": "12"
+    },
+    {
+     "name": "S_AxiLite_AwValid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_AwReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_WData",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(31 downto 0)",
+     "width": "32"
+    },
+    {
+     "name": "S_AxiLite_WStrb",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(3 downto 0)",
+     "width": "4"
+    },
+    {
+     "name": "S_AxiLite_WValid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_WReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_BResp",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "S_AxiLite_BValid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_BReady",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_RData",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(31 downto 0)",
+     "width": "32"
+    },
+    {
+     "name": "S_AxiLite_RResp",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "S_AxiLite_RValid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_RReady",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Irq",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "PhyTx_Data",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(32*NumLanes_g-1 downto 0)",
+     "width": "32*NumLanes_g"
+    },
+    {
+     "name": "PhyTx_K",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g"
+    },
+    {
+     "name": "PhyRx_Data",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(32*NumLanes_g-1 downto 0)",
+     "width": "32*NumLanes_g"
+    },
+    {
+     "name": "PhyRx_K",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g"
+    },
+    {
+     "name": "PhyRx_CodeErr",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g"
+    },
+    {
+     "name": "PhyRx_DispErr",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g"
+    },
+    {
+     "name": "PhyRx_Valid",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_TxEnable",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_RxEnable",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_CdrEnable",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_RxInvert",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_NoSignal",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_BitSync",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Phy_SerialNearLoopback",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_SerialFarLoopback",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_PrbsTxSel",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g"
+    },
+    {
+     "name": "Phy_PrbsRxSel",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g"
+    },
+    {
+     "name": "Phy_PrbsForceErr",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_PrbsCntReset",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_PrbsErr",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Phy_PrbsLocked",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g",
+     "default": "(others => '0')"
+    }
+   ]
+  },
+  {
+   "id": "openfibre/ofb_pa_gty",
+   "kind": "module",
+   "name": "SpaceFibre GTY adapter",
+   "group": "openfibre",
+   "source": "openfibre",
+   "library": "openfibre",
+   "entity": "ofb_pa_gty",
+   "path": "hdl/ofb_pa_gty/src/ofb_pa_gty.vhd",
+   "summary": "Physical adapter of OpenFibre for one AMD Versal GTY quad (vendor-specific): 8B/10B, comma alignment and receive clock correction in the transceivers at 6.25 Gbit/s. Its lane clock output is the lane clock of the core.",
+   "idPrefix": "pa",
+   "doc": "https://openspacehdl.org/openfibre/docs/user_guide.html",
+   "project": "OpenFibre",
+   "vendor": "AMD Versal GTY",
+   "notes": [
+    "Vendor-specific (AMD Versal GTY). hdl/ofb_pa_gty/src/ofb_pa_gty.vhd is not in component_list.txt: add it to the library openfibre, and create the transceiver wizard instance ofb_gtw in the Vivado project with hdl/ofb_pa_gty/tcl/ofb_gtw.tcl (source the file, then ofb_gtw_create ofb_gtw 156.25 for a 156.25 MHz reference clock).",
+    "RefClk is the output O of the IBUFDS_GTE5 of the reference clock pins of the quad; place the buffer in the chip-level top, as hdl/ofb_vck190/src/ofb_vck190_top.vhd does.",
+    "Hold the reset of the core while LaneRst is high; the VCK190 reference design synchronises LaneRst to MgmtClk and ORs it with the power-on reset into Rst of the core.",
+    "The line rate is 6.25 Gbit/s with a 156.25 MHz reference clock, so LaneClk runs at 156.25 MHz.",
+    "Simulation needs the AMD transceiver models (unisim and the simulation files of the wizard); OpenFibre simulates the adapter with tools/run_xsim.py. Without them, the test bench model tb/ofb_tb_pa_model.vhd of OpenFibre (two adapters joined by a lane, one clock) stands in for the adapters of both ends of a link."
+   ],
+   "generics": [
+    {
+     "name": "NumLanes_g",
+     "vhdlType": "positive range 1 to 4",
+     "kind": "integer",
+     "min": 1,
+     "max": 4,
+     "defaultText": "4",
+     "default": 4,
+     "label": "Lanes",
+     "description": "Lanes of the quad in use (1 to 4); follows the core.",
+     "follow": {
+      "interfaces": [
+       "Phy"
+      ],
+      "measure": "generic",
+      "generic": "NumLanes_g"
+     }
+    },
+    {
+     "name": "SimDevice_g",
+     "vhdlType": "string",
+     "kind": "string",
+     "defaultText": "\"VERSAL_AI_CORE\"",
+     "default": "VERSAL_AI_CORE",
+     "label": "Device family",
+     "description": "SIM_DEVICE of the BUFG_GT (device family).",
+     "advanced": true
+    }
+   ],
+   "clocks": [
+    {
+     "port": "FreeRunClk",
+     "primary": true,
+     "label": "Free-running",
+     "description": "Free-running clock of the transceiver reset controller; it runs before the transceivers, for example the management clock."
+    },
+    {
+     "port": "LaneClk",
+     "output": true,
+     "frequency": "156.25e6",
+     "label": "Lane clock",
+     "description": "Transmit user clock of the quad (6.25 Gbit/s / 40 bits); the lane clock of the core."
+    }
+   ],
+   "resets": [
+    {
+     "port": "Rst",
+     "active": "high",
+     "sync": "async",
+     "description": "Asynchronous reset of the transceivers and their reset controller."
+    }
+   ],
+   "interfaces": [
+    {
+     "name": "Phy",
+     "type": "spfi.phy",
+     "role": "slave",
+     "clock": "LaneClk",
+     "label": "Core",
+     "description": "The physical adapter ports of the core, one to one.",
+     "mustServe": true,
+     "signals": {
+      "tx_data": "PhyTx_Data",
+      "tx_k": "PhyTx_K",
+      "rx_data": "PhyRx_Data",
+      "rx_k": "PhyRx_K",
+      "rx_code_err": "PhyRx_CodeErr",
+      "rx_disp_err": "PhyRx_DispErr",
+      "rx_valid": "PhyRx_Valid",
+      "tx_enable": "Phy_TxEnable",
+      "rx_enable": "Phy_RxEnable",
+      "cdr_enable": "Phy_CdrEnable",
+      "rx_invert": "Phy_RxInvert",
+      "no_signal": "Phy_NoSignal",
+      "bit_sync": "Stat_Aligned",
+      "near_loopback": "Phy_SerialNearLoopback",
+      "far_loopback": "Phy_SerialFarLoopback",
+      "prbs_tx_sel": "Phy_PrbsTxSel",
+      "prbs_rx_sel": "Phy_PrbsRxSel",
+      "prbs_force_err": "Phy_PrbsForceErr",
+      "prbs_cnt_reset": "Phy_PrbsCntReset",
+      "prbs_err": "Phy_PrbsErr",
+      "prbs_locked": "Phy_PrbsLocked"
+     }
+    },
+    {
+     "name": "Gt",
+     "type": "spfi.serial",
+     "role": "pins",
+     "label": "Serial lanes",
+     "description": "Serial transmit and receive pairs of the quad and the reference clock from its IBUFDS_GTE5.",
+     "externalOnly": true,
+     "signals": {
+      "tx_p": "Gt_TxP",
+      "tx_n": "Gt_TxN",
+      "rx_p": "Gt_RxP",
+      "rx_n": "Gt_RxN",
+      "refclk": "RefClk"
+     }
+    },
+    {
+     "name": "LaneRst",
+     "type": "reset",
+     "role": "event_out",
+     "clock": "LaneClk",
+     "label": "Lane reset",
+     "description": "High while the transmitters are not ready; hold the reset of the core while it is high.",
+     "tieOff": "open",
+     "signals": {
+      "rst": "LaneRst"
+     }
+    },
+    {
+     "name": "Stat",
+     "type": "sig.status",
+     "role": "event_out",
+     "clock": "LaneClk",
+     "label": "Status",
+     "description": "Transmitters and receivers ready, receive buffer errors and clock corrections per lane.",
+     "tieOff": "open",
+     "signals": {
+      "tx_ready": "Stat_TxReady",
+      "rx_ready": "Stat_RxReady",
+      "rx_buf_err": "Stat_RxBufErr",
+      "clk_cor": "Stat_ClkCor"
+     }
+    }
+   ],
+   "ports": [
+    {
+     "name": "FreeRunClk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Rst",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "RefClk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "LaneClk",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "LaneRst",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Gt_TxP",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Gt_TxN",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Gt_RxP",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Gt_RxN",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "PhyTx_Data",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(32*NumLanes_g-1 downto 0)",
+     "width": "32*NumLanes_g"
+    },
+    {
+     "name": "PhyTx_K",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g"
+    },
+    {
+     "name": "PhyRx_Data",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(32*NumLanes_g-1 downto 0)",
+     "width": "32*NumLanes_g"
+    },
+    {
+     "name": "PhyRx_K",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g"
+    },
+    {
+     "name": "PhyRx_CodeErr",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g"
+    },
+    {
+     "name": "PhyRx_DispErr",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g"
+    },
+    {
+     "name": "PhyRx_Valid",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_TxEnable",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_RxEnable",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_CdrEnable",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_RxInvert",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_NoSignal",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_SerialNearLoopback",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Phy_SerialFarLoopback",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Phy_PrbsTxSel",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Phy_PrbsRxSel",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(4*NumLanes_g-1 downto 0)",
+     "width": "4*NumLanes_g",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Phy_PrbsForceErr",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Phy_PrbsCntReset",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Phy_PrbsErr",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Phy_PrbsLocked",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Stat_TxReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Stat_RxReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Stat_Aligned",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Stat_RxBufErr",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
+    },
+    {
+     "name": "Stat_ClkCor",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
+     "width": "NumLanes_g"
     }
    ]
   },

@@ -46,6 +46,18 @@ sources:
     requires: 4.7.0-ft.2
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
+  - id: openfibre
+    name: OpenFibre
+    repo: openfibre
+    url: https://github.com/open-space-hdl/openfibre
+    doc: https://openspacehdl.org/openfibre/
+    commit: 35424172bd9761cfbacc2e0449a803ab6c60fe8c
+    library: openfibre
+    file_list: component_list.txt
+    file_list_format: modules
+    requires: 4.7.0-ft.2
+    note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. component_list.txt lists the technology-independent modules; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).
+
   - id: opencrypto
     name: OpenCrypto
     repo: opencrypto

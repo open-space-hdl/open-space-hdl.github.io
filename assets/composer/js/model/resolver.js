@@ -764,7 +764,11 @@ export class Resolution {
     const ud = fd.sigs.find((s) => s.name === 'user')?.width;
     const ur = fr.sigs.find((s) => s.name === 'user')?.width;
     if (ud !== undefined && ur !== undefined && ud !== ur && replaced !== 'user') {
-      this.check('info', 'signals', `The user signals on ${c.id} have ${ud} and ${ur} bit: bits ${Math.min(ud, ur) - 1} to 0 are connected.`, { connection: c.id });
+      // "bit 0 is" or "bits 4 to 1 are"
+      const bits = (/** @type {number} */ hi, /** @type {number} */ lo) => (hi === lo ? `bit ${lo} is` : `bits ${hi} to ${lo} are`);
+      const common = Math.min(ud, ur);
+      const rest = ud > ur ? `${bits(ud - 1, ur)} not used` : `${bits(ur - 1, ud)} tied to zero at ${c.to}`;
+      this.check('info', 'signals', `${c.from} has ${ud} user bit${ud === 1 ? '' : 's'}, ${c.to} ${ur}: ${bits(common - 1, 0)} connected, ${rest}.`, { connection: c.id });
     }
   }
 
@@ -952,6 +956,19 @@ export class Resolution {
         } else if (k.kind === 'async_clock_groups') {
           const clocks = clockNames((k.clocks ?? []).map((/** @type {string} */ c) => rec.clocks[c]).filter(Boolean));
           if (clocks.length > 1) add({ kind: 'async_clock_groups', clocks });
+        } else if (k.kind === 'max_delay_pairs') {
+          // every pair of the clock domains of the block, both directions: the period of the faster clock
+          const doms = [...new Set((k.clocks ?? []).map((/** @type {string} */ c) => rec.clocks[c]).filter(Boolean))].sort();
+          for (const a of doms) {
+            for (const b of doms) {
+              if (a === b) continue;
+              const fa = this.domainMap.get(a)?.frequencyHz ?? 0;
+              const fb = this.domainMap.get(b)?.frequencyHz ?? 0;
+              if (!(fa > 0 && fb > 0)) continue;
+              const ns = Math.round(1e12 / Math.max(fa, fb)) / 1000;
+              add({ kind: 'max_delay', from: clockNames([a])[0], to: clockNames([b])[0], ns, datapathOnly: true, instance: inst.id, note: k.note ?? `Clock crossings inside ${inst.id}: period of the faster clock.` });
+            }
+          }
         } else if (Array.isArray(k.ports)) {
           add({ ...k, ports: k.ports.map((/** @type {string} */ p) => topOf(inst.id, p)), instance: inst.id });
         } else if (k.kind === 'vendor_scoped') {

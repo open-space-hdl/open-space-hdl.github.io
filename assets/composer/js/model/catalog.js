@@ -74,6 +74,7 @@ export const CATALOG_VERSION = 1;
  * @property {string} idPrefix
  * @property {string} [doc]
  * @property {string} [project]
+ * @property {string} [vendor]      device family a vendor-specific block is made for (for example AMD Versal GTY)
  * @property {string[]} [notes]
  * @property {Record<string, unknown>[]} [rules]
  * @property {Record<string, unknown>[]} [constraints]

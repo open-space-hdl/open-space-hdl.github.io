@@ -102,7 +102,7 @@ export function runRules(res) {
           const ratio = fast / slow;
           const integer = Math.abs(ratio - Math.round(ratio)) < 1e-6;
           if (ratio < 1 - 1e-9 || (rule.integer && !integer)) {
-            res.check('error', rule.kind,
+            res.check(rule.severity ?? 'error', rule.kind,
               `${inst.id}: ${rule.message ?? `${rule.faster} must run at least as fast as ${rule.slower}.`} (${formatHz(fast)} and ${formatHz(slow)})`,
               where);
           }

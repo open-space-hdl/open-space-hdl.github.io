@@ -39,11 +39,14 @@ test('every example file loads and saves back unchanged', () => {
   const dir = new URL('../../assets/composer/examples/', import.meta.url);
   const files = readdirSync(dir).filter((f) => f.endsWith('.composer.json'));
   assert.ok(files.length >= 1);
+  // the content identifier of the catalog is not part of the comparison: an example written before an unrelated
+  // catalog change still loads without a remark and saves the same system
+  const norm = (/** @type {string} */ t) => t.replace(/"catalog": "[0-9a-f]+"/g, '"catalog": "*"').replace(/\(catalog `[0-9a-f]+`\)/g, '(catalog `*`)');
   for (const f of files) {
     const text = readFileSync(new URL(f, dir), 'utf-8');
     const { design, warnings } = fromText(text, cat);
     assert.deepEqual(warnings, [], f);
-    assert.equal(toText(design, cat), text, f);
+    assert.equal(norm(toText(design, cat)), norm(text), f);
   }
 });
 
@@ -77,6 +80,7 @@ test('broken files are rejected with clear messages', () => {
 test('tolerated deviations are warnings', () => {
   const doc = structuredClone(toDocument(spwRmapNode(), cat));
   doc.generator.catalog = 'other';
+  delete doc.resolved;
   doc.instances[0].generics.Removed_g = 1;
   delete doc.layout.instances.rmap0;
   const t = doc.connections[0].from;
@@ -88,6 +92,15 @@ test('tolerated deviations are warnings', () => {
   // a block without a position gets one and is reported, so that the editor can arrange the system
   assert.ok(design.layout.instances.rmap0);
   assert.deepEqual(unplaced, ['rmap0']);
+});
+
+test('a file of another catalog version gets a remark only when the system resolves differently now', () => {
+  const doc = structuredClone(toDocument(spwRmapNode(), cat));
+  doc.generator.catalog = 'other';
+  doc.resolved.catalog = 'other';
+  assert.deepEqual(fromDocument(doc, cat).warnings, [], 'a catalog that only gained other blocks changes nothing');
+  doc.resolved.instances[0].generics[0].value = 'changed';
+  assert.match(fromDocument(doc, cat).warnings.join(' '), /another version of the block catalog, which resolves the system differently/);
 });
 
 test('side band constants are completed and checked', () => {

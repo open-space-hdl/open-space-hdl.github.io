@@ -186,9 +186,7 @@ export function fromDocument(doc, cat) {
         : `Unsupported format version ${String(o.formatVersion)}.`,
     ]);
   }
-  if (isObject(o.generator) && o.generator.catalog && o.generator.catalog !== cat.id) {
-    warnings.push('The file was saved with another version of the block catalog; check the generics and connections.');
-  }
+  const otherCatalog = Boolean(isObject(o.generator) && o.generator.catalog && o.generator.catalog !== cat.id);
 
   // system
   const d = createDesign();
@@ -400,11 +398,18 @@ export function fromDocument(doc, cat) {
 
   if (errors.length > 0) throw new FormatError(errors);
   // "resolved" is derived: the Composer resolves the system again and says so when the stored netlist differs
-  if (isObject(o.resolved) && !(isObject(o.generator) && o.generator.catalog && o.generator.catalog !== cat.id)) {
-    const fresh = netlist(cat, d, resolve(cat, d));
-    if (JSON.stringify(fresh) !== JSON.stringify(o.resolved)) {
-      warnings.push('The resolved netlist in the file differs from the system it describes (it was edited outside the Composer); the Composer resolves the system again and saves the new netlist.');
+  // "resolved" is derived: the Composer resolves the system again. A file of another catalog version gets a remark
+  // only when the system resolves differently now (a catalog that only gained other blocks changes nothing).
+  const same = () => {
+    const fresh = /** @type {Record<string, unknown>} */ (netlist(cat, d, resolve(cat, d)));
+    return JSON.stringify({ ...fresh, catalog: '' }) === JSON.stringify({ ...o.resolved, catalog: '' });
+  };
+  if (otherCatalog) {
+    if (!isObject(o.resolved) || !same()) {
+      warnings.push('The file was saved with another version of the block catalog, which resolves the system differently; check the generics and connections.');
     }
+  } else if (isObject(o.resolved) && !same()) {
+    warnings.push('The resolved netlist in the file differs from the system it describes (it was edited outside the Composer); the Composer resolves the system again and saves the new netlist.');
   }
   return { design: d, warnings, unplaced };
 }

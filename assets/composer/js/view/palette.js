@@ -107,7 +107,7 @@ export class PaletteView {
       'data-block': b.id,
       'data-preset': preset ?? '',
       title: summary,
-      'aria-label': `Add ${name} (${b.entity})`,
+      'aria-label': `Add ${name} (${b.entity}${b.vendor ? `, for ${b.vendor} only` : ''})`,
       onclick: (/** @type {MouseEvent} */ e) => {
         // pointer users add by drag or double click; Enter and Space arrive as click with detail 0
         if (e.detail === 0) this.app.addBlockAtCenter(b.id, preset);
@@ -116,7 +116,8 @@ export class PaletteView {
       onpointerdown: (/** @type {PointerEvent} */ e) => this.startDrag(e, b, preset, name),
     },
     h('span', { class: 'cmp-pal-name' }, name),
-    h('span', { class: 'cmp-pal-entity' }, b.entity));
+    h('span', { class: 'cmp-pal-entity' }, b.entity),
+    b.vendor ? h('span', { class: 'cmp-pal-vendor' }, `Vendor-specific: ${b.vendor}`) : null);
     return h('li', {}, btn);
   }
 

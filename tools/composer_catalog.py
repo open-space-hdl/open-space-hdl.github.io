@@ -65,6 +65,14 @@ RULE_KINDS = {
     "chain_fits": ("interface", "via", "sink", "bytes"),
 }
 GENERIC_CHECKS = {"pow2", "multiple8", "multiple16"}
+# constraints of the blocks (translated to the top level by the resolver) with their required keys
+CONSTRAINT_KINDS = {
+    "false_path": ("fromPorts",),
+    "async_clock_groups": ("clocks",),
+    "max_delay_pairs": ("clocks",),
+    "io_register": ("ports",),
+    "vendor_scoped": ("file",),
+}
 FOLLOW_MEASURES = {"data", "packed", "generic"}
 CDC_MODES = {"level", "pulse", "valid", "none"}
 INT_MAX = 2**31 - 1
@@ -799,6 +807,9 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
     # Clocks and resets
     clocks = []
     for c in b.get("clocks") or []:
+        unknown = set(c) - {"port", "primary", "output", "frequency", "label", "description", "freqGeneric"}
+        if unknown:
+            ctx.err(where, f"clock {c.get('port')}: unknown keys {', '.join(sorted(map(str, unknown)))}")
         p = use(require(c, "port", where), "clocks")
         expected_dir = "out" if c.get("output") else "in"
         if p and (p["dir"] != expected_dir or p["width"] != "1"):
@@ -816,6 +827,9 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             ctx.err(where, f"clock output {c['port']}: frequency '{c['frequency']}' cannot be evaluated")
     resets = []
     for r in b.get("resets") or []:
+        unknown = set(r) - {"port", "dir", "active", "sync", "clock", "description"}
+        if unknown:
+            ctx.err(where, f"reset {r.get('port')}: unknown keys {', '.join(sorted(map(str, unknown)))}")
         p = use(require(r, "port", where), "resets")
         if p and p["width"] != "1":
             ctx.err(where, f"reset {r['port']} must be a std_logic")
@@ -1007,12 +1021,31 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         for iname in list(r.get("interfaces") or []) + ([r["interface"]] if r.get("interface") else []):
             if iname not in itf_names:
                 ctx.err(where, f"rule {kind}: unknown interface {iname}")
+        if r.get("severity", "error") not in ("error", "warning"):
+            ctx.err(where, f"rule {kind}: severity must be error or warning")
         if kind == "chain_fits":
             ctx.chain_rules.append((where, r))
         if kind == "partner_requires":
             for tid in r.get("types") or []:
                 if tid not in ctx.type_ids:
                     ctx.err(where, f"rule {kind}: unknown type {tid}")
+
+    # Constraints
+    port_names = {p["name"] for p in ports}
+    for k in b.get("constraints") or []:
+        kind = k.get("kind")
+        if kind not in CONSTRAINT_KINDS:
+            ctx.err(where, f"unknown constraint kind {kind}")
+            continue
+        for key in CONSTRAINT_KINDS[kind]:
+            if key not in k:
+                ctx.err(where, f"constraint {kind} needs '{key}'")
+        for c in k.get("clocks") or []:
+            if c not in clock_ports:
+                ctx.err(where, f"constraint {kind}: unknown clock {c}")
+        for pn in list(k.get("fromPorts") or []) + list(k.get("ports") or []):
+            if pn not in port_names:
+                ctx.err(where, f"constraint {kind}: unknown port {pn}")
 
     # Presets
     presets = []
@@ -1036,7 +1069,7 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         "summary": b["summary"],
         "idPrefix": b.get("idPrefix") or re.sub(r"^(olo_(base|ft|axi)_)", "", ent.name).split("_")[0],
     }
-    for key in ("doc", "project", "notes", "rules", "constraints"):
+    for key in ("doc", "project", "vendor", "notes", "rules", "constraints"):
         if key in b:
             block[key] = b[key]
     block["generics"] = generics

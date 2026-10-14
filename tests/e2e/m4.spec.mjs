@@ -28,8 +28,10 @@ test('the saved file carries the netlist, the checks and the build brief of the 
   expect(saved.name).toBe('encrypted_spp_over_spw.composer.json');
   const doc = JSON.parse(saved.text);
   // the browser resolves the system to the same netlist and brief as the unit tests
-  expect(doc.resolved).toEqual(JSON.parse(golden('encrypted-spp-over-spw.resolved.json')));
-  expect(doc.agent.brief.trimEnd()).toBe(golden('encrypted-spp-over-spw.brief.md').trimEnd());
+  // (the golden files pin the netlist and the brief, not the content identifier of the catalog)
+  const noCatalogText = (/** @type {string} */ t) => t.replace(/\(catalog `[0-9a-f]+`\)/, '(catalog `*`)').trimEnd();
+  expect({ ...doc.resolved, catalog: '*' }).toEqual({ ...JSON.parse(golden('encrypted-spp-over-spw.resolved.json')), catalog: '*' });
+  expect(noCatalogText(doc.agent.brief)).toBe(noCatalogText(golden('encrypted-spp-over-spw.brief.md')));
   expect(doc.checks.filter((/** @type {any} */ c) => c.severity === 'error')).toEqual([]);
   expect(Object.keys(doc)).toEqual(['$schema', 'format', 'formatVersion', 'generator', 'system', 'sources', 'clockDomains', 'instances',
     'connections', 'externals', 'resolved', 'checks', 'agent', 'layout']);
@@ -43,6 +45,8 @@ test('the key slot of the framer is a constant of the instance and reaches the n
   await expect(slot).toHaveValue('0');
   // four key slots in the core the framer feeds: 0 to 3
   await expect(page.locator('[data-itf="frm0.Cfg"]')).toContainText('0 to 3');
+  // the field says what the interface is: no second "Key slot" above it
+  await expect(page.locator('[data-itf="frm0.Cfg"] .cmp-itf-label')).toHaveCount(0);
   await slot.fill('7');
   await slot.press('Enter');
   await expect(page.locator('[data-itf="frm0.Cfg"]')).toContainText('Enter an integer from 0 to 3');

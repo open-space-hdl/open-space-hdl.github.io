@@ -56,8 +56,8 @@ blocks:
     resets:
       - { port: In_Rst, active: high, sync: sync, clock: In_Clk }
       - { port: Out_Rst, active: high, sync: sync, clock: Out_Clk }
-      - { port: In_RstOut, dir: out, active: high, clock: In_Clk, description: Reset of the input side, active while either side is in reset. }
-      - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk, description: Reset of the output side, active while either side is in reset. }
+      - { port: In_RstOut, dir: out, active: high, clock: In_Clk, description: "Reset of the input side, active while either side is in reset." }
+      - { port: Out_RstOut, dir: out, active: high, clock: Out_Clk, description: "Reset of the output side, active while either side is in reset." }
     generics:
       - { name: Width_g, label: Width, unit: bits, example: 32, description: Data width; follows the connected stream., follow: { interfaces: [In, Out], measure: packed } }
       - { name: Depth_g, label: Depth, unit: words, check: pow2, example: 512, description: Number of entries (power of 2). }

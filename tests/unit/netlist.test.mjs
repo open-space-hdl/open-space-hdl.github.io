@@ -20,13 +20,17 @@ function load(f) {
   return /** @type {any} */ (toDocument(fromText(readFileSync(EXAMPLES + f, 'utf-8'), cat).design, cat));
 }
 
+/** The golden files pin the netlist and the brief, not the content identifier of the catalog. */
+const noCatalog = (/** @type {any} */ r) => ({ ...r, catalog: '*' });
+const noCatalogText = (/** @type {string} */ t) => t.replace(/\(catalog `[0-9a-f]+`\)/, '(catalog `*`)');
+
 test('the netlist and the brief of every example match their golden files', () => {
-  assert.ok(files.length >= 4);
+  assert.ok(files.length >= 5);
   for (const f of files) {
     const base = f.replace('.composer.json', '');
     const doc = load(f);
-    assert.deepEqual(doc.resolved, JSON.parse(readFileSync(`${GOLDEN}${base}.resolved.json`, 'utf-8')), `${base}: resolved differs from the golden file (run node tools/composer_examples.mjs and review the difference)`);
-    assert.equal(doc.agent.brief, readFileSync(`${GOLDEN}${base}.brief.md`, 'utf-8'), `${base}: brief differs from the golden file`);
+    assert.deepEqual(noCatalog(doc.resolved), noCatalog(JSON.parse(readFileSync(`${GOLDEN}${base}.resolved.json`, 'utf-8'))), `${base}: resolved differs from the golden file (run node tools/composer_examples.mjs and review the difference)`);
+    assert.equal(noCatalogText(doc.agent.brief), noCatalogText(readFileSync(`${GOLDEN}${base}.brief.md`, 'utf-8')), `${base}: brief differs from the golden file`);
     assert.deepEqual(load(f).resolved, doc.resolved, `${base}: not deterministic`);
   }
 });
