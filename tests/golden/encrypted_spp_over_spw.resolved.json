@@ -1,5 +1,5 @@
 {
-  "catalog": "7f69dfab5b09",
+  "catalog": "0a7e06a1638b",
   "entity": "encrypted_spp_over_spw",
   "ports": [
     {
@@ -3870,8 +3870,8 @@
     },
     {
       "kind": "vendor_scoped",
-      "file": "tools/vivado/all_constraints_amd.tcl",
-      "note": "AMD Vivado: source the script of Open Logic once for the scoped constraints of its clock crossings."
+      "file": "src/base/tcl/olo_base_constraints_amd.tcl",
+      "note": "AMD Vivado: source the script of Open Logic once. It reads the scoped constraints of olo_base_cc_reset, olo_base_cc_bits, olo_base_cc_simple, olo_base_reset_gen and olo_base_ram_sdp wherever the system uses them, also inside the cores. tools/vivado/all_constraints_amd.tcl would also read those of olo_intf_sync, which expect device pins at its input and stop the build (ERROR 18-513) where a block synchronises internal signals with it, as ofb_pa_gty does; a block that synchronises device pins declares its own false path for them."
     }
   ],
   "compile": [

@@ -91,7 +91,7 @@ blocks:
       - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Out_Clk, tieOff: open, signals: { sec: Out_EccSec, ded: Out_EccDed } }
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: In_Clk, tieOff: default, signals: { bitflip: In_ErrInj_BitFlip, valid: In_ErrInj_Valid } }
     constraints:
-      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
+      - { kind: vendor_scoped, file: src/base/tcl/olo_base_constraints_amd.tcl, note: "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)." }
 
   - id: olo/olo_ft_fifo_packet
     kind: olo
@@ -186,7 +186,7 @@ blocks:
         tieOff: open
         signals: { full: Out_Full, empty: Out_Empty, alm_full: Out_AlmFull, alm_empty: Out_AlmEmpty, level: Out_Level }
     constraints:
-      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
+      - { kind: vendor_scoped, file: src/base/tcl/olo_base_constraints_amd.tcl, note: "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)." }
 
   - id: olo/olo_base_cc_bits
     kind: olo
@@ -212,7 +212,7 @@ blocks:
       - { name: In, label: Input, type: event.any, role: event_in, clock: In_Clk, signals: { data: In_Data } }
       - { name: Out, label: Output, type: event.any, role: event_out, clock: Out_Clk, signals: { data: Out_Data } }
     constraints:
-      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
+      - { kind: vendor_scoped, file: src/base/tcl/olo_base_constraints_amd.tcl, note: "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)." }
 
   - id: olo/olo_base_cc_pulse
     kind: olo
@@ -240,7 +240,7 @@ blocks:
       - { name: In, label: Input, type: event.any, role: event_in, clock: In_Clk, signals: { pulse: In_Pulse } }
       - { name: Out, label: Output, type: event.any, role: event_out, clock: Out_Clk, signals: { pulse: Out_Pulse } }
     constraints:
-      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
+      - { kind: vendor_scoped, file: src/base/tcl/olo_base_constraints_amd.tcl, note: "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)." }
 
   # Width conversion --------------------------------------------------------------------------------------------------
   - id: olo/olo_base_wconv_n2xn
@@ -337,7 +337,7 @@ blocks:
       - { name: In, label: Input, type: axis.any, role: sink, clock: In_Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready } }
       - { name: Out, label: Output, type: axis.any, role: source, clock: Out_Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready } }
     constraints:
-      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
+      - { kind: vendor_scoped, file: src/base/tcl/olo_base_constraints_amd.tcl, note: "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)." }
 
   - id: olo/olo_base_cc_simple
     kind: olo
@@ -365,7 +365,7 @@ blocks:
       - { name: In, label: Input, type: axis.any, role: sink, clock: In_Clk, signals: { data: In_Data, valid: In_Valid } }
       - { name: Out, label: Output, type: axis.any, role: source, clock: Out_Clk, signals: { data: Out_Data, valid: Out_Valid } }
     constraints:
-      - { kind: vendor_scoped, file: tools/vivado/all_constraints_amd.tcl, note: "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings." }
+      - { kind: vendor_scoped, file: src/base/tcl/olo_base_constraints_amd.tcl, note: "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)." }
 
   - id: olo/olo_base_cc_n2xn
     kind: olo

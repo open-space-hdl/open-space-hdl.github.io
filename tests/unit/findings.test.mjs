@@ -145,3 +145,18 @@ test('the brief initialises a block whose register port hangs on a decoder port,
   // a register port without connection and not external is still reported
   assert.match(init, /\*\*`spw0`\*\* \([^)]*\) \(its register port `S_AxiLite` is not connected/);
 });
+
+test('every system reads the scoped constraints of the Open Logic base entities, never those of olo_intf_sync', () => {
+  // a SpaceWire port alone: no inserted block, but crossings and reset generators inside the core
+  const d = addInstance(createDesign('spw_only'), cat, 'openwire/owr_core', { x: 0, y: 0 }).design;
+  const scoped = /** @type {any} */ (toDocument(d, cat)).resolved.constraints.filter((/** @type {any} */ c) => c.kind === 'vendor_scoped');
+  assert.equal(scoped.length, 1);
+  assert.equal(scoped[0].file, 'src/base/tcl/olo_base_constraints_amd.tcl');
+  assert.match(scoped[0].note, /olo_intf_sync/);
+  // nothing in the catalog or the examples names the script that also reads the interface constraints
+  assert.ok(!readFileSync(`${ROOT}assets/composer/catalog.json`, 'utf-8').includes('all_constraints_amd.tcl"'));
+  for (const name of ['spw_rmap_node', 'spacefibre_node']) {
+    const files = example(name).resolved.constraints.filter((/** @type {any} */ c) => c.kind === 'vendor_scoped').map((/** @type {any} */ c) => c.file);
+    assert.deepEqual(files, ['src/base/tcl/olo_base_constraints_amd.tcl'], name);
+  }
+});

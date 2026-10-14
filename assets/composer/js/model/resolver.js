@@ -92,6 +92,18 @@ export const RESET_PORT = 'Rst';
 export const DEFAULT_FIFO_DEPTH = 32;
 
 /**
+ * The scoped constraints of Open Logic for AMD Vivado. Only the base entities: the constraints of olo_intf_sync
+ * (src/intf/tcl, and tools/vivado/all_constraints_amd.tcl, which reads both) expect device pins at its input and stop
+ * the build where a block synchronises internal signals with it (ofb_pa_gty); a block that synchronises device pins
+ * declares its own false path for them.
+ */
+export const OLO_SCOPED = {
+  kind: 'vendor_scoped',
+  file: 'src/base/tcl/olo_base_constraints_amd.tcl',
+  note: 'AMD Vivado: source the script of Open Logic once. It reads the scoped constraints of olo_base_cc_reset, olo_base_cc_bits, olo_base_cc_simple, olo_base_reset_gen and olo_base_ram_sdp wherever the system uses them, also inside the cores. tools/vivado/all_constraints_amd.tcl would also read those of olo_intf_sync, which expect device pins at its input and stop the build (ERROR 18-513) where a block synchronises internal signals with it, as ofb_pa_gty does; a block that synchronises device pins declares its own false path for them.',
+};
+
+/**
  * Whether a clock domain has the clock output of an instance as source.
  * @param {import('./design.js').ClockDomain} dom
  * @param {string} instance
@@ -980,7 +992,7 @@ export class Resolution {
         } else if (Array.isArray(k.ports)) {
           add({ ...k, ports: k.ports.map((/** @type {string} */ p) => topOf(inst.id, p)), instance: inst.id });
         } else if (k.kind === 'vendor_scoped') {
-          add({ kind: 'vendor_scoped', file: k.file, note: 'AMD Vivado: source the script of Open Logic once for the scoped constraints of its clock crossings.' });
+          // the same script for every system, below
         } else {
           add({ ...k, instance: inst.id });
         }
@@ -1005,9 +1017,9 @@ export class Resolution {
         add({ kind: 'max_delay', from: clockNames([from])[0], to: clockNames([to])[0], ns, datapathOnly: true, instances: [...users].sort(), note });
       }
     }
-    if (this.autos.some((a) => a.role === 'cdc' || a.role === 'reset')) {
-      add({ kind: 'vendor_scoped', file: 'tools/vivado/all_constraints_amd.tcl', note: 'AMD Vivado: source the script of Open Logic once for the scoped constraints of its clock crossings.' });
-    }
+    // every core and every Open Logic block builds on the base entities of Open Logic (clock crossings, reset
+    // generators, RAMs), also inside the cores: their scoped constraints apply to every system
+    if (this.byId.size > 0) add({ ...OLO_SCOPED });
   }
 
   /**
