@@ -8,13 +8,13 @@
 {%- endif -%}
 <article class="card{% if p.public %} card-linked{% endif %}">
   <div class="card-head">
-    <h3>
+    <h4>
       {%- if p.public -%}
       <a class="card-link" href="{{ target }}">{{ p.name }}</a>
       {%- else -%}
       {{ p.name }}
       {%- endif -%}
-    </h3>
+    </h4>
     {%- unless p.public %}
     <span class="badge">Coming soon</span>
     {%- endunless %}

@@ -1,6 +1,8 @@
-# One entry per project, shown as a card on the start page (in this order).
+# One entry per project, shown as a card on the start page: grouped as in project_groups.yml, in this order within
+# a group. The TRL page lists the projects in this order too.
 #
 #   repo:      repository name in github.com/open-space-hdl
+#   group:     id of the group in project_groups.yml (a project without a known group is not shown on the start page)
 #   category:  short label under the name (protocol, domain, ...)
 #   public:    true once the repository is public -> card links to the source
 #   docs:      true once the repository publishes its own GitHub Pages site (MkDocs, tools/ of the repository)
@@ -12,6 +14,7 @@
 
 - name: OpenWire
   repo: openwire
+  group: interfaces-protocols
   category: SpaceWire
   summary: Open SpaceWire implementation based on the Open Logic VHDL library.
   public: true
@@ -21,6 +24,7 @@
 
 - name: OpenFibre
   repo: openfibre
+  group: interfaces-protocols
   category: SpaceFibre
   summary: Open SpaceFibre implementation based on the Open Logic VHDL library.
   public: true
@@ -30,6 +34,7 @@
 
 - name: OpenRMAP
   repo: openrmap
+  group: interfaces-protocols
   category: RMAP
   summary: Open implementation of the Remote Memory Access Protocol for SpaceWire and SpaceFibre networks.
   public: true
@@ -37,17 +42,9 @@
   trl: 3
   trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
 
-- name: Open Logic FT
-  repo: open-logic-ft
-  category: Fault tolerance
-  summary: Fault-tolerant fork of the Open Logic FPGA Library.
-  public: true
-  docs: true
-  trl: 3
-  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
-
 - name: OpenSPP
   repo: openspp
+  group: interfaces-protocols
   category: Space Packet Protocol
   summary: An open Space Packet Protocol implementation according to CCSDS 133.0-B-2.
   public: true
@@ -57,6 +54,7 @@
 
 - name: OpenCompact
   repo: opencompact
+  group: processing-modules
   category: Image compression
   summary: An open hyperspectral image compression core according to CCSDS 123.0-B-2.
   public: true
@@ -66,8 +64,19 @@
 
 - name: OpenCrypto
   repo: opencrypto
+  group: processing-modules
   category: Encryption
   summary: An open AES-GCM implementation for encryption and decryption of real-time data streams.
+  public: true
+  docs: true
+  trl: 3
+  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
+
+- name: Open Logic FT
+  repo: open-logic-ft
+  group: building-blocks
+  category: Fault tolerance
+  summary: Fault-tolerant fork of the Open Logic FPGA Library.
   public: true
   docs: true
   trl: 3

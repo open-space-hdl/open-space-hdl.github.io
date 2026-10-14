@@ -1,0 +1,18 @@
+# Groups of the project cards on the start page, in this order. Every project in projects.yml names its group by id;
+# the id is also the anchor of the group (openspacehdl.org/#<id>).
+#
+#   id:      anchor and key used by the group field of projects.yml
+#   title:   heading of the group
+#   summary: one sentence under the heading
+
+- id: interfaces-protocols
+  title: Interfaces & Protocols
+  summary: SpaceWire and SpaceFibre links and the protocols that run over them.
+
+- id: processing-modules
+  title: Processing Modules
+  summary: Cores that process the data on board before it is sent, such as image compression and encryption.
+
+- id: building-blocks
+  title: Building Blocks
+  summary: The fault-tolerant entities that all cores are built on.

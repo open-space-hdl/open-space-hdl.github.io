@@ -1,5 +1,5 @@
-// The Composer in the site: the entry with the Beta badge in header and footer, the teaser on the start page, no
-// external requests on the pages that link to it.
+// The site around the Composer: the entry with the Beta badge in header and footer, the project groups and the
+// teaser on the start page, no external requests on the pages that link to it.
 import { test } from '@playwright/test';
 import { expect, watch } from './helpers.mjs';
 
@@ -26,6 +26,23 @@ test('header and footer of every page lead to the Composer, marked as beta', asy
   await page.goto('/composer/');
   await page.waitForSelector('.cmp.is-ready');
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Composer Beta' })).toHaveAttribute('aria-current', 'page');
+});
+
+test('the start page groups the projects and shows every project exactly once', async ({ page }) => {
+  // all projects of _data/projects.yml, as the Composer page embeds them
+  await page.goto('/composer/');
+  const all = JSON.parse((await page.locator('#cmp-projects').textContent()) ?? '[]').map((/** @type {{name: string}} */ p) => p.name);
+  expect(all.length).toBeGreaterThan(0);
+
+  await page.goto('/');
+  const groups = page.locator('#projects .project-group');
+  await expect(groups.getByRole('heading', { level: 3 })).toHaveText(['Interfaces & Protocols', 'Processing Modules', 'Building Blocks']);
+  await expect(page.locator('#interfaces-protocols .card h4')).toHaveText(['OpenWire', 'OpenFibre', 'OpenRMAP', 'OpenSPP']);
+  await expect(page.locator('#processing-modules .card h4')).toHaveText(['OpenCompact', 'OpenCrypto']);
+  await expect(page.locator('#building-blocks .card h4')).toHaveText(['Open Logic FT']);
+  // a project without a known group would be missing here
+  const shown = (await page.locator('#projects .card h4').allTextContents()).map((s) => s.trim());
+  expect([...shown].sort()).toEqual([...all].sort());
 });
 
 test('the start page shows the Composer with a picture of the editor', async ({ page }) => {
