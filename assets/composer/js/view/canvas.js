@@ -133,7 +133,13 @@ export class CanvasView {
     this.empty = document.createElement('div');
     this.empty.className = 'cmp-empty';
 
-    this.wrap.append(this.svg, this.empty, this.tip, this.popover);
+    // dot grid: a layer of its own that a pan moves with a transform (no repaint)
+    this.grid = document.createElement('div');
+    this.grid.className = 'cmp-grid';
+    this.grid.setAttribute('aria-hidden', 'true');
+    /** @type {number | null} */
+    this.gridZoom = null;
+    this.wrap.append(this.grid, this.svg, this.empty, this.tip, this.popover);
 
     /** @type {Map<string, BlockEntry>} */
     this.blocks = new Map();
@@ -253,18 +259,26 @@ export class CanvasView {
   }
 
   /**
-   * Dot grid of the canvas area for a view: a dot on every grid point of the world.
+   * Dot grid of the canvas area for a view: a dot on every grid point of the world. The layer is one grid step
+   * larger than the view and shifts by less than a step; the dots are drawn again only when the zoom changes.
    * @param {number} x
    * @param {number} y
    * @param {number} zoom
    */
   applyGrid(x, y, zoom) {
     const size = GRID * zoom;
-    const r = Math.max(0.6, Math.min(1.2, zoom));
-    const st = this.wrap.style;
-    st.backgroundImage = `radial-gradient(circle, var(--cmp-grid-dot) ${r.toFixed(2)}px, transparent ${(r + 0.4).toFixed(2)}px)`;
-    st.backgroundSize = `${size}px ${size}px`;
-    st.backgroundPosition = `${(x + zoom - size / 2).toFixed(1)}px ${(y + zoom - size / 2).toFixed(1)}px`;
+    const st = this.grid.style;
+    if (this.gridZoom !== zoom) {
+      this.gridZoom = zoom;
+      const r = Math.max(0.6, Math.min(1.2, zoom));
+      st.backgroundImage = `radial-gradient(circle, var(--cmp-grid-dot) ${r.toFixed(2)}px, transparent ${(r + 0.4).toFixed(2)}px)`;
+      st.backgroundSize = `${size}px ${size}px`;
+      st.width = `calc(100% + ${Math.ceil(size)}px)`;
+      st.height = `calc(100% + ${Math.ceil(size)}px)`;
+    }
+    // a dot centre lies at x + zoom (the centre of a grid point) plus whole steps
+    const shift = (/** @type {number} */ v) => ((((v + zoom - size / 2) % size) + size) % size) - size;
+    st.transform = `translate(${shift(x).toFixed(1)}px, ${shift(y).toFixed(1)}px)`;
   }
 
   /**

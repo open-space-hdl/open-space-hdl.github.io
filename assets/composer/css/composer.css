@@ -375,8 +375,18 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
   touch-action: none;
   user-select: none;
   font-family: var(--font-sans);
+  /* labels without kerning and ligatures: WebKit draws the many short labels three times faster while panning */
+  text-rendering: optimizeSpeed;
 }
 .cmp-canvas.is-panning { cursor: grabbing; }
+/* dot grid below the SVG, moved by a transform (see CanvasView.applyGrid) */
+.cmp-grid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  will-change: transform;
+}
 /* while panning: twice the visible area, centred on it, moved as a whole (see CanvasView.panFrame) */
 .cmp-canvas-wrap.is-pan-big .cmp-canvas {
   left: -50%;
