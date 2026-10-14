@@ -19,7 +19,10 @@ import { netlist } from '../model/netlist.js';
 import { sha256 } from '../model/sha256.js';
 import { resolve } from '../model/resolver.js';
 import { FormatError, fromText, GENERATOR, toText } from '../model/serialize.js';
-import { withSubsystems } from '../model/subsystems.js';
+import {
+  changedSubsystems, definitionAsSystem, placeProblem, placeSubsystem, updateSubsystem as updateDefinition, withSubsystems,
+  wouldReplace,
+} from '../model/subsystems.js';
 import { loadSnapshot, saveSnapshot, Workspace } from '../model/workspace.js';
 import { zipStore } from '../model/zip.js';
 import { CanvasView } from './canvas.js';
@@ -232,6 +235,7 @@ export class App {
     this.pruneSelection();
     const tab = this.ws.active;
     this.tabs.render();
+    this.palette.renderSubsystems();
     this.canvas.render();
     this.inspector.render();
     this.checks.render();
@@ -414,6 +418,114 @@ export class App {
     const pos = freeSpot([...this.canvas.blockRects().values()], { x: c.x - size.width / 2, y: c.y - size.height / 2 }, size);
     const id = this.addBlockAt(blockId, preset, { x: pos.x + BLOCK_WIDTH / 2, y: pos.y + 28 });
     this.canvas.focusBlock(id);
+  }
+
+  /**
+   * The systems of the other tabs.
+   * @returns {Design[]}
+   */
+  get otherSystems() {
+    return this.ws.tabs.filter((t) => t.id !== this.ws.activeId).map((t) => t.design);
+  }
+
+  /**
+   * The subsystems of the active design whose system is open in another tab in another version: name -> system.
+   * @returns {Map<string, Design>}
+   */
+  get changedSubsystems() {
+    const d = this.design;
+    const others = this.otherSystems;
+    const c = this.changedCache;
+    if (c && c.design === d && c.others.length === others.length && c.others.every((x, k) => x === others[k])) return c.value;
+    const value = d ? changedSubsystems(d, others) : new Map();
+    /** @type {{ design: Design, others: Design[], value: Map<string, Design> } | undefined} */
+    this.changedCache = { design: d, others, value };
+    return value;
+  }
+
+  /**
+   * Places the system of another tab as a subsystem. When the active system holds another version of one of its
+   * definitions, it asks first: placing it replaces that version everywhere in the system.
+   * @param {string} tabId
+   * @param {{x: number, y: number}} world drop position
+   * @returns {Promise<string>} the id of the new instance, or '' when nothing was placed
+   */
+  async addSubsystemAt(tabId, world) {
+    const sys = this.ws.tabs.find((t) => t.id === tabId)?.design;
+    const d = this.design;
+    if (!sys || !d) return '';
+    const problem = placeProblem(d, sys);
+    if (problem) {
+      this.notify(`${sys.name} cannot be placed in ${d.name}: ${problem}`, 'error');
+      return '';
+    }
+    const replaced = wouldReplace(d, sys);
+    if (replaced.length > 0) {
+      const answer = await this.ask(`Place ${sys.name}?`, [
+        `${d.name} already uses another version of ${replaced.join(', ')}. Placing ${sys.name} replaces ${replaced.length > 1 ? 'them' : 'it'} with the version of the open tabs, everywhere in ${d.name}, also inside other subsystems.`,
+      ], [{ label: 'Place and update', value: 'ok', primary: true }, { label: 'Cancel', value: 'cancel' }]);
+      if (answer !== 'ok') return '';
+    }
+    let newId = '';
+    const domain = this.canvas.domainAt(world) ?? undefined;
+    this.ws.apply('add subsystem', (cur) => {
+      const r = placeSubsystem(cur, this.baseCatalog, sys, { x: snap(world.x - BLOCK_WIDTH / 2), y: snap(world.y - 28) }, { domain });
+      newId = r.id;
+      return this.tidy(r.design, { dropped: [r.id], anchorsOf: [r.id] });
+    });
+    this.selectInstances([newId]);
+    this.notify(`Added ${newId}, subsystem ${sys.name}.`);
+    return newId;
+  }
+
+  /**
+   * Places the system of another tab as a subsystem in the middle of the visible area.
+   * @param {string} tabId
+   */
+  async addSubsystemAtCenter(tabId) {
+    const c = this.canvas.visibleCenter();
+    const size = { width: BLOCK_WIDTH, height: 160 };
+    const pos = freeSpot([...this.canvas.blockRects().values()], { x: c.x - size.width / 2, y: c.y - size.height / 2 }, size);
+    const id = await this.addSubsystemAt(tabId, { x: pos.x + BLOCK_WIDTH / 2, y: pos.y + 28 });
+    if (id) this.canvas.focusBlock(id);
+  }
+
+  /**
+   * Updates a subsystem to the version of its open tab (one undo step).
+   * @param {string} name
+   */
+  updateSubsystem(name) {
+    const sys = this.changedSubsystems.get(name);
+    if (!sys) return;
+    /** @type {import('../model/design.js').Connection[]} */
+    let removed = [];
+    this.ws.apply(`update ${name}`, (d) => {
+      const r = updateDefinition(d, this.baseCatalog, sys);
+      removed = r.removed;
+      return r.design;
+    });
+    const n = removed.length;
+    this.notify(`Updated ${name} to the version of its tab${n ? `; removed ${n} connection${n > 1 ? 's' : ''} to interfaces it no longer has` : ''}.`);
+  }
+
+  /**
+   * Opens a subsystem in a tab of its own, or shows its tab when it is open.
+   * @param {string} name
+   */
+  openSubsystem(name) {
+    const open = this.ws.tabs.find((t) => t.design.name === name && t.id !== this.ws.activeId);
+    if (open) {
+      this.ws.activate(open.id);
+      return;
+    }
+    const sys = definitionAsSystem(this.design, name);
+    const placed = sys.instances.every((i) => sys.layout.instances[i.id]);
+    this.ws.addTab(placed ? sys : arrange(this.baseCatalog, sys), { dirty: true });
+    requestAnimationFrame(() => {
+      this.canvas.settleNow();
+      this.fit();
+    });
+    this.notify(`Opened the subsystem ${name} in a tab of its own.`);
   }
 
   /**

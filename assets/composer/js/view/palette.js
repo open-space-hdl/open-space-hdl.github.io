@@ -1,10 +1,12 @@
 // @ts-check
 /**
- * The palette: the blocks of the catalog in two categories (Open Space HDL cores, Open Logic), with search.
+ * The palette: the blocks of the catalog in two categories (Open Space HDL cores, Open Logic), with search, and the
+ * systems of the other tabs as subsystems (those that do not contain the active system).
  * A block is added by dragging it onto the canvas, by double click, or with Enter on the focused entry. While dragged,
  * the entry follows the pointer as a card that tilts with the motion and straightens when it stops.
  */
 
+import { placeProblem } from '../model/subsystems.js';
 import { h, replace } from './dom.js';
 
 /** @typedef {import('./app.js').App} App */
@@ -23,6 +25,9 @@ export class PaletteView {
       oninput: () => this.render(),
     });
     this.list = h('div', { class: 'cmp-palette-list' });
+    // the subsystems, rendered again when the tabs change
+    this.subs = h('div', { class: 'cmp-pal-subs' });
+    this.subsKey = '';
     this.root.append(
       h('div', { class: 'cmp-palette-head' }, this.search),
       this.list,
@@ -47,9 +52,13 @@ export class PaletteView {
     return [b.name, b.entity, b.summary, b.project ?? '', ...(b.presets ?? []).map((p) => p.name)].join(' ').toLowerCase();
   }
 
+  /** Search terms. */
+  terms() {
+    return this.search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  }
+
   render() {
-    const q = this.search.value.trim().toLowerCase();
-    const terms = q.split(/\s+/).filter(Boolean);
+    const terms = this.terms();
     const match = (/** @type {BlockDef} */ b) => terms.every((t) => this.haystack(b).includes(t));
     const sections = [];
     for (const cat of this.app.catalog.palette()) {
@@ -69,7 +78,54 @@ export class PaletteView {
       );
     }
     if (sections.length === 0) sections.push(h('p', { class: 'cmp-pal-none' }, 'No block matches the search.'));
-    replace(this.list, sections);
+    replace(this.list, [...sections, this.subs]);
+    this.renderSubsystems(true);
+  }
+
+  /**
+   * The section of subsystems: the systems of the other tabs that can be placed in the active one.
+   * @param {boolean} [force]
+   */
+  renderSubsystems(force = false) {
+    const app = this.app;
+    const d = app.design;
+    const terms = this.terms();
+    const tabs = d ? app.ws.tabs.filter((t) => t.id !== app.ws.activeId && !placeProblem(d, t.design)) : [];
+    const shown = tabs.filter((t) => terms.every((q) => `${t.design.name} ${t.design.description} subsystem`.toLowerCase().includes(q)));
+    const key = JSON.stringify([shown.map((t) => [t.id, t.design.name, t.design.description, t.design.instances.length]), terms]);
+    if (!force && key === this.subsKey) return;
+    this.subsKey = key;
+    replace(this.subs, shown.length === 0 ? [] : [
+      h('section', { class: 'cmp-pal-cat cmp-pal-subsystem', 'aria-labelledby': 'cmp-pal-subsystem' },
+        h('h2', { id: 'cmp-pal-subsystem', class: 'cmp-pal-cat-title' }, 'Subsystems'),
+        h('p', { class: 'cmp-pal-group-title' }, 'Systems of the other tabs'),
+        h('ul', { class: 'cmp-pal-items', role: 'list' }, shown.map((t) => this.subsystemEntry(t.id, t.design)))),
+    ]);
+  }
+
+  /**
+   * Palette entry of the system of another tab.
+   * @param {string} tabId
+   * @param {import('../model/design.js').Design} sys
+   */
+  subsystemEntry(tabId, sys) {
+    const n = sys.instances.length;
+    const btn = h('button', {
+      type: 'button',
+      class: 'cmp-pal-item',
+      'data-tab': tabId,
+      'data-subsystem': sys.name,
+      title: sys.description || `The system ${sys.name} of another tab`,
+      'aria-label': `Add ${sys.name} as a subsystem`,
+      onclick: (/** @type {MouseEvent} */ e) => {
+        if (e.detail === 0) void this.app.addSubsystemAtCenter(tabId);
+      },
+      ondblclick: () => void this.app.addSubsystemAtCenter(tabId),
+      onpointerdown: (/** @type {PointerEvent} */ e) => this.startDrag(e, null, undefined, sys.name, tabId),
+    },
+    h('span', { class: 'cmp-pal-name' }, sys.name),
+    h('span', { class: 'cmp-pal-entity' }, `subsystem, ${n} block${n === 1 ? '' : 's'}`));
+    return h('li', {}, btn);
   }
 
   /**
@@ -123,13 +179,14 @@ export class PaletteView {
 
   /**
    * @param {PointerEvent} e
-   * @param {BlockDef} b
+   * @param {BlockDef | null} b   null for a subsystem
    * @param {string | undefined} preset
    * @param {string} name
+   * @param {string} [tab]   the tab of a subsystem
    */
-  startDrag(e, b, preset, name) {
+  startDrag(e, b, preset, name, tab) {
     if (e.button !== 0) return;
-    this.drag = { block: b.id, preset, name, entity: b.entity, x: e.clientX, y: e.clientY, active: false, pointerId: e.pointerId, lastX: e.clientX, lastT: performance.now(), tilt: 0, rest: 0 };
+    this.drag = { block: b?.id ?? '', tab, preset, name, entity: b?.entity ?? 'subsystem', x: e.clientX, y: e.clientY, active: false, pointerId: e.pointerId, lastX: e.clientX, lastT: performance.now(), tilt: 0, rest: 0 };
   }
 
   /** @param {PointerEvent} e */
@@ -140,7 +197,7 @@ export class PaletteView {
       if (Math.hypot(e.clientX - dr.x, e.clientY - dr.y) < 5) return;
       dr.active = true;
       replace(this.ghost, h('span', { class: 'cmp-pal-name' }, dr.name), h('span', { class: 'cmp-pal-entity' }, dr.entity));
-      this.ghost.className = `cmp-ghost cmp-ghost-${this.app.catalog.categoryOf(this.app.catalog.block(dr.block))}`;
+      this.ghost.className = `cmp-ghost cmp-ghost-${dr.tab ? 'subsystem' : this.app.catalog.categoryOf(this.app.catalog.block(dr.block))}`;
       this.ghost.hidden = false;
       document.body.classList.add('cmp-dragging');
     }
@@ -175,7 +232,9 @@ export class PaletteView {
     const dr = this.drag;
     if (!dr || e.pointerId !== dr.pointerId) return;
     if (dr.active && this.app.canvas.isInside(e.clientX, e.clientY)) {
-      this.app.addBlockAt(dr.block, dr.preset, this.app.canvas.toWorld(e.clientX, e.clientY));
+      const world = this.app.canvas.toWorld(e.clientX, e.clientY);
+      if (dr.tab) void this.app.addSubsystemAt(dr.tab, world);
+      else this.app.addBlockAt(dr.block, dr.preset, world);
     }
     this.endDrag();
   }

@@ -648,7 +648,9 @@ export class CanvasView {
       if (!inst || !b || !rec) continue;
       const domainsSig = blk.chips.map((c) => `${c.port}:${c.domain}:${domainIndex.get(c.domain)}:${d.clockDomains.find((x) => x.id === c.domain)?.name}`);
       const extSig = sc.externals.filter((x) => x.interface.startsWith(`${blk.id}.`)).map((x) => [x.interface, x.prefix, x.ports]);
-      const signature = JSON.stringify([inst.id, inst.block, inst.preset, rec.generics, domainsSig, extSig]);
+      // a subsystem: its interfaces follow its definition, and it shows whether its tab holds another version
+      const subSig = b.kind === 'subsystem' ? [blk.ports.map((p) => p.ref), this.app.changedSubsystems.has(b.entity)] : null;
+      const signature = JSON.stringify([inst.id, inst.block, inst.preset, rec.generics, domainsSig, extSig, subSig]);
       let entry = this.blocks.get(blk.id);
       if (!entry || entry.signature !== signature) {
         const el = entry?.el ?? /** @type {SVGGElement} */ (s('g', { class: 'cmp-block' }));
@@ -759,7 +761,8 @@ export class CanvasView {
   buildBlock(el, inner, inst, b, blk, external) {
     const cat = this.app.catalog;
     const d = this.app.design;
-    const category = cat.categoryOf(b);
+    const sub = b.kind === 'subsystem';
+    const category = sub ? 'subsystem' : cat.categoryOf(b);
     inner.replaceChildren();
     el.setAttribute('class', `cmp-block cmp-block-${category}`);
     el.setAttribute('data-block', inst.id);
@@ -773,9 +776,14 @@ export class CanvasView {
       s('path', { class: 'cmp-block-head', d: `M0,12A12,12 0 0 1 12,0H${w - 12}A12,12 0 0 1 ${w},12V${HEADER_HEIGHT}H0Z` }),
       s('path', { class: 'cmp-block-stripe', d: `M0,12A12,12 0 0 1 12,0H${w - 12}A12,12 0 0 1 ${w},12V4H0Z` }),
       s('text', { class: 'cmp-block-id', x: 16, y: 26 }, inst.id),
-      s('text', { class: 'cmp-block-name', x: 16, y: 44 }, `${preset?.name ?? b.name} · ${b.entity}`),
+      s('text', { class: 'cmp-block-name', x: 16, y: 44 }, sub ? `Subsystem · ${b.entity}` : `${preset?.name ?? b.name} · ${b.entity}`),
       s('rect', { class: 'cmp-block-focus', x: -5, y: -5, width: w + 10, height: hgt + 10, rx: 16 }),
     );
+    if (sub && this.app.changedSubsystems.has(b.entity)) {
+      inner.append(s('g', { class: 'cmp-block-changed' },
+        s('text', { x: w - 16, y: 26, 'text-anchor': 'end' }, 'changed'),
+        s('title', {}, `The tab ${b.entity} holds another version of this subsystem; update it in the inspector.`)));
+    }
     blk.chips.forEach((c, k) => {
       const di = d.clockDomains.findIndex((x) => x.id === c.domain);
       const tint = DOMAIN_TINTS[Math.max(0, di) % DOMAIN_TINTS.length];

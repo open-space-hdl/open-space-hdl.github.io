@@ -17,7 +17,7 @@
  * Definitions are resolved leaves first; their checks are reported once per definition, prefixed with its name.
  */
 
-import { identifierProblem } from './design.js';
+import { addDomain, addInstance, danglingConnections, identifierProblem, renameDomain } from './design.js';
 import { formatHz } from './rules.js';
 import { canonicalJson, sha256 } from './sha256.js';
 
@@ -432,4 +432,238 @@ export function subsystemChecks(cat, d) {
     for (const p of s.resolved.problems) out.push({ severity: 'error', rule: 'netlist', message: `${s.name}/${p}` });
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Editing: placing another system as a subsystem, and updating a definition to the current version of its system
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * A design as a definition: without the definitions it carries itself.
+ * @param {Design} d
+ * @returns {Design}
+ */
+function bare(d) {
+  const { subsystems: _own, ...rest } = d;
+  return rest;
+}
+
+/**
+ * The definitions a system brings along as a subsystem: itself, and the definitions it uses, by name.
+ * @param {Design} sys
+ * @returns {Record<string, Design>}
+ */
+export function definitionsOf(sys) {
+  const defs = sys.subsystems ?? {};
+  /** @type {Record<string, Design>} */
+  const out = {};
+  for (const n of definitionOrder(defs, directSubsystems(sys))) out[n] = bare(defs[n]);
+  out[sys.name] = bare(sys);
+  return out;
+}
+
+/**
+ * Whether two definitions are the same (their hashes; the layout plays no part).
+ * @param {Design} a
+ * @param {Design} b
+ */
+export function sameDefinition(a, b) {
+  return a === b || definitionHash(definitionDocument(a)) === definitionHash(definitionDocument(b));
+}
+
+/**
+ * Why a system cannot be placed in another one as a subsystem, or '' when it can: it is not the system itself, does
+ * not contain it, has blocks and no cycle.
+ * @param {Design} d     the system to place it in
+ * @param {Design} sys   the system to place
+ */
+export function placeProblem(d, sys) {
+  if (sys.name === d.name) return `${sys.name} is this system.`;
+  if (sys.instances.length === 0) return `${sys.name} has no blocks.`;
+  let defs;
+  try {
+    defs = definitionsOf(sys);
+  } catch (e) {
+    return e instanceof Error ? e.message : String(e);
+  }
+  if (d.name in defs) return `${sys.name} contains ${d.name}.`;
+  return '';
+}
+
+/**
+ * The definitions whose stored version differs from the given ones (or that are new to the design).
+ * @param {Design} d
+ * @param {Record<string, Design>} incoming
+ */
+function differing(d, incoming) {
+  const current = d.subsystems ?? {};
+  return Object.keys(incoming).filter((n) => !current[n] || !sameDefinition(current[n], incoming[n]));
+}
+
+/**
+ * The design with the given definitions, existing ones replaced: the instances of a replaced definition keep the
+ * clock domains of the clock inputs that still exist (a new one joins the primary domain of the instance), and
+ * connections and externals of interfaces that no longer exist are removed.
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {Record<string, Design>} incoming
+ * @returns {{ design: Design, replaced: string[], removed: import('./design.js').Connection[] }}
+ */
+function withDefinitions(d, cat, incoming) {
+  const current = d.subsystems ?? {};
+  const changed = differing(d, incoming);
+  if (changed.length === 0) return { design: d, replaced: [], removed: [] };
+  /** @type {Record<string, Design>} */
+  const merged = { ...current };
+  for (const n of changed) merged[n] = incoming[n];
+  /** @type {Design} */
+  let next = { ...d, subsystems: merged };
+  const replaced = changed.filter((n) => current[n]);
+  const ov = withSubsystems(/** @type {any} */ (cat).baseCatalog ?? cat, next);
+  const first = next.clockDomains[0]?.id;
+  next = {
+    ...next,
+    instances: next.instances.map((inst) => {
+      const name = subsystemName(inst.block);
+      if (!name || !replaced.includes(name)) return inst;
+      const b = ov.blocks.get(inst.block);
+      if (!b) return inst;
+      const old = /** @type {Record<string, string>} */ (inst.clocks);
+      const primary = b.clocks.find((c) => c.primary)?.port;
+      const fallback = (primary && old[primary]) || Object.values(old)[0] || first;
+      /** @type {Record<string, string>} */
+      const clocks = {};
+      for (const c of b.clocks.filter((x) => !x.output)) clocks[c.port] = old[c.port] ?? fallback;
+      return { ...inst, clocks };
+    }),
+  };
+  const removed = danglingConnections(next, ov);
+  const gone = new Set(removed.map((c) => c.id));
+  /** @type {Map<string, Set<string>>} */
+  const refs = new Map();
+  for (const inst of next.instances) {
+    const b = ov.blocks.get(inst.block);
+    if (b) refs.set(inst.id, new Set(ov.ports(b, ov.genericValues(b, inst.generics, inst.preset)).map((x) => x.ref)));
+  }
+  const exists = (/** @type {string} */ ref) => refs.get(ref.slice(0, ref.indexOf('.')))?.has(ref.slice(ref.indexOf('.') + 1)) ?? false;
+  next = {
+    ...next,
+    connections: next.connections.filter((c) => !gone.has(c.id)),
+    externals: next.externals.filter((e) => exists(e.interface)),
+  };
+  return { design: next, replaced, removed };
+}
+
+/**
+ * Places a system as a subsystem: its definitions join the design (a different stored version of one of them is
+ * replaced, see replaced) and an instance is added. Its primary clock input joins the given domain. Every other clock
+ * input joins a domain of the design with the frequency of its domain inside (rule subsystem_clock_frequency): the
+ * one of the same id, else the domain of the primary clock, else another one, each only where the subsystem does not
+ * cross between the input and an input already on that domain (rule subsystem_clocks); without such a domain it gets
+ * a new one with the name and frequency of the domain inside.
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {Design} sys
+ * @param {{x: number, y: number}} pos
+ * @param {{ domain?: string }} [opts]
+ * @returns {{ id: string, design: Design, replaced: string[], removed: import('./design.js').Connection[] }}
+ */
+export function placeSubsystem(d, cat, sys, pos, opts = {}) {
+  const problem = placeProblem(d, sys);
+  if (problem) throw new Error(problem);
+  const w = withDefinitions(d, cat, definitionsOf(sys));
+  const r = addInstance(w.design, cat, subsystemBlockId(sys.name), pos, undefined, opts);
+  let next = r.design;
+  const sc = withSubsystems(/** @type {any} */ (cat).baseCatalog ?? cat, next);
+  const b = sc.blocks.get(subsystemBlockId(sys.name));
+  const info = /** @type {Map<string, SubsystemInfo>} */ (/** @type {any} */ (sc).subsystemInfo).get(sys.name);
+  const inst = next.instances.find((i) => i.id === r.id);
+  if (b && info && inst) {
+    /** @type {Record<string, string>} */
+    const clocks = { ...inst.clocks };
+    const primary = b.clocks.find((x) => x.primary)?.port;
+    /** @type {Set<string>} */
+    const bound = new Set(primary ? [primary] : []);
+    // the inputs bound so far that the subsystem crosses to from this one
+    const partners = (/** @type {string} */ port) => info.crossings
+      .filter(([x, y]) => x === port || y === port)
+      .map(([x, y]) => (x === port ? y : x))
+      .filter((x) => bound.has(x));
+    for (const c of b.clocks.filter((x) => !x.output && !x.primary)) {
+      const inner = c.port.slice('Clk_'.length);
+      const dom = info.design.clockDomains.find((x) => x.id === inner);
+      const freq = dom?.frequencyHz ?? 100e6;
+      const fits = (/** @type {string | undefined} */ id) => {
+        const cand = next.clockDomains.find((x) => x.id === id);
+        return Boolean(cand && cand.frequencyHz === freq && !partners(c.port).some((x) => clocks[x] === id));
+      };
+      const choice = [inner, primary ? clocks[primary] : undefined, ...next.clockDomains.map((x) => x.id)].find(fits);
+      if (choice) clocks[c.port] = choice;
+      else {
+        const added = addDomain(next, { name: dom?.name ?? inner, frequencyHz: freq });
+        const free = !identifierProblem(inner) && !next.clockDomains.some((x) => x.id === inner);
+        next = free ? renameDomain(added.design, added.id, inner) : added.design;
+        clocks[c.port] = free ? inner : added.id;
+      }
+      bound.add(c.port);
+    }
+    next = { ...next, instances: next.instances.map((i) => (i.id === r.id ? { ...i, clocks } : i)) };
+  }
+  return { id: r.id, design: next, replaced: w.replaced, removed: w.removed };
+}
+
+/**
+ * The definitions which the design would replace when it placed the system (stored in another version).
+ * @param {Design} d
+ * @param {Design} sys
+ */
+export function wouldReplace(d, sys) {
+  const current = d.subsystems ?? {};
+  return differing(d, definitionsOf(sys)).filter((n) => current[n]);
+}
+
+/**
+ * The subsystems the design uses directly whose system is open in another version: name -> that system.
+ * @param {Design} d
+ * @param {Design[]} systems   the systems of the other tabs
+ * @returns {Map<string, Design>}
+ */
+export function changedSubsystems(d, systems) {
+  /** @type {Map<string, Design>} */
+  const out = new Map();
+  if (!d.subsystems) return out;
+  for (const name of directSubsystems(d)) {
+    const sys = systems.find((s) => s.name === name && s !== d);
+    if (!sys || placeProblem(d, sys)) continue;
+    if (differing(d, definitionsOf(sys)).length > 0) out.set(name, sys);
+  }
+  return out;
+}
+
+/**
+ * Updates a subsystem to the current version of its system (and the definitions it uses).
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {Design} sys
+ * @returns {{ design: Design, replaced: string[], removed: import('./design.js').Connection[] }}
+ */
+export function updateSubsystem(d, cat, sys) {
+  const problem = placeProblem(d, sys);
+  if (problem) throw new Error(problem);
+  return withDefinitions(d, cat, definitionsOf(sys));
+}
+
+/**
+ * A definition as a system of its own, with the definitions it uses (to open it in a tab).
+ * @param {Design} d
+ * @param {string} name
+ * @returns {Design}
+ */
+export function definitionAsSystem(d, name) {
+  const defs = d.subsystems ?? {};
+  const def = defs[name];
+  if (!def) throw new Error(`${name} has no definition in ${d.name}.`);
+  const used = definitionOrder(defs, directSubsystems(def));
+  const sys = { ...bare(def), name };
+  return used.length ? { ...sys, subsystems: Object.fromEntries(used.map((n) => [n, bare(defs[n])])) } : sys;
 }
