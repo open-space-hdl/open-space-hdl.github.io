@@ -31,7 +31,7 @@ async function example(page, name) {
 test('blocks in different clock domains get an asynchronous FIFO that disappears when the domains are merged', async ({ page }, info) => {
   await open(page);
   await example(page, /SpaceWire RMAP target/);
-  await expect(page.locator('.cmp-auto')).toHaveCount(0);
+  await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)')).toHaveCount(0);
   await expect(page.locator('.cmp-domain')).toHaveCount(1);
 
   // new clock domain: its placeholder box appears in the view
@@ -50,28 +50,28 @@ test('blocks in different clock domains get an asynchronous FIFO that disappears
 
   // drag the RMAP node into the new box: two crossings (one per direction)
   await dropBlockInto(page, 'rmap0', box);
-  await expect(page.locator('.cmp-auto')).toHaveCount(2);
+  await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)')).toHaveCount(2);
   const d = await design(page);
   expect(d.instances.find((/** @type {any} */ i) => i.id === 'rmap0').clocks).toEqual({ Clk: 'clk1' });
-  await expect(page.locator('.cmp-auto').first()).toContainText('Async FIFO');
+  await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)').first()).toContainText('Async FIFO');
   await page.getByRole('button', { name: 'Fit' }).click();
   await settled(page);
   await page.mouse.click(...Object.values(await canvasPoint(page, 0.97, 0.97)));
   await shot(page, info, '01-domains-auto-fifo');
 
   // the inserted FIFO explains itself and its depth can be set
-  await page.locator('.cmp-auto').first().click();
+  await page.locator('.cmp-auto:not(.cmp-auto-reset)').first().click();
   await expect(page.locator('.cmp-inspector')).toContainText('Inserted block');
   await expect(page.locator('.cmp-inspector')).toContainText('olo_ft_fifo_async');
   await page.locator('#cmp-auto-depth').fill('64');
   await page.locator('#cmp-auto-depth').press('Enter');
-  await expect(page.locator('.cmp-auto').first()).toContainText('64 deep');
+  await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)').first()).toContainText('64 deep');
 
   // merge the domains: the crossings disappear
   await page.locator('[data-domain-head="clk1"]').click();
   await page.locator('#cmp-dom-merge').selectOption('sys');
   await page.getByRole('button', { name: 'Merge and remove this domain' }).click();
-  await expect(page.locator('.cmp-auto')).toHaveCount(0);
+  await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)')).toHaveCount(0);
   expect((await design(page)).clockDomains.map((/** @type {any} */ c) => c.id)).toEqual(['sys', 'link']);
 });
 
@@ -121,7 +121,7 @@ test('the RMAP pass-through port connects directly to the N-Char adapter', async
   await dragWire(page, 'nchar0.M_NChar', 'rmap0.S_User');
   const d = await design(page);
   expect(d.connections.map((/** @type {any} */ c) => [c.from, c.to])).toEqual([['rmap0.M_User', 'nchar0.S_NChar'], ['nchar0.M_NChar', 'rmap0.S_User']]);
-  await expect(page.locator('.cmp-auto')).toHaveCount(0);
+  await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)')).toHaveCount(0);
 });
 
 test('a side band constant survives save and load', async ({ page, browser }, info) => {

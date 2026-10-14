@@ -602,13 +602,20 @@ export class InspectorView {
       depth.push(h('div', { class: 'cmp-field' }, h('label', { for: fid }, h('span', { class: 'cmp-g-label' }, 'Depth'), h('span', { class: 'cmp-g-name cmp-mono' }, 'Depth_g')), inp,
         h('p', { class: 'cmp-help' }, 'Entries of the FIFO (power of 2), stored with the connection.'), err.el));
     }
-    const pack = rec.packing.In;
-    const shown = b ? b.generics.filter((g) => g.name in rec.generics && (rec.auto.includes(g.name) || g.name === 'Depth_g')) : [];
+    const pack = rec.packing?.In;
+    const reset = rec.role === 'reset';
+    // a reset generator shows all its generics; an adapter those that follow its connection, and the depth
+    const shown = b ? b.generics.filter((g) => g.name in rec.generics && (reset || rec.auto.includes(g.name) || g.name === 'Depth_g')) : [];
+    // the blocks whose synchronous reset it drives
+    const users = reset ? [...res.byId.values()].filter((r) => Object.values(r.resets ?? {}).includes(`${rec.id}.RstOut`)).map((r) => r.id) : [];
     return [
       h('h2', { class: 'cmp-insp-title cmp-insp-bar' }, 'Inserted block'),
       h('p', { class: 'cmp-insp-meta' }, h('span', { class: 'cmp-mono' }, rec.entity), h('span', { class: 'cmp-auto-tag' }, 'auto'), h('span', { class: 'cmp-mono' }, rec.id)),
       h('p', { class: 'cmp-insp-summary' }, rec.reason ?? ''),
-      h('p', { class: 'cmp-help' }, 'The Composer inserts this block because of the connection and removes it when the reason goes away.'),
+      h('p', { class: 'cmp-help' }, reset
+        ? 'The Composer inserts this block because blocks of the clock domain have a synchronous reset: it asserts their reset with the system reset Rst and releases it synchronously to the clock. It goes away when no block of the domain needs it.'
+        : 'The Composer inserts this block because of the connection and removes it when the reason goes away.'),
+      users.length ? [h('h3', { class: 'cmp-insp-sub' }, 'Resets'), h('p', { class: 'cmp-mono' }, users.join(', '))] : null,
       b?.doc ? h('a', { class: 'cmp-doc-link', href: b.doc, target: '_blank', rel: 'noopener' }, 'Documentation') : null,
       depth,
       h('h3', { class: 'cmp-insp-sub' }, 'Generics'),

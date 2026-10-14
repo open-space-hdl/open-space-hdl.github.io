@@ -45,17 +45,17 @@ async function rmapInOwnDomain(page) {
 test('a clock crossing sits on the border between the two domain boxes; boxes stay apart when blocks move', async ({ page }, info) => {
   await open(page);
   await rmapInOwnDomain(page);
-  await expect(page.locator('.cmp-auto')).toHaveCount(2);
+  await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)')).toHaveCount(2);
   const [sys, fast] = await rects(page, '.cmp-domain-box');
   expect(overlap(sys, fast)).toBe(false);
   const left = sys.x < fast.x ? sys : fast;
   const right = sys.x < fast.x ? fast : sys;
   const border = (left.x + left.w + right.x) / 2;
-  for (const f of await rects(page, '.cmp-auto-body')) {
+  for (const f of await rects(page, '.cmp-auto:not(.cmp-auto-reset) .cmp-auto-body')) {
     expect(Math.abs(f.x + f.w / 2 - border)).toBeLessThan(2);
   }
   // the FIFO halves carry the colours of the two domains
-  await expect(page.locator('.cmp-auto').first().locator('.cmp-auto-half')).toHaveCount(2);
+  await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)').first().locator('.cmp-auto-half')).toHaveCount(2);
   await page.mouse.click(...Object.values(await canvasPoint(page, 0.97, 0.97)));
   await settled(page);
   await shot(page, info, '05-fifo-on-the-border');
@@ -97,7 +97,7 @@ test('Arrange lays out the system from left to right and is undone in one step',
   // the example with two clock domains: one box per domain, the FIFOs on their border
   await openExample(page, 'Space Packets over SpaceWire, two clocks');
   await expect(page.locator('.cmp-domain-box')).toHaveCount(2);
-  await expect(page.locator('.cmp-auto')).toHaveCount(2);
+  await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)')).toHaveCount(2);
   await shot(page, info, '06-arranged-two-clocks');
 });
 
@@ -156,17 +156,17 @@ test('an inserted adapter pops in, and leaves again when its reason goes away', 
     const obs = new MutationObserver(() => {
       const w = /** @type {any} */ (window).seen;
       if (document.querySelector('.cmp-auto-inner[transform*="scale"]')) w.scaled = true;
-      w.leaving = Math.max(w.leaving, document.querySelectorAll('.cmp-auto.is-leaving').length);
+      w.leaving = Math.max(w.leaving, document.querySelectorAll('.cmp-auto:not(.cmp-auto-reset).is-leaving').length);
     });
     obs.observe(document.querySelector('.cmp-autos') ?? document.body, { subtree: true, childList: true, attributes: true });
   });
   await page.locator('#cmp-clk-rmap0-Clk').selectOption('clk1');
   await settled(page);
-  await expect(page.locator('.cmp-auto')).toHaveCount(2);
+  await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)')).toHaveCount(2);
   expect(await page.evaluate(() => /** @type {any} */ (window).seen.scaled)).toBe(true);
   await page.locator('#cmp-clk-rmap0-Clk').selectOption('sys');
   await settled(page);
-  await expect(page.locator('.cmp-auto')).toHaveCount(0);
+  await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)')).toHaveCount(0);
   expect(await page.evaluate(() => /** @type {any} */ (window).seen.leaving)).toBe(2);
 });
 
@@ -318,7 +318,7 @@ test.describe('reduced motion', () => {
     await page.getByRole('button', { name: 'Clock domain', exact: true }).click();
     await page.locator('[data-block="rmap0"] .cmp-block-head').click();
     await page.locator('#cmp-clk-rmap0-Clk').selectOption('clk1');
-    await expect(page.locator('.cmp-auto')).toHaveCount(2);
+    await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)')).toHaveCount(2);
     await settled(page);
     expect(await page.evaluate(() => /** @type {any} */ (window).moved)).toBe(false);
     expect(await page.evaluate(() => [.../** @type {any} */ (window).kinds])).toEqual(['opacity']);

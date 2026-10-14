@@ -1,6 +1,7 @@
 // Scene: adapters on the domain border and next to their source, routes around blocks; tidy, arrange and the diff
 // that drives the animations.
 import { test } from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { ARRANGE, arrange, DOMAIN_GAP, greedyOrder, layers, needsArrange, placeBetween, separate, tidy } from '../../assets/composer/js/model/arrange.js';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
@@ -12,7 +13,8 @@ import { ADAPTER_HEIGHT, ADAPTER_WIDTH } from '../../assets/composer/js/model/la
 import { resolve } from '../../assets/composer/js/model/resolver.js';
 import { crossesRect, overlaps } from '../../assets/composer/js/model/router.js';
 import { ADAPTER_OFFSET, buildScene } from '../../assets/composer/js/model/scene.js';
-import { catalogWith, connect, designWith, loadCatalog, streamBlock } from './helpers.mjs';
+import { fromText } from '../../assets/composer/js/model/serialize.js';
+import { catalogWith, connect, designWith, loadCatalog, ROOT, streamBlock } from './helpers.mjs';
 
 const cat = loadCatalog();
 
@@ -136,7 +138,7 @@ test('adapters of neighbouring connections do not overlap', () => {
   d = moveToDomain(moveToDomain(r.design, c, 'dual_snk0', r.id), c, 'dual_snk1', r.id);
   d = link(c, d, 'dual_src0.Out', 'dual_snk0.In');
   d = link(c, d, 'dual_src1.Out', 'dual_snk1.In');
-  const ads = [...scene(d, c).adapters.values()];
+  const ads = [...scene(d, c).adapters.values()].filter((a) => a.connection);
   assert.equal(ads.length, 2);
   assert.ok(!overlaps(ads[0].rect, ads[1].rect));
 });
@@ -305,7 +307,7 @@ test('arrange puts clock domains side by side with room for the clock crossing o
   const fast = /** @type {any} */ (sc.domains.get(r.id)?.box);
   assert.ok(!overlaps(sys, fast));
   assert.equal(fast.x - (sys.x + sys.w), ARRANGE.domainGapX);
-  const fifos = [...sc.adapters.values()];
+  const fifos = [...sc.adapters.values()].filter((a) => a.connection);
   assert.equal(fifos.length, 2);
   for (const f of fifos) {
     assert.equal(f.orient, 'h');
@@ -330,7 +332,7 @@ test('arrange stacks clock domains that would be too wide side by side', () => {
   assert.equal(lower.y - (upper.y + upper.h), ARRANGE.domainGapY);
   const width = Math.max(sys.x + sys.w, port.x + port.w) - Math.min(sys.x, port.x);
   assert.ok(width <= ARRANGE.wrapWidth, `${width} wide`);
-  const fifos = [...sc.adapters.values()];
+  const fifos = [...sc.adapters.values()].filter((a) => a.connection);
   assert.equal(fifos.length, 1);
   for (const f of fifos) {
     assert.equal(f.orient, 'v');
@@ -366,14 +368,17 @@ test('the diff lists new connections, inserted and removed adapters and moved bl
   const d1 = moveToDomain(r.design, cat, 'rmap0', r.id);
   const s1 = scene(d1);
   const df = diffScenes(s0, s1);
-  assert.equal(df.adaptersAdded.length, 2);
+  // the two FIFOs on the connections (the new domain also gets its reset generator)
+  assert.equal(df.adaptersAdded.filter((id) => s1.adapters.get(id)?.connection).length, 2);
   assert.deepEqual(df.edgesChanged, ['c1', 'c2']);
   assert.deepEqual(df.domainsAdded, [r.id]);
   assert.equal(df.domainsChanged.length, 1, 'the system box shrinks to spw0');
   // merging the domains removes them again, at the place where they were
   const back = diffScenes(s1, scene(removeDomain(d1, r.id, 'sys')));
-  assert.equal(back.adaptersRemoved.length, 2);
-  assert.deepEqual(back.adaptersRemoved.map((x) => x.at), df.adaptersAdded.map((id) => ({ x: /** @type {any} */ (s1.adapters.get(id)).x, y: /** @type {any} */ (s1.adapters.get(id)).y })));
+  const fifosOf = (/** @type {string[]} */ ids) => ids.filter((id) => s1.adapters.get(id)?.connection);
+  const removed = back.adaptersRemoved.filter((x) => s1.adapters.get(x.id)?.connection);
+  assert.equal(removed.length, 2);
+  assert.deepEqual(removed.map((x) => x.at), fifosOf(df.adaptersAdded).map((id) => ({ x: /** @type {any} */ (s1.adapters.get(id)).x, y: /** @type {any} */ (s1.adapters.get(id)).y })));
   // moving a block, removing a connection, adding one
   const mv = diffScenes(s0, scene(moveInstances(d0, { rmap0: { x: 656, y: 160 } })));
   assert.deepEqual(mv.blocksMoved, [{ id: 'rmap0', from: { x: 656, y: 96 }, to: { x: 656, y: 160 } }]);
@@ -429,4 +434,23 @@ test('in a wide gap between two domain boxes the clock crossing sits across the 
   assert.equal(sc.edges.get('c1')?.hops[0].length, 2, 'straight into the FIFO');
   for (const a of sc.adapters.values()) for (const b of sc.adapters.values()) if (a !== b) assert.ok(!overlaps(a.rect, b.rect));
   assertClean(sc);
+});
+
+test('an inserted reset generator sits on the top border of its clock domain, clear of the header tab and the blocks', () => {
+  for (const name of ['spw_rmap_node', 'spp_over_spw_two_clocks']) {
+    const d = fromText(readFileSync(`${ROOT}assets/composer/examples/${name}.composer.json`, 'utf-8'), cat).design;
+    const res = resolve(cat, d);
+    const sc = buildScene(cat, d, res);
+    const gens = res.domains.filter((x) => x.resetGen);
+    assert.ok(gens.length > 0, name);
+    for (const dom of gens) {
+      const ad = sc.adapters.get(dom.resetGen);
+      const sd = sc.domains.get(dom.id);
+      assert.ok(ad && sd?.box && sd.head, `${name}: ${dom.resetGen}`);
+      assert.equal(ad.connection, '', 'a reset generator belongs to its domain, not to a connection');
+      assert.equal(ad.y, sd.box.y, 'centred on the top border');
+      assert.ok(!overlaps(ad.rect, sd.head), 'clear of the header tab');
+      for (const b of sc.blocks.values()) assert.ok(!overlaps(ad.rect, b), `clear of ${b.id}`);
+    }
+  }
 });
