@@ -5,3 +5,4 @@ node_modules/
 tests/test-results/
 tests/playwright-report/
 __pycache__/
+tests/jekyll/Gemfile.lock

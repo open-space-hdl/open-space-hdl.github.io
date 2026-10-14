@@ -8,6 +8,7 @@ RTL.
 
   python tools/composer_catalog.py build              write assets/composer/catalog.json
   python tools/composer_catalog.py check              verify YAML against VHDL, catalog.json current, examples valid
+  python tools/composer_catalog.py clone              clone the missing source repositories (continuous integration)
   python tools/composer_catalog.py dump <src> <path> <entity>
                                                       print the parsed entity (authoring aid)
 
@@ -606,7 +607,7 @@ def require(obj: dict, key: str, where: str) -> Any:
     return obj[key]
 
 
-def load_sources(ctx: Context) -> dict[str, dict]:
+def load_sources(ctx: Context, resolve: bool = True) -> dict[str, dict]:
     data = load_yaml(CATALOG_DIR / "sources.yml")
     sources = {}
     for src in require(data, "sources", "sources.yml"):
@@ -615,6 +616,9 @@ def load_sources(ctx: Context) -> dict[str, dict]:
             require(src, key, f"sources.yml {sid}")
         if ("commit" in src) == ("tag" in src):
             raise CatalogError(f"sources.yml {sid}: give exactly one of 'commit' or 'tag'")
+        if not resolve:
+            sources[sid] = dict(src)
+            continue
         repo = ctx.repos / src["repo"]
         if not repo.is_dir():
             raise CatalogError(f"sources.yml {sid}: local clone {repo} not found (set --repos)")
@@ -1244,6 +1248,18 @@ def cmd_check(ctx: Context, fetch: bool) -> int:
     return 1 if ctx.errors else 0
 
 
+def cmd_clone(ctx: Context) -> int:
+    """Clones every source repository that is missing next to this one (full history and tags for the check)."""
+    for src in load_sources(ctx, resolve=False).values():
+        target = ctx.repos / src["repo"]
+        if target.exists():
+            print(f"{src['repo']}: present")
+            continue
+        subprocess.run(["git", "clone", "--quiet", src["url"], str(target)], check=True)
+        print(f"{src['repo']}: cloned from {src['url']}")
+    return 0
+
+
 def check_examples(ctx: Context, catalog: dict) -> None:
     if not SCHEMA_FILE.exists():
         ctx.err("schema", f"{SCHEMA_FILE.relative_to(ROOT)} missing")
@@ -1293,6 +1309,7 @@ def main() -> int:
     sub = ap.add_subparsers(dest="cmd")
     sub.add_parser("build")
     sub.add_parser("check")
+    sub.add_parser("clone")
     dmp = sub.add_parser("dump")
     dmp.add_argument("source")
     dmp.add_argument("path")
@@ -1308,6 +1325,8 @@ def main() -> int:
             return cmd_build(ctx)
         if args.cmd == "check":
             return cmd_check(ctx, args.fetch)
+        if args.cmd == "clone":
+            return cmd_clone(ctx)
         return cmd_dump(ctx, args.source, args.path, args.entity)
     except CatalogError as e:
         print(f"error: {e}")

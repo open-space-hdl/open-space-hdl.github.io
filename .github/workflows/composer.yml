@@ -1,0 +1,90 @@
+# Open Space Composer: unit tests, type check, catalog check against the pinned core repositories, schema validation
+# of the example systems, and the browser tests in Chromium, Firefox and WebKit against a Jekyll build of the site
+# with the gem set of GitHub Pages. The site itself is published by the legacy Pages build, not by this workflow.
+name: Composer
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: composer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  model:
+    name: Unit tests, type check, catalog and schema
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the site
+        uses: actions/checkout@v4
+        with:
+          path: site
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python packages
+        run: python -m pip install --quiet pyyaml jsonschema
+      - name: Clone the core repositories (next to the site, full history for the pin check)
+        run: python site/tools/composer_catalog.py clone
+      - name: Catalog check (YAML against the VHDL entities at the pinned commits, catalog.json current, examples valid)
+        run: python site/tools/composer_catalog.py check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Node packages
+        working-directory: site/tests
+        run: npm ci
+      - name: Unit tests
+        working-directory: site/tests
+        run: npm run unit
+      - name: Type check
+        working-directory: site/tests
+        run: npm run typecheck
+
+  browser:
+    name: Browser tests (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - name: Check out the site
+        uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+      - name: Jekyll with the gem set of GitHub Pages
+        env:
+          BUNDLE_GEMFILE: tests/jekyll/Gemfile
+        run: bundle install --jobs 4
+      - name: Build the site
+        env:
+          BUNDLE_GEMFILE: tests/jekyll/Gemfile
+        run: bundle exec jekyll build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Node packages
+        working-directory: tests
+        run: npm ci
+      - name: Browser
+        working-directory: tests
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Browser tests
+        working-directory: tests
+        run: npx playwright test --project=${{ matrix.browser }}
+      - name: Traces of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-${{ matrix.browser }}
+          path: tests/test-results/
+          retention-days: 7

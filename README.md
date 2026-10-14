@@ -6,11 +6,11 @@ Source of the Open Space HDL website, published with GitHub Pages (Jekyll, built
 
 | Path | Purpose |
 |---|---|
-| `index.html` | Start page (hero + project cards) |
+| `index.html` | Start page (hero, project cards, Composer teaser) |
 | `trl.html` | Technology readiness levels: status of every project and what the levels mean for our IP cores (`/trl/`) |
 | `composer/` | Open Space Composer (beta, `/composer/`) and the JSON schema of its system files |
 | `_data/projects.yml` | Project list – the cards are generated from it |
-| `_layouts/default.html` | Page frame: head, header, footer |
+| `_layouts/default.html` | Page frame: head, header, footer (both with the Composer entry) |
 | `_layouts/app.html` | Full-window frame of the Composer |
 | `_includes/head.html`, `_includes/site-header.html` | Head and header shared by both layouts |
 | `_includes/project-card.html` | One project card |
@@ -44,33 +44,46 @@ Do not create folders in this repo named like a repository – the project site 
 
 ## Open Space Composer
 
-The Composer is a browser editor for systems built from the cores and from Open Logic blocks. It is plain JavaScript
-(ES modules, no build step, no runtime dependency) and runs entirely in the browser.
+The Composer (`/composer/`, beta) is a browser editor for FPGA systems built from the cores and from Open Logic
+blocks: it connects matching interfaces, inserts width converters, clock crossings and reset generators, checks the
+design rules and saves a `.composer.json` file with the resolved netlist and a build brief, from which a person or an
+AI agent writes the VHDL top level (format: `/composer/format/`). It is plain JavaScript (ES modules, no build step,
+no runtime dependency) and runs entirely in the browser; the header, the footer and the start page link to it.
 
 | Path | Purpose |
 |---|---|
-| `_composer/catalog/` | Catalog source: interface types, pinned source repositories, palette, block descriptions |
-| `tools/composer_catalog.py` | Builds `assets/composer/catalog.json` from the catalog source and the VHDL entities at the pinned commits, and checks them |
-| `tools/composer_examples.mjs` | Writes the example systems in `assets/composer/examples/` (laid out by Arrange) and their golden netlists and build briefs in `tests/golden/` |
-| `assets/composer/js/model/` | Catalog access, design model, connection rules, resolver (adapters, clock domains, resets, top level), design rules, resolved netlist and build brief, file format, scene and router (placement and orthogonal routes), Arrange and tidy, scene differences and springs for the animations (no DOM, unit tested) |
-| `assets/composer/js/view/` | Editor: palette, canvas with clock domains and animations, inspector, checks, legend, tabs |
-| `composer/schema/system-1.json` | JSON schema of the `.composer.json` files |
+| `composer/index.html` | The editor page (`layout: app`, only the mount point) |
 | `composer/format.html` | The file format for agents and engineers (`/composer/format/`) |
-| `tests/` | Unit tests (`node --test`), type check (TypeScript) and browser tests (Playwright) |
+| `composer/schema/system-1.json` | JSON schema of the `.composer.json` files |
+| `_composer/catalog/` | Catalog source (not published): interface types, pinned source repositories, palette, block descriptions |
+| `assets/composer/catalog.json` | The catalog, built from the source and the VHDL entities at the pinned commits |
+| `assets/composer/examples/` | Example systems of the Examples menu, written by `tools/composer_examples.mjs` |
+| `assets/composer/js/model/` | Catalog access, design model, connection rules, resolver (adapters, clock domains, resets, top level), design rules, resolved netlist and build brief, file format, scene and router, Arrange and tidy, scene differences and springs for the animations (no DOM, unit tested) |
+| `assets/composer/js/view/` | Editor: palette, canvas with clock domains and animations, inspector, checks, legend, tabs |
+| `assets/img/composer-teaser.png` | Picture of the editor on the start page (`node tools/composer_teaser.mjs` with the built site served) |
+| `tools/composer_catalog.py` | `build`, `check` (YAML against the VHDL entities at the pinned commits, catalog current, examples valid against the schema), `clone` (the source repositories next to this one) |
+| `tools/composer_examples.mjs` | Writes the examples and their golden netlists and build briefs in `tests/golden/` |
+| `tests/` | Unit tests (`node --test`), type check (TypeScript), browser tests (Playwright), Gemfile of the Jekyll build |
+| `.github/workflows/composer.yml` | Continuous integration of all of it, see below |
 
-The catalog reads the entities from sibling clones of the source repositories (`../openwire`, `../openrmap`, ...).
-Updating a core: set its new commit in `_composer/catalog/sources.yml`, then
+### Updating a core
+
+The catalog reads the entities from clones of the source repositories next to this one (`../openwire`,
+`../openrmap`, ...; `python tools/composer_catalog.py clone` makes the missing ones). Set the new commit of the core
+in `_composer/catalog/sources.yml`, adapt its block description to the user guide at that commit, then
 
 ```sh
 python tools/composer_catalog.py build    # requires PyYAML
 python tools/composer_catalog.py check    # requires jsonschema for the example files
-node tools/composer_examples.mjs           # or with example names (spacefibre_node ...) for only those
+node tools/composer_examples.mjs          # or with example names (spacefibre_node ...) for only those
 ```
 
-A changed golden file in `tests/golden/` shows how the update changes the netlists of the example systems; review it
-before committing.
+A changed golden file in `tests/golden/` shows how the update changes the netlists and briefs of the example systems;
+review it before committing. A release of a core is not complete before its pin here is updated.
 
-Tests (from `tests/`, after `npm install` and `npx playwright install chromium firefox webkit`):
+### Tests
+
+From `tests/`, after `npm ci` and `npx playwright install chromium firefox webkit`:
 
 ```sh
 npm run unit
@@ -79,9 +92,14 @@ npm run e2e        # against the built site in ../_site (COMPOSER_SITE selects a
                    # COMPOSER_SCREENS=<directory> also writes review screenshots and a screen recording
 ```
 
+`.github/workflows/composer.yml` runs on every push and pull request: the catalog check with the source repositories
+cloned next to the site, the schema validation of the examples, the unit tests and the type check, and the browser
+tests in Chromium, Firefox and WebKit against a Jekyll build with the gem set of GitHub Pages (`tests/jekyll/Gemfile`).
+The frame-time bounds of the 100-block test are checked locally only; shared runners have no GPU.
+
 ## Local preview (optional)
 
 ```sh
-gem install bundler jekyll
-jekyll serve
+BUNDLE_GEMFILE=tests/jekyll/Gemfile bundle install
+BUNDLE_GEMFILE=tests/jekyll/Gemfile bundle exec jekyll serve
 ```
