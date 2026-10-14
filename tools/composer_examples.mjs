@@ -4,7 +4,7 @@
 // the resolver shows up as a reviewable difference of these files.
 //
 //   node tools/composer_examples.mjs              all examples
-//   node tools/composer_examples.mjs <name> ...   only the named examples (file names without extension)
+//   node tools/composer_examples.mjs <name> ...   only the named examples (system names = file names without extension)
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { arrange } from '../assets/composer/js/model/arrange.js';
 import { Catalog } from '../assets/composer/js/model/catalog.js';
@@ -62,7 +62,9 @@ const examples = [];
  */
 function linkDomain(d, spw, hz) {
   const r = addDomain(d, { name: 'Link clock', frequencyHz: hz });
-  return renameDomain(assignClock(r.design, cat, spw, 'LinkClk', r.id), r.id, 'link');
+  // in the Run state half the link clock, so that a port with the same link clock receives it (OpenWire guide 3)
+  const run = setGeneric(r.design, cat, spw, 'RunDiv_g', 2).design;
+  return renameDomain(assignClock(run, cat, spw, 'LinkClk', r.id), r.id, 'link');
 }
 
 {
@@ -74,7 +76,7 @@ function linkDomain(d, spw, hz) {
   d = link(d, 'rmap0.M_Pkt', 'spw0.S_Pkt');
   d = linkDomain(d, 'spw0', 200e6);
   d = external(d, { 'rmap0.M_Axi': 'mem_', 'spw0.S_AxiLite': 'spw_reg_', 'rmap0.S_AxiLite': 'rmap_reg_' });
-  examples.push(['spw-rmap-node', 'SpaceWire RMAP target', d]);
+  examples.push(['spw_rmap_node', 'SpaceWire RMAP target', d]);
 }
 
 {
@@ -100,7 +102,7 @@ function linkDomain(d, spw, hz) {
     'spp0.S_Tx[0]': 'tx0_', 'spp0.S_Tx[1]': 'tx1_', 'spp0.M_Rx[0]': 'rx0_', 'rmap0.M_Axi': 'mem_',
     'spw0.S_AxiLite': 'spw_reg_', 'rmap0.S_AxiLite': 'rmap_reg_', 'spp0.S_AxiLite': 'spp_reg_',
   });
-  examples.push(['spp-over-spw', 'Space Packets over SpaceWire', d]);
+  examples.push(['spp_over_spw', 'Space Packets over SpaceWire', d]);
 }
 
 {
@@ -129,7 +131,7 @@ function linkDomain(d, spw, hz) {
     'spp0.S_Tx[0]': 'tx0_', 'spp0.M_Rx[0]': 'rx0_', 'rmap0.M_Axi': 'mem_',
     'spw0.S_AxiLite': 'spw_reg_', 'rmap0.S_AxiLite': 'rmap_reg_', 'spp0.S_AxiLite': 'spp_reg_',
   });
-  examples.push(['spp-over-spw-two-clocks', 'Space Packets over SpaceWire, two clocks', d]);
+  examples.push(['spp_over_spw_two_clocks', 'Space Packets over SpaceWire, two clocks', d]);
 }
 
 {
@@ -145,7 +147,12 @@ function linkDomain(d, spw, hz) {
     ],
   );
   d = setGeneric(d, cat, 'ocr0', 'DenseOutput_g', true).design;
+  // a failed message never leaves the core: the release buffer holds a whole message (chunk + IV, AAD and tag)
+  d = setGeneric(d, cat, 'ocr0', 'ReleaseBuffer_g', true).design;
+  d = setGeneric(d, cat, 'ocr0', 'ReleaseBytes_g', 8192).design;
+  // the send buffer holds one encrypted chunk, the receive buffer one Space Packet of it (the example loops back)
   d = setGeneric(d, cat, 'spp0', 'TxBufferBytes_g', 8192).design;
+  d = setGeneric(d, cat, 'spp0', 'RxBufferBytes_g', 8192).design;
   d = link(d, 'frm0.M_Ctx', 'ocr0.S_Ctx');
   d = link(d, 'frm0.M_Out', 'ocr0.S_In');
   d = link(d, 'ocr0.M_Out', 'spp0.S_Tx[0]', { apid: 0x123 });
@@ -158,7 +165,7 @@ function linkDomain(d, spw, hz) {
     'frm0.S_In': 'pkt_', 'spp0.M_Rx[0]': 'rx0_',
     'ocr0.S_AxiLite': 'ocr_reg_', 'spp0.S_AxiLite': 'spp_reg_', 'spw0.S_AxiLite': 'spw_reg_',
   });
-  examples.push(['encrypted-spp-over-spw', 'Encrypted packets over SpaceWire', d]);
+  examples.push(['encrypted_spp_over_spw', 'Encrypted packets over SpaceWire', d]);
 }
 
 {
@@ -191,7 +198,7 @@ function linkDomain(d, spw, hz) {
     'spp0.S_Tx[0]': 'tx0_', 'spp0.M_Rx[0]': 'rx0_', 'rmap0.M_Axi': 'mem_',
     'rmap0.S_AxiLite': 'rmap_reg_', 'ofb0.S_AxiLite': 'ofb_reg_', 'spp0.S_AxiLite': 'spp_reg_',
   });
-  examples.push(['spacefibre-node', 'SpaceFibre node', d]);
+  examples.push(['spacefibre_node', 'SpaceFibre node', d]);
 }
 
 // a subset of the examples by name (the others keep their files)

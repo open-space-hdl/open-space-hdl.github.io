@@ -4,13 +4,23 @@
  * connection or clock domain the check is about.
  */
 
-import { h, replace } from './dom.js';
+import { h, replace, s } from './dom.js';
 
 /** @typedef {import('./app.js').App} App */
 /** @typedef {import('../model/resolver.js').Check} Check */
 
 const ORDER = { error: 0, warning: 1, info: 2 };
-const SYMBOL = { error: '✖', warning: '▲', info: 'i' };
+// symbols drawn as SVG paths: glyphs from fallback fonts made every repaint of the panel slow in WebKit
+const SYMBOL = {
+  error: 'M2.5 2.5 L9.5 9.5 M9.5 2.5 L2.5 9.5',
+  warning: 'M6 1.5 L11 10.5 L1 10.5 Z',
+  info: 'M6 5 L6 10 M6 2.2 L6 2.8',
+};
+
+/** @param {'error' | 'warning' | 'info'} sev */
+function symbol(sev) {
+  return s('svg', { class: `cmp-sym cmp-sym-${sev}`, viewBox: '0 0 12 12', width: '12', height: '12', 'aria-hidden': 'true' }, s('path', { d: SYMBOL[sev] }));
+}
 const WORD = { error: 'Error', warning: 'Warning', info: 'Note' };
 
 export class ChecksView {
@@ -51,9 +61,9 @@ export class ChecksView {
     replace(this.toggle,
       h('span', { class: 'cmp-checks-title' }, 'Checks'),
       h('span', { class: 'cmp-checks-counts' },
-        h('span', { class: 'cmp-count cmp-sev-error', title: `${errors} errors` }, `${SYMBOL.error} ${errors}`),
-        h('span', { class: 'cmp-count cmp-sev-warning', title: `${warnings} warnings` }, `${SYMBOL.warning} ${warnings}`),
-        h('span', { class: 'cmp-count cmp-sev-info', title: `${notes} notes` }, `${SYMBOL.info} ${notes}`)),
+        h('span', { class: 'cmp-count cmp-sev-error', title: `${errors} errors` }, symbol('error'), ` ${errors}`),
+        h('span', { class: 'cmp-count cmp-sev-warning', title: `${warnings} warnings` }, symbol('warning'), ` ${warnings}`),
+        h('span', { class: 'cmp-count cmp-sev-info', title: `${notes} notes` }, symbol('info'), ` ${notes}`)),
       h('span', { class: 'cmp-checks-chevron', 'aria-hidden': 'true' }, this.open ? '−' : '+'));
     this.list.hidden = !this.open;
     if (checks.length === 0) {
@@ -67,7 +77,7 @@ export class ChecksView {
         onclick: () => this.app.focusCheck(c),
         disabled: !c.instance && !c.connection && !c.domain,
       },
-      h('span', { class: 'cmp-check-sym', 'aria-hidden': 'true' }, SYMBOL[c.severity]),
+      h('span', { class: 'cmp-check-sym', 'aria-hidden': 'true' }, symbol(c.severity)),
       h('span', { class: 'cmp-sr' }, `${WORD[c.severity]}: `),
       h('span', { class: 'cmp-check-msg' }, c.message)))));
   }

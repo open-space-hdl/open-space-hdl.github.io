@@ -58,6 +58,7 @@ export const CATALOG_VERSION = 1;
  * @property {Record<string, string>} signals
  * @property {{signal: string, description?: string, fields: SidebandField[]}} [sideband]
  * @property {'native' | 'packed'} [carry]
+ * @property {{name: string, label: string, lsb: number, bits: number}[]} [userFields]   meaning of the bits of user
  */
 
 /**
@@ -78,9 +79,14 @@ export const CATALOG_VERSION = 1;
  * @property {string[]} [notes]
  * @property {Record<string, unknown>[]} [rules]
  * @property {Record<string, unknown>[]} [constraints]
+ * @property {{address: string, value: string}} [idRegister]   identification register
+ * @property {{text: string, when?: string[], unless?: string[], unlessAll?: string[]}[]} [init]   initialisation by
+ *           software; a step applies when all generics of when are true, none of unless and not all of unlessAll
+ * @property {string} [endToEnd]   what an end-to-end test of the block checks
+ * @property {string[]} [packages]  packages of the block library that its generics refer to
  * @property {GenericDef[]} generics
  * @property {{port: string, primary?: boolean, output?: boolean, frequency?: string | number, label?: string, description?: string, freqGeneric?: string}[]} clocks
- * @property {{port: string, dir?: string, active?: string, sync?: string, clock?: string}[]} resets
+ * @property {{port: string, dir?: string, active?: string, sync?: string, clock?: string, description?: string}[]} resets
  * @property {InterfaceDef[]} interfaces
  * @property {{name: string, dir: string, vhdlType: string, width: string|null, default?: string}[]} ports
  * @property {{port: string, value: string}[]} [tieOffs]

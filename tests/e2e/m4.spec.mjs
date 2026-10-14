@@ -30,11 +30,11 @@ test('the saved file carries the netlist, the checks and the build brief of the 
   // the browser resolves the system to the same netlist and brief as the unit tests
   // (the golden files pin the netlist and the brief, not the content identifier of the catalog)
   const noCatalogText = (/** @type {string} */ t) => t.replace(/\(catalog `[0-9a-f]+`\)/, '(catalog `*`)').trimEnd();
-  expect({ ...doc.resolved, catalog: '*' }).toEqual({ ...JSON.parse(golden('encrypted-spp-over-spw.resolved.json')), catalog: '*' });
-  expect(noCatalogText(doc.agent.brief)).toBe(noCatalogText(golden('encrypted-spp-over-spw.brief.md')));
+  expect({ ...doc.resolved, catalog: '*' }).toEqual({ ...JSON.parse(golden('encrypted_spp_over_spw.resolved.json')), catalog: '*' });
+  expect(noCatalogText(doc.agent.brief)).toBe(noCatalogText(golden('encrypted_spp_over_spw.brief.md')));
   expect(doc.checks.filter((/** @type {any} */ c) => c.severity === 'error')).toEqual([]);
   expect(Object.keys(doc)).toEqual(['$schema', 'format', 'formatVersion', 'generator', 'system', 'sources', 'clockDomains', 'instances',
-    'connections', 'externals', 'resolved', 'checks', 'agent', 'layout']);
+    'connections', 'externals', 'resolved', 'checks', 'agent', 'catalogSubset', 'layout']);
 });
 
 test('the key slot of the framer is a constant of the instance and reaches the netlist', async ({ page }, info) => {

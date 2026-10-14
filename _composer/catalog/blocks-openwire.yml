@@ -127,6 +127,15 @@ blocks:
         signals: { d_out: Spw_DOut, s_out: Spw_SOut, d_in: Spw_DIn, s_in: Spw_SIn, tx_en: Phy_TxEn, rx_en: Phy_RxEn }
     rules:
       - { kind: clock_freq_multiple, clock: LinkClk, multipleHz: 10.0e6, tolerance: 0.1 }
+      - { kind: run_rate, clock: LinkClk, divider: RunDiv_g, sampling: 1.2, message: "A receiver samples a bit period that is longer than 1.2 of its LinkClk periods (user guide, section 3)" }
+    idRegister: { address: "0x00", value: "0x4F575201" }
+    init:
+      - { text: "Optionally write LINK_SPEED (0x14) bits 7:0 RUN_DIV: the bit period in the Run state in LinkClk cycles (reset value RunDiv_g); choose it for the far end, which samples at most about LinkClk / 1.2." }
+      - { text: "Write PORT_CTRL (0x10) = 0x34 (RECEIVER_EN, DRIVER_EN, LINK_START) to start the link, or 0x38 (AUTO_START) to wait for the far end.", unless: [LinkStart_g, AutoStart_g] }
+      - { text: "The link starts after the reset without software (LinkStart_g or AutoStart_g).", when: [LinkStart_g] }
+      - { text: "The link starts after the reset without software (LinkStart_g or AutoStart_g).", when: [AutoStart_g], unless: [LinkStart_g] }
+      - { text: "Wait for PORT_STATUS (0x18) bits 2:0 LINK_STATE = 5 (Run) before packets are exchanged." }
+    endToEnd: "Loop the SpaceWire line back (Spw_DOut to Spw_DIn, Spw_SOut to Spw_SIn) or connect a second port, start the link and wait for PORT_STATUS LINK_STATE = 5 (Run)."
     constraints:
       - { kind: false_path, fromPorts: [Spw_DIn, Spw_SIn, Rst] }
       - { kind: async_clock_groups, clocks: [UserClk, LinkClk, MgmtClk] }

@@ -6,7 +6,7 @@
 #   file_list:        file of the repository that lists the sources in compile order
 #   file_list_format: modules (one module directory per line, sources in <module>/src/*.vhd)
 #                     or files (one VHDL file per line)
-#   requires:         Open Logic FT tag the repository is verified with (its open-logic submodule)
+#   verified_with:    Open Logic FT tag the repository is verified with (its open-logic submodule)
 #   note:             what a build of a system needs to know about the repository (shown in the brief)
 
 sources:
@@ -19,7 +19,7 @@ sources:
     library: openwire
     file_list: component_list.txt
     file_list_format: modules
-    requires: 4.7.0-ft.2
+    verified_with: 4.7.0-ft.2
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
   - id: openrmap
@@ -31,7 +31,7 @@ sources:
     library: openrmap
     file_list: component_list.txt
     file_list_format: modules
-    requires: 4.7.0-ft.2
+    verified_with: 4.7.0-ft.2
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
   - id: openspp
@@ -43,7 +43,7 @@ sources:
     library: openspp
     file_list: component_list.txt
     file_list_format: modules
-    requires: 4.7.0-ft.2
+    verified_with: 4.7.0-ft.2
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
   - id: openfibre
@@ -55,7 +55,7 @@ sources:
     library: openfibre
     file_list: component_list.txt
     file_list_format: modules
-    requires: 4.7.0-ft.2
+    verified_with: 4.7.0-ft.2
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. component_list.txt lists the technology-independent modules; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).
 
   - id: opencrypto
@@ -67,7 +67,7 @@ sources:
     library: opencrypto
     file_list: component_list.txt
     file_list_format: modules
-    requires: 4.7.0-ft.3
+    verified_with: 4.7.0-ft.3
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
   - id: olo
@@ -79,4 +79,7 @@ sources:
     library: olo
     file_list: compile_order.txt
     file_list_format: files
-    note: Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files.
+    note: >-
+      Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files.
+      4.7.0-ft.3 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 and changes no other source, so the
+      cores verified with 4.7.0-ft.2 use it unchanged.

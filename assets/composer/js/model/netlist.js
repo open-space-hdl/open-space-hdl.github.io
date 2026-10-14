@@ -12,7 +12,12 @@
  *                every connection signal by signal (side band packed into the data word of a FIFO bit by bit),
  *                the side band constants, the tie-offs and the top-level ports
  *   packing      the bit fields of every packed data word
+ *   context      the context clause of the top level (libraries, and the packages that generic values refer to)
  *   clocks, resets, constraints, compile (libraries in order with their pinned sources)
+ *
+ * Every port of the top level and of an instance names its clock domain (a port of a block with several clocks: the
+ * domain of the clock of its interface); a reset port says whether it is synchronous or asynchronous and why, and a
+ * user port of an external interface and every constant of a side band carry their field map.
  *
  * Clocks and resets are port actuals, never assignments, so that no clock gets a delta delay in simulation.
  */
@@ -45,6 +50,7 @@ import { packFields, RESET_PORT, vhdlType } from './resolver.js';
  * @property {string} [connection]
  * @property {string} [signal]   logical signal of the interface
  * @property {string} [reason]
+ * @property {{ name: string, label: string, lsb: number, bits: number, value: number | boolean }[]} [fields]  field map of a constant
  */
 
 /**
@@ -69,6 +75,7 @@ export function signalName(inst, port) {
  * @property {Record<string, any>[]} packing
  * @property {Record<string, any>[]} constraints
  * @property {Record<string, any>[]} compile
+ * @property {string[]} context  context clause of the top level
  * @property {string[]} problems   inconsistencies found while building the netlist (none in a correct catalog)
  */
 
@@ -170,6 +177,46 @@ class Netlist {
   }
 
   /**
+   * Clock domain of every port of an instance: clocks, synchronous resets and the signals of interfaces with a clock.
+   * @param {ResolvedInstance} rec
+   * @param {BlockDef} b
+   * @returns {Map<string, string>}
+   */
+  portDomains(rec, b) {
+    /** @type {Map<string, string>} */
+    const m = new Map();
+    for (const c of b.clocks) if (rec.clocks[c.port]) m.set(c.port, rec.clocks[c.port]);
+    for (const r of b.resets) {
+      if (r.sync === 'async' || !r.clock || !rec.clocks[r.clock]) continue;
+      m.set(r.port, rec.clocks[r.clock]);
+    }
+    for (const itf of b.interfaces) {
+      const dom = itf.clock ? rec.clocks[itf.clock] : undefined;
+      if (!dom) continue;
+      for (const pname of Object.values(itf.signals)) if (!m.has(pname)) m.set(pname, dom);
+    }
+    return m;
+  }
+
+  /**
+   * Logical signal of a port in its interface, and the field map of the port where the interface defines one (side
+   * band constants or the meaning of the user bits).
+   * @param {BlockDef} b
+   * @param {string} pname
+   */
+  portMeaning(b, pname) {
+    for (const itf of b.interfaces) {
+      const entry = Object.entries(itf.signals).find(([, p]) => p === pname);
+      if (!entry) continue;
+      const signal = entry[0];
+      const sbFields = itf.sideband && itf.sideband.signal === signal ? itf.sideband.fields : undefined;
+      const fields = sbFields ?? (signal === 'user' ? itf.userFields : undefined);
+      return { signal, fields: fields?.map((fl) => ({ name: fl.name, label: fl.label, lsb: fl.lsb, bits: fl.bits })) };
+    }
+    return { signal: undefined, fields: undefined };
+  }
+
+  /**
    * Logical signals of an interface endpoint and the bits that carry them.
    * @param {string} ref
    * @returns {Map<string, Bits>}
@@ -222,7 +269,8 @@ class Netlist {
           if (constant && bb.dir === 'in') {
             if (constant === 'sideband' && sb && conn?.sideband) {
               const v = packFields(sb.fields, conn.sideband);
-              this.nets.push({ to: bitsExpr(bb), from: constExpr(bb, v), kind: 'constant', connection: chain.connection, signal: name, reason: 'Side band constants of the connection.' });
+              const fields = sb.fields.map((fl) => ({ name: fl.name, label: fl.label, lsb: fl.lsb, bits: fl.bits, value: conn.sideband?.[fl.name] ?? fl.default ?? 0 }));
+              this.nets.push({ to: bitsExpr(bb), from: constExpr(bb, v), kind: 'constant', connection: chain.connection, signal: name, reason: 'Side band constants of the connection.', fields });
             } else {
               this.nets.push({ to: bitsExpr(bb), from: constExpr(bb, constant === 'ones' ? 'ones' : 'zero'), kind: 'constant', connection: chain.connection, signal: name, reason: `${chain.from} has no ${name}.` });
             }
@@ -287,7 +335,10 @@ class Netlist {
       const w = m[3] ? Number(m[4]) - lo + 1 : total;
       const bits = { sig: signalName(rec.id, m[2]), lo, width: w, total, vector, dir: /** @type {'in'} */ ('in') };
       const from = t.value === '0' ? constExpr(bits, 'zero') : t.value;
-      this.nets.push({ to: bitsExpr(bits), from, kind: 'tie-off', signal: m[2], reason: t.reason });
+      /** @type {Net} */
+      const net = { to: bitsExpr(bits), from, kind: 'tie-off', signal: m[2], reason: t.reason };
+      if (t.fields) net.fields = t.fields.map((x) => ({ ...x }));
+      this.nets.push(net);
     }
   }
 
@@ -315,17 +366,27 @@ class Netlist {
       const s = /** @type {{ kind: string, instance?: string, port?: string }} */ (dom.source);
       if (s.kind === 'block') used.add(signalName(s.instance ?? '', s.port ?? ''));
     }
-    const defaults = new Set(res.tieOffs.filter((t) => t.value === 'default').map((t) => signalName(instanceOf(t.port), portOf(t.port))));
     /** @type {{ name: string, type: string }[]} */
     const signals = [];
     const instances = res.instances.map((rec) => {
       const { b, width } = this.info(rec);
       const clockPorts = new Set(b.clocks.filter((c) => !c.output).map((c) => c.port));
+      const domains = this.portDomains(rec, b);
       const ports = b.ports.map((p) => {
         const sig = signalName(rec.id, p.name);
         const type = vhdlType(width(p), p.vhdlType);
         /** @type {Record<string, unknown>} */
         const o = { name: p.name, dir: p.dir, type };
+        const dom = domains.get(p.name);
+        if (dom) o.domain = dom;
+        // a reset input: synchronous (from the reset generator of its domain) or asynchronous, and why
+        const rst = b.resets.find((r) => r.port === p.name && r.dir !== 'out');
+        if (rst) {
+          const gen = rec.resets[p.name]?.endsWith('.RstOut') ? instanceOf(rec.resets[p.name]) : undefined;
+          o.reset = rst.sync === 'async'
+            ? { kind: 'async', note: rst.description ?? `Asynchronous reset: ${b.entity} synchronises its release itself.` }
+            : { kind: 'sync', note: `Synchronous reset in the clock domain ${this.d.clockDomains.find((c) => c.id === rec.clocks[rst.clock ?? ''])?.name ?? rec.clocks[rst.clock ?? ''] ?? ''} (clock ${rst.clock ?? ''})${gen ? `: the output of the reset generator ${gen}` : ''}.` };
+        }
         if (clockPorts.has(p.name)) {
           o.actual = rec.clocks[p.name] ? clockOf(rec.clocks[p.name]) : 'open';
         } else if (p.name in rec.resets && p.dir !== 'out') {
@@ -339,7 +400,7 @@ class Netlist {
         } else if (p.default !== undefined) {
           o.actual = null;
           o.useDefault = true;
-          if (!defaults.has(sig)) o.default = p.default;
+          o.default = p.default;
         } else {
           o.actual = null;
           this.problems.push(`${rec.id}.${p.name} is an input without a source and without a default.`);
@@ -380,11 +441,22 @@ class Netlist {
         if (s.commit) o.commit = s.commit;
         o.fileList = s.fileList;
         o.fileListFormat = s.fileListFormat;
-        if (s.requires) o.verifiedWith = s.requires;
+        if (s.verifiedWith) o.verifiedWith = s.verifiedWith;
         if (s.note) o.note = s.note;
         o.entities = [...new Set(res.instances.filter((r) => r.library === s.library).map((r) => r.entity))].sort();
         return o;
       });
+    // context clause: ieee, every library, and the packages whose constants appear in a generic map
+    const context = ['library ieee;', 'use ieee.std_logic_1164.all;', ...compile.map((c) => `library ${c.library};`)];
+    for (const inst of instances) {
+      const b = this.cat.blocks.get(/** @type {string} */ (inst.block));
+      const named = /** @type {Record<string, unknown>[]} */ (inst.generics).some((g) => !g.default && /\b[A-Za-z]\w*_c\b/.test(String(g.vhdl)));
+      if (!b || !named) continue;
+      for (const pkg of b.packages ?? []) {
+        const clause = `use ${b.library}.${pkg}.all;`;
+        if (!context.includes(clause)) context.push(clause);
+      }
+    }
     const top = new Set(res.topPorts.map((tp) => tp.name.toLowerCase()));
     for (const sg of signals) if (top.has(sg.name.toLowerCase())) this.problems.push(`Signal ${sg.name} has the name of a top-level port.`);
     return {
@@ -395,6 +467,16 @@ class Netlist {
         const o = { name: tp.name, dir: tp.dir, type: tp.vhdlType, kind: tp.kind };
         if (tp.ref) o.interface = tp.ref;
         if (tp.domain) o.domain = tp.domain;
+        const m = tp.port ? /^([^.]+)\.(\w+)/.exec(tp.port) : null;
+        const rec = m ? res.byId.get(m[1]) : undefined;
+        if (m && rec) {
+          const b = this.cat.block(rec.block);
+          const dom = this.portDomains(rec, b).get(m[2]);
+          if (dom) o.domain = dom;
+          const meaning = this.portMeaning(b, m[2]);
+          if (meaning.signal) o.signal = meaning.signal;
+          if (meaning.fields) o.fields = meaning.fields;
+        }
         return o;
       }),
       clocks,
@@ -405,6 +487,7 @@ class Netlist {
       packing,
       constraints: res.constraints.map((c) => ({ ...c })),
       compile,
+      context,
       problems: this.problems,
     };
   }

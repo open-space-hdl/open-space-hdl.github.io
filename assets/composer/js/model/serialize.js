@@ -49,15 +49,33 @@ function usedSources(cat, d) {
       o.library = s.library;
       o.fileList = s.fileList;
       o.fileListFormat = s.fileListFormat;
-      if (s.requires) o.requires = s.requires;
+      if (s.verifiedWith) o.verifiedWith = s.verifiedWith;
       return o;
     });
 }
 
 /**
+ * The catalog entries of the blocks that a resolved design uses (inserted adapters and reset generators included) and
+ * of their interface types, so that a file explains itself without the catalog it was made with.
+ * @param {Catalog} cat
+ * @param {import('./resolver.js').Resolved} res
+ */
+function catalogSubset(cat, res) {
+  const ids = [...new Set(res.instances.map((r) => r.block))];
+  const blocks = ids.map((id) => cat.blocks.get(id)).filter((b) => b !== undefined);
+  const typeIds = new Set(blocks.flatMap((b) => b.interfaces.map((i) => i.type)));
+  return {
+    id: cat.id,
+    note: 'Catalog entries of the blocks of this system and of their interface types, as the Composer used them: ports, generics, clocks, resets, interfaces with their signals, clocks, fields and directions, presets, rules, notes and the initialisation by software.',
+    types: [...cat.types.values()].filter((t) => typeIds.has(t.id)).map((t) => JSON.parse(JSON.stringify(t))),
+    blocks: blocks.map((b) => JSON.parse(JSON.stringify(b))),
+  };
+}
+
+/**
  * Document object of a design (deterministic key order, so that saving twice gives the same text). A full document
- * also holds what the design resolves to: the netlist ("resolved"), the checks and the brief for an agent; the
- * autosave of the browser leaves them out.
+ * also holds what the design resolves to: the netlist ("resolved"), the checks, the brief for an agent and the catalog
+ * entries of the blocks it uses ("catalogSubset"); the autosave of the browser leaves them out.
  * @param {Design} d
  * @param {Catalog} cat
  * @param {{ full?: boolean }} [opts]
@@ -100,6 +118,7 @@ export function toDocument(d, cat, opts = {}) {
     out.resolved = resolved;
     out.checks = checks.map((c) => ({ ...c }));
     out.agent = { brief: agentBrief(cat, d, res, resolved, checks) };
+    out.catalogSubset = catalogSubset(cat, res);
   }
   out.layout = {
     instances: Object.fromEntries(d.instances.map((i) => [i.id, { ...(d.layout.instances[i.id] ?? { x: 0, y: 0 }) }])),

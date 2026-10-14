@@ -1,6 +1,6 @@
 {
-  "catalog": "22fe96cb3252",
-  "entity": "spp_over_spw",
+  "catalog": "4a5bef7a4f02",
+  "entity": "spp_over_spw_two_clocks",
   "ports": [
     {
       "name": "Rst",
@@ -16,6 +16,13 @@
       "domain": "sys"
     },
     {
+      "name": "Clk_spw",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "clock",
+      "domain": "spw"
+    },
+    {
       "name": "Clk_link",
       "dir": "in",
       "type": "std_logic",
@@ -27,742 +34,964 @@
       "dir": "in",
       "type": "std_logic_vector(7 downto 0)",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "AwAddr"
     },
     {
       "name": "spw_reg_S_AxiLite_AwValid",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "AwValid"
     },
     {
       "name": "spw_reg_S_AxiLite_AwReady",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "AwReady"
     },
     {
       "name": "spw_reg_S_AxiLite_WData",
       "dir": "in",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "WData"
     },
     {
       "name": "spw_reg_S_AxiLite_WStrb",
       "dir": "in",
       "type": "std_logic_vector(3 downto 0)",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "WStrb"
     },
     {
       "name": "spw_reg_S_AxiLite_WValid",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "WValid"
     },
     {
       "name": "spw_reg_S_AxiLite_WReady",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "WReady"
     },
     {
       "name": "spw_reg_S_AxiLite_BResp",
       "dir": "out",
       "type": "std_logic_vector(1 downto 0)",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "BResp"
     },
     {
       "name": "spw_reg_S_AxiLite_BValid",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "BValid"
     },
     {
       "name": "spw_reg_S_AxiLite_BReady",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "BReady"
     },
     {
       "name": "spw_reg_S_AxiLite_ArAddr",
       "dir": "in",
       "type": "std_logic_vector(7 downto 0)",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "ArAddr"
     },
     {
       "name": "spw_reg_S_AxiLite_ArValid",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "ArValid"
     },
     {
       "name": "spw_reg_S_AxiLite_ArReady",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "ArReady"
     },
     {
       "name": "spw_reg_S_AxiLite_RData",
       "dir": "out",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "RData"
     },
     {
       "name": "spw_reg_S_AxiLite_RResp",
       "dir": "out",
       "type": "std_logic_vector(1 downto 0)",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "RResp"
     },
     {
       "name": "spw_reg_S_AxiLite_RValid",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "RValid"
     },
     {
       "name": "spw_reg_S_AxiLite_RReady",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.S_AxiLite"
+      "interface": "spw0.S_AxiLite",
+      "domain": "spw",
+      "signal": "RReady"
     },
     {
       "name": "spw0_Spw_DOut",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.Spw"
+      "interface": "spw0.Spw",
+      "domain": "link",
+      "signal": "d_out"
     },
     {
       "name": "spw0_Spw_SOut",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.Spw"
+      "interface": "spw0.Spw",
+      "domain": "link",
+      "signal": "s_out"
     },
     {
       "name": "spw0_Spw_DIn",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.Spw"
+      "interface": "spw0.Spw",
+      "domain": "link",
+      "signal": "d_in"
     },
     {
       "name": "spw0_Spw_SIn",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.Spw"
+      "interface": "spw0.Spw",
+      "domain": "link",
+      "signal": "s_in"
     },
     {
       "name": "spw0_Phy_TxEn",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.Spw"
+      "interface": "spw0.Spw",
+      "domain": "link",
+      "signal": "tx_en"
     },
     {
       "name": "spw0_Phy_RxEn",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spw0.Spw"
+      "interface": "spw0.Spw",
+      "domain": "link",
+      "signal": "rx_en"
     },
     {
       "name": "rmap_reg_S_AxiLite_AwAddr",
       "dir": "in",
       "type": "std_logic_vector(9 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "AwAddr"
     },
     {
       "name": "rmap_reg_S_AxiLite_AwValid",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "AwValid"
     },
     {
       "name": "rmap_reg_S_AxiLite_AwReady",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "AwReady"
     },
     {
       "name": "rmap_reg_S_AxiLite_WData",
       "dir": "in",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "WData"
     },
     {
       "name": "rmap_reg_S_AxiLite_WStrb",
       "dir": "in",
       "type": "std_logic_vector(3 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "WStrb"
     },
     {
       "name": "rmap_reg_S_AxiLite_WValid",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "WValid"
     },
     {
       "name": "rmap_reg_S_AxiLite_WReady",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "WReady"
     },
     {
       "name": "rmap_reg_S_AxiLite_BResp",
       "dir": "out",
       "type": "std_logic_vector(1 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "BResp"
     },
     {
       "name": "rmap_reg_S_AxiLite_BValid",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "BValid"
     },
     {
       "name": "rmap_reg_S_AxiLite_BReady",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "BReady"
     },
     {
       "name": "rmap_reg_S_AxiLite_ArAddr",
       "dir": "in",
       "type": "std_logic_vector(9 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "ArAddr"
     },
     {
       "name": "rmap_reg_S_AxiLite_ArValid",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "ArValid"
     },
     {
       "name": "rmap_reg_S_AxiLite_ArReady",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "ArReady"
     },
     {
       "name": "rmap_reg_S_AxiLite_RData",
       "dir": "out",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "RData"
     },
     {
       "name": "rmap_reg_S_AxiLite_RResp",
       "dir": "out",
       "type": "std_logic_vector(1 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "RResp"
     },
     {
       "name": "rmap_reg_S_AxiLite_RValid",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "RValid"
     },
     {
       "name": "rmap_reg_S_AxiLite_RReady",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.S_AxiLite"
+      "interface": "rmap0.S_AxiLite",
+      "domain": "spw",
+      "signal": "RReady"
     },
     {
       "name": "mem_M_Axi_AwAddr",
       "dir": "out",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "AwAddr"
     },
     {
       "name": "mem_M_Axi_AwLen",
       "dir": "out",
       "type": "std_logic_vector(7 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "AwLen"
     },
     {
       "name": "mem_M_Axi_AwSize",
       "dir": "out",
       "type": "std_logic_vector(2 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "AwSize"
     },
     {
       "name": "mem_M_Axi_AwBurst",
       "dir": "out",
       "type": "std_logic_vector(1 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "AwBurst"
     },
     {
       "name": "mem_M_Axi_AwLock",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "AwLock"
     },
     {
       "name": "mem_M_Axi_AwCache",
       "dir": "out",
       "type": "std_logic_vector(3 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "AwCache"
     },
     {
       "name": "mem_M_Axi_AwProt",
       "dir": "out",
       "type": "std_logic_vector(2 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "AwProt"
     },
     {
       "name": "mem_M_Axi_AwValid",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "AwValid"
     },
     {
       "name": "mem_M_Axi_AwReady",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "AwReady"
     },
     {
       "name": "mem_M_Axi_WData",
       "dir": "out",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "WData"
     },
     {
       "name": "mem_M_Axi_WStrb",
       "dir": "out",
       "type": "std_logic_vector(3 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "WStrb"
     },
     {
       "name": "mem_M_Axi_WLast",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "WLast"
     },
     {
       "name": "mem_M_Axi_WValid",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "WValid"
     },
     {
       "name": "mem_M_Axi_WReady",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "WReady"
     },
     {
       "name": "mem_M_Axi_BResp",
       "dir": "in",
       "type": "std_logic_vector(1 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "BResp"
     },
     {
       "name": "mem_M_Axi_BValid",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "BValid"
     },
     {
       "name": "mem_M_Axi_BReady",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "BReady"
     },
     {
       "name": "mem_M_Axi_ArAddr",
       "dir": "out",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "ArAddr"
     },
     {
       "name": "mem_M_Axi_ArLen",
       "dir": "out",
       "type": "std_logic_vector(7 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "ArLen"
     },
     {
       "name": "mem_M_Axi_ArSize",
       "dir": "out",
       "type": "std_logic_vector(2 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "ArSize"
     },
     {
       "name": "mem_M_Axi_ArBurst",
       "dir": "out",
       "type": "std_logic_vector(1 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "ArBurst"
     },
     {
       "name": "mem_M_Axi_ArLock",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "ArLock"
     },
     {
       "name": "mem_M_Axi_ArCache",
       "dir": "out",
       "type": "std_logic_vector(3 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "ArCache"
     },
     {
       "name": "mem_M_Axi_ArProt",
       "dir": "out",
       "type": "std_logic_vector(2 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "ArProt"
     },
     {
       "name": "mem_M_Axi_ArValid",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "ArValid"
     },
     {
       "name": "mem_M_Axi_ArReady",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "ArReady"
     },
     {
       "name": "mem_M_Axi_RData",
       "dir": "in",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "RData"
     },
     {
       "name": "mem_M_Axi_RResp",
       "dir": "in",
       "type": "std_logic_vector(1 downto 0)",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "RResp"
     },
     {
       "name": "mem_M_Axi_RLast",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "RLast"
     },
     {
       "name": "mem_M_Axi_RValid",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "RValid"
     },
     {
       "name": "mem_M_Axi_RReady",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "rmap0.M_Axi"
+      "interface": "rmap0.M_Axi",
+      "domain": "spw",
+      "signal": "RReady"
     },
     {
       "name": "tx0_S_Tx_Data_0",
       "dir": "in",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "spp0.S_Tx[0]"
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "data"
     },
     {
       "name": "tx0_S_Tx_Keep_0",
       "dir": "in",
       "type": "std_logic_vector(3 downto 0)",
       "kind": "interface",
-      "interface": "spp0.S_Tx[0]"
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "keep"
     },
     {
       "name": "tx0_S_Tx_Last_0",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_Tx[0]"
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "last"
     },
     {
       "name": "tx0_S_Tx_User_0",
       "dir": "in",
       "type": "std_logic_vector(27 downto 0)",
       "kind": "interface",
-      "interface": "spp0.S_Tx[0]"
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "user",
+      "fields": [
+        {
+          "name": "apid",
+          "label": "APID",
+          "lsb": 0,
+          "bits": 11
+        },
+        {
+          "name": "shi",
+          "label": "Secondary header flag",
+          "lsb": 11,
+          "bits": 1
+        },
+        {
+          "name": "type",
+          "label": "Packet type (telecommand)",
+          "lsb": 12,
+          "bits": 1
+        },
+        {
+          "name": "nameValid",
+          "label": "Packet name instead of sequence count",
+          "lsb": 13,
+          "bits": 1
+        },
+        {
+          "name": "name",
+          "label": "Packet name",
+          "lsb": 14,
+          "bits": 14
+        }
+      ]
     },
     {
       "name": "tx0_S_Tx_Valid_0",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_Tx[0]"
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "valid"
     },
     {
       "name": "tx0_S_Tx_Ready_0",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_Tx[0]"
-    },
-    {
-      "name": "tx1_S_Tx_Data_1",
-      "dir": "in",
-      "type": "std_logic_vector(31 downto 0)",
-      "kind": "interface",
-      "interface": "spp0.S_Tx[1]"
-    },
-    {
-      "name": "tx1_S_Tx_Keep_1",
-      "dir": "in",
-      "type": "std_logic_vector(3 downto 0)",
-      "kind": "interface",
-      "interface": "spp0.S_Tx[1]"
-    },
-    {
-      "name": "tx1_S_Tx_Last_1",
-      "dir": "in",
-      "type": "std_logic",
-      "kind": "interface",
-      "interface": "spp0.S_Tx[1]"
-    },
-    {
-      "name": "tx1_S_Tx_User_1",
-      "dir": "in",
-      "type": "std_logic_vector(27 downto 0)",
-      "kind": "interface",
-      "interface": "spp0.S_Tx[1]"
-    },
-    {
-      "name": "tx1_S_Tx_Valid_1",
-      "dir": "in",
-      "type": "std_logic",
-      "kind": "interface",
-      "interface": "spp0.S_Tx[1]"
-    },
-    {
-      "name": "tx1_S_Tx_Ready_1",
-      "dir": "out",
-      "type": "std_logic",
-      "kind": "interface",
-      "interface": "spp0.S_Tx[1]"
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "ready"
     },
     {
       "name": "rx0_M_Rx_Data_0",
       "dir": "out",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "spp0.M_Rx[0]"
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "data"
     },
     {
       "name": "rx0_M_Rx_Keep_0",
       "dir": "out",
       "type": "std_logic_vector(3 downto 0)",
       "kind": "interface",
-      "interface": "spp0.M_Rx[0]"
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "keep"
     },
     {
       "name": "rx0_M_Rx_Last_0",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.M_Rx[0]"
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "last"
     },
     {
       "name": "rx0_M_Rx_User_0",
       "dir": "out",
       "type": "std_logic_vector(21 downto 0)",
       "kind": "interface",
-      "interface": "spp0.M_Rx[0]"
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "user",
+      "fields": [
+        {
+          "name": "apid",
+          "label": "APID",
+          "lsb": 0,
+          "bits": 11
+        },
+        {
+          "name": "shi",
+          "label": "Secondary Header Indicator (Octet String Service)",
+          "lsb": 11,
+          "bits": 1
+        },
+        {
+          "name": "loss",
+          "label": "Packet Loss or Data Loss Indicator",
+          "lsb": 12,
+          "bits": 1
+        },
+        {
+          "name": "error",
+          "label": "Double bit error in the receive buffer during this SDU, valid with last",
+          "lsb": 13,
+          "bits": 1
+        },
+        {
+          "name": "ua",
+          "label": "User Application value of the CPTP packet (0 without the CPTP layer)",
+          "lsb": 14,
+          "bits": 8
+        }
+      ]
     },
     {
       "name": "rx0_M_Rx_Valid_0",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.M_Rx[0]"
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "valid"
     },
     {
       "name": "rx0_M_Rx_Ready_0",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.M_Rx[0]"
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "ready"
     },
     {
       "name": "spp_reg_S_AxiLite_AwAddr",
       "dir": "in",
       "type": "std_logic_vector(10 downto 0)",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwAddr"
     },
     {
       "name": "spp_reg_S_AxiLite_AwValid",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwValid"
     },
     {
       "name": "spp_reg_S_AxiLite_AwReady",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwReady"
     },
     {
       "name": "spp_reg_S_AxiLite_WData",
       "dir": "in",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WData"
     },
     {
       "name": "spp_reg_S_AxiLite_WStrb",
       "dir": "in",
       "type": "std_logic_vector(3 downto 0)",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WStrb"
     },
     {
       "name": "spp_reg_S_AxiLite_WValid",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WValid"
     },
     {
       "name": "spp_reg_S_AxiLite_WReady",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WReady"
     },
     {
       "name": "spp_reg_S_AxiLite_BResp",
       "dir": "out",
       "type": "std_logic_vector(1 downto 0)",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BResp"
     },
     {
       "name": "spp_reg_S_AxiLite_BValid",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BValid"
     },
     {
       "name": "spp_reg_S_AxiLite_BReady",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BReady"
     },
     {
       "name": "spp_reg_S_AxiLite_ArAddr",
       "dir": "in",
       "type": "std_logic_vector(10 downto 0)",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArAddr"
     },
     {
       "name": "spp_reg_S_AxiLite_ArValid",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArValid"
     },
     {
       "name": "spp_reg_S_AxiLite_ArReady",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArReady"
     },
     {
       "name": "spp_reg_S_AxiLite_RData",
       "dir": "out",
       "type": "std_logic_vector(31 downto 0)",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RData"
     },
     {
       "name": "spp_reg_S_AxiLite_RResp",
       "dir": "out",
       "type": "std_logic_vector(1 downto 0)",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RResp"
     },
     {
       "name": "spp_reg_S_AxiLite_RValid",
       "dir": "out",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RValid"
     },
     {
       "name": "spp_reg_S_AxiLite_RReady",
       "dir": "in",
       "type": "std_logic",
       "kind": "interface",
-      "interface": "spp0.S_AxiLite"
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RReady"
     }
   ],
   "clocks": [
@@ -771,6 +1000,13 @@
       "name": "System clock",
       "frequencyHz": 100000000,
       "actual": "Clk_sys",
+      "source": "top"
+    },
+    {
+      "id": "spw",
+      "name": "Port clock",
+      "frequencyHz": 50000000,
+      "actual": "Clk_spw",
       "source": "top"
     },
     {
@@ -789,10 +1025,10 @@
       "output": "auto_rst_sys_RstOut_s"
     },
     {
-      "domain": "link",
-      "generator": "auto_rst_link",
+      "domain": "spw",
+      "generator": "auto_rst_spw",
       "input": "Rst",
-      "output": "auto_rst_link_RstOut_s"
+      "output": "auto_rst_spw_RstOut_s"
     }
   ],
   "instances": [
@@ -802,7 +1038,7 @@
       "library": "openwire",
       "block": "openwire/owr_core",
       "origin": "user",
-      "domain": "sys",
+      "domain": "spw",
       "generics": [
         {
           "name": "LinkClkFreq_g",
@@ -860,9 +1096,9 @@
         },
         {
           "name": "RunDiv_g",
-          "value": 1,
-          "vhdl": "1",
-          "default": true
+          "value": 2,
+          "vhdl": "2",
+          "default": false
         },
         {
           "name": "SyncStages_g",
@@ -876,333 +1112,399 @@
           "name": "Rst",
           "dir": "in",
           "type": "std_logic",
+          "reset": {
+            "kind": "async",
+            "note": "Asynchronous reset; the core synchronises its release in every domain."
+          },
           "actual": "Rst"
         },
         {
           "name": "UserClk",
           "dir": "in",
           "type": "std_logic",
-          "actual": "Clk_sys"
+          "domain": "spw",
+          "actual": "Clk_spw"
         },
         {
           "name": "LinkClk",
           "dir": "in",
           "type": "std_logic",
+          "domain": "link",
           "actual": "Clk_link"
         },
         {
           "name": "MgmtClk",
           "dir": "in",
           "type": "std_logic",
-          "actual": "Clk_sys"
+          "domain": "spw",
+          "actual": "Clk_spw"
         },
         {
           "name": "S_Pkt_TData",
           "dir": "in",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "spw0_S_Pkt_TData_s"
         },
         {
           "name": "S_Pkt_TLast",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_Pkt_TLast_s"
         },
         {
           "name": "S_Pkt_TValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_Pkt_TValid_s"
         },
         {
           "name": "S_Pkt_TReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_Pkt_TReady_s"
         },
         {
           "name": "M_Pkt_TData",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "spw0_M_Pkt_TData_s"
         },
         {
           "name": "M_Pkt_TLast",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_M_Pkt_TLast_s"
         },
         {
           "name": "M_Pkt_TValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_M_Pkt_TValid_s"
         },
         {
           "name": "M_Pkt_TReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_M_Pkt_TReady_s"
         },
         {
           "name": "S_Tc_TData",
           "dir": "in",
           "type": "std_logic_vector(5 downto 0)",
+          "domain": "spw",
           "actual": null,
-          "useDefault": true
+          "useDefault": true,
+          "default": "(others => '0')"
         },
         {
           "name": "S_Tc_TValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
-          "useDefault": true
+          "useDefault": true,
+          "default": "'0'"
         },
         {
           "name": "S_Tc_TReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Tc_TData",
           "dir": "out",
           "type": "std_logic_vector(5 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Tc_TValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Tc_TReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
-          "useDefault": true
+          "useDefault": true,
+          "default": "'1'"
         },
         {
           "name": "S_Int_TData",
           "dir": "in",
           "type": "std_logic_vector(4 downto 0)",
+          "domain": "spw",
           "actual": null,
-          "useDefault": true
+          "useDefault": true,
+          "default": "(others => '0')"
         },
         {
           "name": "S_Int_TValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
-          "useDefault": true
+          "useDefault": true,
+          "default": "'0'"
         },
         {
           "name": "S_Int_TReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "S_IntAck_TData",
           "dir": "in",
           "type": "std_logic_vector(4 downto 0)",
+          "domain": "spw",
           "actual": null,
-          "useDefault": true
+          "useDefault": true,
+          "default": "(others => '0')"
         },
         {
           "name": "S_IntAck_TValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
-          "useDefault": true
+          "useDefault": true,
+          "default": "'0'"
         },
         {
           "name": "S_IntAck_TReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Int_TData",
           "dir": "out",
           "type": "std_logic_vector(4 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Int_TValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Int_TReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
-          "useDefault": true
+          "useDefault": true,
+          "default": "'1'"
         },
         {
           "name": "M_IntAck_TData",
           "dir": "out",
           "type": "std_logic_vector(4 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_IntAck_TValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_IntAck_TReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
-          "useDefault": true
+          "useDefault": true,
+          "default": "'1'"
         },
         {
           "name": "S_AxiLite_ArAddr",
           "dir": "in",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_ArAddr_s"
         },
         {
           "name": "S_AxiLite_ArValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_ArValid_s"
         },
         {
           "name": "S_AxiLite_ArReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_ArReady_s"
         },
         {
           "name": "S_AxiLite_AwAddr",
           "dir": "in",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_AwAddr_s"
         },
         {
           "name": "S_AxiLite_AwValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_AwValid_s"
         },
         {
           "name": "S_AxiLite_AwReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_AwReady_s"
         },
         {
           "name": "S_AxiLite_WData",
           "dir": "in",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_WData_s"
         },
         {
           "name": "S_AxiLite_WStrb",
           "dir": "in",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_WStrb_s"
         },
         {
           "name": "S_AxiLite_WValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_WValid_s"
         },
         {
           "name": "S_AxiLite_WReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_WReady_s"
         },
         {
           "name": "S_AxiLite_BResp",
           "dir": "out",
           "type": "std_logic_vector(1 downto 0)",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_BResp_s"
         },
         {
           "name": "S_AxiLite_BValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_BValid_s"
         },
         {
           "name": "S_AxiLite_BReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_BReady_s"
         },
         {
           "name": "S_AxiLite_RData",
           "dir": "out",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_RData_s"
         },
         {
           "name": "S_AxiLite_RResp",
           "dir": "out",
           "type": "std_logic_vector(1 downto 0)",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_RResp_s"
         },
         {
           "name": "S_AxiLite_RValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_RValid_s"
         },
         {
           "name": "S_AxiLite_RReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "spw0_S_AxiLite_RReady_s"
         },
         {
           "name": "Irq",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Spw_DOut",
           "dir": "out",
           "type": "std_logic",
+          "domain": "link",
           "actual": "spw0_Spw_DOut_s"
         },
         {
           "name": "Spw_SOut",
           "dir": "out",
           "type": "std_logic",
+          "domain": "link",
           "actual": "spw0_Spw_SOut_s"
         },
         {
           "name": "Spw_DIn",
           "dir": "in",
           "type": "std_logic",
+          "domain": "link",
           "actual": "spw0_Spw_DIn_s"
         },
         {
           "name": "Spw_SIn",
           "dir": "in",
           "type": "std_logic",
+          "domain": "link",
           "actual": "spw0_Spw_SIn_s"
         },
         {
           "name": "Phy_TxEn",
           "dir": "out",
           "type": "std_logic",
+          "domain": "link",
           "actual": "spw0_Phy_TxEn_s"
         },
         {
           "name": "Phy_RxEn",
           "dir": "out",
           "type": "std_logic",
+          "domain": "link",
           "actual": "spw0_Phy_RxEn_s"
         }
       ]
@@ -1213,7 +1515,7 @@
       "library": "openrmap",
       "block": "openrmap/omap_core",
       "origin": "user",
-      "domain": "sys",
+      "domain": "spw",
       "generics": [
         {
           "name": "Target_g",
@@ -1335,456 +1637,536 @@
           "name": "Clk",
           "dir": "in",
           "type": "std_logic",
-          "actual": "Clk_sys"
+          "domain": "spw",
+          "actual": "Clk_spw"
         },
         {
           "name": "Rst",
           "dir": "in",
           "type": "std_logic",
-          "actual": "auto_rst_sys_RstOut_s"
+          "domain": "spw",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain Port clock (clock Clk): the output of the reset generator auto_rst_spw."
+          },
+          "actual": "auto_rst_spw_RstOut_s"
         },
         {
           "name": "S_Pkt_TData",
           "dir": "in",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_S_Pkt_TData_s"
         },
         {
           "name": "S_Pkt_TLast",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_Pkt_TLast_s"
         },
         {
           "name": "S_Pkt_TValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_Pkt_TValid_s"
         },
         {
           "name": "S_Pkt_TReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_Pkt_TReady_s"
         },
         {
           "name": "M_Pkt_TData",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Pkt_TData_s"
         },
         {
           "name": "M_Pkt_TLast",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Pkt_TLast_s"
         },
         {
           "name": "M_Pkt_TValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Pkt_TValid_s"
         },
         {
           "name": "M_Pkt_TReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Pkt_TReady_s"
         },
         {
           "name": "M_User_TData",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_User_TData_s"
         },
         {
           "name": "M_User_TLast",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_User_TLast_s"
         },
         {
           "name": "M_User_TValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_User_TValid_s"
         },
         {
           "name": "M_User_TReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_User_TReady_s"
         },
         {
           "name": "S_User_TData",
           "dir": "in",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_S_User_TData_s"
         },
         {
           "name": "S_User_TLast",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_User_TLast_s"
         },
         {
           "name": "S_User_TValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_User_TValid_s"
         },
         {
           "name": "S_User_TReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_User_TReady_s"
         },
         {
           "name": "S_AxiLite_ArAddr",
           "dir": "in",
           "type": "std_logic_vector(9 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_ArAddr_s"
         },
         {
           "name": "S_AxiLite_ArValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_ArValid_s"
         },
         {
           "name": "S_AxiLite_ArReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_ArReady_s"
         },
         {
           "name": "S_AxiLite_AwAddr",
           "dir": "in",
           "type": "std_logic_vector(9 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_AwAddr_s"
         },
         {
           "name": "S_AxiLite_AwValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_AwValid_s"
         },
         {
           "name": "S_AxiLite_AwReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_AwReady_s"
         },
         {
           "name": "S_AxiLite_WData",
           "dir": "in",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_WData_s"
         },
         {
           "name": "S_AxiLite_WStrb",
           "dir": "in",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_WStrb_s"
         },
         {
           "name": "S_AxiLite_WValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_WValid_s"
         },
         {
           "name": "S_AxiLite_WReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_WReady_s"
         },
         {
           "name": "S_AxiLite_BResp",
           "dir": "out",
           "type": "std_logic_vector(1 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_BResp_s"
         },
         {
           "name": "S_AxiLite_BValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_BValid_s"
         },
         {
           "name": "S_AxiLite_BReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_BReady_s"
         },
         {
           "name": "S_AxiLite_RData",
           "dir": "out",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_RData_s"
         },
         {
           "name": "S_AxiLite_RResp",
           "dir": "out",
           "type": "std_logic_vector(1 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_RResp_s"
         },
         {
           "name": "S_AxiLite_RValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_RValid_s"
         },
         {
           "name": "S_AxiLite_RReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_S_AxiLite_RReady_s"
         },
         {
           "name": "Irq",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Axi_AwAddr",
           "dir": "out",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_AwAddr_s"
         },
         {
           "name": "M_Axi_AwLen",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_AwLen_s"
         },
         {
           "name": "M_Axi_AwSize",
           "dir": "out",
           "type": "std_logic_vector(2 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_AwSize_s"
         },
         {
           "name": "M_Axi_AwBurst",
           "dir": "out",
           "type": "std_logic_vector(1 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_AwBurst_s"
         },
         {
           "name": "M_Axi_AwLock",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_AwLock_s"
         },
         {
           "name": "M_Axi_AwCache",
           "dir": "out",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_AwCache_s"
         },
         {
           "name": "M_Axi_AwProt",
           "dir": "out",
           "type": "std_logic_vector(2 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_AwProt_s"
         },
         {
           "name": "M_Axi_AwValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_AwValid_s"
         },
         {
           "name": "M_Axi_AwReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_AwReady_s"
         },
         {
           "name": "M_Axi_WData",
           "dir": "out",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_WData_s"
         },
         {
           "name": "M_Axi_WStrb",
           "dir": "out",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_WStrb_s"
         },
         {
           "name": "M_Axi_WLast",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_WLast_s"
         },
         {
           "name": "M_Axi_WValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_WValid_s"
         },
         {
           "name": "M_Axi_WReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_WReady_s"
         },
         {
           "name": "M_Axi_BResp",
           "dir": "in",
           "type": "std_logic_vector(1 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_BResp_s"
         },
         {
           "name": "M_Axi_BValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_BValid_s"
         },
         {
           "name": "M_Axi_BReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_BReady_s"
         },
         {
           "name": "M_Axi_ArAddr",
           "dir": "out",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_ArAddr_s"
         },
         {
           "name": "M_Axi_ArLen",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_ArLen_s"
         },
         {
           "name": "M_Axi_ArSize",
           "dir": "out",
           "type": "std_logic_vector(2 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_ArSize_s"
         },
         {
           "name": "M_Axi_ArBurst",
           "dir": "out",
           "type": "std_logic_vector(1 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_ArBurst_s"
         },
         {
           "name": "M_Axi_ArLock",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_ArLock_s"
         },
         {
           "name": "M_Axi_ArCache",
           "dir": "out",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_ArCache_s"
         },
         {
           "name": "M_Axi_ArProt",
           "dir": "out",
           "type": "std_logic_vector(2 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_ArProt_s"
         },
         {
           "name": "M_Axi_ArValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_ArValid_s"
         },
         {
           "name": "M_Axi_ArReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_ArReady_s"
         },
         {
           "name": "M_Axi_RData",
           "dir": "in",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_RData_s"
         },
         {
           "name": "M_Axi_RResp",
           "dir": "in",
           "type": "std_logic_vector(1 downto 0)",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_RResp_s"
         },
         {
           "name": "M_Axi_RLast",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_RLast_s"
         },
         {
           "name": "M_Axi_RValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_RValid_s"
         },
         {
           "name": "M_Axi_RReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "rmap0_M_Axi_RReady_s"
         },
         {
           "name": "Auth_Valid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Auth_Tla",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Auth_Instr",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Auth_Key",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Auth_Ila",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Auth_Tid",
           "dir": "out",
           "type": "std_logic_vector(15 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Auth_Addr",
           "dir": "out",
           "type": "std_logic_vector(39 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Auth_Len",
           "dir": "out",
           "type": "std_logic_vector(23 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Auth_RspValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "'0'"
@@ -1793,6 +2175,7 @@
           "name": "Auth_RspAccept",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "'0'"
@@ -1801,60 +2184,70 @@
           "name": "Ind_Valid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Ind_Tla",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Ind_Instr",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Ind_Ila",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Ind_Tid",
           "dir": "out",
           "type": "std_logic_vector(15 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Ind_Addr",
           "dir": "out",
           "type": "std_logic_vector(39 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Ind_Len",
           "dir": "out",
           "type": "std_logic_vector(23 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Ind_Status",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "Ind_Replied",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "S_Req_Valid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "'0'"
@@ -1863,12 +2256,14 @@
           "name": "S_Req_Ready",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "S_Req_Code",
           "dir": "in",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "\"0000\""
@@ -1877,6 +2272,7 @@
           "name": "S_Req_TgtAddr",
           "dir": "in",
           "type": "std_logic_vector(63 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "(others => '0')"
@@ -1885,6 +2281,7 @@
           "name": "S_Req_TgtAddrLen",
           "dir": "in",
           "type": "std_logic_vector(4 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "(others => '0')"
@@ -1893,6 +2290,7 @@
           "name": "S_Req_Tla",
           "dir": "in",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "x\"FE\""
@@ -1901,6 +2299,7 @@
           "name": "S_Req_Key",
           "dir": "in",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "x\"00\""
@@ -1909,6 +2308,7 @@
           "name": "S_Req_ReplyAddr",
           "dir": "in",
           "type": "std_logic_vector(95 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "(others => '0')"
@@ -1917,6 +2317,7 @@
           "name": "S_Req_ReplyAddrLen",
           "dir": "in",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "(others => '0')"
@@ -1925,6 +2326,7 @@
           "name": "S_Req_Ila",
           "dir": "in",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "x\"FE\""
@@ -1933,6 +2335,7 @@
           "name": "S_Req_Tid",
           "dir": "in",
           "type": "std_logic_vector(15 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "(others => '0')"
@@ -1941,6 +2344,7 @@
           "name": "S_Req_Addr",
           "dir": "in",
           "type": "std_logic_vector(39 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "(others => '0')"
@@ -1949,6 +2353,7 @@
           "name": "S_Req_Len",
           "dir": "in",
           "type": "std_logic_vector(23 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "(others => '0')"
@@ -1957,6 +2362,7 @@
           "name": "S_ReqData_TData",
           "dir": "in",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "(others => '0')"
@@ -1965,6 +2371,7 @@
           "name": "S_ReqData_TValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "'0'"
@@ -1973,18 +2380,21 @@
           "name": "S_ReqData_TReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Conf_Valid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Conf_Ready",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "'1'"
@@ -1993,54 +2403,63 @@
           "name": "M_Conf_Tid",
           "dir": "out",
           "type": "std_logic_vector(15 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Conf_Instr",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Conf_Status",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Conf_Len",
           "dir": "out",
           "type": "std_logic_vector(23 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_Conf_Error",
           "dir": "out",
           "type": "std_logic_vector(1 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_RepData_TData",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_RepData_TLast",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_RepData_TValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "open"
         },
         {
           "name": "M_RepData_TReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": null,
           "useDefault": true,
           "default": "'1'"
@@ -2053,7 +2472,7 @@
       "library": "openspp",
       "block": "openspp/spp_nchar",
       "origin": "user",
-      "domain": "sys",
+      "domain": "spw",
       "generics": [
         {
           "name": "DataWidth_g",
@@ -2067,132 +2486,158 @@
           "name": "Clk",
           "dir": "in",
           "type": "std_logic",
-          "actual": "Clk_sys"
+          "domain": "spw",
+          "actual": "Clk_spw"
         },
         {
           "name": "Rst",
           "dir": "in",
           "type": "std_logic",
-          "actual": "auto_rst_sys_RstOut_s"
+          "domain": "spw",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain Port clock (clock Clk): the output of the reset generator auto_rst_spw."
+          },
+          "actual": "auto_rst_spw_RstOut_s"
         },
         {
           "name": "S_Link_Valid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_S_Link_Valid_s"
         },
         {
           "name": "S_Link_Ready",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_S_Link_Ready_s"
         },
         {
           "name": "S_Link_Data",
           "dir": "in",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "spw",
           "actual": "nchar0_S_Link_Data_s"
         },
         {
           "name": "S_Link_Keep",
           "dir": "in",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "spw",
           "actual": "nchar0_S_Link_Keep_s"
         },
         {
           "name": "S_Link_Last",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_S_Link_Last_s"
         },
         {
           "name": "S_Link_User",
           "dir": "in",
           "type": "std_logic_vector(4 downto 0)",
+          "domain": "spw",
           "actual": "nchar0_S_Link_User_s"
         },
         {
           "name": "M_NChar_Valid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_M_NChar_Valid_s"
         },
         {
           "name": "M_NChar_Ready",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_M_NChar_Ready_s"
         },
         {
           "name": "M_NChar_Data",
           "dir": "out",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "nchar0_M_NChar_Data_s"
         },
         {
           "name": "M_NChar_Last",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_M_NChar_Last_s"
         },
         {
           "name": "S_NChar_Valid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_S_NChar_Valid_s"
         },
         {
           "name": "S_NChar_Ready",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_S_NChar_Ready_s"
         },
         {
           "name": "S_NChar_Data",
           "dir": "in",
           "type": "std_logic_vector(7 downto 0)",
+          "domain": "spw",
           "actual": "nchar0_S_NChar_Data_s"
         },
         {
           "name": "S_NChar_Last",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_S_NChar_Last_s"
         },
         {
           "name": "M_Link_Valid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_M_Link_Valid_s"
         },
         {
           "name": "M_Link_Ready",
           "dir": "in",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_M_Link_Ready_s"
         },
         {
           "name": "M_Link_Data",
           "dir": "out",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "spw",
           "actual": "nchar0_M_Link_Data_s"
         },
         {
           "name": "M_Link_Keep",
           "dir": "out",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "spw",
           "actual": "nchar0_M_Link_Keep_s"
         },
         {
           "name": "M_Link_Last",
           "dir": "out",
           "type": "std_logic",
+          "domain": "spw",
           "actual": "nchar0_M_Link_Last_s"
         },
         {
           "name": "M_Link_User",
           "dir": "out",
           "type": "std_logic_vector(0 downto 0)",
+          "domain": "spw",
           "actual": "nchar0_M_Link_User_s"
         }
       ]
@@ -2213,9 +2658,9 @@
         },
         {
           "name": "NumTx_g",
-          "value": 2,
-          "vhdl": "2",
-          "default": false
+          "value": 1,
+          "vhdl": "1",
+          "default": true
         },
         {
           "name": "NumRx_g",
@@ -2319,289 +2764,903 @@
           "name": "Clk",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "Clk_sys"
         },
         {
           "name": "Rst",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain System clock (clock Clk): the output of the reset generator auto_rst_sys."
+          },
           "actual": "auto_rst_sys_RstOut_s"
         },
         {
           "name": "S_Tx_Valid",
           "dir": "in",
-          "type": "std_logic_vector(1 downto 0)",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_Tx_Valid_s"
         },
         {
           "name": "S_Tx_Ready",
           "dir": "out",
-          "type": "std_logic_vector(1 downto 0)",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_Tx_Ready_s"
         },
         {
           "name": "S_Tx_Data",
           "dir": "in",
-          "type": "std_logic_vector(63 downto 0)",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_Tx_Data_s"
         },
         {
           "name": "S_Tx_Keep",
           "dir": "in",
-          "type": "std_logic_vector(7 downto 0)",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_Tx_Keep_s"
         },
         {
           "name": "S_Tx_Last",
           "dir": "in",
-          "type": "std_logic_vector(1 downto 0)",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_Tx_Last_s"
         },
         {
           "name": "S_Tx_User",
           "dir": "in",
-          "type": "std_logic_vector(55 downto 0)",
+          "type": "std_logic_vector(27 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_Tx_User_s"
         },
         {
           "name": "M_Rx_Valid",
           "dir": "out",
           "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
           "actual": "spp0_M_Rx_Valid_s"
         },
         {
           "name": "M_Rx_Ready",
           "dir": "in",
           "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
           "actual": "spp0_M_Rx_Ready_s"
         },
         {
           "name": "M_Rx_Data",
           "dir": "out",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
           "actual": "spp0_M_Rx_Data_s"
         },
         {
           "name": "M_Rx_Keep",
           "dir": "out",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
           "actual": "spp0_M_Rx_Keep_s"
         },
         {
           "name": "M_Rx_Last",
           "dir": "out",
           "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
           "actual": "spp0_M_Rx_Last_s"
         },
         {
           "name": "M_Rx_User",
           "dir": "out",
           "type": "std_logic_vector(21 downto 0)",
+          "domain": "sys",
           "actual": "spp0_M_Rx_User_s"
         },
         {
           "name": "M_Link_Valid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_M_Link_Valid_s"
         },
         {
           "name": "M_Link_Ready",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_M_Link_Ready_s"
         },
         {
           "name": "M_Link_Data",
           "dir": "out",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
           "actual": "spp0_M_Link_Data_s"
         },
         {
           "name": "M_Link_Keep",
           "dir": "out",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
           "actual": "spp0_M_Link_Keep_s"
         },
         {
           "name": "M_Link_Last",
           "dir": "out",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_M_Link_Last_s"
         },
         {
           "name": "M_Link_User",
           "dir": "out",
           "type": "std_logic_vector(4 downto 0)",
+          "domain": "sys",
           "actual": "spp0_M_Link_User_s"
         },
         {
           "name": "S_Link_Valid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_Link_Valid_s"
         },
         {
           "name": "S_Link_Ready",
           "dir": "out",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_Link_Ready_s"
         },
         {
           "name": "S_Link_Data",
           "dir": "in",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_Link_Data_s"
         },
         {
           "name": "S_Link_Keep",
           "dir": "in",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_Link_Keep_s"
         },
         {
           "name": "S_Link_Last",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_Link_Last_s"
         },
         {
           "name": "S_Link_User",
           "dir": "in",
           "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_Link_User_s"
         },
         {
           "name": "S_AxiLite_ArAddr",
           "dir": "in",
           "type": "std_logic_vector(10 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_ArAddr_s"
         },
         {
           "name": "S_AxiLite_ArValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_ArValid_s"
         },
         {
           "name": "S_AxiLite_ArReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_ArReady_s"
         },
         {
           "name": "S_AxiLite_AwAddr",
           "dir": "in",
           "type": "std_logic_vector(10 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_AwAddr_s"
         },
         {
           "name": "S_AxiLite_AwValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_AwValid_s"
         },
         {
           "name": "S_AxiLite_AwReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_AwReady_s"
         },
         {
           "name": "S_AxiLite_WData",
           "dir": "in",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_WData_s"
         },
         {
           "name": "S_AxiLite_WStrb",
           "dir": "in",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_WStrb_s"
         },
         {
           "name": "S_AxiLite_WValid",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_WValid_s"
         },
         {
           "name": "S_AxiLite_WReady",
           "dir": "out",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_WReady_s"
         },
         {
           "name": "S_AxiLite_BResp",
           "dir": "out",
           "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_BResp_s"
         },
         {
           "name": "S_AxiLite_BValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_BValid_s"
         },
         {
           "name": "S_AxiLite_BReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_BReady_s"
         },
         {
           "name": "S_AxiLite_RData",
           "dir": "out",
           "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_RData_s"
         },
         {
           "name": "S_AxiLite_RResp",
           "dir": "out",
           "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_RResp_s"
         },
         {
           "name": "S_AxiLite_RValid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_RValid_s"
         },
         {
           "name": "S_AxiLite_RReady",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "spp0_S_AxiLite_RReady_s"
         },
         {
           "name": "Irq",
           "dir": "out",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "open"
         },
         {
           "name": "Err_Valid",
           "dir": "out",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "open"
         },
         {
           "name": "Err_Code",
           "dir": "out",
           "type": "std_logic_vector(4 downto 0)",
+          "domain": "sys",
           "actual": "open"
         },
         {
           "name": "Err_Port",
           "dir": "out",
           "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
           "actual": "open"
         },
         {
           "name": "Err_Apid",
           "dir": "out",
           "type": "std_logic_vector(10 downto 0)",
+          "domain": "sys",
           "actual": "open"
+        }
+      ]
+    },
+    {
+      "id": "auto_cdc_c5",
+      "entity": "olo_ft_fifo_async",
+      "library": "olo",
+      "block": "olo/olo_ft_fifo_async",
+      "origin": "auto",
+      "role": "cdc",
+      "reason": "nchar0.M_Link runs in Port clock, spp0.S_Link in System clock.",
+      "connection": "c5",
+      "domain": "spw",
+      "generics": [
+        {
+          "name": "Width_g",
+          "value": 38,
+          "vhdl": "38",
+          "default": false
+        },
+        {
+          "name": "Depth_g",
+          "value": 32,
+          "vhdl": "32",
+          "default": false
+        },
+        {
+          "name": "AlmFullOn_g",
+          "value": false,
+          "vhdl": "false",
+          "default": true
+        },
+        {
+          "name": "AlmFullLevel_g",
+          "value": 0,
+          "vhdl": "0",
+          "default": true
+        },
+        {
+          "name": "AlmEmptyOn_g",
+          "value": false,
+          "vhdl": "false",
+          "default": true
+        },
+        {
+          "name": "AlmEmptyLevel_g",
+          "value": 0,
+          "vhdl": "0",
+          "default": true
+        },
+        {
+          "name": "RamStyle_g",
+          "value": "auto",
+          "vhdl": "\"auto\"",
+          "default": true
+        },
+        {
+          "name": "RamBehavior_g",
+          "value": "RBW",
+          "vhdl": "\"RBW\"",
+          "default": true
+        },
+        {
+          "name": "ReadyRstState_g",
+          "value": "1",
+          "vhdl": "'1'",
+          "default": true
+        },
+        {
+          "name": "Optimization_g",
+          "value": "SPEED",
+          "vhdl": "\"SPEED\"",
+          "default": true
+        },
+        {
+          "name": "SyncStages_g",
+          "value": 2,
+          "vhdl": "2",
+          "default": true
+        },
+        {
+          "name": "SyncTmr_g",
+          "value": true,
+          "vhdl": "true",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "name": "In_Clk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "Clk_spw"
+        },
+        {
+          "name": "In_Rst",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "spw",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain Port clock (clock In_Clk): the output of the reset generator auto_rst_spw."
+          },
+          "actual": "auto_rst_spw_RstOut_s"
+        },
+        {
+          "name": "In_RstOut",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "In_Data",
+          "dir": "in",
+          "type": "std_logic_vector(37 downto 0)",
+          "domain": "spw",
+          "actual": "auto_cdc_c5_In_Data_s"
+        },
+        {
+          "name": "In_Valid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "auto_cdc_c5_In_Valid_s"
+        },
+        {
+          "name": "In_Ready",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "auto_cdc_c5_In_Ready_s"
+        },
+        {
+          "name": "In_Full",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "In_Empty",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "In_AlmFull",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "In_AlmEmpty",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "In_Level",
+          "dir": "out",
+          "type": "std_logic_vector(5 downto 0)",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "Out_Clk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "Clk_sys"
+        },
+        {
+          "name": "Out_Rst",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain System clock (clock Out_Clk): the output of the reset generator auto_rst_sys."
+          },
+          "actual": "auto_rst_sys_RstOut_s"
+        },
+        {
+          "name": "Out_RstOut",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Out_Data",
+          "dir": "out",
+          "type": "std_logic_vector(37 downto 0)",
+          "domain": "sys",
+          "actual": "auto_cdc_c5_Out_Data_s"
+        },
+        {
+          "name": "Out_Valid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "auto_cdc_c5_Out_Valid_s"
+        },
+        {
+          "name": "Out_Ready",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "auto_cdc_c5_Out_Ready_s"
+        },
+        {
+          "name": "Out_EccSec",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Out_EccDed",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Out_Full",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Out_Empty",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Out_AlmFull",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Out_AlmEmpty",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Out_Level",
+          "dir": "out",
+          "type": "std_logic_vector(5 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "In_ErrInj_BitFlip",
+          "dir": "in",
+          "type": "std_logic_vector(44 downto 0)",
+          "domain": "spw",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "In_ErrInj_Valid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": null,
+          "useDefault": true,
+          "default": "'0'"
+        }
+      ]
+    },
+    {
+      "id": "auto_cdc_c6",
+      "entity": "olo_ft_fifo_async",
+      "library": "olo",
+      "block": "olo/olo_ft_fifo_async",
+      "origin": "auto",
+      "role": "cdc",
+      "reason": "spp0.M_Link runs in System clock, nchar0.S_Link in Port clock.",
+      "connection": "c6",
+      "domain": "sys",
+      "generics": [
+        {
+          "name": "Width_g",
+          "value": 42,
+          "vhdl": "42",
+          "default": false
+        },
+        {
+          "name": "Depth_g",
+          "value": 32,
+          "vhdl": "32",
+          "default": false
+        },
+        {
+          "name": "AlmFullOn_g",
+          "value": false,
+          "vhdl": "false",
+          "default": true
+        },
+        {
+          "name": "AlmFullLevel_g",
+          "value": 0,
+          "vhdl": "0",
+          "default": true
+        },
+        {
+          "name": "AlmEmptyOn_g",
+          "value": false,
+          "vhdl": "false",
+          "default": true
+        },
+        {
+          "name": "AlmEmptyLevel_g",
+          "value": 0,
+          "vhdl": "0",
+          "default": true
+        },
+        {
+          "name": "RamStyle_g",
+          "value": "auto",
+          "vhdl": "\"auto\"",
+          "default": true
+        },
+        {
+          "name": "RamBehavior_g",
+          "value": "RBW",
+          "vhdl": "\"RBW\"",
+          "default": true
+        },
+        {
+          "name": "ReadyRstState_g",
+          "value": "1",
+          "vhdl": "'1'",
+          "default": true
+        },
+        {
+          "name": "Optimization_g",
+          "value": "SPEED",
+          "vhdl": "\"SPEED\"",
+          "default": true
+        },
+        {
+          "name": "SyncStages_g",
+          "value": 2,
+          "vhdl": "2",
+          "default": true
+        },
+        {
+          "name": "SyncTmr_g",
+          "value": true,
+          "vhdl": "true",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "name": "In_Clk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "Clk_sys"
+        },
+        {
+          "name": "In_Rst",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain System clock (clock In_Clk): the output of the reset generator auto_rst_sys."
+          },
+          "actual": "auto_rst_sys_RstOut_s"
+        },
+        {
+          "name": "In_RstOut",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "In_Data",
+          "dir": "in",
+          "type": "std_logic_vector(41 downto 0)",
+          "domain": "sys",
+          "actual": "auto_cdc_c6_In_Data_s"
+        },
+        {
+          "name": "In_Valid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "auto_cdc_c6_In_Valid_s"
+        },
+        {
+          "name": "In_Ready",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "auto_cdc_c6_In_Ready_s"
+        },
+        {
+          "name": "In_Full",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "In_Empty",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "In_AlmFull",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "In_AlmEmpty",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "In_Level",
+          "dir": "out",
+          "type": "std_logic_vector(5 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Out_Clk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "Clk_spw"
+        },
+        {
+          "name": "Out_Rst",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "spw",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain Port clock (clock Out_Clk): the output of the reset generator auto_rst_spw."
+          },
+          "actual": "auto_rst_spw_RstOut_s"
+        },
+        {
+          "name": "Out_RstOut",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "Out_Data",
+          "dir": "out",
+          "type": "std_logic_vector(41 downto 0)",
+          "domain": "spw",
+          "actual": "auto_cdc_c6_Out_Data_s"
+        },
+        {
+          "name": "Out_Valid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "auto_cdc_c6_Out_Valid_s"
+        },
+        {
+          "name": "Out_Ready",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "auto_cdc_c6_Out_Ready_s"
+        },
+        {
+          "name": "Out_EccSec",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "Out_EccDed",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "Out_Full",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "Out_Empty",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "Out_AlmFull",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "Out_AlmEmpty",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "Out_Level",
+          "dir": "out",
+          "type": "std_logic_vector(5 downto 0)",
+          "domain": "spw",
+          "actual": "open"
+        },
+        {
+          "name": "In_ErrInj_BitFlip",
+          "dir": "in",
+          "type": "std_logic_vector(48 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "In_ErrInj_Valid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "'0'"
         }
       ]
     },
@@ -2651,31 +3710,37 @@
           "name": "Clk",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "Clk_sys"
         },
         {
           "name": "RstOut",
           "dir": "out",
           "type": "std_logic",
+          "domain": "sys",
           "actual": "auto_rst_sys_RstOut_s"
         },
         {
           "name": "RstIn",
           "dir": "in",
           "type": "std_logic",
+          "reset": {
+            "kind": "async",
+            "note": "Asynchronous reset input (polarity from RstInPolarity_g)."
+          },
           "actual": "Rst"
         }
       ]
     },
     {
-      "id": "auto_rst_link",
+      "id": "auto_rst_spw",
       "entity": "olo_base_reset_gen",
       "library": "olo",
       "block": "olo/olo_base_reset_gen",
       "origin": "auto",
       "role": "reset",
-      "reason": "Synchronous reset of Link clock.",
-      "domain": "link",
+      "reason": "Synchronous reset of Port clock.",
+      "domain": "spw",
       "generics": [
         {
           "name": "RstPulseCycles_g",
@@ -2713,24 +3778,82 @@
           "name": "Clk",
           "dir": "in",
           "type": "std_logic",
-          "actual": "Clk_link"
+          "domain": "spw",
+          "actual": "Clk_spw"
         },
         {
           "name": "RstOut",
           "dir": "out",
           "type": "std_logic",
-          "actual": "open"
+          "domain": "spw",
+          "actual": "auto_rst_spw_RstOut_s"
         },
         {
           "name": "RstIn",
           "dir": "in",
           "type": "std_logic",
+          "reset": {
+            "kind": "async",
+            "note": "Asynchronous reset input (polarity from RstInPolarity_g)."
+          },
           "actual": "Rst"
         }
       ]
     }
   ],
   "signals": [
+    {
+      "name": "auto_cdc_c5_In_Data_s",
+      "type": "std_logic_vector(37 downto 0)"
+    },
+    {
+      "name": "auto_cdc_c5_In_Ready_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "auto_cdc_c5_In_Valid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "auto_cdc_c5_Out_Data_s",
+      "type": "std_logic_vector(37 downto 0)"
+    },
+    {
+      "name": "auto_cdc_c5_Out_Ready_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "auto_cdc_c5_Out_Valid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "auto_cdc_c6_In_Data_s",
+      "type": "std_logic_vector(41 downto 0)"
+    },
+    {
+      "name": "auto_cdc_c6_In_Ready_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "auto_cdc_c6_In_Valid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "auto_cdc_c6_Out_Data_s",
+      "type": "std_logic_vector(41 downto 0)"
+    },
+    {
+      "name": "auto_cdc_c6_Out_Ready_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "auto_cdc_c6_Out_Valid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "auto_rst_spw_RstOut_s",
+      "type": "std_logic"
+    },
     {
       "name": "auto_rst_sys_RstOut_s",
       "type": "std_logic"
@@ -3213,27 +4336,27 @@
     },
     {
       "name": "spp0_S_Tx_Data_s",
-      "type": "std_logic_vector(63 downto 0)"
+      "type": "std_logic_vector(31 downto 0)"
     },
     {
       "name": "spp0_S_Tx_Keep_s",
-      "type": "std_logic_vector(7 downto 0)"
+      "type": "std_logic_vector(3 downto 0)"
     },
     {
       "name": "spp0_S_Tx_Last_s",
-      "type": "std_logic_vector(1 downto 0)"
+      "type": "std_logic_vector(0 downto 0)"
     },
     {
       "name": "spp0_S_Tx_Ready_s",
-      "type": "std_logic_vector(1 downto 0)"
+      "type": "std_logic_vector(0 downto 0)"
     },
     {
       "name": "spp0_S_Tx_User_s",
-      "type": "std_logic_vector(55 downto 0)"
+      "type": "std_logic_vector(27 downto 0)"
     },
     {
       "name": "spp0_S_Tx_Valid_s",
-      "type": "std_logic_vector(1 downto 0)"
+      "type": "std_logic_vector(0 downto 0)"
     },
     {
       "name": "spw0_M_Pkt_TData_s",
@@ -3474,21 +4597,21 @@
       "signal": "valid"
     },
     {
-      "to": "spp0_S_Link_Data_s",
+      "to": "auto_cdc_c5_In_Data_s(31 downto 0)",
       "from": "nchar0_M_Link_Data_s",
       "kind": "connection",
       "connection": "c5",
       "signal": "data"
     },
     {
-      "to": "spp0_S_Link_Keep_s",
+      "to": "auto_cdc_c5_In_Data_s(35 downto 32)",
       "from": "nchar0_M_Link_Keep_s",
       "kind": "connection",
       "connection": "c5",
       "signal": "keep"
     },
     {
-      "to": "spp0_S_Link_Last_s",
+      "to": "auto_cdc_c5_In_Data_s(36)",
       "from": "nchar0_M_Link_Last_s",
       "kind": "connection",
       "connection": "c5",
@@ -3496,6 +4619,48 @@
     },
     {
       "to": "nchar0_M_Link_Ready_s",
+      "from": "auto_cdc_c5_In_Ready_s",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "ready"
+    },
+    {
+      "to": "auto_cdc_c5_In_Data_s(37)",
+      "from": "nchar0_M_Link_User_s(0)",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "user"
+    },
+    {
+      "to": "auto_cdc_c5_In_Valid_s",
+      "from": "nchar0_M_Link_Valid_s",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "valid"
+    },
+    {
+      "to": "spp0_S_Link_Data_s",
+      "from": "auto_cdc_c5_Out_Data_s(31 downto 0)",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "data"
+    },
+    {
+      "to": "spp0_S_Link_Keep_s",
+      "from": "auto_cdc_c5_Out_Data_s(35 downto 32)",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "keep"
+    },
+    {
+      "to": "spp0_S_Link_Last_s",
+      "from": "auto_cdc_c5_Out_Data_s(36)",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "last"
+    },
+    {
+      "to": "auto_cdc_c5_Out_Ready_s",
       "from": "spp0_S_Link_Ready_s",
       "kind": "connection",
       "connection": "c5",
@@ -3503,34 +4668,34 @@
     },
     {
       "to": "spp0_S_Link_User_s(0)",
-      "from": "nchar0_M_Link_User_s(0)",
+      "from": "auto_cdc_c5_Out_Data_s(37)",
       "kind": "connection",
       "connection": "c5",
       "signal": "user"
     },
     {
       "to": "spp0_S_Link_Valid_s",
-      "from": "nchar0_M_Link_Valid_s",
+      "from": "auto_cdc_c5_Out_Valid_s",
       "kind": "connection",
       "connection": "c5",
       "signal": "valid"
     },
     {
-      "to": "nchar0_S_Link_Data_s",
+      "to": "auto_cdc_c6_In_Data_s(31 downto 0)",
       "from": "spp0_M_Link_Data_s",
       "kind": "connection",
       "connection": "c6",
       "signal": "data"
     },
     {
-      "to": "nchar0_S_Link_Keep_s",
+      "to": "auto_cdc_c6_In_Data_s(35 downto 32)",
       "from": "spp0_M_Link_Keep_s",
       "kind": "connection",
       "connection": "c6",
       "signal": "keep"
     },
     {
-      "to": "nchar0_S_Link_Last_s",
+      "to": "auto_cdc_c6_In_Data_s(36)",
       "from": "spp0_M_Link_Last_s",
       "kind": "connection",
       "connection": "c6",
@@ -3538,6 +4703,48 @@
     },
     {
       "to": "spp0_M_Link_Ready_s",
+      "from": "auto_cdc_c6_In_Ready_s",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "ready"
+    },
+    {
+      "to": "auto_cdc_c6_In_Data_s(41 downto 37)",
+      "from": "spp0_M_Link_User_s",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "user"
+    },
+    {
+      "to": "auto_cdc_c6_In_Valid_s",
+      "from": "spp0_M_Link_Valid_s",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "valid"
+    },
+    {
+      "to": "nchar0_S_Link_Data_s",
+      "from": "auto_cdc_c6_Out_Data_s(31 downto 0)",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "data"
+    },
+    {
+      "to": "nchar0_S_Link_Keep_s",
+      "from": "auto_cdc_c6_Out_Data_s(35 downto 32)",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "keep"
+    },
+    {
+      "to": "nchar0_S_Link_Last_s",
+      "from": "auto_cdc_c6_Out_Data_s(36)",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "last"
+    },
+    {
+      "to": "auto_cdc_c6_Out_Ready_s",
       "from": "nchar0_S_Link_Ready_s",
       "kind": "connection",
       "connection": "c6",
@@ -3545,14 +4752,14 @@
     },
     {
       "to": "nchar0_S_Link_User_s",
-      "from": "spp0_M_Link_User_s",
+      "from": "auto_cdc_c6_Out_Data_s(41 downto 37)",
       "kind": "connection",
       "connection": "c6",
       "signal": "user"
     },
     {
       "to": "nchar0_S_Link_Valid_s",
-      "from": "spp0_M_Link_Valid_s",
+      "from": "auto_cdc_c6_Out_Valid_s",
       "kind": "connection",
       "connection": "c6",
       "signal": "valid"
@@ -3984,13 +5191,13 @@
       "signal": "M_Axi_RReady"
     },
     {
-      "to": "spp0_S_Tx_Data_s(31 downto 0)",
+      "to": "spp0_S_Tx_Data_s",
       "from": "tx0_S_Tx_Data_0",
       "kind": "top",
       "signal": "S_Tx_Data"
     },
     {
-      "to": "spp0_S_Tx_Keep_s(3 downto 0)",
+      "to": "spp0_S_Tx_Keep_s",
       "from": "tx0_S_Tx_Keep_0",
       "kind": "top",
       "signal": "S_Tx_Keep"
@@ -4002,7 +5209,7 @@
       "signal": "S_Tx_Last"
     },
     {
-      "to": "spp0_S_Tx_User_s(27 downto 0)",
+      "to": "spp0_S_Tx_User_s",
       "from": "tx0_S_Tx_User_0",
       "kind": "top",
       "signal": "S_Tx_User"
@@ -4016,42 +5223,6 @@
     {
       "to": "tx0_S_Tx_Ready_0",
       "from": "spp0_S_Tx_Ready_s(0)",
-      "kind": "top",
-      "signal": "S_Tx_Ready"
-    },
-    {
-      "to": "spp0_S_Tx_Data_s(63 downto 32)",
-      "from": "tx1_S_Tx_Data_1",
-      "kind": "top",
-      "signal": "S_Tx_Data"
-    },
-    {
-      "to": "spp0_S_Tx_Keep_s(7 downto 4)",
-      "from": "tx1_S_Tx_Keep_1",
-      "kind": "top",
-      "signal": "S_Tx_Keep"
-    },
-    {
-      "to": "spp0_S_Tx_Last_s(1)",
-      "from": "tx1_S_Tx_Last_1",
-      "kind": "top",
-      "signal": "S_Tx_Last"
-    },
-    {
-      "to": "spp0_S_Tx_User_s(55 downto 28)",
-      "from": "tx1_S_Tx_User_1",
-      "kind": "top",
-      "signal": "S_Tx_User"
-    },
-    {
-      "to": "spp0_S_Tx_Valid_s(1)",
-      "from": "tx1_S_Tx_Valid_1",
-      "kind": "top",
-      "signal": "S_Tx_Valid"
-    },
-    {
-      "to": "tx1_S_Tx_Ready_1",
-      "from": "spp0_S_Tx_Ready_s(1)",
       "kind": "top",
       "signal": "S_Tx_Ready"
     },
@@ -4194,12 +5365,122 @@
       "signal": "S_AxiLite_RReady"
     }
   ],
-  "packing": [],
+  "packing": [
+    {
+      "instance": "auto_cdc_c5",
+      "interface": "In",
+      "width": 38,
+      "fields": [
+        {
+          "signal": "data",
+          "lsb": 0,
+          "width": 32
+        },
+        {
+          "signal": "keep",
+          "lsb": 32,
+          "width": 4
+        },
+        {
+          "signal": "last",
+          "lsb": 36,
+          "width": 1
+        },
+        {
+          "signal": "user",
+          "lsb": 37,
+          "width": 1
+        }
+      ]
+    },
+    {
+      "instance": "auto_cdc_c5",
+      "interface": "Out",
+      "width": 38,
+      "fields": [
+        {
+          "signal": "data",
+          "lsb": 0,
+          "width": 32
+        },
+        {
+          "signal": "keep",
+          "lsb": 32,
+          "width": 4
+        },
+        {
+          "signal": "last",
+          "lsb": 36,
+          "width": 1
+        },
+        {
+          "signal": "user",
+          "lsb": 37,
+          "width": 1
+        }
+      ]
+    },
+    {
+      "instance": "auto_cdc_c6",
+      "interface": "In",
+      "width": 42,
+      "fields": [
+        {
+          "signal": "data",
+          "lsb": 0,
+          "width": 32
+        },
+        {
+          "signal": "keep",
+          "lsb": 32,
+          "width": 4
+        },
+        {
+          "signal": "last",
+          "lsb": 36,
+          "width": 1
+        },
+        {
+          "signal": "user",
+          "lsb": 37,
+          "width": 5
+        }
+      ]
+    },
+    {
+      "instance": "auto_cdc_c6",
+      "interface": "Out",
+      "width": 42,
+      "fields": [
+        {
+          "signal": "data",
+          "lsb": 0,
+          "width": 32
+        },
+        {
+          "signal": "keep",
+          "lsb": 32,
+          "width": 4
+        },
+        {
+          "signal": "last",
+          "lsb": 36,
+          "width": 1
+        },
+        {
+          "signal": "user",
+          "lsb": 37,
+          "width": 5
+        }
+      ]
+    }
+  ],
   "constraints": [
     {
       "kind": "async_clock_groups",
       "clocks": [
         "Clk_link",
+        "Clk_spw",
         "Clk_sys"
       ]
     },
@@ -4243,9 +5524,10 @@
       "commit": "a3c86207790fa91d89e5f02a657f6345de31656e",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files.",
+      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.3 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 and changes no other source, so the cores verified with 4.7.0-ft.2 use it unchanged.",
       "entities": [
-        "olo_base_reset_gen"
+        "olo_base_reset_gen",
+        "olo_ft_fifo_async"
       ]
     },
     {
@@ -4288,6 +5570,14 @@
         "spp_nchar"
       ]
     }
+  ],
+  "context": [
+    "library ieee;",
+    "use ieee.std_logic_1164.all;",
+    "library olo;",
+    "library openwire;",
+    "library openrmap;",
+    "library openspp;"
   ],
   "problems": []
 }

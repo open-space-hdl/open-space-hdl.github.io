@@ -422,8 +422,7 @@ test('performance: 100 blocks open, pan and drag smoothly', async ({ page }, inf
     mkdirSync(SCREENS, { recursive: true });
     writeFileSync(join(SCREENS, `performance-${info.project.name}.json`), `${JSON.stringify(result, null, 2)}\n`);
   }
-  // at least 30 frames per second; WebKit (the Windows build of Playwright) draws the SVG again on every frame of a
-  // pan, which takes about 60 ms at the readable zoom of Fit
-  expect(pan.median).toBeLessThan(info.project.name === 'webkit' ? 100 : 34);
+  // at least 30 frames per second in every browser
+  expect(pan.median).toBeLessThan(34);
   expect(drag.median).toBeLessThan(34);
 });

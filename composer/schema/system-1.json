@@ -104,11 +104,11 @@
               "modules",
               "files"
             ],
-            "description": "modules: one module directory per line, sources in <module>/src/*.vhd; files: one VHDL file per line."
+            "description": "modules: one module directory per line, relative to the repository root (blank lines and lines starting with # are ignored), its sources in <module>/src/*.vhd without a given order inside the module (packages first, then in dependency order, or let the tool order them); files: one VHDL file per line, in compile order."
           },
-          "requires": {
+          "verifiedWith": {
             "type": "string",
-            "description": "Open Logic FT tag the repository is verified with."
+            "description": "Open Logic FT tag the repository is verified with (its open-logic submodule); the system compiles one olo library, see the note of the olo source."
           }
         }
       }
@@ -406,7 +406,8 @@
         "packing",
         "constraints",
         "compile",
-        "problems"
+        "problems",
+        "context"
       ],
       "additionalProperties": false,
       "properties": {
@@ -459,7 +460,47 @@
               },
               "domain": {
                 "$ref": "#/$defs/identifier",
-                "description": "Clock domain of a clock port."
+                "description": "Clock domain of the port: the domain of a clock port, or of the clock of the interface of the port."
+              },
+              "signal": {
+                "type": "string",
+                "description": "Logical signal of the interface that the port carries (data, keep, last, user, valid, ready, a field)."
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "label",
+                    "lsb",
+                    "bits"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Meaning of the field."
+                    },
+                    "lsb": {
+                      "type": "integer",
+                      "description": "Lowest bit of the field in the signal."
+                    },
+                    "bits": {
+                      "type": "integer"
+                    },
+                    "value": {
+                      "type": [
+                        "integer",
+                        "boolean"
+                      ],
+                      "description": "Value of the field (constants only)."
+                    }
+                  }
+                },
+                "description": "Meaning of the bits of the port (the side band of a send port, the user bits of a stream)."
               }
             }
           }
@@ -641,7 +682,31 @@
                     },
                     "default": {
                       "type": "string",
-                      "description": "The VHDL default the port keeps."
+                      "description": "The VHDL default of a port that keeps it (always given with useDefault)."
+                    },
+                    "domain": {
+                      "$ref": "#/$defs/identifier",
+                      "description": "Clock domain of the port: of its clock, of its synchronous reset or of the clock of its interface. Asynchronous resets and ports outside an interface have none."
+                    },
+                    "reset": {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "note"
+                      ],
+                      "additionalProperties": false,
+                      "description": "A reset input: synchronous (from the reset generator of its domain) or asynchronous (the block synchronises the release itself), and why.",
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "sync",
+                            "async"
+                          ]
+                        },
+                        "note": {
+                          "type": "string"
+                        }
+                      }
                     }
                   }
                 }
@@ -708,6 +773,42 @@
               },
               "reason": {
                 "type": "string"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "label",
+                    "lsb",
+                    "bits"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Meaning of the field."
+                    },
+                    "lsb": {
+                      "type": "integer",
+                      "description": "Lowest bit of the field in the signal."
+                    },
+                    "bits": {
+                      "type": "integer"
+                    },
+                    "value": {
+                      "type": [
+                        "integer",
+                        "boolean"
+                      ],
+                      "description": "Value of the field (constants only)."
+                    }
+                  }
+                },
+                "description": "Field map of a constant: the side band constants of a connection or the constants of an instance."
               }
             }
           }
@@ -760,7 +861,7 @@
         },
         "constraints": {
           "type": "array",
-          "description": "Timing and placement constraints in terms of the top level: async_clock_groups (clocks), max_delay (from, to, ns, datapathOnly: the maximum delay between the clocks of two clock domains, for the clock crossings inside a block), false_path (from), io_register (ports), vendor_scoped (file of Open Logic).",
+          "description": "Timing and placement constraints in terms of the top level: async_clock_groups (clocks; a group inside a larger one is left out), max_delay (from, to, ns, datapathOnly: the maximum delay between the clocks of two clock domains, for the clock crossings inside a block), false_path (from), io_register (ports), vendor_scoped (file of Open Logic).",
           "items": {
             "type": "object",
             "required": [
@@ -806,11 +907,11 @@
                   "files",
                   "modules"
                 ],
-                "description": "files: one VHDL file per line, in order; modules: one module directory per line, its sources in <module>/src/*.vhd."
+                "description": "modules: one module directory per line, relative to the repository root (blank lines and lines starting with # are ignored), its sources in <module>/src/*.vhd without a given order inside the module (packages first, then in dependency order, or let the tool order them); files: one VHDL file per line, in compile order."
               },
               "verifiedWith": {
                 "type": "string",
-                "description": "Open Logic FT tag the repository was verified with."
+                "description": "Open Logic FT tag the repository is verified with (as sources[].verifiedWith)."
               },
               "note": {
                 "type": "string"
@@ -830,6 +931,13 @@
             "type": "string"
           },
           "description": "Inconsistencies found while building the netlist (none for a correct catalog)."
+        },
+        "context": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Context clause of the top level: library ieee with std_logic_1164, every library of compile, and a use clause for every package whose constants a generic map names."
         }
       }
     },
@@ -881,6 +989,47 @@
         "brief": {
           "type": "string",
           "description": "Markdown: sources and compile order, the top-level entity, how to write the architecture from resolved, clocks and resets, constraints, notes of the user guides, open checks and a verification plan."
+        }
+      }
+    },
+    "catalogSubset": {
+      "type": "object",
+      "required": [
+        "id",
+        "types",
+        "blocks"
+      ],
+      "description": "Derived by the Composer: the catalog entries of the blocks of the system (placed and inserted) and of their interface types, so that the file explains itself; id is the content identifier of the whole catalog, for change detection.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "kind"
+            ]
+          }
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "entity",
+              "library",
+              "ports",
+              "interfaces"
+            ]
+          }
         }
       }
     }

@@ -64,7 +64,7 @@ Updating a core: set its new commit in `_composer/catalog/sources.yml`, then
 ```sh
 python tools/composer_catalog.py build    # requires PyYAML
 python tools/composer_catalog.py check    # requires jsonschema for the example files
-node tools/composer_examples.mjs           # or with example names (spacefibre-node ...) for only those
+node tools/composer_examples.mjs           # or with example names (spacefibre_node ...) for only those
 ```
 
 A changed golden file in `tests/golden/` shows how the update changes the netlists of the example systems; review it

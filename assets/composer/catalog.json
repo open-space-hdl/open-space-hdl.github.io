@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "1b1836436255",
+ "id": "4a5bef7a4f02",
  "sources": [
   {
    "id": "openwire",
@@ -13,7 +13,7 @@
    "library": "openwire",
    "fileList": "component_list.txt",
    "fileListFormat": "modules",
-   "requires": "4.7.0-ft.2",
+   "verifiedWith": "4.7.0-ft.2",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer."
   },
   {
@@ -26,7 +26,7 @@
    "library": "openrmap",
    "fileList": "component_list.txt",
    "fileListFormat": "modules",
-   "requires": "4.7.0-ft.2",
+   "verifiedWith": "4.7.0-ft.2",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer."
   },
   {
@@ -39,7 +39,7 @@
    "library": "openspp",
    "fileList": "component_list.txt",
    "fileListFormat": "modules",
-   "requires": "4.7.0-ft.2",
+   "verifiedWith": "4.7.0-ft.2",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer."
   },
   {
@@ -52,7 +52,7 @@
    "library": "openfibre",
    "fileList": "component_list.txt",
    "fileListFormat": "modules",
-   "requires": "4.7.0-ft.2",
+   "verifiedWith": "4.7.0-ft.2",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. component_list.txt lists the technology-independent modules; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes)."
   },
   {
@@ -65,7 +65,7 @@
    "library": "opencrypto",
    "fileList": "component_list.txt",
    "fileListFormat": "modules",
-   "requires": "4.7.0-ft.3",
+   "verifiedWith": "4.7.0-ft.3",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer."
   },
   {
@@ -78,7 +78,7 @@
    "library": "olo",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files.",
+   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.3 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 and changes no other source, so the cores verified with 4.7.0-ft.2 use it unchanged.",
    "commit": "a3c86207790fa91d89e5f02a657f6345de31656e"
   }
  ],
@@ -6181,7 +6181,32 @@
      "generic": "DenseOutput_g",
      "value": true,
      "message": "Set DenseOutput_g = true, so that every message leaves as one gapless byte string (IV, AAD, ciphertext, tag); the sectioned output is for the input of a second core (decryption)."
+    },
+    {
+     "kind": "flag_dropped",
+     "interface": "M_Out",
+     "signal": "user",
+     "bit": 2,
+     "unlessGeneric": "ReleaseBuffer_g",
+     "unlessInterface": "M_Sts",
+     "message": "The error flag of the messages (user bit 2 on the last beat) is not passed on, so a message that failed (for example with KEY) is sent like a good one. Set ReleaseBuffer_g = true (a message leaves the core only when its status is OK) with ReleaseBytes_g of at least the longest message, or consume the status at M_Sts."
     }
+   ],
+   "idRegister": {
+    "address": "0x000",
+    "value": "0x4F435201"
+   },
+   "init": [
+    {
+     "text": "After the reset wait until STATUS (0x014) bit 0 BUSY is 0: the key table erases every slot."
+    },
+    {
+     "text": "Load every key slot in use: write the key to KEY0 to KEY7 (0x040 + 4 n; key byte 4 n in bits 31:24; 4, 6 or 8 words), for generated IVs the fixed field to IV_FIXED (0x060) and the first invocation counter to IV_COUNT_LO (0x064) and IV_COUNT_HI (0x068), then write KEY_LOAD (0x06C) with START (bit 31), IV_GEN (bit 8) and the slot (bits 7:0), for example 0x80000100 for slot 0 with generated IVs; wait until STATUS.BUSY is 0."
+    }
+   ],
+   "endToEnd": "Load the key slot, send a packet and check the output: with generated IVs the first 4 bytes of every message are IV_FIXED, the next 8 the invocation counter; decrypt it with AES-GCM in the test bench (or a second core) and compare.",
+   "packages": [
+    "ocr_pkg"
    ],
    "generics": [
     {
@@ -6369,8 +6394,7 @@
       "fields": [
        {
         "name": "section",
-        "label": "Section (0 DATA",
-        "1 AAD)": null,
+        "label": "Section (0 DATA, 1 AAD)",
         "lsb": 0,
         "bits": 2,
         "kind": "integer",
@@ -6401,6 +6425,20 @@
      "label": "Messages out",
      "description": "user(1:0) is the section of the beat (dense output: of its first byte), user(2) the error flag on the last beat.",
      "tieOff": "default",
+     "userFields": [
+      {
+       "name": "section",
+       "label": "Section of the beat (dense output: of its first byte): 11 IV, 01 AAD, 00 DATA, 10 TAG",
+       "lsb": 0,
+       "bits": 2
+      },
+      {
+       "name": "error",
+       "label": "Error flag on the last beat: the status of the message is not OK",
+       "lsb": 2,
+       "bits": 1
+      }
+     ],
      "signals": {
       "data": "M_Out_Data",
       "keep": "M_Out_Keep",
@@ -6797,8 +6835,25 @@
       "generic": "TxBufferBytes_g"
      },
      "bytes": "ChunkBytes_g + 32",
-     "max": 65536
+     "max": 65536,
+     "release": {
+      "generic": "ReleaseBytes_g",
+      "enabledBy": "ReleaseBuffer_g"
+     },
+     "packet": {
+      "bytes": "ChunkBytes_g + 38",
+      "generic": "RxBufferBytes_g",
+      "what": "Space Packets"
+     }
     }
+   ],
+   "init": [
+    {
+     "text": "Load the key slot Cfg_Slot of the AES-GCM core for generated IVs (KEY_LOAD with IV_GEN = '1', see the core) before the first packet; without a loaded slot every chunk fails with KEY."
+    }
+   ],
+   "packages": [
+    "ocr_pkg"
    ],
    "generics": [
     {
@@ -6963,6 +7018,14 @@
      "label": "Messages out",
      "description": "AAD section with the position of the chunk, then the chunk as DATA section, to S_In of the core.",
      "mustServe": true,
+     "userFields": [
+      {
+       "name": "section",
+       "label": "Section of the beat: 01 AAD, 00 DATA",
+       "lsb": 0,
+       "bits": 2
+      }
+     ],
      "signals": {
       "data": "M_Out_Data",
       "keep": "M_Out_Keep",
@@ -7215,6 +7278,19 @@
      "note": "Clock crossings inside the core (Open Logic): for every pair of its clocks, in both directions, the period of the faster clock."
     }
    ],
+   "idRegister": {
+    "address": "0x000",
+    "value": "0x0FB10007"
+   },
+   "init": [
+    {
+     "text": "Start the link at one end: write LANE_CTRL (0x100 + 0x20 i) of every lane i = 0x63 (LaneStart, AutoStart, TxEn, RxEn); the reset value 0x62 (AutoStart) starts when the far end sends."
+    },
+    {
+     "text": "Wait for LANE_STATUS (0x104 + 0x20 i) bits 3:0 = 7 (Active) of the lanes and DL_STATUS (0x010) bits 1:0 = 3 (link initialised); VC_HAS_CREDIT (0x030) shows the VCs that may send."
+    }
+   ],
+   "endToEnd": "Connect two nodes (in a simulation without the transceiver models: two cores joined by tb/ofb_tb_pa_model.vhd of OpenFibre), start the link at one end and send a packet on a virtual channel; it arrives on the same virtual channel at the other end.",
    "generics": [
     {
      "name": "NumVc_g",
@@ -7353,6 +7429,14 @@
      "description": "Packets to send on the virtual channel: one SpaceFibre packet (destination address and cargo) per stream packet; user with last: '1' ends the packet with an EEP.",
      "vector": "NumVc_g",
      "tieOff": "zero",
+     "userFields": [
+      {
+       "name": "eep",
+       "label": "Error end of packet (EEP), valid with last",
+       "lsb": 0,
+       "bits": 1
+      }
+     ],
      "signals": {
       "data": "S_Vc_TData",
       "keep": "S_Vc_TKeep",
@@ -7376,6 +7460,14 @@
      "description": "Received packets of the virtual channel; user with last: '1' the packet ended with an EEP. A channel that is not read stops the far end through flow control.",
      "vector": "NumVc_g",
      "tieOff": "zero",
+     "userFields": [
+      {
+       "name": "eep",
+       "label": "Error end of packet (EEP), valid with last",
+       "lsb": 0,
+       "bits": 1
+      }
+     ],
      "signals": {
       "data": "M_Vc_TData",
       "keep": "M_Vc_TKeep",
@@ -7398,6 +7490,26 @@
      "label": "Broadcasts to send",
      "description": "64-bit broadcast messages; user: channel 7:0, B_TYPE 15:8, DELAYED 16.",
      "tieOff": "zero",
+     "userFields": [
+      {
+       "name": "channel",
+       "label": "Broadcast channel",
+       "lsb": 0,
+       "bits": 8
+      },
+      {
+       "name": "btype",
+       "label": "B_TYPE",
+       "lsb": 8,
+       "bits": 8
+      },
+      {
+       "name": "delayed",
+       "label": "DELAYED",
+       "lsb": 16,
+       "bits": 1
+      }
+     ],
      "signals": {
       "data": "S_Bc_TData",
       "user": "S_Bc_TUser",
@@ -7417,6 +7529,32 @@
      "label": "Received broadcasts",
      "description": "Received broadcast messages; user: channel 7:0, B_TYPE 15:8, DELAYED 16, LATE 17. Four messages are buffered; further ones are discarded and flagged.",
      "tieOff": "zero",
+     "userFields": [
+      {
+       "name": "channel",
+       "label": "Broadcast channel",
+       "lsb": 0,
+       "bits": 8
+      },
+      {
+       "name": "btype",
+       "label": "B_TYPE",
+       "lsb": 8,
+       "bits": 8
+      },
+      {
+       "name": "delayed",
+       "label": "DELAYED",
+       "lsb": 16,
+       "bits": 1
+      },
+      {
+       "name": "late",
+       "label": "LATE (not sent immediately)",
+       "lsb": 17,
+       "bits": 1
+      }
+     ],
      "signals": {
       "data": "M_Bc_TData",
       "user": "M_Bc_TUser",
@@ -8323,6 +8461,18 @@
      ],
      "message": "The RMAP node normally runs on the user clock of its SpaceWire port; an asynchronous FIFO was inserted instead."
     }
+   ],
+   "idRegister": {
+    "address": "0x000",
+    "value": "0x4F4D4101"
+   },
+   "init": [
+    {
+     "text": "None needed: with the default generics the target accepts every command to the logical address 0xFE with the key 0x00 on the whole address space (WinInit_g). A flight configuration narrows the logical addresses (TGT_LA 0x010), the key (TGT_KEY) and the windows (WIN_BASE, WIN_LAST, WIN_CTRL), see the register map."
+    }
+   ],
+   "packages": [
+    "omap_pkg"
    ],
    "generics": [
     {
@@ -9593,6 +9743,33 @@
      "pow2Ratio": true
     }
    ],
+   "idRegister": {
+    "address": "0x000",
+    "value": "0x53505001"
+   },
+   "init": [
+    {
+     "text": "After the reset wait until TABLE_STATUS (0x040) bits 1:0 (TX_BUSY, RX_BUSY) are 0: the core initialises both APID tables (2048 clock cycles)."
+    },
+    {
+     "text": "Nothing else is needed: with TxPathDefault_g and RxPathDefault_g every APID has an enabled path to destination 0 and to receive port 0, destination 0 has the Target Logical Address 0xFE (DEST_CTRL 0x400) and the own address is Tla_g. A flight configuration writes the APID tables (TX_TABLE_APID 0x030 and TX_TABLE_ENTRY 0x034, RX_TABLE_APID 0x038 and RX_TABLE_ENTRY 0x03C) and the destinations (DEST_CTRL 0x400 + 0x20 n).",
+     "when": [
+      "TxPathDefault_g",
+      "RxPathDefault_g"
+     ]
+    },
+    {
+     "text": "Enable the managed data paths: for every APID write TX_TABLE_APID (0x030), read TX_TABLE_ENTRY (0x034), write it with ENABLE and DEST, read it again; the same with RX_TABLE_APID (0x038) and RX_TABLE_ENTRY (0x03C) with ENABLE and PORT; write the destinations (DEST_CTRL 0x400 + 0x20 n).",
+     "unlessAll": [
+      "TxPathDefault_g",
+      "RxPathDefault_g"
+     ]
+    }
+   ],
+   "endToEnd": "Send one SDU on a send port (APID 0x123, for example) and expect it on receive port 0 with the same APID in user bits 10:0, once the APID tables are ready.",
+   "packages": [
+    "spp_pkg"
+   ],
    "generics": [
     {
      "name": "DataWidth_g",
@@ -9895,6 +10072,38 @@
      "description": "Must be served; all receive ports share one receive buffer.",
      "mustServe": true,
      "vector": "NumRx_g",
+     "userFields": [
+      {
+       "name": "apid",
+       "label": "APID",
+       "lsb": 0,
+       "bits": 11
+      },
+      {
+       "name": "shi",
+       "label": "Secondary Header Indicator (Octet String Service)",
+       "lsb": 11,
+       "bits": 1
+      },
+      {
+       "name": "loss",
+       "label": "Packet Loss or Data Loss Indicator",
+       "lsb": 12,
+       "bits": 1
+      },
+      {
+       "name": "error",
+       "label": "Double bit error in the receive buffer during this SDU, valid with last",
+       "lsb": 13,
+       "bits": 1
+      },
+      {
+       "name": "ua",
+       "label": "User Application value of the CPTP packet (0 without the CPTP layer)",
+       "lsb": 14,
+       "bits": 8
+      }
+     ],
      "signals": {
       "data": "M_Rx_Data",
       "keep": "M_Rx_Keep",
@@ -9917,6 +10126,20 @@
      "label": "Link out",
      "description": "Transmitted packets; user bit 0 is the error end of packet, bits 4:1 the destination index.",
      "mustServe": true,
+     "userFields": [
+      {
+       "name": "eep",
+       "label": "Error end of packet (EEP), valid with last",
+       "lsb": 0,
+       "bits": 1
+      },
+      {
+       "name": "dest",
+       "label": "Destination index of the packet",
+       "lsb": 1,
+       "bits": 4
+      }
+     ],
      "signals": {
       "data": "M_Link_Data",
       "keep": "M_Link_Keep",
@@ -9938,6 +10161,14 @@
      "clock": "Clk",
      "label": "Link in",
      "description": "Received packets; user bit 0 is the error end of packet.",
+     "userFields": [
+      {
+       "name": "eep",
+       "label": "Error end of packet (EEP), valid with last",
+       "lsb": 0,
+       "bits": 1
+      }
+     ],
      "signals": {
       "data": "S_Link_Data",
       "keep": "S_Link_Keep",
@@ -10314,6 +10545,9 @@
    "notes": [
     "A received end of packet marker without data characters is discarded."
    ],
+   "packages": [
+    "spp_pkg"
+   ],
    "generics": [
     {
      "name": "DataWidth_g",
@@ -10359,6 +10593,20 @@
      "role": "sink",
      "clock": "Clk",
      "label": "Link in",
+     "userFields": [
+      {
+       "name": "eep",
+       "label": "Error end of packet (EEP), valid with last",
+       "lsb": 0,
+       "bits": 1
+      },
+      {
+       "name": "dest",
+       "label": "Destination index (not used by the adapter)",
+       "lsb": 1,
+       "bits": 4
+      }
+     ],
      "signals": {
       "data": "S_Link_Data",
       "keep": "S_Link_Keep",
@@ -10411,6 +10659,14 @@
      "role": "source",
      "clock": "Clk",
      "label": "Link out",
+     "userFields": [
+      {
+       "name": "eep",
+       "label": "Error end of packet (EEP), valid with last",
+       "lsb": 0,
+       "bits": 1
+      }
+     ],
      "signals": {
       "data": "M_Link_Data",
       "keep": "M_Link_Keep",
@@ -10587,6 +10843,13 @@
      "clock": "LinkClk",
      "multipleHz": "10.0e6",
      "tolerance": 0.1
+    },
+    {
+     "kind": "run_rate",
+     "clock": "LinkClk",
+     "divider": "RunDiv_g",
+     "sampling": 1.2,
+     "message": "A receiver samples a bit period that is longer than 1.2 of its LinkClk periods (user guide, section 3)"
     }
    ],
    "constraints": [
@@ -10615,6 +10878,41 @@
      "note": "Place the output flip-flops of data and strobe in the I/O blocks with matched routing."
     }
    ],
+   "idRegister": {
+    "address": "0x00",
+    "value": "0x4F575201"
+   },
+   "init": [
+    {
+     "text": "Optionally write LINK_SPEED (0x14) bits 7:0 RUN_DIV: the bit period in the Run state in LinkClk cycles (reset value RunDiv_g); choose it for the far end, which samples at most about LinkClk / 1.2."
+    },
+    {
+     "text": "Write PORT_CTRL (0x10) = 0x34 (RECEIVER_EN, DRIVER_EN, LINK_START) to start the link, or 0x38 (AUTO_START) to wait for the far end.",
+     "unless": [
+      "LinkStart_g",
+      "AutoStart_g"
+     ]
+    },
+    {
+     "text": "The link starts after the reset without software (LinkStart_g or AutoStart_g).",
+     "when": [
+      "LinkStart_g"
+     ]
+    },
+    {
+     "text": "The link starts after the reset without software (LinkStart_g or AutoStart_g).",
+     "when": [
+      "AutoStart_g"
+     ],
+     "unless": [
+      "LinkStart_g"
+     ]
+    },
+    {
+     "text": "Wait for PORT_STATUS (0x18) bits 2:0 LINK_STATE = 5 (Run) before packets are exchanged."
+    }
+   ],
+   "endToEnd": "Loop the SpaceWire line back (Spw_DOut to Spw_DIn, Spw_SOut to Spw_SIn) or connect a second port, start the link and wait for PORT_STATUS LINK_STATE = 5 (Run).",
    "generics": [
     {
      "name": "LinkClkFreq_g",

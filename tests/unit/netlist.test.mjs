@@ -59,7 +59,7 @@ test('every example resolves without errors; every input is driven and every sig
 });
 
 test('clocks and resets are port actuals: top-level clocks and the outputs of the reset generators', () => {
-  const r = load('spp-over-spw-two-clocks.composer.json').resolved;
+  const r = load('spp_over_spw_two_clocks.composer.json').resolved;
   const spw = r.instances.find((/** @type {any} */ i) => i.id === 'spw0');
   const actual = (/** @type {string} */ port) => spw.ports.find((/** @type {any} */ p) => p.name === port).actual;
   assert.equal(actual('UserClk'), 'Clk_spw');
@@ -76,7 +76,7 @@ test('clocks and resets are port actuals: top-level clocks and the outputs of th
 });
 
 test('a clock crossing carries the packed word bit by bit', () => {
-  const r = load('spp-over-spw-two-clocks.composer.json').resolved;
+  const r = load('spp_over_spw_two_clocks.composer.json').resolved;
   const fifo = r.instances.find((/** @type {any} */ i) => i.entity === 'olo_ft_fifo_async');
   const pack = r.packing.find((/** @type {any} */ p) => p.instance === fifo.id && p.interface === 'In');
   assert.deepEqual(pack.fields.map((/** @type {any} */ f) => f.signal), ['data', 'keep', 'last', 'user']);
@@ -90,7 +90,7 @@ test('a clock crossing carries the packed word bit by bit', () => {
 });
 
 test('side band constants are bit strings of the receiving field', () => {
-  const r = load('encrypted-spp-over-spw.composer.json').resolved;
+  const r = load('encrypted_spp_over_spw.composer.json').resolved;
   const user = r.nets.find((/** @type {any} */ n) => n.to === 'spp0_S_Tx_User_s');
   assert.equal(user.kind, 'constant');
   assert.equal(user.from, `"${(0x123).toString(2).padStart(28, '0')}"`);

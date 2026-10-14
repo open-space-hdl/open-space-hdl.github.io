@@ -52,7 +52,7 @@ blocks:
           signal: user
           description: "Section of every beat when the input is a plain byte stream: 0 DATA (encrypt the whole packet), 1 AAD (authenticate only)."
           fields:
-            - { name: section, label: Section (0 DATA, 1 AAD), lsb: 0, bits: 2, kind: integer, default: 0 }
+            - { name: section, label: "Section (0 DATA, 1 AAD)", lsb: 0, bits: 2, kind: integer, default: 0 }
       - name: M_Out
         label: Messages out
         type: gcm.msg
@@ -61,6 +61,9 @@ blocks:
         tieOff: default
         description: "user(1:0) is the section of the beat (dense output: of its first byte), user(2) the error flag on the last beat."
         signals: { data: M_Out_Data, keep: M_Out_Keep, last: M_Out_Last, user: M_Out_User, valid: M_Out_Valid, ready: M_Out_Ready }
+        userFields:
+          - { name: section, label: "Section of the beat (dense output: of its first byte): 11 IV, 01 AAD, 00 DATA, 10 TAG", lsb: 0, bits: 2 }
+          - { name: error, label: "Error flag on the last beat: the status of the message is not OK", lsb: 2, bits: 1 }
       - name: M_Sts
         label: Status
         type: gcm.sts
@@ -83,6 +86,11 @@ blocks:
         clock: Clk
         tieOff: open
         signals: { irq: Irq }
+    idRegister: { address: "0x000", value: "0x4F435201" }
+    init:
+      - { text: "After the reset wait until STATUS (0x014) bit 0 BUSY is 0: the key table erases every slot." }
+      - { text: "Load every key slot in use: write the key to KEY0 to KEY7 (0x040 + 4 n; key byte 4 n in bits 31:24; 4, 6 or 8 words), for generated IVs the fixed field to IV_FIXED (0x060) and the first invocation counter to IV_COUNT_LO (0x064) and IV_COUNT_HI (0x068), then write KEY_LOAD (0x06C) with START (bit 31), IV_GEN (bit 8) and the slot (bits 7:0), for example 0x80000100 for slot 0 with generated IVs; wait until STATUS.BUSY is 0." }
+    endToEnd: "Load the key slot, send a packet and check the output: with generated IVs the first 4 bytes of every message are IV_FIXED, the next 8 the invocation counter; decrypt it with AES-GCM in the test bench (or a second core) and compare."
     rules:
       - kind: partner_requires
         interface: M_Out
@@ -92,6 +100,16 @@ blocks:
         message: >-
           Set DenseOutput_g = true, so that every message leaves as one gapless byte string (IV, AAD, ciphertext,
           tag); the sectioned output is for the input of a second core (decryption).
+      - kind: flag_dropped
+        interface: M_Out
+        signal: user
+        bit: 2
+        unlessGeneric: ReleaseBuffer_g
+        unlessInterface: M_Sts
+        message: >-
+          The error flag of the messages (user bit 2 on the last beat) is not passed on, so a message that failed (for
+          example with KEY) is sent like a good one. Set ReleaseBuffer_g = true (a message leaves the core only when its
+          status is OK) with ReleaseBytes_g of at least the longest message, or consume the status at M_Sts.
     notes:
       - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen with SyncTmr_g = true.
       - After the reset the key table erases every slot (NumKeys_g cycles, STATUS.BUSY = '1'); no key survives a reset.
@@ -162,6 +180,8 @@ blocks:
         mustServe: true
         description: AAD section with the position of the chunk, then the chunk as DATA section, to S_In of the core.
         signals: { data: M_Out_Data, keep: M_Out_Keep, last: M_Out_Last, user: M_Out_User, valid: M_Out_Valid, ready: M_Out_Ready }
+        userFields:
+          - { name: section, label: "Section of the beat: 01 AAD, 00 DATA", lsb: 0, bits: 2 }
       - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, vector: "2", tieOff: open, description: "Element 0 the chunk buffer, element 1 the position FIFO.", signals: { sec: Ecc_Sec, ded: Ecc_Ded } }
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, description: Tests only., signals: { sel: ErrInj_Sel, bitflip: ErrInj_BitFlip, valid: ErrInj_Valid } }
     rules:
@@ -172,6 +192,10 @@ blocks:
         sink: { block: openspp/spp_core, interface: S_Tx, generic: TxBufferBytes_g }
         bytes: ChunkBytes_g + 32
         max: 65536
+        release: { generic: ReleaseBytes_g, enabledBy: ReleaseBuffer_g }
+        packet: { bytes: ChunkBytes_g + 38, generic: RxBufferBytes_g, what: Space Packets }
+    init:
+      - { text: "Load the key slot Cfg_Slot of the AES-GCM core for generated IVs (KEY_LOAD with IV_GEN = '1', see the core) before the first packet; without a loaded slot every chunk fails with KEY." }
     notes:
       - The slot Cfg_Slot is loaded for generated IVs and stays unchanged while the framer holds chunks.
       - Every chunk consumes one invocation of the slot; save the counter regularly (GCM 9.1).

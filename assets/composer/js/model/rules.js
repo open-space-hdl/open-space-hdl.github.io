@@ -11,6 +11,9 @@
  *   same_domain          the interfaces should share the clock domain of their partner (no crossing inserted)
  *   partner_requires     an interface that feeds one of the given types needs generic = value
  *   chain_fits           messages of bytes bytes leaving through the via block must fit into the buffer of the sink
+ *                        (and into the release buffer of the via block; packet: the size of the packets the sink sends)
+ *   flag_dropped         a flag bit of user is not passed on (unless a generic or an interface of the block catches it)
+ *   run_rate             the transmit rate (clock / divider) exceeds what a receiver with the same clock samples
  */
 
 import { typedEndpoint } from './compat.js';
@@ -189,9 +192,63 @@ export function runRules(res) {
                   `${inst.id}: ${what}; ${b.ref} must hold one: set ${rule.sink.generic} of ${sink.id} to at least ${bytes} (now ${have}).`,
                   { instance: sink.id, connection: b.connection });
               }
+              // the release buffer of the via block holds a whole message
+              const rel = rule.release;
+              const relBytes = rel ? via.generics[rel.generic] : undefined;
+              if (rel && via.generics[rel.enabledBy] === true && typeof relBytes === 'number' && relBytes < bytes) {
+                res.check('error', rule.kind,
+                  `${inst.id}: ${what}; the release buffer of ${via.id} holds ${relBytes} bytes, so every message would be dropped with OVERFLOW: set ${rel.generic} to at least ${bytes}.`,
+                  { instance: via.id });
+              }
+              // the packets that the sink sends: the receiving node holds them
+              if (rule.packet) {
+                let pbytes;
+                try {
+                  pbytes = evaluate(rule.packet.bytes, env());
+                } catch (e) {
+                  if (!(e instanceof ExprError)) throw e;
+                }
+                const own = sink.generics[rule.packet.generic];
+                if (pbytes !== undefined) {
+                  res.check('info', rule.kind,
+                    `${sink.id} sends ${rule.packet.what} of up to ${rule.packet.bytes} = ${pbytes} bytes: the node that receives them needs ${rule.packet.generic} of at least ${pbytes}${typeof own === 'number' ? ` (${sink.id} has ${own}${own < pbytes ? ', too small to receive its own packets' : ''})` : ''}.`,
+                    { instance: sink.id });
+                }
+              }
             }
           }
           break;
+        case 'flag_dropped': {
+          if (rule.unlessGeneric && rec.generics[rule.unlessGeneric] === true) break;
+          const caught = rule.unlessInterface && res.portsOf(inst.id).some((p) => p.itf.name === rule.unlessInterface
+            && (res.d.connections.some((c) => c.from === `${inst.id}.${p.ref}`) || res.externals.some((e) => e.interface === `${inst.id}.${p.ref}`)));
+          if (caught) break;
+          for (const p of res.portsOf(inst.id).filter((x) => x.itf.name === rule.interface)) {
+            const ref = `${inst.id}.${p.ref}`;
+            const conn = res.d.connections.find((c) => c.from === ref);
+            if (!conn) continue;
+            const rcv = res.byId.get(instanceOf(conn.to));
+            const rb = rcv && res.cat.blocks.get(rcv.block);
+            const rp = rb && rcv ? res.cat.ports(rb, rcv.generics).find((x) => `${rcv.id}.${x.ref}` === conn.to) : undefined;
+            const chain = res.chains.find((x) => x.connection === conn.id);
+            const width = rp && rule.signal in rp.itf.signals ? Number(rp.widths[rule.signal] ?? 1) : 0;
+            const replaced = chain?.constants?.[rule.signal] === 'sideband';
+            if (replaced || width <= rule.bit) {
+              res.check('warning', rule.kind, `${ref} feeds ${conn.to}. ${rule.message}`, { ...where, connection: conn.id });
+            }
+          }
+          break;
+        }
+        case 'run_rate': {
+          const f = freq(rule.clock);
+          const div = rec.generics[rule.divider];
+          if (f === undefined || typeof div !== 'number' || div >= rule.sampling) break;
+          const mbps = (/** @type {number} */ v) => `${Math.floor((v / 1e6) * 10) / 10} Mb/s`;
+          res.check('warning', rule.kind,
+            `${inst.id}: with ${rule.divider} = ${div} the port sends at ${mbps(f / div)} in the Run state (${rule.clock} ${formatHz(f)}). ${rule.message}, so a far end with the same ${rule.clock} receives at most about ${mbps(f / rule.sampling)}: set ${rule.divider} (or RUN_DIV by software) to at least ${Math.ceil(rule.sampling)} for such a far end.`,
+            where);
+          break;
+        }
         default:
           res.check('info', 'catalog', `${inst.id}: unknown rule ${String(rule.kind)} in the catalog.`, where);
       }

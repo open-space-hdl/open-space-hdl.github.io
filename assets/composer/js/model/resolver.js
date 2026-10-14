@@ -28,6 +28,7 @@ import { runRules } from './rules.js';
 /** @typedef {{ name: string, width: number }} Sig */
 /** @typedef {{ type: TypeDef, sigs: Sig[], hasReady: boolean, hasValid: boolean }} Format */
 /** @typedef {{ signal: string, lsb: number, width: number }} PackField */
+/** @typedef {{ name: string, label: string, lsb: number, bits: number, value: number | boolean }} FieldValue  a field of a constant */
 /** @typedef {{ width: number, fields: PackField[] }} Packing */
 
 /**
@@ -79,7 +80,7 @@ import { runRules } from './rules.js';
  * @property {{ id: string, name: string, frequencyHz: number, source: any, members: string[], resetGen: string, clock: string }[]} domains
  * @property {{ name: string, dir: 'in' | 'out' | 'inout', vhdlType: string, kind: 'clock' | 'reset' | 'interface', ref?: string, port?: string, domain?: string }[]} topPorts
  * @property {{ interface: string, prefix: string, implicit: boolean }[]} externals
- * @property {{ port: string, value: string, reason: string }[]} tieOffs
+ * @property {{ port: string, value: string, reason: string, fields?: FieldValue[] }[]} tieOffs
  * @property {Record<string, unknown>[]} constraints
  * @property {Check[]} checks
  */
@@ -780,8 +781,17 @@ export class Resolution {
     /** @type {Map<string, string>} */
     this.resetGen = new Map();
     const all = [...this.d.instances.map((i) => this.byId.get(i.id)).filter((x) => x !== undefined), ...this.autos];
+    // a reset generator for every clock domain with a synchronous reset input (blocks with an asynchronous reset
+    // synchronise its release themselves)
     const used = new Set();
-    for (const rec of all) for (const dom of Object.values(rec.clocks)) if (dom) used.add(dom);
+    for (const rec of all) {
+      const b = this.cat.blocks.get(rec.block);
+      for (const r of b?.resets ?? []) {
+        if (r.dir === 'out' || r.sync === 'async' || !r.clock) continue;
+        const dom = rec.clocks[r.clock];
+        if (dom) used.add(dom);
+      }
+    }
     for (const dom of this.d.clockDomains) {
       if (!used.has(dom.id)) continue;
       const id = this.autoId(`rst_${dom.id}`);
@@ -892,7 +902,13 @@ export class Resolution {
             } else if (bits >= 2 ** w) {
               this.check('error', 'constant', `${ref}: the constant ${bits} does not fit into ${w} bit of ${pname}.`, { instance: inst.id });
             }
-            this.tieOffs.push({ port: target, value: vhdlBits(bits, w, port.vhdlType), reason: `Constant of ${ref}: ${sb.fields.map((fl) => `${fl.label} ${String(values[fl.name])}`).join(', ')}.` });
+            this.tieOffs.push({
+              port: target,
+              value: vhdlBits(bits, w, port.vhdlType),
+              reason: `Constant of ${ref}: ${sb.fields.map((fl) => `${fl.label} ${String(values[fl.name])}`).join(', ')}.`,
+              // the fields as far as the port carries them (a key slot of 8 bits on a port of NumKeys_g slots)
+              fields: sb.fields.filter((fl) => fl.lsb < w).map((fl) => ({ name: fl.name, label: fl.label, lsb: fl.lsb, bits: Math.min(fl.bits, w - fl.lsb), value: values[fl.name] })),
+            });
             continue;
           }
           if (port.dir === 'out') {
@@ -981,6 +997,11 @@ export class Resolution {
     if (this.autos.some((a) => a.role === 'cdc' || a.role === 'reset')) {
       add({ kind: 'vendor_scoped', file: 'tools/vivado/all_constraints_amd.tcl', note: 'AMD Vivado: source the script of Open Logic once for the scoped constraints of its clock crossings.' });
     }
+    // a group of asynchronous clocks inside a larger group says nothing more
+    const groups = this.constraints.filter((c) => c.kind === 'async_clock_groups');
+    this.constraints = this.constraints.filter((c) => c.kind !== 'async_clock_groups' || !groups.some((g) => g !== c
+      && /** @type {string[]} */ (c.clocks).every((x) => /** @type {string[]} */ (g.clocks).includes(x))
+      && (/** @type {string[]} */ (g.clocks).length > /** @type {string[]} */ (c.clocks).length || groups.indexOf(g) < groups.indexOf(c))));
   }
 
   /**

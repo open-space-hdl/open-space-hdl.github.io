@@ -63,7 +63,13 @@ RULE_KINDS = {
     "same_domain": ("interfaces",),
     "partner_requires": ("interface", "types", "generic", "value", "message"),
     "chain_fits": ("interface", "via", "sink", "bytes"),
+    "flag_dropped": ("interface", "signal", "bit", "message"),
+    "run_rate": ("clock", "divider", "sampling", "message"),
 }
+# keys of a field of a side band or of a user signal
+FIELD_KEYS = {"name", "label", "lsb", "bits", "kind", "default", "enabledBy", "below", "description"}
+# conditions of a software initialisation step (names of boolean generics)
+INIT_CONDITIONS = ("when", "unless", "unlessAll")
 GENERIC_CHECKS = {"pow2", "multiple8", "multiple16"}
 # constraints of the blocks (translated to the top level by the resolver) with their required keys
 CONSTRAINT_KINDS = {
@@ -909,9 +915,17 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 ctx.err(iwhere, f"required signal '{sname}' of type {tid} not mapped")
         out = {"name": iname, "type": tid, "role": role}
         for key in ("clock", "label", "description", "mustServe", "externalOnly", "enabledBy", "sideband",
-                    "params", "vector", "tieOff", "carry"):
+                    "params", "vector", "tieOff", "carry", "userFields"):
             if key in itf:
                 out[key] = itf[key]
+        for uf in itf.get("userFields") or []:
+            if "user" not in signals:
+                ctx.err(iwhere, "userFields need a user signal")
+            for key in ("name", "label", "lsb", "bits"):
+                if key not in uf:
+                    ctx.err(iwhere, f"user field needs '{key}'")
+            if set(uf) - FIELD_KEYS:
+                ctx.err(iwhere, f"user field {uf.get('name')}: unknown keys {', '.join(sorted(map(str, set(uf) - FIELD_KEYS)))}")
         if "carry" in itf and (itf["carry"] not in ("native", "packed") or not ttype.get("generic")):
             ctx.err(iwhere, "carry (native or packed) is only for untyped interfaces")
         out["signals"] = signals
@@ -966,6 +980,8 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 for key in ("name", "label", "lsb", "bits"):
                     if key not in f:
                         ctx.err(iwhere, f"sideband field needs '{key}'")
+                if set(f) - FIELD_KEYS:
+                    ctx.err(iwhere, f"sideband field {f.get('name')}: unknown keys {', '.join(sorted(map(str, set(f) - FIELD_KEYS)))}")
                 below = f.get("below")
                 if below is not None and (f.get("kind") == "boolean"
                                           or next((g["kind"] for g in generics if g["name"] == below), None) != "integer"):
@@ -1025,6 +1041,16 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             ctx.err(where, f"rule {kind}: severity must be error or warning")
         if kind == "chain_fits":
             ctx.chain_rules.append((where, r))
+            for opt, keys in (("release", ("generic", "enabledBy")), ("packet", ("bytes", "generic", "what"))):
+                if opt in r and any(k not in r[opt] for k in keys):
+                    ctx.err(where, f"rule chain_fits: {opt} needs {', '.join(keys)}")
+        if kind == "flag_dropped":
+            if r.get("unlessGeneric") and r["unlessGeneric"] not in gen_names:
+                ctx.err(where, f"rule {kind}: unknown generic {r['unlessGeneric']}")
+            if r.get("unlessInterface") and r["unlessInterface"] not in itf_names:
+                ctx.err(where, f"rule {kind}: unknown interface {r['unlessInterface']}")
+        if kind == "run_rate" and r.get("divider") not in gen_names:
+            ctx.err(where, f"rule {kind}: unknown generic {r.get('divider')}")
         if kind == "partner_requires":
             for tid in r.get("types") or []:
                 if tid not in ctx.type_ids:
@@ -1069,9 +1095,33 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         "summary": b["summary"],
         "idPrefix": b.get("idPrefix") or re.sub(r"^(olo_(base|ft|axi)_)", "", ent.name).split("_")[0],
     }
-    for key in ("doc", "project", "vendor", "notes", "rules", "constraints"):
+    for key in ("doc", "project", "vendor", "notes", "rules", "constraints", "idRegister", "init", "endToEnd"):
         if key in b:
             block[key] = b[key]
+    # software initialisation: steps with optional conditions on boolean generics
+    reg = b.get("idRegister")
+    if reg is not None and (not isinstance(reg, dict) or set(reg) != {"address", "value"}):
+        ctx.err(where, "idRegister needs address and value")
+    for step in b.get("init") or []:
+        if not isinstance(step, dict) or not isinstance(step.get("text"), str):
+            ctx.err(where, "every init step needs a text")
+            continue
+        for cond in INIT_CONDITIONS:
+            for gname in step.get(cond) or []:
+                if next((g["kind"] for g in generics if g["name"] == gname), None) != "boolean":
+                    ctx.err(where, f"init step: {cond} names {gname}, not a boolean generic")
+        if set(step) - {"text", *INIT_CONDITIONS}:
+            ctx.err(where, f"init step: unknown keys {', '.join(sorted(set(step) - {'text', *INIT_CONDITIONS}))}")
+    # packages of the block (use clauses of the top level when a generic value names one of their constants)
+    if b.get("packages"):
+        names = []
+        for path in b["packages"]:
+            m = re.search(r"^\s*package\s+(\w+)\s+is", git(ctx.repos / src["repo"], "show", f"{src['sha']}:{path}"), re.M | re.I)
+            if m:
+                names.append(m.group(1))
+            else:
+                ctx.err(where, f"no package in {path}")
+        block["packages"] = names
     block["generics"] = generics
     block["clocks"] = clocks
     block["resets"] = resets

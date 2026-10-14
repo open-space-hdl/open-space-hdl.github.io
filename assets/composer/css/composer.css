@@ -249,6 +249,8 @@ a.cmp-tool {
   min-height: 0;
   background: #FFFFFF;
   border-right: 1px solid var(--border);
+  /* the canvas beside it moves while panning: without containment WebKit paints the panels again on every frame */
+  contain: paint;
 }
 .cmp-palette-head { padding: 12px 12px 8px; }
 .cmp-search {
@@ -604,6 +606,7 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
   min-height: 0;
   background: #FFFFFF;
   border-left: 1px solid var(--border);
+  contain: paint;
 }
 .cmp-split {
   position: relative;
@@ -956,6 +959,17 @@ textarea.cmp-input { resize: vertical; }
 .cmp-check-item:hover:not(:disabled) { background: var(--light); }
 .cmp-check-item:disabled { cursor: default; }
 .cmp-check-sym { flex: 0 0 14px; font-weight: 700; }
+.cmp-sym {
+  display: inline-block;
+  vertical-align: -1px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cmp-sym-warning { fill: currentColor; stroke-width: 1.2; }
+.cmp-check-item .cmp-sym { margin-top: 2px; }
 .cmp-check-item.cmp-sev-error .cmp-check-sym { color: var(--cmp-danger); }
 .cmp-check-item.cmp-sev-warning .cmp-check-sym { color: #9A5B00; }
 .cmp-check-item.cmp-sev-info .cmp-check-sym { color: #1864AB; font-style: italic; font-family: var(--font-mono); }

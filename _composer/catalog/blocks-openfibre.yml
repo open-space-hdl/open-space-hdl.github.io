@@ -44,6 +44,8 @@ blocks:
         tieOff: zero
         description: "Packets to send on the virtual channel: one SpaceFibre packet (destination address and cargo) per stream packet; user with last: '1' ends the packet with an EEP."
         signals: { data: S_Vc_TData, keep: S_Vc_TKeep, last: S_Vc_TLast, user: S_Vc_TUser, valid: S_Vc_TValid, ready: S_Vc_TReady }
+        userFields:
+          - { name: eep, label: "Error end of packet (EEP), valid with last", lsb: 0, bits: 1 }
       - name: M_Vc
         label: Virtual channel out
         type: pkt.link
@@ -53,6 +55,8 @@ blocks:
         tieOff: zero
         description: "Received packets of the virtual channel; user with last: '1' the packet ended with an EEP. A channel that is not read stops the far end through flow control."
         signals: { data: M_Vc_TData, keep: M_Vc_TKeep, last: M_Vc_TLast, user: M_Vc_TUser, valid: M_Vc_TValid, ready: M_Vc_TReady }
+        userFields:
+          - { name: eep, label: "Error end of packet (EEP), valid with last", lsb: 0, bits: 1 }
       - name: S_Bc
         label: Broadcasts to send
         type: spfi.bc
@@ -61,6 +65,10 @@ blocks:
         tieOff: zero
         description: "64-bit broadcast messages; user: channel 7:0, B_TYPE 15:8, DELAYED 16."
         signals: { data: S_Bc_TData, user: S_Bc_TUser, valid: S_Bc_TValid, ready: S_Bc_TReady }
+        userFields:
+          - { name: channel, label: Broadcast channel, lsb: 0, bits: 8 }
+          - { name: btype, label: B_TYPE, lsb: 8, bits: 8 }
+          - { name: delayed, label: DELAYED, lsb: 16, bits: 1 }
       - name: M_Bc
         label: Received broadcasts
         type: spfi.bc
@@ -69,6 +77,11 @@ blocks:
         tieOff: zero
         description: "Received broadcast messages; user: channel 7:0, B_TYPE 15:8, DELAYED 16, LATE 17. Four messages are buffered; further ones are discarded and flagged."
         signals: { data: M_Bc_TData, user: M_Bc_TUser, valid: M_Bc_TValid, ready: M_Bc_TReady }
+        userFields:
+          - { name: channel, label: Broadcast channel, lsb: 0, bits: 8 }
+          - { name: btype, label: B_TYPE, lsb: 8, bits: 8 }
+          - { name: delayed, label: DELAYED, lsb: 16, bits: 1 }
+          - { name: late, label: LATE (not sent immediately), lsb: 17, bits: 1 }
       - name: S_Sched
         label: Time-slots
         type: spfi.sched
@@ -124,6 +137,11 @@ blocks:
       - { kind: clock_relation, faster: CoreClk, slower: LaneClk, message: CoreClk must run at least as fast as LaneClk; a slower CoreClk loses received rows (DL_ERRORS bit 10). }
       - { kind: clock_relation, faster: UserClk, slower: LaneClk, severity: warning, message: "UserClk slower than LaneClk limits the throughput of the virtual channels (one beat of NumLanes_g words per cycle)." }
       - { kind: generic_multiple, generic: VcInDepth_g, of: 64 * NumLanes_g }
+    idRegister: { address: "0x000", value: "0x0FB10007" }
+    init:
+      - { text: "Start the link at one end: write LANE_CTRL (0x100 + 0x20 i) of every lane i = 0x63 (LaneStart, AutoStart, TxEn, RxEn); the reset value 0x62 (AutoStart) starts when the far end sends." }
+      - { text: "Wait for LANE_STATUS (0x104 + 0x20 i) bits 3:0 = 7 (Active) of the lanes and DL_STATUS (0x010) bits 1:0 = 3 (link initialised); VC_HAS_CREDIT (0x030) shows the VCs that may send." }
+    endToEnd: "Connect two nodes (in a simulation without the transceiver models: two cores joined by tb/ofb_tb_pa_model.vhd of OpenFibre), start the link at one end and send a packet on a virtual channel; it arrives on the same virtual channel at the other end."
     constraints:
       - { kind: max_delay_pairs, clocks: [UserClk, CoreClk, LaneClk, MgmtClk], note: "Clock crossings inside the core (Open Logic): for every pair of its clocks, in both directions, the period of the faster clock." }
     notes:

@@ -21,7 +21,7 @@ permalink: /composer/format/
       <a href="{{ '/composer/schema/system-1.json' | relative_url }}"><code>/composer/schema/system-1.json</code></a>.
       Examples: <a href="{{ '/assets/composer/examples/index.json' | relative_url }}">the example systems of the Composer</a>,
       for instance
-      <a href="{{ '/assets/composer/examples/encrypted-spp-over-spw.composer.json' | relative_url }}"><code>encrypted-spp-over-spw.composer.json</code></a>.
+      <a href="{{ '/assets/composer/examples/encrypted_spp_over_spw.composer.json' | relative_url }}"><code>encrypted_spp_over_spw.composer.json</code></a>.
     </p>
 
     <h2 id="overview">Parts of a file</h2>
@@ -33,7 +33,7 @@ permalink: /composer/format/
           <tr><td data-label="Key"><code>format</code>, <code>formatVersion</code></td><td data-label="Content"><code>open-space-composer-system</code>, <code>1</code></td><td data-label="Written by">Editor</td></tr>
           <tr><td data-label="Key"><code>generator</code></td><td data-label="Content">Composer version and the content identifier of the block catalog</td><td data-label="Written by">Editor</td></tr>
           <tr><td data-label="Key"><code>system</code></td><td data-label="Content">Name of the top-level entity, description, fault tolerance of the inserted blocks</td><td data-label="Written by">User</td></tr>
-          <tr><td data-label="Key"><code>sources</code></td><td data-label="Content">Repositories of the blocks with their pinned commit or tag and VHDL library</td><td data-label="Written by">Editor</td></tr>
+          <tr><td data-label="Key"><code>sources</code></td><td data-label="Content">Repositories of the blocks with their pinned commit or tag, VHDL library and the Open Logic FT tag they were verified with (<code>verifiedWith</code>)</td><td data-label="Written by">Editor</td></tr>
           <tr><td data-label="Key"><code>clockDomains</code></td><td data-label="Content">Clock domains with name, frequency and source (top-level port or a clock output)</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>instances</code></td><td data-label="Content">Placed blocks with generics that differ from the defaults, clock assignment and constants</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>connections</code></td><td data-label="Content">Connections from a driving to a receiving interface, side band constants, adapter settings</td><td data-label="Written by">User</td></tr>
@@ -41,6 +41,7 @@ permalink: /composer/format/
           <tr><td data-label="Key"><code>resolved</code></td><td data-label="Content">Netlist of the top level: ports, instances with generic and port maps, signals, assignments, packing, clocks, resets, constraints, compile order</td><td data-label="Written by">Derived</td></tr>
           <tr><td data-label="Key"><code>checks</code></td><td data-label="Content">Results of the structural checks and the design rules</td><td data-label="Written by">Derived</td></tr>
           <tr><td data-label="Key"><code>agent.brief</code></td><td data-label="Content">Build brief in Markdown</td><td data-label="Written by">Derived</td></tr>
+          <tr><td data-label="Key"><code>catalogSubset</code></td><td data-label="Content">Catalog entries of the blocks of the system and of their interface types: ports, generics, clocks, resets, interfaces with signals, fields and directions, presets, rules, notes, initialisation by software</td><td data-label="Written by">Derived</td></tr>
           <tr><td data-label="Key"><code>layout</code></td><td data-label="Content">Positions of the blocks and the view; no meaning for the build</td><td data-label="Written by">Editor</td></tr>
         </tbody>
       </table>
@@ -83,15 +84,20 @@ permalink: /composer/format/
     <p>
       <code>resolved</code> describes the top level completely. It contains the placed blocks and the blocks the
       Composer inserts: width converters, clock crossings (asynchronous FIFOs with the side band packed into the data
-      word) and one reset generator per clock domain. Writing the top level takes three steps:
+      word) and a reset generator for every clock domain with a synchronous reset. Writing the top level takes four
+      steps:
     </p>
     <ol>
+      <li>Write the context clause of <code>context</code>: <code>library ieee;</code> with
+        <code>std_logic_1164</code>, every library of <code>compile</code>, and a <code>use</code> clause for every
+        package whose constants a generic map names.</li>
       <li>Declare a signal for every entry of <code>signals</code>. Every port of an instance with a signal actual has
         one, named <code>&lt;instance&gt;_&lt;port&gt;_s</code>, with the VHDL type of the port.</li>
       <li>Instantiate every entry of <code>instances</code> as <code>&lt;id&gt; : entity
         &lt;library&gt;.&lt;entity&gt;</code>. The generic map holds the generics whose <code>default</code> is
         false, with the VHDL literal in <code>vhdl</code>. The port map holds the <code>actual</code> of every port:
-        its signal, a clock, a reset or <code>open</code>; a port with <code>useDefault</code> is left out.</li>
+        its signal, a clock, a reset or <code>open</code>; a port with <code>useDefault</code> is left out and keeps
+        its VHDL <code>default</code>.</li>
       <li>Write every entry of <code>nets</code> as the concurrent assignment <code>to &lt;= from;</code>.</li>
     </ol>
 <pre><code>signal spw0_M_Pkt_TData_s : std_logic_vector(7 downto 0);
@@ -107,21 +113,23 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
       <table class="trl-table">
         <thead><tr><th scope="col">Entry</th><th scope="col">Meaning</th></tr></thead>
         <tbody>
-          <tr><td data-label="Entry"><code>entity</code>, <code>ports</code></td><td data-label="Meaning">Name and ports of the top-level entity, in order. <code>Rst</code> is the asynchronous system reset (high-active), <code>Clk_&lt;domain&gt;</code> the clock of an external clock domain, the other ports belong to external interfaces and are named <code>&lt;prefix&gt;&lt;port&gt;</code> (an element of a vector interface adds <code>_&lt;index&gt;</code>).</td></tr>
-          <tr><td data-label="Entry"><code>instances</code></td><td data-label="Meaning">Entity, library, origin (placed or inserted, with the reason), clock domain, every generic with its value, VHDL literal and whether it is the default, every port with its type and actual.</td></tr>
+          <tr><td data-label="Entry"><code>entity</code>, <code>ports</code></td><td data-label="Meaning">Name and ports of the top-level entity, in order. <code>Rst</code> is the asynchronous system reset (high-active), <code>Clk_&lt;domain&gt;</code> the clock of an external clock domain, the other ports belong to external interfaces and are named <code>&lt;prefix&gt;&lt;port&gt;</code> (an element of a vector interface adds <code>_&lt;index&gt;</code>). Every port names its clock <code>domain</code>; a port of an external interface names its logical <code>signal</code> and, where its bits have a meaning, the <code>fields</code> (for example the APID in bits 10:0 of a receive port of OpenSPP).</td></tr>
+          <tr><td data-label="Entry"><code>instances</code></td><td data-label="Meaning">Entity, library, origin (placed or inserted, with the reason), clock domain, every generic with its value, VHDL literal and whether it is the default, every port with its type, actual and clock <code>domain</code> (a block with several clocks: the clock of the interface of the port). A reset input says in <code>reset</code> whether it is synchronous (from the reset generator of its domain) or asynchronous (the block synchronises the release itself), and why.</td></tr>
           <tr><td data-label="Entry"><code>signals</code></td><td data-label="Meaning">Signal declarations of the architecture.</td></tr>
-          <tr><td data-label="Entry"><code>nets</code></td><td data-label="Meaning">Assignments: connections signal by signal (<code>kind</code> connection), constants of side bands and missing signals (constant), tie-offs of unconnected inputs (tie-off) and the top-level ports (top). A packed data word appears bit field by bit field.</td></tr>
+          <tr><td data-label="Entry"><code>nets</code></td><td data-label="Meaning">Assignments: connections signal by signal (<code>kind</code> connection), constants of side bands and missing signals (constant), tie-offs of unconnected inputs (tie-off) and the top-level ports (top). A packed data word appears bit field by bit field. A constant of a side band or of an instance carries its field map in <code>fields</code>.</td></tr>
           <tr><td data-label="Entry"><code>packing</code></td><td data-label="Meaning">Bit fields of every packed data word, for example <code>data 31:0, keep 35:32, last 36, user 37</code>.</td></tr>
-          <tr><td data-label="Entry"><code>clocks</code>, <code>resets</code></td><td data-label="Meaning">Clock domains with frequency and the actual of their clock inputs; the reset generator of every domain and the signal of its synchronous reset.</td></tr>
-          <tr><td data-label="Entry"><code>constraints</code></td><td data-label="Meaning">Asynchronous clock groups, false paths, I/O registers and the scoped constraint script of Open Logic, in terms of the top level.</td></tr>
-          <tr><td data-label="Entry"><code>compile</code></td><td data-label="Meaning">VHDL libraries in compile order with repository, commit or tag, file list and its format, and the entities used. <code>files</code>: one VHDL file per line in compile order; <code>modules</code>: one module directory per line, with the sources in <code>&lt;module&gt;/src/*.vhd</code>, packages first.</td></tr>
+          <tr><td data-label="Entry"><code>clocks</code>, <code>resets</code></td><td data-label="Meaning">Clock domains with frequency and the actual of their clock inputs; the reset generators (one for every domain with a synchronous reset) and the signals of their resets.</td></tr>
+          <tr><td data-label="Entry"><code>constraints</code></td><td data-label="Meaning">Asynchronous clock groups, maximum delays between the clocks of a block (<code>max_delay</code>, data path only), false paths, I/O registers and the scoped constraint script of Open Logic, in terms of the top level.</td></tr>
+          <tr><td data-label="Entry"><code>compile</code></td><td data-label="Meaning">VHDL libraries in compile order with repository, commit or tag, file list and its format, and the entities used. <code>files</code>: one VHDL file per line in compile order. <code>modules</code>: one module directory per line, relative to the repository root; blank lines and lines starting with <code>#</code> are ignored; the sources of a module are its <code>src/*.vhd</code> files, which have no given order inside the module (packages first, then in dependency order, or let the tool order them). <code>verifiedWith</code> is the Open Logic FT tag the repository was verified with.</td></tr>
           <tr><td data-label="Entry"><code>problems</code></td><td data-label="Meaning">Inconsistencies found while building the netlist; empty for a correct catalog.</td></tr>
         </tbody>
       </table>
     </div>
     <p>
       Clocks and resets are port actuals and never assignments, so that no clock gets a delta delay in a simulation.
-      One <code>olo</code> library (Open Logic FT) serves all blocks of the system.
+      One <code>olo</code> library (Open Logic FT) serves all blocks of the system; the note of the
+      <code>olo</code> source says which tags are compatible. GHDL needs <code>-frelaxed</code> for Open Logic and
+      the cores.
     </p>
 
     <h2 id="checks">Checks</h2>
@@ -136,9 +144,11 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
     <h2 id="agent">The build brief</h2>
     <p>
       <code>agent.brief</code> is a Markdown text for a person or an AI agent: the repositories and their compile
-      order, the ports of the top level, how to write the architecture from <code>resolved</code>, the clock domains
-      and resets, the constraints, the notes of the user guides of the blocks, the open checks and a smoke test bench
-      to verify the result with GHDL.
+      order, the ports of the top level with their clock domains and the field maps of the external interfaces, how
+      to write the architecture from <code>resolved</code>, the clock domains and resets, the constraints, the notes of
+      the user guides of the blocks, the initialisation by software (identification registers and the register writes
+      that start the blocks), the open checks, a smoke test bench to verify the result with GHDL and an optional
+      end-to-end test.
     </p>
 
     <h2 id="versions">Versions and the catalog</h2>
@@ -146,7 +156,8 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
       The block catalog of the Composer is checked against the VHDL entities of the cores at their pinned commits.
       <code>generator.catalog</code> and <code>resolved.catalog</code> name the catalog a file was resolved with; a
       newer catalog may resolve the same system differently (for example after a core update), and the editor says so
-      when it opens the file.
+      when it opens the file. <code>catalogSubset</code> holds the catalog entries the system was resolved with, so
+      that a file explains itself without the catalog.
     </p>
   </div>
 </section>

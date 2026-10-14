@@ -66,6 +66,12 @@ blocks:
         mustServe: true
         description: Must be served; all receive ports share one receive buffer.
         signals: { data: M_Rx_Data, keep: M_Rx_Keep, last: M_Rx_Last, user: M_Rx_User, valid: M_Rx_Valid, ready: M_Rx_Ready }
+        userFields:
+          - { name: apid, label: APID, lsb: 0, bits: 11 }
+          - { name: shi, label: Secondary Header Indicator (Octet String Service), lsb: 11, bits: 1 }
+          - { name: loss, label: Packet Loss or Data Loss Indicator, lsb: 12, bits: 1 }
+          - { name: error, label: "Double bit error in the receive buffer during this SDU, valid with last", lsb: 13, bits: 1 }
+          - { name: ua, label: User Application value of the CPTP packet (0 without the CPTP layer), lsb: 14, bits: 8 }
       - name: M_Link
         label: Link out
         type: pkt.link
@@ -74,6 +80,9 @@ blocks:
         mustServe: true
         description: "Transmitted packets; user bit 0 is the error end of packet, bits 4:1 the destination index."
         signals: { data: M_Link_Data, keep: M_Link_Keep, last: M_Link_Last, user: M_Link_User, valid: M_Link_Valid, ready: M_Link_Ready }
+        userFields:
+          - { name: eep, label: "Error end of packet (EEP), valid with last", lsb: 0, bits: 1 }
+          - { name: dest, label: Destination index of the packet, lsb: 1, bits: 4 }
       - name: S_Link
         label: Link in
         type: pkt.link
@@ -81,6 +90,8 @@ blocks:
         clock: Clk
         description: "Received packets; user bit 0 is the error end of packet."
         signals: { data: S_Link_Data, keep: S_Link_Keep, last: S_Link_Last, user: S_Link_User, valid: S_Link_Valid, ready: S_Link_Ready }
+        userFields:
+          - { name: eep, label: "Error end of packet (EEP), valid with last", lsb: 0, bits: 1 }
       - name: S_AxiLite
         label: Registers
         type: axi4lite
@@ -105,6 +116,12 @@ blocks:
     rules:
       - { kind: generic_multiple, generic: TxBufferBytes_g, of: DataWidth_g / 8, pow2Ratio: true }
       - { kind: generic_multiple, generic: RxBufferBytes_g, of: DataWidth_g / 8, pow2Ratio: true }
+    idRegister: { address: "0x000", value: "0x53505001" }
+    init:
+      - { text: "After the reset wait until TABLE_STATUS (0x040) bits 1:0 (TX_BUSY, RX_BUSY) are 0: the core initialises both APID tables (2048 clock cycles)." }
+      - { text: "Nothing else is needed: with TxPathDefault_g and RxPathDefault_g every APID has an enabled path to destination 0 and to receive port 0, destination 0 has the Target Logical Address 0xFE (DEST_CTRL 0x400) and the own address is Tla_g. A flight configuration writes the APID tables (TX_TABLE_APID 0x030 and TX_TABLE_ENTRY 0x034, RX_TABLE_APID 0x038 and RX_TABLE_ENTRY 0x03C) and the destinations (DEST_CTRL 0x400 + 0x20 n).", when: [TxPathDefault_g, RxPathDefault_g] }
+      - { text: "Enable the managed data paths: for every APID write TX_TABLE_APID (0x030), read TX_TABLE_ENTRY (0x034), write it with ENABLE and DEST, read it again; the same with RX_TABLE_APID (0x038) and RX_TABLE_ENTRY (0x03C) with ENABLE and PORT; write the destinations (DEST_CTRL 0x400 + 0x20 n).", unlessAll: [TxPathDefault_g, RxPathDefault_g] }
+    endToEnd: "Send one SDU on a send port (APID 0x123, for example) and expect it on receive port 0 with the same APID in user bits 10:0, once the APID tables are ready."
     notes:
       - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.
       - After the reset the core initialises both APID tables (2048 clock cycles); packets are sent and delivered once the tables are ready.
@@ -140,6 +157,9 @@ blocks:
         role: sink
         clock: Clk
         signals: { data: S_Link_Data, keep: S_Link_Keep, last: S_Link_Last, user: S_Link_User, valid: S_Link_Valid, ready: S_Link_Ready }
+        userFields:
+          - { name: eep, label: "Error end of packet (EEP), valid with last", lsb: 0, bits: 1 }
+          - { name: dest, label: Destination index (not used by the adapter), lsb: 1, bits: 4 }
       - name: M_NChar
         label: N-Chars out
         type: spw.nchar
@@ -158,5 +178,7 @@ blocks:
         role: source
         clock: Clk
         signals: { data: M_Link_Data, keep: M_Link_Keep, last: M_Link_Last, user: M_Link_User, valid: M_Link_Valid, ready: M_Link_Ready }
+        userFields:
+          - { name: eep, label: "Error end of packet (EEP), valid with last", lsb: 0, bits: 1 }
     notes:
       - A received end of packet marker without data characters is discarded.
