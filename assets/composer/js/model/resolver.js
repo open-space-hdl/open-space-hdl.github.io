@@ -13,7 +13,7 @@
  * Inserted blocks are derived state: they appear and disappear with the reason for them.
  */
 
-import { isDriver } from './catalog.js';
+import { absentValue, isDriver } from './catalog.js';
 import { typedEndpoint } from './compat.js';
 import { tryEvaluate } from './expr.js';
 import { runRules } from './rules.js';
@@ -539,6 +539,21 @@ export class Resolution {
       const fr = this.sideFormat(c.to, c.id);
       if (!fd || !fr) continue;
       const typeId = !fd.type.generic ? fd.type.id : fr.type.id;
+      // a receiver that accepts the type of the driver under a condition on the generics of the driver: checked on
+      // every resolution, because the generics can change after the connection was made
+      if (!fd.type.generic && !fr.type.generic && fd.type.id !== fr.type.id) {
+        const acc = (fr.type.accepts ?? []).find((a) => a.type === fd.type.id);
+        if (acc?.condition === 'liteWhen') {
+          const conds = /** @type {{generic: string, value: unknown}[]} */ (drv.port.itf.params?.liteWhen ?? []);
+          const failing = conds.filter((x) => drv.rec.generics[x.generic] !== x.value);
+          if (conds.length === 0 || failing.length > 0) {
+            const need = failing.map((x) => `${x.generic} = ${String(x.value)}`).join(' and ');
+            this.check('error', 'accepts',
+              `${fr.type.name} at ${c.to} needs single transfers from ${c.from}: set ${need || 'single transfers'} on ${drv.rec.id}.`,
+              { connection: c.id, instance: drv.rec.id });
+          }
+        }
+      }
       /** @type {Chain} */
       const chain = { connection: c.id, from: c.from, to: c.to, type: typeId, adapters: [], hops: [] };
       if (c.sideband) chain.sideband = { ...c.sideband };
@@ -744,12 +759,17 @@ export class Resolution {
         constants[s.name] = 'sideband';
         continue;
       }
-      if (s.name === 'keep') {
-        constants.keep = 'ones';
+      const absent = absentValue(s.name, fr.type, fd.type);
+      if (!absent) {
+        constants[s.name] = 'zero';
+        this.check('error', 'signals', `${c.to} has ${s.name}, ${c.from} does not, and the catalog defines no value for it.`, { connection: c.id });
         continue;
       }
-      constants[s.name] = 'zero';
-      this.check('warning', 'signals', `${c.to} has ${s.name}, ${c.from} does not: it is tied to zero.`, { connection: c.id });
+      constants[s.name] = absent.value === '1' ? 'ones' : 'zero';
+      // a missing keep marks every byte valid: nothing to report
+      if (s.name === 'keep' && absent.value === '1') continue;
+      this.check(absent.value === '1' ? 'info' : 'warning', 'signals',
+        `${c.to} has ${s.name}, ${c.from} does not: it is tied to '${absent.value}'${absent.why ? ` (${absent.why})` : ''}.`, { connection: c.id });
     }
     if (Object.keys(constants).length) chain.constants = constants;
     if (fd.type.generic) return;
@@ -759,6 +779,17 @@ export class Resolution {
         continue;
       }
       if (needed.has(s.name)) continue;
+      // an input of the driving side (a response signal of a bus) gets the value of the catalog
+      if (fd.type.signals?.[s.name]?.dir === 'in') {
+        const absent = absentValue(s.name, fd.type, fr.type);
+        if (!absent) {
+          this.check('error', 'signals', `${c.from} has ${s.name}, ${c.to} does not, and the catalog defines no value for it.`, { connection: c.id });
+        } else {
+          this.check(absent.value === '1' ? 'info' : 'warning', 'signals',
+            `${c.from} has ${s.name}, ${c.to} does not: it is tied to '${absent.value}'${absent.why ? ` (${absent.why})` : ''}.`, { connection: c.id });
+        }
+        continue;
+      }
       const sev = s.name === 'last' || s.name === 'keep' ? 'warning' : 'info';
       this.check(sev, 'signals', `${c.from} has ${s.name}, ${c.to} does not: it is not passed on.`, { connection: c.id });
     }

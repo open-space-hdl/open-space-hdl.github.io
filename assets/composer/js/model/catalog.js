@@ -20,7 +20,9 @@ export const CATALOG_VERSION = 1;
  * @property {'stream'|'bus'|'pins'|'event'} kind
  * @property {string} color
  * @property {string} description
- * @property {Record<string, {dir: 'in'|'out', optional?: boolean}>} [signals]
+ * @property {Record<string, {dir: 'in'|'out', optional?: boolean, absent?: '0'|'1', absentWhy?: string}>} [signals]
+ *           absent: the value of the signal where the other side of a connection lacks it (every bit), with the reason
+ *           where it is not obvious
  * @property {'in'|'out'|'mixed'} [fields]
  * @property {{type: string, sideband?: string, condition?: string, note?: string}[]} [accepts]
  * @property {{type: string, via: string}[]} [bridges]
@@ -125,6 +127,21 @@ export function sideOf(role) {
 /** @param {InterfaceDef['role']} role */
 export function isDriver(role) {
   return role === 'source' || role === 'master' || role === 'event_out';
+}
+
+/**
+ * Value of a signal that one side of a connection lacks: what the type of the lacking side defines for it (an optional
+ * signal of that type), else what the type of the side that has it defines (a signal the other type does not know).
+ * Undefined: the catalog defines no value, which is an error of the catalog.
+ * @param {string} name   logical signal
+ * @param {TypeDef | undefined} have   type of the side with the signal
+ * @param {TypeDef | undefined} lack   type of the side without it
+ * @returns {{ value: '0' | '1', why?: string } | undefined}
+ */
+export function absentValue(name, have, lack) {
+  const def = lack?.signals?.[name]?.absent !== undefined ? lack.signals[name] : have?.signals?.[name];
+  if (!def || def.absent === undefined) return undefined;
+  return def.absentWhy ? { value: def.absent, why: def.absentWhy } : { value: def.absent };
 }
 
 export class Catalog {

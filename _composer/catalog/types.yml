@@ -11,6 +11,9 @@
 #
 # signals: logical signal names with their direction seen from the source (stream), master (bus) or the driving side
 #          (event); sinks, slaves and event inputs see the flipped direction. Optional signals may be missing.
+#          absent: the value of the signal (every bit) where the other side of a connection lacks it, with the reason in
+#          absentWhy. Every optional signal and every signal that an accepted type lacks has one; the netlist never
+#          assumes a value the catalog does not give.
 # fields:  direction of additional, interface-specific signals (descriptor fields), or absent if none are allowed.
 # accepts: further source types a sink of this type accepts, with the condition; sideband: required gives the sink
 #          the side band constants of the connection even where the source has a signal of the same name.
@@ -47,7 +50,7 @@ types:
     signals:
       data: { dir: out }
       valid: { dir: out }
-      ready: { dir: in, optional: true }
+      ready: { dir: in, optional: true, absent: '1', absentWhy: a sink without ready takes every beat }
 
   - id: spw.int
     name: SpaceWire interrupts
@@ -58,7 +61,7 @@ types:
     signals:
       data: { dir: out }
       valid: { dir: out }
-      ready: { dir: in, optional: true }
+      ready: { dir: in, optional: true, absent: '1', absentWhy: a sink without ready takes every beat }
 
   - id: spw.intack
     name: SpaceWire interrupt acknowledgements
@@ -69,7 +72,7 @@ types:
     signals:
       data: { dir: out }
       valid: { dir: out }
-      ready: { dir: in, optional: true }
+      ready: { dir: in, optional: true, absent: '1', absentWhy: a sink without ready takes every beat }
 
   - id: spw.ds
     name: SpaceWire line
@@ -115,7 +118,7 @@ types:
       byte 0 and partial only on the last beat of a packet.
     signals:
       data: { dir: out }
-      keep: { dir: out, optional: true }
+      keep: { dir: out, optional: true, absent: '1', absentWhy: every byte of a beat is valid }
       last: { dir: out }
       valid: { dir: out }
       ready: { dir: in }
@@ -248,7 +251,7 @@ types:
     description: Confirmation of every command of the RMAP initiator service (status, length, error).
     signals:
       valid: { dir: out }
-      ready: { dir: in, optional: true }
+      ready: { dir: in, optional: true, absent: '1', absentWhy: a sink without ready takes every beat }
     fields: out
 
   - id: rmap.repdata
@@ -261,7 +264,7 @@ types:
       data: { dir: out }
       last: { dir: out }
       valid: { dir: out }
-      ready: { dir: in, optional: true }
+      ready: { dir: in, optional: true, absent: '1', absentWhy: a sink without ready takes every beat }
 
   - id: rmap.auth
     name: RMAP authorisation
@@ -311,7 +314,7 @@ types:
       last: { dir: out }
       user: { dir: out }
       valid: { dir: out }
-      ready: { dir: in, optional: true }
+      ready: { dir: in, optional: true, absent: '1', absentWhy: a sink without ready takes every beat }
     accepts:
       - type: byte.stream
         sideband: required
@@ -325,7 +328,7 @@ types:
     description: Status of every message of the AES-GCM core (code, key slot, IV, section lengths).
     signals:
       valid: { dir: out }
-      ready: { dir: in, optional: true }
+      ready: { dir: in, optional: true, absent: '1', absentWhy: a sink without ready takes every beat }
     fields: out
 
   - id: c123.samples
@@ -363,9 +366,9 @@ types:
       AwLen: { dir: out }
       AwSize: { dir: out }
       AwBurst: { dir: out }
-      AwLock: { dir: out, optional: true }
-      AwCache: { dir: out, optional: true }
-      AwProt: { dir: out, optional: true }
+      AwLock: { dir: out, optional: true, absent: '0', absentWhy: normal access }
+      AwCache: { dir: out, optional: true, absent: '0', absentWhy: 'device access, not bufferable' }
+      AwProt: { dir: out, optional: true, absent: '0', absentWhy: 'unprivileged, secure data access' }
       AwValid: { dir: out }
       AwReady: { dir: in }
       WData: { dir: out }
@@ -380,14 +383,14 @@ types:
       ArLen: { dir: out }
       ArSize: { dir: out }
       ArBurst: { dir: out }
-      ArLock: { dir: out, optional: true }
-      ArCache: { dir: out, optional: true }
-      ArProt: { dir: out, optional: true }
+      ArLock: { dir: out, optional: true, absent: '0', absentWhy: normal access }
+      ArCache: { dir: out, optional: true, absent: '0', absentWhy: 'device access, not bufferable' }
+      ArProt: { dir: out, optional: true, absent: '0', absentWhy: 'unprivileged, secure data access' }
       ArValid: { dir: out }
       ArReady: { dir: in }
       RData: { dir: in }
       RResp: { dir: in }
-      RLast: { dir: in }
+      RLast: { dir: in, absent: '1', absentWhy: 'an AXI4-Lite slave answers single transfers, so every read beat is the last; valid only with the single-transfer condition of the AXI4-Lite connection' }
       RValid: { dir: in }
       RReady: { dir: out }
 
@@ -441,7 +444,7 @@ types:
     signals:
       sec: { dir: out }
       ded: { dir: out }
-      valid: { dir: out, optional: true }
+      valid: { dir: out, optional: true, absent: '1', absentWhy: 'events without valid are valid in every cycle, as the default of In_Valid of olo_ft_ecc_monitor' }
 
   - id: ecc.inject
     name: EDAC error injection
@@ -491,10 +494,10 @@ types:
       (widths) follow that interface.
     signals:
       data: { dir: out }
-      valid: { dir: out, optional: true }
-      ready: { dir: in, optional: true }
-      last: { dir: out, optional: true }
-      keep: { dir: out, optional: true }
+      valid: { dir: out, optional: true, absent: '1', absentWhy: a source without valid delivers a beat in every cycle }
+      ready: { dir: in, optional: true, absent: '1', absentWhy: a sink without ready takes every beat }
+      last: { dir: out, optional: true, absent: '0', absentWhy: a stream without last has no packet boundaries }
+      keep: { dir: out, optional: true, absent: '1', absentWhy: every byte of a beat is valid }
     fields: out
     generic: true
 

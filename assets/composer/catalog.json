@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "7f69dfab5b09",
+ "id": "70e68b0fa582",
  "sources": [
   {
    "id": "openwire",
@@ -191,7 +191,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    }
   },
@@ -211,7 +213,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    }
   },
@@ -231,7 +235,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    }
   },
@@ -312,7 +318,9 @@
     },
     "keep": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "every byte of a beat is valid"
     },
     "last": {
      "dir": "out"
@@ -523,7 +531,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    },
    "fields": "out"
@@ -547,7 +557,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    }
   },
@@ -629,7 +641,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    },
    "accepts": [
@@ -653,7 +667,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    },
    "fields": "out"
@@ -719,15 +735,21 @@
     },
     "AwLock": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "normal access"
     },
     "AwCache": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "device access, not bufferable"
     },
     "AwProt": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "unprivileged, secure data access"
     },
     "AwValid": {
      "dir": "out"
@@ -773,15 +795,21 @@
     },
     "ArLock": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "normal access"
     },
     "ArCache": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "device access, not bufferable"
     },
     "ArProt": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "unprivileged, secure data access"
     },
     "ArValid": {
      "dir": "out"
@@ -796,7 +824,9 @@
      "dir": "in"
     },
     "RLast": {
-     "dir": "in"
+     "dir": "in",
+     "absent": "1",
+     "absentWhy": "an AXI4-Lite slave answers single transfers, so every read beat is the last; valid only with the single-transfer condition of the AXI4-Lite connection"
     },
     "RValid": {
      "dir": "in"
@@ -906,7 +936,9 @@
     },
     "valid": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "events without valid are valid in every cycle, as the default of In_Valid of olo_ft_ecc_monitor"
     }
    }
   },
@@ -967,19 +999,27 @@
     },
     "valid": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a source without valid delivers a beat in every cycle"
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     },
     "last": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "a stream without last has no packet boundaries"
     },
     "keep": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "every byte of a beat is valid"
     }
    },
    "fields": "out",

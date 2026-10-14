@@ -688,6 +688,11 @@ def load_types() -> dict[str, dict]:
         for sname, sdef in sigs.items():
             if sdef.get("dir") not in ("in", "out"):
                 raise CatalogError(f"{where}: signal {sname} needs dir in/out")
+            if "absent" in sdef and sdef["absent"] not in ("0", "1"):
+                raise CatalogError(f"{where}: signal {sname}: absent must be '0' or '1'")
+            # pins are external only: no connection between two blocks can lack them
+            if sdef.get("optional") and kind != "pins" and "absent" not in sdef:
+                raise CatalogError(f"{where}: optional signal {sname} needs an absent value")
         if t.get("fields") not in (None, "in", "out", "mixed"):
             raise CatalogError(f"{where}: fields must be in, out or mixed")
         if "cdc" in t and t["cdc"] not in CDC_MODES:
@@ -703,6 +708,17 @@ def load_types() -> dict[str, dict]:
                 raise CatalogError(f"types.yml {t['id']}: unknown accept condition {acc.get('condition')}")
             if acc.get("sideband") not in (None, "required"):
                 raise CatalogError(f"types.yml {t['id']}: sideband must be 'required'")
+            # a signal that one of the two types lacks needs the value it takes in such a connection
+            src = types[acc["type"]]
+            mine = t.get("signals") or {}
+            theirs = src.get("signals") or {}
+            for sname, sdef in theirs.items():
+                if sdef["dir"] == "in" and sname not in mine and "absent" not in sdef:
+                    raise CatalogError(f"types.yml {src['id']}: signal {sname} needs an absent value ({t['id']} accepts {src['id']} without it)")
+            for sname, sdef in mine.items():
+                replaced = acc.get("sideband") == "required" and sname == "user"
+                if sdef["dir"] == "out" and sname not in theirs and not replaced and "absent" not in sdef:
+                    raise CatalogError(f"types.yml {t['id']}: signal {sname} needs an absent value ({acc['type']} lacks it)")
         for br in t.get("bridges") or []:
             if br.get("type") not in types:
                 raise CatalogError(f"types.yml {t['id']}: bridge to unknown type {br.get('type')}")
