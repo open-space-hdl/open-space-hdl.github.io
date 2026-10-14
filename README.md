@@ -58,7 +58,7 @@ no runtime dependency) and runs entirely in the browser; the header, the footer 
 | `_composer/catalog/` | Catalog source (not published): interface types, pinned source repositories, palette, block descriptions |
 | `assets/composer/catalog.json` | The catalog, built from the source and the VHDL entities at the pinned commits |
 | `assets/composer/examples/` | Example systems of the Examples menu, written by `tools/composer_examples.mjs` |
-| `assets/composer/js/model/` | Catalog access, design model, connection rules, resolver (adapters, clock domains, resets, top level), design rules, resolved netlist and build brief, file format, scene and router, Arrange and tidy, scene differences and springs for the animations (no DOM, unit tested) |
+| `assets/composer/js/model/` | Catalog access, design model, connection rules, resolver (adapters, clock domains, resets, top level), design rules, resolved netlist and build brief, VHDL export and its ZIP archive, file format, scene and router, Arrange and tidy, scene differences and springs for the animations (no DOM, unit tested) |
 | `assets/composer/js/view/` | Editor: palette, canvas with clock domains and animations, inspector, checks, legend, tabs |
 | `assets/img/composer-teaser.png` | Picture of the editor on the start page (`node tools/composer_teaser.mjs` with the built site served) |
 | `tools/composer_catalog.py` | `build`, `check` (YAML against the VHDL entities at the pinned commits, catalog current, examples valid against the schema), `clone` (the source repositories next to this one) |
