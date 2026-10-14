@@ -50,6 +50,8 @@ const FUNCTIONS = {
   slotbits: (a) => Math.max(1, log2ceil(a)),
   ceil: (a) => Math.ceil(a),
   floor: (a) => Math.floor(a),
+  // a / b rounded up, for whole beats and rows: cdiv(12, 8) = 2
+  cdiv: (a, b) => Math.ceil(a / b),
 };
 
 const TOKEN_RE =

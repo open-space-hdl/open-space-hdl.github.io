@@ -8,6 +8,7 @@
 
 import { formatHz } from './rules.js';
 import { subsystemsOf, withSubsystems } from './subsystems.js';
+import { analyseThroughput, elementText, formatRate } from './throughput.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./catalog.js').BlockDef} BlockDef */
@@ -83,6 +84,72 @@ function applies(step, generics) {
 }
 
 /**
+ * The section on the throughput: the capacity of every path at reference lengths, the bottleneck, shared elements,
+ * stated traffic and the blocks without rate data.
+ * @param {import('./throughput.js').Throughput} t
+ * @returns {string[]}
+ */
+function throughputSection(t) {
+  /** @type {string[]} */
+  const L = [];
+  L.push(
+    'The capacity of every path from a source (an external stream input, the inbound side of a link) to a sink (an external stream output, the outbound side of a link), from the rate data of the catalog: every element at its packet length and at the frequency of its clock domain, the path at its slowest element (in bold). Capacities are payload rates at the source in bit/s (SI prefixes, three significant digits). The packet lengths are reference points, not stated traffic, unless the system states traffic for the interface.',
+    '',
+  );
+  if (t.paths.length === 0) L.push('No path from a source to a sink carries rate data.', '');
+  t.paths.forEach((p, k) => {
+    L.push(`### Path ${k + 1}: ${p.source.label} to ${p.sink.label}`, '');
+    const points = p.references.map((b) => p.at(b));
+    if (points.every((pt) => !pt)) {
+      L.push('The rate data of an element cannot be evaluated with the generics of the system.', '');
+      return;
+    }
+    const head = ['Element', 'Clock', 'Model', ...p.references.map((b) => `${b} B`)];
+    const rows = p.elements.map((el, i) => {
+      const model = el.model === 'chain' ? 'chain formula' : el.model === 'link' ? (el.node.both ? 'link, both directions' : 'link, one direction') : 'per interface';
+      const clock = el.model === 'link' ? '' : `${el.node.domainName}`;
+      const cells = points.map((pt) => {
+        if (!pt) return '';
+        const text = formatRate((8 * pt.bytes) / pt.elements[i].seconds);
+        return pt.bottleneck === i ? `**${text}**` : text;
+      });
+      return [`\`${el.label}\``, clock, model, ...cells];
+    });
+    rows.push(['**Path**', '', '', ...points.map((pt) => (pt ? `**${formatRate(pt.bitsPerSecond)}**` : ''))]);
+    L.push(table(head, rows), '');
+    for (const pt of points) {
+      if (pt) L.push(`- At ${pt.bytes} B: limited by \`${p.elements[pt.bottleneck].label}\` (${elementText(p, pt, pt.bottleneck)}).`);
+    }
+    const stated = t.traffic.get(p.source.key) ?? t.traffic.get(p.sink.key);
+    if (stated?.bitsPerSecond) {
+      const pt = p.at(stated.packetBytes);
+      if (pt) L.push(`- Stated: ${formatRate(stated.bitsPerSecond)} at ${stated.packetBytes} B packets; the path sustains ${formatRate(pt.bitsPerSecond)}, ${pt.bitsPerSecond >= stated.bitsPerSecond ? `a margin of ${(pt.bitsPerSecond / stated.bitsPerSecond).toPrecision(3)}` : 'too little (see the checks)'}.`);
+    }
+    if (p.split) L.push(`- Assuming every packet of ${p.source.label} reaches ${p.sink.label}: the route of the source has several outputs and the system decides at run time where a packet goes.`);
+    for (const el of p.elements) if (el.model === 'link' && el.node.link.note) L.push(`- ${el.label}: ${el.node.link.note}.`);
+    L.push('');
+  });
+  if (t.shared.length > 0) {
+    L.push('Elements on the paths of more than one source share their capacity:', '');
+    for (const s of t.shared) L.push(`- \`${s.label}\`: paths ${s.paths.map((k) => k + 1).join(', ')}.`);
+    L.push('');
+  }
+  if (t.missing.size > 0) {
+    L.push('Blocks without rate data end the paths through them:', '');
+    for (const [, m] of t.missing) L.push(`- \`${m.entity}\` (${m.labels.map((l) => `\`${l}\``).join(', ')}).`);
+    L.push('');
+  }
+  if (t.stopped) L.push(`The analysis stopped after ${t.stopped} paths; the paths above are those analysed.`, '');
+  const evidence = new Map();
+  for (const p of t.paths) for (const el of p.elements) if (el.evidence) evidence.set(el.model === 'chain' ? `${el.node.block.entity} and ${el.chain.to.block.split('/')[1]}` : el.node.block.entity, el.evidence);
+  if (evidence.size > 0) {
+    L.push('Evidence of the rate data:', '');
+    for (const [k, v] of [...evidence].sort((a, b) => a[0].localeCompare(b[0]))) L.push(`- \`${k}\`: ${v}.`);
+  }
+  return L;
+}
+
+/**
  * Generates the brief.
  * @param {Catalog} cat
  * @param {Design} d
@@ -110,7 +177,7 @@ export function agentBrief(cat, d, res, resolved, checks) {
     '',
   );
   if (errors.length > 0) {
-    L.push(`**The system has ${errors.length} open error${errors.length > 1 ? 's' : ''} (section 8). Fix ${errors.length > 1 ? 'them' : 'it'} in the Composer before building.**`, '');
+    L.push(`**The system has ${errors.length} open error${errors.length > 1 ? 's' : ''} (section 9). Fix ${errors.length > 1 ? 'them' : 'it'} in the Composer before building.**`, '');
   }
 
   // 1. sources
@@ -254,8 +321,12 @@ export function agentBrief(cat, d, res, resolved, checks) {
   }
   L.push('');
 
-  // 6. notes of the user guides
-  L.push('## 6. Notes from the user guides', '');
+  // 6. throughput
+  L.push('## 6. Throughput', '');
+  L.push(...throughputSection(res.throughput ?? analyseThroughput(cat, d, res)), '');
+
+  // 7. notes of the user guides
+  L.push('## 7. Notes from the user guides', '');
   // the blocks of the system and those inside its subsystems (named <subsystem>/<instance>)
   const placed = [
     ...d.instances.map((i) => ({ block: i.block, name: i.id })),
@@ -272,8 +343,8 @@ export function agentBrief(cat, d, res, resolved, checks) {
     L.push('');
   }
 
-  // 7. initialisation by software
-  L.push('## 7. Initialisation by software', '');
+  // 8. initialisation by software
+  L.push('## 8. Initialisation by software', '');
   L.push('Register addresses are byte addresses of the AXI4-Lite port of the block; write registers as 32-bit words and wait for the write response before a read that depends on it.', '');
   // the blocks of the system, then those inside every subsystem (in each of its instances)
   for (const [dd, rr, sub] of /** @type {[Design, Resolved, string][]} */ ([[d, res, ''], ...subs.map((s) => [s.design, s.res, s.name])])) {
@@ -302,8 +373,8 @@ export function agentBrief(cat, d, res, resolved, checks) {
     }
   }
 
-  // 8. checks
-  L.push('## 8. Checks', '');
+  // 9. checks
+  L.push('## 9. Checks', '');
   if (checks.length === 0) L.push('No problems found.', '');
   else {
     for (const c of [...errors, ...warnings, ...checks.filter((x) => x.severity === 'info')]) {
@@ -312,8 +383,8 @@ export function agentBrief(cat, d, res, resolved, checks) {
     L.push('');
   }
 
-  // 9. verification
-  L.push('## 9. Verification', '');
+  // 10. verification
+  L.push('## 10. Verification', '');
   const clocks = resolved.clocks.filter((/** @type {any} */ c) => c.source === 'top');
   const slow = clocks.length ? Math.min(...clocks.map((/** @type {any} */ c) => c.frequencyHz)) : 100e6;
   L.push(
@@ -323,7 +394,7 @@ export function agentBrief(cat, d, res, resolved, checks) {
     `2. Hold \`Rst\` at '1' for 16 cycles of the slowest clock (${formatHz(slow)}), then '0'.`,
     '3. Keep every external input idle: stream inputs with valid at \'0\', ready inputs of external outputs at \'1\', bus requests idle, pins at \'0\'.',
     '4. Run for at least 100 us (the blocks initialise their tables after the reset) and stop the simulation: it must end without failed assertions, and the handshake outputs of the top level (valid, ready) and the line outputs must not be \'U\' or \'X\' after the reset. Data outputs may stay undefined while their valid is \'0\'.',
-    '5. Where an AXI4-Lite port is external, read the ID register of the block (section 7) and compare it with the documented value.',
+    '5. Where an AXI4-Lite port is external, read the ID register of the block (section 8) and compare it with the documented value.',
     '',
     `With GHDL: analyse the libraries of section 1, then \`ghdl -i --std=08 -frelaxed ${d.name}.vhd ${d.name}_tb.vhd\`, \`ghdl -m --std=08 -frelaxed ${d.name}_tb\` and \`ghdl -r --std=08 -frelaxed ${d.name}_tb --stop-time=100us --assert-level=error --ieee-asserts=disable\` (\`--ieee-asserts=disable\` silences the warnings of the numeric package about metavalues before the reset).`,
     '',
@@ -331,14 +402,14 @@ export function agentBrief(cat, d, res, resolved, checks) {
   // the optional end-to-end test: what every block contributes
   const e2e = blocks.map((id) => cat.blocks.get(id)).filter((b) => b?.endToEnd);
   if (e2e.length > 0) {
-    L.push('Optional end-to-end test, after the initialisation of section 7:', '');
+    L.push('Optional end-to-end test, after the initialisation of section 8:', '');
     for (const b of e2e) L.push(`- ${b?.name} (\`${b?.entity}\`): ${b?.endToEnd}`);
     L.push('');
   }
   // vendor-specific blocks need the simulation libraries of the vendor
   const vendor = d.instances.map((i) => ({ id: i.id, b: cat.blocks.get(i.block) })).filter((x) => x.b?.vendor);
   if (vendor.length > 0) {
-    L.push(`Vendor-specific blocks need the simulation libraries of their vendor: ${vendor.map((x) => `\`${x.id}\` (${x.b?.entity}, ${x.b?.vendor})`).join(', ')}; see their notes in section 6.`, '');
+    L.push(`Vendor-specific blocks need the simulation libraries of their vendor: ${vendor.map((x) => `\`${x.id}\` (${x.b?.entity}, ${x.b?.vendor})`).join(', ')}; see their notes in section 7.`, '');
   }
   return `${L.join('\n').replace(/\n{3,}/g, '\n\n').trim()}\n`;
 }

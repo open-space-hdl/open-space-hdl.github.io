@@ -43,6 +43,13 @@ import { withSubsystems } from './subsystems.js';
  * @typedef {object} External
  * @property {string} interface           "instance.Interface[index]"
  * @property {string} prefix
+ * @property {Traffic} [traffic]          stated traffic of the interface (throughput budget)
+ */
+
+/**
+ * @typedef {object} Traffic
+ * @property {number} packetBytes         length of the packets at the interface
+ * @property {number} [bitsPerSecond]     payload rate: offered at an input, required at an output
  */
 
 /**
@@ -447,8 +454,43 @@ export function setExternal(d, ref, prefix) {
   if (prefix === null) return rest.length === d.externals.length ? d : { ...d, externals: rest };
   if (d.connections.some((c) => c.from === ref || c.to === ref)) throw new DesignError('A connected interface cannot be external.');
   const k = d.externals.findIndex((e) => e.interface === ref);
-  const next = k >= 0 ? d.externals.map((e, j) => (j === k ? { interface: ref, prefix } : e)) : [...d.externals, { interface: ref, prefix }];
+  // a new prefix keeps the stated traffic of the interface
+  const next = k >= 0 ? d.externals.map((e, j) => (j === k ? { ...e, interface: ref, prefix } : e)) : [...d.externals, { interface: ref, prefix }];
   return { ...d, externals: next };
+}
+
+/**
+ * What is wrong with stated traffic, or '' when nothing is.
+ * @param {unknown} t
+ */
+export function trafficProblem(t) {
+  if (typeof t !== 'object' || t === null || Array.isArray(t)) return 'must be an object with packetBytes and optionally bitsPerSecond.';
+  const o = /** @type {Record<string, unknown>} */ (t);
+  const extra = Object.keys(o).filter((k) => k !== 'packetBytes' && k !== 'bitsPerSecond');
+  if (extra.length) return `unknown keys ${extra.join(', ')}.`;
+  if (!Number.isInteger(o.packetBytes) || /** @type {number} */ (o.packetBytes) < 1) return 'packetBytes must be a whole number of bytes, at least 1.';
+  if (o.bitsPerSecond !== undefined && !(typeof o.bitsPerSecond === 'number' && Number.isFinite(o.bitsPerSecond) && o.bitsPerSecond > 0)) {
+    return 'bitsPerSecond must be a positive number.';
+  }
+  return '';
+}
+
+/**
+ * Sets or removes the stated traffic of an external interface (throughput budget).
+ * @param {Design} d
+ * @param {string} ref
+ * @param {Traffic | null} traffic
+ */
+export function setTraffic(d, ref, traffic) {
+  const k = d.externals.findIndex((e) => e.interface === ref);
+  if (k < 0) throw new DesignError(`${ref} is not external.`);
+  if (traffic !== null) {
+    const problem = trafficProblem(traffic);
+    if (problem) throw new DesignError(`Traffic of ${ref}: ${problem}`);
+  }
+  const { traffic: _old, ...rest } = d.externals[k];
+  const ext = traffic === null ? rest : { ...rest, traffic: { ...traffic } };
+  return { ...d, externals: d.externals.map((e, j) => (j === k ? ext : e)) };
 }
 
 /**

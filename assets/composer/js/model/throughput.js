@@ -1,0 +1,668 @@
+// @ts-check
+/**
+ * Throughput budget of a system (pure, no DOM).
+ *
+ * The catalog states the rate data of a block in `rates` (evidence, interfaces, routes, links, chains). From them:
+ *
+ *   capacity     of an element at a packet length n: f / cycles(n) packets per second, f the frequency of the clock
+ *                domain of the element; a link: its payload capacity in bytes per second at n
+ *   path         from a source (an external stream input, the inbound side of a link) to a sink (an external stream
+ *                output, the outbound side of a link), through connections, inserted adapters, the routes inside the
+ *                blocks and the inside of subsystems
+ *   path rate    the minimum over its elements, each at its own packet length; the element of the minimum is the
+ *                bottleneck. A route can change the length (headers, tags) and cut a packet into chunks: every packet
+ *                of the source then crosses an element as several fragments.
+ *
+ * Only stated rates are checked (traffic of an external interface): a source that is merely faster than its path is
+ * slowed by back pressure. The brief shows the capacity of every path at reference lengths. A block without rate data
+ * ends a path, with a remark. The enumeration of paths stops at a limit, with a remark.
+ */
+
+import { evaluate, makeEnv } from './expr.js';
+import { formatHz } from './rules.js';
+import { subsystemName } from './subsystems.js';
+
+/** @typedef {import('./catalog.js').Catalog} Catalog */
+/** @typedef {import('./design.js').Design} Design */
+/** @typedef {import('./resolver.js').Resolved} Resolved */
+/** @typedef {import('./resolver.js').Check} Check */
+/** @typedef {import('./expr.js').Num} Num */
+
+/** Paths per system before the analysis stops. */
+export const PATH_LIMIT = 10000;
+/** Time per system before the analysis stops, in milliseconds. */
+export const TIME_LIMIT_MS = 2000;
+/** Packet lengths at which the brief shows every path without stated traffic, in bytes. */
+export const REFERENCE_BYTES = [64, 1024];
+
+/**
+ * @typedef {object} Node
+ * @property {string} key      <path of subsystems><instance>.<Interface>[k]; a link: <instance>.<Interface>:out or :in
+ * @property {string} label    as the user reads it
+ * @property {'interface' | 'link-out' | 'link-in' | 'pass' | 'missing'} kind
+ * @property {any} [rec]       resolved instance
+ * @property {any} [block]     catalog block
+ * @property {any} [entry]     rate entry of the interface
+ * @property {any} [link]      rate entry of the link
+ * @property {boolean} [both]  a link whose inbound side is in use
+ * @property {Map<string, Num>} [env]
+ * @property {string} [domain]
+ * @property {string} [domainName]
+ * @property {number} [freq]
+ * @property {string} [itf]    interface name
+ * @property {number} [dataBytes]   bytes per beat of the stream at the port (typed interfaces)
+ * @property {boolean} [noReady]    a port without ready: no back pressure
+ */
+
+/**
+ * @typedef {object} Edge
+ * @property {string} to
+ * @property {any} [route]     the route inside a block: its length changes apply on this edge
+ * @property {Map<string, Num>} [env]
+ * @property {boolean} [split] one of several outputs of a route
+ */
+
+/**
+ * @typedef {object} Element
+ * @property {string} label
+ * @property {'interface' | 'link' | 'chain'} model
+ * @property {number} first   index of its first node on the path (its packet length)
+ * @property {number} last    index of its last node on the path
+ * @property {Node} node
+ * @property {any} [chain]    the chain entry of a chain element
+ * @property {string} [evidence]
+ */
+
+/**
+ * @typedef {object} Point
+ * @property {number} bytes        packet length at the source
+ * @property {number} packetsPerSecond
+ * @property {number} bitsPerSecond   payload at the source
+ * @property {number} bottleneck   index of the element
+ * @property {{ seconds: number, cycles?: number, fragments: number[], out: number[], capacity?: number }[]} elements
+ */
+
+/**
+ * @typedef {object} Path
+ * @property {Node} source
+ * @property {Node} sink
+ * @property {string[]} nodes
+ * @property {Edge[]} edges
+ * @property {Element[]} elements
+ * @property {boolean} split     the path takes one of several outputs of a route
+ * @property {boolean} chunked   a route on the path cuts packets into chunks
+ * @property {(bytes: number) => Point | null} at
+ * @property {number[]} references
+ */
+
+/**
+ * @typedef {object} Throughput
+ * @property {Path[]} paths
+ * @property {{ label: string, paths: number[] }[]} shared   elements on paths of more than one source
+ * @property {Map<string, { entity: string, labels: string[] }>} missing   blocks without rate data on a path
+ * @property {number} stopped   number of paths when the limit stopped the analysis, 0 otherwise
+ * @property {Check[]} checks
+ * @property {Map<string, { packetBytes: number, bitsPerSecond?: number }>} traffic   stated traffic by node key
+ */
+
+/**
+ * A rate in bit/s with three significant digits and an SI prefix (factor 1000).
+ * @param {number} bps
+ */
+export function formatRate(bps) {
+  if (!Number.isFinite(bps)) return String(bps);
+  const prefixes = ['', 'k', 'M', 'G', 'T'];
+  let k = 0;
+  let v = bps;
+  while (Math.abs(v) >= 1000 && k < prefixes.length - 1) {
+    v /= 1000;
+    k += 1;
+  }
+  let text = v.toPrecision(3);
+  if (Number(text) >= 1000 && k < prefixes.length - 1) {
+    k += 1;
+    text = (v / 1000).toPrecision(3);
+  }
+  return `${text} ${prefixes[k]}bit/s`;
+}
+
+/**
+ * A number with three significant digits (cycles, percent).
+ * @param {number} x
+ */
+export function formatNumber(x) {
+  if (Number.isInteger(x) && Math.abs(x) < 1e6) return String(x);
+  return Number(x.toPrecision(3)).toString();
+}
+
+/**
+ * Evaluates an expression of the rate data.
+ * @param {string | number} text
+ * @param {Map<string, Num>} env
+ * @param {number} [n]   packet length
+ */
+function value(text, env, n) {
+  if (typeof text === 'number') return text;
+  const e = n === undefined ? env : new Map(env).set('n', { value: n, real: !Number.isInteger(n) });
+  return evaluate(text, e);
+}
+
+/**
+ * The environment of an instance for its rate data: its generics, the variables of its rate data and the frequency
+ * of every clock (Freq_<port>, real).
+ * @param {Catalog} cat
+ * @param {any} b
+ * @param {any} rec
+ * @param {Map<string, number>} freqs   domain id -> Hz
+ */
+function envOf(cat, b, rec, freqs) {
+  const env = cat.envFor(b, rec.generics);
+  for (const [port, dom] of Object.entries(/** @type {Record<string, string>} */ (rec.clocks ?? {}))) {
+    const f = freqs.get(dom);
+    if (f !== undefined) env.set(`freq_${port}`.toLowerCase(), { value: f, real: true });
+  }
+  for (const [k, v] of Object.entries(b.rates?.vars ?? {})) {
+    try {
+      const x = value(/** @type {string | number} */ (v), env);
+      env.set(k.toLowerCase(), { value: x, real: !Number.isInteger(x) });
+    } catch {
+      // a variable that cannot be evaluated makes the expressions that use it fail, which ends the path
+    }
+  }
+  return env;
+}
+
+/**
+ * @typedef {object} Graph
+ * @property {Map<string, Node>} nodes
+ * @property {Map<string, Edge[]>} edges
+ * @property {Node[]} sources
+ * @property {Set<string>} sinks
+ * @property {Map<string, { packetBytes: number, bitsPerSecond?: number }>} traffic
+ */
+
+/**
+ * Adds one level of the system (the system, or a subsystem inside it) to the graph.
+ * @param {Graph} g
+ * @param {Catalog} cat
+ * @param {Design} d
+ * @param {Resolved} res
+ * @param {string} prefix   key prefix: subsystem instances with "/"
+ * @param {boolean} top
+ * @returns {Map<string, string>} external interface of this level -> node key
+ */
+function addLevel(g, cat, d, res, prefix, top) {
+  /** @type {Map<string, number>} */
+  const freqs = new Map(d.clockDomains.map((c) => [c.id, c.frequencyHz]));
+  const domName = new Map(d.clockDomains.map((c) => [c.id, c.name]));
+  /** @param {string} from @param {Edge} e */
+  const edge = (from, e) => g.edges.set(from, [...(g.edges.get(from) ?? []), e]);
+  const connected = new Set(res.chains.flatMap((c) => [c.from, c.to]));
+  const external = new Set(res.externals.map((e) => e.interface));
+
+  for (const rec of res.instances) {
+    const b = cat.blocks.get(rec.block);
+    if (!b) continue;
+    const sub = subsystemName(rec.block);
+    if (sub) {
+      const info = /** @type {any} */ (cat).subsystemInfo?.get(sub);
+      if (!info) continue;
+      const inner = addLevel(g, cat, info.design, info.res, `${prefix}${rec.id}/`, false);
+      // the interfaces of the subsystem pass to the external interfaces inside
+      for (const ext of info.res.externals) {
+        const name = ext.prefix.replace(/_$/, '');
+        const itf = b.interfaces.find((/** @type {any} */ i) => i.name === name);
+        const innerKey = inner.get(ext.interface);
+        if (!itf || !innerKey) continue;
+        const key = `${prefix}${rec.id}.${name}`;
+        g.nodes.set(key, { key, label: `${prefix}${rec.id}.${name}`, kind: 'pass', rec, block: b, itf: name });
+        if (itf.role === 'sink') edge(key, { to: innerKey });
+        else edge(innerKey, { to: key });
+      }
+      continue;
+    }
+    const env = envOf(cat, b, rec, freqs);
+    const rates = b.rates;
+    const ports = cat.ports(b, rec.generics).filter((p) => p.type.kind === 'stream');
+    const paced = new Set((rates?.routes ?? []).filter((/** @type {any} */ r) => r.paced).map((/** @type {any} */ r) => r.to));
+    for (const p of ports) {
+      const key = `${prefix}${rec.id}.${p.ref}`;
+      const dom = p.itf.clock ? rec.clocks[p.itf.clock] : rec.domain;
+      /** @type {Node} */
+      const node = { key, label: key, kind: 'missing', rec, block: b, itf: p.itf.name, env, domain: dom, domainName: domName.get(dom ?? '') ?? dom, freq: freqs.get(dom ?? '') };
+      if (p.widths.data) node.dataBytes = p.widths.data / 8;
+      node.noReady = !Object.prototype.hasOwnProperty.call(p.itf.signals ?? {}, 'ready');
+      if (rates?.interfaces?.[p.itf.name]) {
+        node.kind = 'interface';
+        node.entry = rates.interfaces[p.itf.name];
+      } else if (rates && paced.has(p.itf.name)) node.kind = 'pass';
+      else if (rates) continue;   // an interface the rate data does not cover (time-codes, status) is no part of a path
+      g.nodes.set(key, node);
+    }
+    if (!rates) continue;
+    /** @param {string} name */
+    const portsOf = (name) => ports.filter((p) => p.itf.name === name);
+    for (const r of rates.routes ?? []) {
+      const from = portsOf(r.from);
+      const to = portsOf(r.to);
+      const pairwise = from.length > 1 && from.length === to.length;
+      for (const [k, p] of from.entries()) {
+        const targets = pairwise ? [to[k]] : to;
+        for (const q of targets) {
+          edge(`${prefix}${rec.id}.${p.ref}`, { to: `${prefix}${rec.id}.${q.ref}`, route: r, env, split: targets.length > 1 });
+        }
+      }
+    }
+    for (const lk of rates.links ?? []) {
+      const outKey = `${prefix}${rec.id}.${lk.interface}:out`;
+      const inKey = `${prefix}${rec.id}.${lk.interface}:in`;
+      const inbound = lk.to ? portsOf(lk.to) : [];
+      const both = inbound.some((p) => connected.has(`${rec.id}.${p.ref}`) || external.has(`${rec.id}.${p.ref}`));
+      const label = `the link of ${prefix}${rec.id}`;
+      if (lk.from) {
+        g.nodes.set(outKey, { key: outKey, label, kind: 'link-out', rec, block: b, link: lk, both, env, itf: lk.interface });
+        g.sinks.add(outKey);
+        for (const p of portsOf(lk.from)) edge(`${prefix}${rec.id}.${p.ref}`, { to: outKey });
+      }
+      if (lk.to) {
+        g.nodes.set(inKey, { key: inKey, label, kind: 'link-in', rec, block: b, link: lk, both, env, itf: lk.interface });
+        g.sources.push(/** @type {Node} */ (g.nodes.get(inKey)));
+        for (const p of inbound) edge(inKey, { to: `${prefix}${rec.id}.${p.ref}`, split: inbound.length > 1 });
+      }
+    }
+  }
+  // the connections, through their inserted adapters
+  for (const c of res.chains) for (const h of c.hops) edge(`${prefix}${h.from}`, { to: `${prefix}${h.to}` });
+  /** @type {Map<string, string>} */
+  const exts = new Map();
+  for (const e of res.externals) {
+    const key = `${prefix}${e.interface}`;
+    const node = g.nodes.get(key);
+    if (!node) continue;
+    exts.set(e.interface, key);
+    if (!top) continue;
+    const ext = d.externals.find((x) => x.interface === e.interface);
+    node.label = `${e.prefix} (${e.interface})`;
+    if (ext?.traffic) g.traffic.set(key, ext.traffic);
+    const role = node.rec ? cat.ports(node.block, node.rec.generics).find((p) => `${node.rec.id}.${p.ref}` === e.interface)?.itf.role : undefined;
+    if (role === 'sink') g.sources.push(node);
+    else if (role === 'source') g.sinks.add(key);
+  }
+  return exts;
+}
+
+/**
+ * The fragments of a packet after a route: cut into chunks, then the length change of each.
+ * @param {number[]} frags
+ * @param {any} route
+ * @param {Map<string, Num>} env
+ */
+function afterRoute(frags, route, env) {
+  let out = frags;
+  if (route.chunk !== undefined) {
+    const c = value(route.chunk, env);
+    out = out.flatMap((f) => {
+      const whole = Math.floor(f / c);
+      const rest = f - whole * c;
+      return [...Array(whole).fill(c), ...(rest > 0 ? [rest] : [])];
+    });
+  }
+  if (route.addBytes !== undefined) out = out.map((f) => f + value(route.addBytes, env, f));
+  return out;
+}
+
+/**
+ * Seconds that an element needs for the fragments of one packet of the source.
+ * @param {Element} el
+ * @param {number[]} frags
+ * @param {number | undefined} carried   bytes per beat of the stream before the element
+ * @returns {{ seconds: number, cycles?: number, capacity?: number, bytesPerBeat?: number }}
+ */
+function elementTime(el, frags, carried) {
+  const node = el.node;
+  const env = /** @type {Map<string, Num>} */ (node.env);
+  if (el.model === 'link') {
+    const lk = node.link;
+    const eff = lk.efficiency;
+    const e = new Map(env);
+    if (eff) {
+      const table = node.both ? eff.bothDirections : eff.oneDirection;
+      const v = table[String(value(eff.by, env))];
+      if (typeof v !== 'number') throw new Error(`no efficiency for ${eff.by} = ${value(eff.by, env)}`);
+      e.set('eff', { value: v, real: true });
+    }
+    const expr = node.both && lk.capacityBoth ? lk.capacityBoth : lk.capacity;
+    let seconds = 0;
+    for (const f of frags) seconds += f / value(expr, e, f);
+    const total = frags.reduce((s, f) => s + f, 0);
+    return { seconds, capacity: total / seconds };
+  }
+  const freq = node.freq;
+  if (!(typeof freq === 'number' && freq > 0)) throw new Error(`no clock frequency at ${node.label}`);
+  if (el.model === 'chain') {
+    let cycles = 0;
+    for (const f of frags) cycles += value(el.chain.cycles, env, f);
+    return { seconds: cycles / freq, cycles };
+  }
+  const entry = node.entry;
+  let bytesPerBeat;
+  let cycles = 0;
+  if (entry.cycles !== undefined) {
+    for (const f of frags) cycles += value(entry.cycles, env, f);
+  } else {
+    bytesPerBeat = entry.bytesPerBeat === 'carried' ? carried ?? node.dataBytes : value(entry.bytesPerBeat, env);
+    if (!(typeof bytesPerBeat === 'number' && bytesPerBeat > 0)) throw new Error(`no bytes per beat at ${node.label}`);
+    const perCycle = entry.beatsPerCycle === undefined ? 1 : value(entry.beatsPerCycle, env);
+    const extra = entry.extraBeats === undefined ? 0 : value(entry.extraBeats, env);
+    for (const f of frags) {
+      const over = entry.overheadCycles === undefined ? 0 : value(entry.overheadCycles, env, f);
+      cycles += (Math.ceil(f / bytesPerBeat) + extra) / perCycle + over;
+    }
+  }
+  return { seconds: cycles / freq, cycles, bytesPerBeat };
+}
+
+/**
+ * The elements of a path: its interfaces and links, with a measured chain formula in place of the elements it covers.
+ * @param {Graph} g
+ * @param {string[]} keys
+ * @param {Edge[]} edges
+ */
+function elementsOf(g, keys, edges) {
+  /** @type {Element[]} */
+  const out = [];
+  for (let i = 0; i < keys.length; i += 1) {
+    const node = /** @type {Node} */ (g.nodes.get(keys[i]));
+    if (node.kind === 'link-out' || node.kind === 'link-in') {
+      out.push({ label: node.label, model: 'link', first: i, last: i, node, evidence: node.block?.rates?.evidence });
+      continue;
+    }
+    if (node.kind !== 'interface') continue;
+    // a measured formula of a pair of blocks: this output, the input of the next block, its output
+    const chain = (node.block.rates.chains ?? []).find((/** @type {any} */ ch) => {
+      if (ch.from !== node.itf || i + 2 >= keys.length || edges[i].route) return false;
+      const a = g.nodes.get(keys[i + 1]);
+      const b = g.nodes.get(keys[i + 2]);
+      if (!a?.rec || !b || b.rec !== a.rec) return false;
+      return a.block.id === ch.to.block && a.itf === ch.to.in && b.itf === ch.to.out && (!ch.to.when || a.rec.generics[ch.to.when] === true);
+    });
+    if (chain) {
+      const core = /** @type {Node} */ (g.nodes.get(keys[i + 2]));
+      out.push({ label: core.label, model: 'chain', first: i, last: i + 2, node, chain, evidence: chain.evidence });
+      i += 2;
+      continue;
+    }
+    out.push({ label: node.label, model: 'interface', first: i, last: i, node, evidence: node.block.rates.evidence });
+  }
+  return out;
+}
+
+/**
+ * Builds a path with its evaluation.
+ * @param {Graph} g
+ * @param {string[]} keys
+ * @param {Edge[]} edges
+ * @returns {Path}
+ */
+function makePath(g, keys, edges) {
+  const source = /** @type {Node} */ (g.nodes.get(keys[0]));
+  const sink = /** @type {Node} */ (g.nodes.get(keys[keys.length - 1]));
+  const elements = elementsOf(g, keys, edges);
+  const split = edges.some((e) => e.split);
+  const chunked = edges.some((e) => e.route?.chunk !== undefined);
+  /** @type {Map<number, Point | null>} */
+  const cache = new Map();
+  const at = (/** @type {number} */ bytes) => {
+    if (cache.has(bytes)) return /** @type {Point | null} */ (cache.get(bytes));
+    /** @type {Point | null} */
+    let point = null;
+    try {
+      // the fragments of one packet of the source at every node of the path
+      /** @type {number[][]} */
+      const frags = [[bytes]];
+      for (let i = 0; i < edges.length; i += 1) {
+        const e = edges[i];
+        frags.push(e.route ? afterRoute(frags[i], e.route, /** @type {Map<string, Num>} */ (e.env)) : frags[i]);
+      }
+      /** @type {Point['elements']} */
+      const times = [];
+      /** @type {number | undefined} */
+      let carried;
+      for (const el of elements) {
+        const t = elementTime(el, frags[el.first], carried);
+        if (t.bytesPerBeat !== undefined) carried = t.bytesPerBeat;
+        else if (el.node.dataBytes !== undefined) carried = el.node.dataBytes;
+        times.push({ seconds: t.seconds, cycles: t.cycles, capacity: t.capacity, fragments: frags[el.first], out: frags[el.last] });
+      }
+      let worst = 0;
+      for (let k = 1; k < times.length; k += 1) if (times[k].seconds > times[worst].seconds) worst = k;
+      const pps = times.length ? 1 / times[worst].seconds : Infinity;
+      point = { bytes, packetsPerSecond: pps, bitsPerSecond: 8 * bytes * pps, bottleneck: worst, elements: times };
+    } catch {
+      point = null;
+    }
+    cache.set(bytes, point);
+    return point;
+  };
+  // reference lengths: 64 and 1024 bytes, the largest packet of the source where its rate data states one
+  const refs = new Set(REFERENCE_BYTES);
+  const max = source.entry?.maxBytes;
+  if (max !== undefined) {
+    try {
+      refs.add(value(max, /** @type {Map<string, Num>} */ (source.env)));
+    } catch {
+      // no largest packet
+    }
+  }
+  const stated = g.traffic.get(source.key);
+  if (stated) refs.add(stated.packetBytes);
+  return { source, sink, nodes: keys, edges, elements, split, chunked, at, references: [...refs].sort((a, b) => a - b) };
+}
+
+/**
+ * Text of the cost of an element at a point, for the messages: clock, cycles and lengths, or the link rate.
+ * @param {Path} p
+ * @param {Point} pt
+ * @param {number} k   element index
+ */
+export function elementText(p, pt, k) {
+  const el = p.elements[k];
+  const t = pt.elements[k];
+  const word = el.node.block?.rates?.packet ?? 'packet';
+  const frags = t.fragments;
+  const lengths = frags.length === 1 ? `of ${frags[0]} B` : `in ${frags.length} ${word}s of up to ${Math.max(...frags)} B`;
+  if (el.model === 'link') {
+    return `${formatRate(8 * (t.capacity ?? 0))} on the link at ${frags.length === 1 ? `${frags[0]} B` : `up to ${Math.max(...frags)} B`} ${word}s${el.node.both ? ', both directions in use' : ''}`;
+  }
+  const n = el.node;
+  if (el.model === 'chain') {
+    // the pair of blocks: its cycles per chunk and the length of a chunk at the output of the second block
+    const per = t.out.length === 1 ? `${formatNumber(t.cycles ?? 0)} cycles per ${word}, ${t.out[0]} B out` : `${formatNumber(t.cycles ?? 0)} cycles per packet in ${t.out.length} ${word}s of up to ${Math.max(...t.out)} B out`;
+    return `${n.domainName}, ${formatHz(n.freq ?? 0)}: ${per}, chain formula`;
+  }
+  const per = frags.length === 1 ? `${formatNumber(t.cycles ?? 0)} cycles per ${word} ${lengths}` : `${formatNumber(t.cycles ?? 0)} cycles per packet ${lengths}`;
+  return `${n.domainName}, ${formatHz(n.freq ?? 0)}: ${per}`;
+}
+
+/**
+ * Advice for a bottleneck.
+ * @param {Element} el
+ */
+function advice(el) {
+  if (el.model === 'link') return `raise the line rate of ${el.node.rec.id}${el.node.link.efficiency ? ' or its lanes' : ''}, or lower the rate`;
+  return `raise the clock of the domain ${el.node.domainName}, widen the data path of ${el.node.rec.id}, or lower the rate`;
+}
+
+/**
+ * The instance of a check about an element: the instance of the system it belongs to (not one inside a subsystem).
+ * @param {Element} el
+ * @returns {{ instance?: string }}
+ */
+function instanceOf(el) {
+  const key = el.node.key;
+  return key.includes('/') || !el.node.rec ? {} : { instance: el.node.rec.id };
+}
+
+/**
+ * The throughput analysis of a system.
+ * @param {Catalog} cat   the catalog of the design (withSubsystems)
+ * @param {Design} d
+ * @param {Resolved} res
+ * @param {{ maxPaths?: number, maxMs?: number }} [opts]
+ * @returns {Throughput}
+ */
+export function analyseThroughput(cat, d, res, opts = {}) {
+  const maxPaths = opts.maxPaths ?? PATH_LIMIT;
+  const maxMs = opts.maxMs ?? TIME_LIMIT_MS;
+  /** @type {Graph} */
+  const g = { nodes: new Map(), edges: new Map(), sources: [], sinks: new Set(), traffic: new Map() };
+  addLevel(g, cat, d, res, '', true);
+
+  /** @type {Path[]} */
+  const paths = [];
+  /** @type {Map<string, { entity: string, labels: string[] }>} */
+  const missing = new Map();
+  let stopped = 0;
+  const t0 = Date.now();
+  /**
+   * @param {string} key
+   * @param {string[]} keys
+   * @param {Edge[]} edges
+   * @param {Set<string>} seen
+   */
+  const walk = (key, keys, edges, seen) => {
+    if (stopped) return;
+    const node = g.nodes.get(key);
+    if (!node) return;
+    if (node.kind === 'missing') {
+      const m = missing.get(node.block.id) ?? { entity: node.block.entity, labels: /** @type {string[]} */ ([]) };
+      const label = node.key.slice(0, node.key.lastIndexOf('.'));
+      if (!m.labels.includes(label)) m.labels.push(label);
+      missing.set(node.block.id, m);
+      return;
+    }
+    if (keys.length > 1 && g.sinks.has(key)) {
+      if (paths.length >= maxPaths || Date.now() - t0 > maxMs) {
+        stopped = paths.length;
+        return;
+      }
+      paths.push(makePath(g, [...keys], [...edges]));
+      return;
+    }
+    for (const e of g.edges.get(key) ?? []) {
+      if (seen.has(e.to)) continue;
+      seen.add(e.to);
+      keys.push(e.to);
+      edges.push(e);
+      walk(e.to, keys, edges, seen);
+      keys.pop();
+      edges.pop();
+      seen.delete(e.to);
+    }
+  };
+  for (const s of g.sources) walk(s.key, [s.key], [], new Set([s.key]));
+
+  // elements on paths of more than one source
+  /** @type {Map<string, { label: string, paths: number[], sources: Set<string> }>} */
+  const byElement = new Map();
+  paths.forEach((p, k) => {
+    for (const el of p.elements) {
+      const key = el.model === 'link' ? el.node.key : `${el.node.key}#${el.model}`;
+      const e = byElement.get(key) ?? { label: el.label, paths: [], sources: new Set() };
+      e.paths.push(k);
+      e.sources.add(p.source.key);
+      byElement.set(key, e);
+    }
+  });
+  const shared = [...byElement.values()].filter((e) => e.sources.size > 1).map((e) => ({ label: e.label, paths: e.paths }));
+
+  /** @type {Check[]} */
+  const checks = [];
+  const assume = (/** @type {Path} */ p) => (p.split ? ` Assuming every packet of ${p.source.label} reaches ${p.sink.label}.` : '');
+  // stated rates of sources
+  for (const p of paths) {
+    const t = g.traffic.get(p.source.key);
+    if (!t?.bitsPerSecond) continue;
+    const pt = p.at(t.packetBytes);
+    if (!pt || pt.bitsPerSecond >= t.bitsPerSecond) continue;
+    const bn = p.elements[pt.bottleneck];
+    const loss = p.source.noReady ? ' Without back pressure the excess is lost.' : '';
+    checks.push({
+      severity: 'warning',
+      rule: 'throughput',
+      message: `${p.source.label} needs ${formatRate(t.bitsPerSecond)} at ${t.packetBytes} B packets; the path ${p.source.label} to ${p.sink.label} sustains ${formatRate(pt.bitsPerSecond)} at ${t.packetBytes} B packets, limited by ${bn.label} (${elementText(p, pt, pt.bottleneck)}).${loss} To meet it, ${advice(bn)}.${assume(p)}`,
+      ...instanceOf(bn),
+    });
+  }
+  // stated rates of sinks: at the length the source gives the stated length at the sink
+  for (const p of paths) {
+    const t = g.traffic.get(p.sink.key);
+    if (!t?.bitsPerSecond) continue;
+    const st = g.traffic.get(p.source.key);
+    let bytes = st?.packetBytes;
+    if (bytes === undefined) {
+      if (p.chunked) {
+        checks.push({ severity: 'info', rule: 'throughput', message: `${p.sink.label} states ${formatRate(t.bitsPerSecond)} at ${t.packetBytes} B packets, but the packets of ${p.source.label} are cut into chunks on the way; the rate of this path is not checked.` });
+        continue;
+      }
+      // the source length that gives the stated length at the sink (the routes add or remove bytes)
+      bytes = t.packetBytes;
+      for (let k = 0; k < 4; k += 1) {
+        const pt = p.at(bytes);
+        const last = pt?.elements[pt.elements.length - 1]?.fragments[0];
+        if (!pt || last === undefined || last === t.packetBytes) break;
+        bytes = Math.max(1, bytes + t.packetBytes - last);
+      }
+    }
+    const pt = p.at(bytes);
+    if (!pt) continue;
+    const atSink = pt.packetsPerSecond * 8 * t.packetBytes;
+    if (atSink >= t.bitsPerSecond) continue;
+    const bn = p.elements[pt.bottleneck];
+    checks.push({
+      severity: 'warning',
+      rule: 'throughput',
+      message: `${p.sink.label} needs ${formatRate(t.bitsPerSecond)} at ${t.packetBytes} B packets; the path ${p.source.label} to ${p.sink.label} delivers at most ${formatRate(atSink)} at ${t.packetBytes} B packets (${bytes} B at the source), limited by ${bn.label} (${elementText(p, pt, pt.bottleneck)}). To meet it, ${advice(bn)}.${assume(p)}`,
+      ...instanceOf(bn),
+    });
+  }
+  // shared elements: the stated packet rates of their sources together
+  for (const [, e] of byElement) {
+    if (e.sources.size < 2) continue;
+    /** @type {{ label: string, bps: number, bytes: number, share: number, split: boolean }[]} */
+    const loads = [];
+    for (const src of e.sources) {
+      const t = g.traffic.get(src);
+      if (!t?.bitsPerSecond) continue;
+      let share = 0;
+      let split = false;
+      for (const k of e.paths) {
+        const p = paths[k];
+        if (p.source.key !== src) continue;
+        const pt = p.at(t.packetBytes);
+        const idx = p.elements.findIndex((x) => x.label === e.label);
+        if (!pt || idx < 0) continue;
+        share = Math.max(share, (t.bitsPerSecond / (8 * t.packetBytes)) * pt.elements[idx].seconds);
+        split ||= p.split;
+      }
+      loads.push({ label: /** @type {Node} */ (g.nodes.get(src)).label, bps: t.bitsPerSecond, bytes: t.packetBytes, share, split });
+    }
+    const total = loads.reduce((s, l) => s + l.share, 0);
+    if (loads.length < 2 || total <= 1) continue;
+    checks.push({
+      severity: 'warning',
+      rule: 'throughput',
+      message: `${e.label} carries ${loads.map((l) => `${l.label} (${formatRate(l.bps)} at ${l.bytes} B packets, ${formatNumber(100 * l.share)} % of its capacity)`).join(' and ')}: together ${formatNumber(100 * total)} % of its capacity.${loads.some((l) => l.split) ? ' Assuming every packet of each reaches it.' : ''}`,
+    });
+  }
+  for (const [, m] of missing) {
+    /** @type {Check} */
+    const c = { severity: 'info', rule: 'throughput', message: `No rate data for ${m.entity} (${m.labels.join(', ')}): the paths through it are not checked.` };
+    if (m.labels.length === 1 && !m.labels[0].includes('/')) c.instance = m.labels[0];
+    checks.push(c);
+  }
+  if (stopped) {
+    checks.push({ severity: 'info', rule: 'throughput', message: `Throughput analysis stopped after ${stopped} paths (limit ${maxPaths} paths or ${maxMs / 1000} s); the brief lists the paths analysed.` });
+  }
+  return { paths, shared, missing, stopped, checks, traffic: g.traffic };
+}

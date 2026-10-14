@@ -146,3 +146,18 @@ blocks:
       - Set INT_HOLDOFF and INT_ACK_DELAY for the network before distributed interrupts are used.
       - Serve the indication ports before the indication FIFO (16 entries) fills.
       - Write registers as 32-bit words; a read that depends on a write waits for the write response.
+    rates:
+      evidence: "user guide section 7; TC-DL-43 (one N-Char per UserClk cycle at the packet ports), TC-DL-40 and TC-CORE-11 (link rate in one and in both directions), TC-EN-03 (run dividers)"
+      packet: packet
+      interfaces:
+        S_Pkt: { bytesPerBeat: 1, extraBeats: 1 }      # the end of packet marker is a beat without a byte
+        M_Pkt: { bytesPerBeat: 1, extraBeats: 1 }
+      links:
+        - interface: Spw
+          from: S_Pkt
+          to: M_Pkt
+          # payload bytes per second at the bit rate R = LinkClk / RunDiv_g (reset value of LINK_SPEED.RUN_DIV): ten
+          # bits per data character, four per end marker; in both directions also one FCT per eight N-Chars received
+          capacity: "n * Freq_LinkClk / RunDiv_g / (10 * n + 4)"
+          capacityBoth: "n * Freq_LinkClk / RunDiv_g / (10.5 * n + 4.5)"
+          note: "the bit rate follows RunDiv_g, the reset value of LINK_SPEED.RUN_DIV; software can change it"

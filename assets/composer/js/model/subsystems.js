@@ -103,7 +103,7 @@ export function definitionDocument(def) {
       if (c.adapters) o.adapters = JSON.parse(JSON.stringify(c.adapters));
       return o;
     }),
-    externals: def.externals.map((e) => ({ interface: e.interface, prefix: e.prefix })),
+    externals: def.externals.map((e) => (e.traffic ? { interface: e.interface, prefix: e.prefix, traffic: { ...e.traffic } } : { interface: e.interface, prefix: e.prefix })),
   };
 }
 

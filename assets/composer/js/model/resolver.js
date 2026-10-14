@@ -17,6 +17,7 @@ import { absentValue, isDriver } from './catalog.js';
 import { typedEndpoint } from './compat.js';
 import { tryEvaluate } from './expr.js';
 import { runRules } from './rules.js';
+import { analyseThroughput } from './throughput.js';
 import { netlist } from './netlist.js';
 import {
   bindingChecks, registerSubsystemModel, SUBSYSTEM_PREFIX, subsystemChecks, subsystemName, withSubsystems,
@@ -87,6 +88,7 @@ import {
  * @property {{ port: string, value: string, reason: string, fields?: FieldValue[] }[]} tieOffs
  * @property {Record<string, unknown>[]} constraints
  * @property {Check[]} checks
+ * @property {import('./throughput.js').Throughput} [throughput]   throughput budget of the system (not of a definition)
  */
 
 const HANDSHAKE = new Set(['valid', 'ready', 'rsp_valid', 'rsp_accept']);
@@ -212,6 +214,9 @@ export function resolve(cat, d) {
   cat = withSubsystems(cat, d);
   const res = new Resolution(cat, d).run();
   if (d.subsystems && Object.keys(d.subsystems).length > 0) res.checks.push(...subsystemChecks(cat, d));
+  // the throughput budget: its findings are checks, its tables are in the brief; the netlist stays as it is
+  res.throughput = analyseThroughput(cat, d, res);
+  res.checks.push(...res.throughput.checks);
   return res;
 }
 

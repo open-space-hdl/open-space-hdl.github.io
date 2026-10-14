@@ -92,6 +92,13 @@ blocks:
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: In_Clk, tieOff: default, signals: { bitflip: In_ErrInj_BitFlip, valid: In_ErrInj_Valid } }
     constraints:
       - { kind: vendor_scoped, file: src/base/tcl/olo_base_constraints_amd.tcl, note: "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)." }
+    rates:
+      evidence: "Open Logic test BackToBack of olo_ft_fifo_async_tb (one word per cycle on each side)"
+      interfaces:
+        In: { bytesPerBeat: carried }
+        Out: { bytesPerBeat: carried }
+      routes:
+        - { from: In, to: Out, addBytes: "0" }
 
   - id: olo/olo_ft_fifo_packet
     kind: olo
@@ -191,6 +198,13 @@ blocks:
         signals: { full: Out_Full, empty: Out_Empty, alm_full: Out_AlmFull, alm_empty: Out_AlmEmpty, level: Out_Level }
     constraints:
       - { kind: vendor_scoped, file: src/base/tcl/olo_base_constraints_amd.tcl, note: "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)." }
+    rates:
+      evidence: "Open Logic test TwoWordsWriteAndRead of olo_base_fifo_async_tb (words in consecutive cycles on each side)"
+      interfaces:
+        In: { bytesPerBeat: carried }
+        Out: { bytesPerBeat: carried }
+      routes:
+        - { from: In, to: Out, addBytes: "0" }
 
   - id: olo/olo_base_cc_bits
     kind: olo
@@ -272,6 +286,13 @@ blocks:
       - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, wordena: Out_WordEna } }
     notes:
       - A partially filled output word leaves only with In_Last; a source without last strands its final words.
+    rates:
+      evidence: "Open Logic documentation of olo_base_wconv_n2xn (back-to-back conversions); test FullThrottle of olo_base_wconv_n2xn_tb"
+      interfaces:
+        In: { bytesPerBeat: InWidth_g / 8 }
+        Out: { bytesPerBeat: OutWidth_g / 8 }
+      routes:
+        - { from: In, to: Out, addBytes: "0" }
 
   - id: olo/olo_base_wconv_xn2n
     kind: olo
@@ -296,6 +317,13 @@ blocks:
     interfaces:
       - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last, wordena: In_WordEna } }
       - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
+    rates:
+      evidence: "Open Logic documentation of olo_base_wconv_xn2n (back-to-back conversions); test FullThrottle of olo_base_wconv_xn2n_tb"
+      interfaces:
+        In: { bytesPerBeat: InWidth_g / 8 }
+        Out: { bytesPerBeat: OutWidth_g / 8 }
+      routes:
+        - { from: In, to: Out, addBytes: "0" }
 
   - id: olo/olo_base_wconv_n2m
     kind: olo
@@ -322,6 +350,13 @@ blocks:
     interfaces:
       - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, keep: In_Be, valid: In_Valid, ready: In_Ready, last: In_Last } }
       - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, keep: Out_Be, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
+    rates:
+      evidence: "Open Logic documentation of olo_base_wconv_n2m (back-to-back conversions); tests RateLimit-Input and RateLimit-Output of olo_base_wconv_n2m_tb"
+      interfaces:
+        In: { bytesPerBeat: InWidth_g / 8 }
+        Out: { bytesPerBeat: OutWidth_g / 8 }
+      routes:
+        - { from: In, to: Out, addBytes: "0" }
 
   # Clock crossings ---------------------------------------------------------------------------------------------------
   - id: olo/olo_base_cc_handshake
@@ -380,6 +415,13 @@ blocks:
       - { name: Out, label: Output, type: axis.any, role: source, clock: Out_Clk, signals: { data: Out_Data, valid: Out_Valid } }
     constraints:
       - { kind: vendor_scoped, file: src/base/tcl/olo_base_constraints_amd.tcl, note: "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)." }
+    rates:
+      evidence: "Open Logic documentation of olo_base_cc_simple (data rate at most the slower clock / (3 + SyncStages_g)); test MaxRate of olo_base_cc_simple_tb"
+      interfaces:
+        In: { bytesPerBeat: carried, beatsPerCycle: "min(Freq_In_Clk, Freq_Out_Clk) / Freq_In_Clk / (3 + SyncStages_g)" }
+        Out: { bytesPerBeat: carried, beatsPerCycle: "min(Freq_In_Clk, Freq_Out_Clk) / Freq_Out_Clk / (3 + SyncStages_g)" }
+      routes:
+        - { from: In, to: Out, addBytes: "0" }
 
   - id: olo/olo_base_cc_n2xn
     kind: olo

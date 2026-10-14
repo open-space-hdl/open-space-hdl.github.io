@@ -321,6 +321,24 @@
           "prefix": {
             "type": "string",
             "pattern": "^[A-Za-z](?:_?[A-Za-z0-9])*_?$"
+          },
+          "traffic": {
+            "type": "object",
+            "description": "Stated traffic of the interface for the throughput budget (since 0.3.0-beta): the length of its packets and, optionally, the payload rate offered at an input or required at an output.",
+            "required": [
+              "packetBytes"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "packetBytes": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "bitsPerSecond": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
           }
         }
       }

@@ -38,7 +38,7 @@ permalink: /composer/format/
           <tr><td data-label="Key"><code>clockDomains</code></td><td data-label="Content">Clock domains with name, frequency and source (top-level port or a clock output)</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>instances</code></td><td data-label="Content">Placed blocks with generics that differ from the defaults, clock assignment and constants</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>connections</code></td><td data-label="Content">Connections from a driving to a receiving interface, side band constants, adapter settings</td><td data-label="Written by">User</td></tr>
-          <tr><td data-label="Key"><code>externals</code></td><td data-label="Content">Interfaces that become ports of the top level, with a name prefix</td><td data-label="Written by">User</td></tr>
+          <tr><td data-label="Key"><code>externals</code></td><td data-label="Content">Interfaces that become ports of the top level, with a name prefix and optionally their stated traffic</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>subsystems</code></td><td data-label="Content">Version 2: the definitions of the subsystems the system uses, each with its hash</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>resolved</code></td><td data-label="Content">Netlist of the top level: ports, instances with generic and port maps, signals, assignments, packing, clocks, resets, constraints, compile order</td><td data-label="Written by">Derived</td></tr>
           <tr><td data-label="Key"><code>checks</code></td><td data-label="Content">Results of the structural checks and the design rules</td><td data-label="Written by">Derived</td></tr>
@@ -78,6 +78,10 @@ permalink: /composer/format/
         example the key slot of the OpenCrypto framer.</li>
       <li><code>adapters</code>: settings of the blocks the Composer inserts on a connection, for example the depth of
         an asynchronous FIFO: <code>{ "cdc": { "Depth_g": 64 } }</code>.</li>
+      <li><code>traffic</code> of an external interface (since 0.3.0-beta): the length of its packets in bytes and,
+        optionally, the payload rate offered at an input or required at an output, for the
+        <a href="#throughput">throughput budget</a>: <code>{ "packetBytes": 1024, "bitsPerSecond": 2.0e9 }</code>. The
+        key is written only when it is set; a Composer older than 0.3.0-beta does not read a file that has it.</li>
       <li>Values of generics: booleans and numbers as JSON, <code>std_logic</code> as <code>"0"</code> or
         <code>"1"</code>, vectors as VHDL literals (<code>"x\"FE\""</code>), strings without quotes.</li>
     </ul>
@@ -147,6 +151,38 @@ permalink: /composer/format/
       tab</strong> shows the tab of a subsystem, or opens its definition in a new tab.
     </p>
 
+    <h2 id="throughput">Throughput budget</h2>
+    <p>
+      The Composer computes the capacity of every path of a system from the rate data of the catalog. Every block that
+      has rate data states for its stream interfaces the clock cycles of a packet of n bytes, how its routes change the
+      length of a packet (headers, tags, chunks), the payload capacity of its links, and the test or measurement the
+      numbers come from. The inserted width converters and clock crossings have rate data from the Open Logic
+      documentation and tests.
+    </p>
+    <ul>
+      <li>A path runs from a source (an external stream input, the inbound side of a link) to a sink (an external
+        stream output, the outbound side of a link), through the connections, the inserted adapters, the routes inside
+        the blocks and the inside of subsystems.</li>
+      <li>The capacity of an element is <code>f / cycles(n)</code> packets per second at the frequency <code>f</code>
+        of its clock domain and its packet length <code>n</code>; a link has a payload capacity of its own. The path
+        runs at its slowest element, the bottleneck. A packet that a route cuts into chunks crosses the elements behind
+        it as several chunks.</li>
+      <li>A link uses its figures for traffic in both directions as soon as its inbound side is connected or external,
+        and those for one direction otherwise.</li>
+      <li>Where a route has several outputs whose choice the system makes at run time (receive ports by APID, virtual
+        channels), the path to each output assumes that every packet of the source reaches it.</li>
+    </ul>
+    <p>
+      The brief shows every path at reference lengths of 64 and 1024 bytes, at the largest packet where the catalog
+      states one, and at the stated length, with the bottleneck in bold. These are reference points, not assumed
+      traffic. The rule <code>throughput</code> checks only stated traffic (<code>traffic</code> of an external
+      interface): a warning when a stated rate exceeds the capacity of a path, or when the stated rates of the paths
+      through one element add up to more than its capacity. A source that is merely faster than its path is slowed by
+      back pressure and gets no warning. A block without rate data ends the paths through it, with the remark "No rate
+      data". The analysis stops after 10&nbsp;000 paths or 2&nbsp;s and then says so. Rates are payload in bit/s with
+      SI prefixes and three significant digits; every number of a message names its packet length.
+    </p>
+
     <h2 id="resolved">The resolved netlist</h2>
     <p>
       <code>resolved</code> describes the top level completely. It contains the placed blocks and the blocks the
@@ -204,7 +240,8 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
     <p>
       <code>checks</code> lists the results of the structural checks (missing connections of interfaces that must be
       served, side band constants, widths, clock crossings) and of the design rules of the catalog (clock relations,
-      generics that depend on each other, buffer sizes of a chain). Each entry has a severity (<code>error</code>,
+      generics that depend on each other, buffer sizes of a chain) and of the <a href="#throughput">throughput
+      budget</a>. Each entry has a severity (<code>error</code>,
       <code>warning</code>, <code>info</code>), the rule and a message, and names the instance, connection or clock
       domain it is about. A system with an error is not ready to build.
     </p>
@@ -213,7 +250,8 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
     <p>
       <code>agent.brief</code> is a Markdown text for a person or an AI agent: the repositories and their compile
       order, the ports of the top level with their clock domains and the field maps of the external interfaces, how
-      to write the architecture from <code>resolved</code>, the clock domains and resets, the constraints, the notes of
+      to write the architecture from <code>resolved</code>, the clock domains and resets, the constraints, the
+      throughput of every path, the notes of
       the user guides of the blocks, the initialisation by software (identification registers and the register writes
       that start the blocks), the open checks, a smoke test bench to verify the result with GHDL and an optional
       end-to-end test.

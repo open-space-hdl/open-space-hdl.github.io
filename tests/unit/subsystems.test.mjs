@@ -57,7 +57,10 @@ test('the fixture opens without remarks and saves byte for byte', () => {
   assert.deepEqual(unplaced, []);
   assert.deepEqual(Object.keys(design.subsystems ?? {}).sort(), ['rmap_node', 'spw_port']);
   assert.equal(toText(design, cat), text);
-  assert.deepEqual(checksOf(design), []);
+  // OpenRMAP has no rate data yet: the throughput of the paths through the RMAP targets is not checked
+  assert.deepEqual(checksOf(design), [
+    { severity: 'info', rule: 'throughput', message: 'No rate data for omap_core (rmap_node0/rmap0, rmap_node1/rmap0): the paths through it are not checked.' },
+  ]);
 });
 
 test('a definition is a block: interfaces named by their prefixes, a clock input per external domain, Rst', () => {

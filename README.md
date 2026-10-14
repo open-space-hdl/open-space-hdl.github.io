@@ -83,6 +83,11 @@ node tools/composer_examples.mjs          # or with example names (spacefibre_no
 A changed golden file in `tests/golden/` shows how the update changes the netlists and briefs of the example systems;
 review it before committing. A release of a core is not complete before its pin here is updated.
 
+The block description may carry the throughput data of the core in `rates`: the clock cycles per packet of every
+stream interface, the length changes of its routes, the payload capacity of its links and, required, the `evidence`
+(test cases or measurements of the core) behind the numbers. The Composer computes the throughput budget of a system
+from them (`/composer/format/#throughput`); a block without `rates` ends the paths through it with a remark.
+
 ### Tests
 
 From `tests/`, after `npm ci` and `npx playwright install chromium firefox webkit`:
