@@ -164,6 +164,8 @@ class Netlist {
     this.nets = [];
     /** @type {string[]} */
     this.problems = [];
+    /** @type {Map<string, string>} "<instance>.<port>" -> the top-level port that is its actual (clock pins) */
+    this.directActuals = new Map();
   }
 
   /**
@@ -343,6 +345,14 @@ class Netlist {
       const lo = m[3] ? Number(m[5]) : 0;
       const w = m[3] ? Number(m[4]) - lo + 1 : total;
       const bits = { sig: signalName(rec.id, m[2]), lo, width: w, total, vector, dir: /** @type {'in' | 'out'} */ (port.dir === 'out' ? 'out' : 'in') };
+      // a clock pin is the actual of its block port itself: an assignment would delay the clock by a delta cycle in
+      // simulation, and data of another domain could arrive before its edge
+      const itf = b.interfaces.find((x) => Object.values(x.signals).includes(port.name));
+      const logical = itf && Object.entries(itf.signals).find(([, pn]) => pn === port.name)?.[0];
+      if (itf && logical && (itf.clockSignals ?? []).includes(logical) && !m[3] && port.dir !== 'out') {
+        this.directActuals.set(`${rec.id}.${port.name}`, tp.name);
+        continue;
+      }
       // a one-bit vector port of the top level is used as its bit
       const topExpr = w === 1 && /vector/i.test(tp.vhdlType) ? `${tp.name}(0)` : tp.name;
       if (tp.dir === 'out') this.nets.push({ to: topExpr, from: bitsExpr(bits), kind: 'top', signal: m[2] });
@@ -420,6 +430,8 @@ class Netlist {
         } else if (p.name in rec.resets && p.dir !== 'out') {
           const r = rec.resets[p.name];
           o.actual = r === RESET_PORT ? RESET_PORT : r.endsWith('.RstOut') ? signalName(instanceOf(r), 'RstOut') : 'open';
+        } else if (this.directActuals.has(`${rec.id}.${p.name}`)) {
+          o.actual = this.directActuals.get(`${rec.id}.${p.name}`);
         } else if (used.has(sig)) {
           o.actual = sig;
           signals.push({ name: sig, type });

@@ -1,5 +1,5 @@
 {
-  "catalog": "b028ed4ffc06",
+  "catalog": "42a93b9ce784",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -2704,7 +2704,7 @@
           "name": "RefClk",
           "dir": "in",
           "type": "std_logic",
-          "actual": "pa0_RefClk_s"
+          "actual": "pa0_RefClk"
         },
         {
           "name": "LaneClk",
@@ -3850,10 +3850,6 @@
     {
       "name": "pa0_PhyTx_K_s",
       "type": "std_logic_vector(3 downto 0)"
-    },
-    {
-      "name": "pa0_RefClk_s",
-      "type": "std_logic"
     },
     {
       "name": "pa0_Stat_Aligned_s",
@@ -5041,12 +5037,6 @@
       "from": "pa0_Gt_RxN(0)",
       "kind": "top",
       "signal": "Gt_RxN"
-    },
-    {
-      "to": "pa0_RefClk_s",
-      "from": "pa0_RefClk",
-      "kind": "top",
-      "signal": "RefClk"
     },
     {
       "to": "spp0_S_Tx_Data_s",

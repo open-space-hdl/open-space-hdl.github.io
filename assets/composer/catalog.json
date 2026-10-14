@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "b028ed4ffc06",
+ "id": "42a93b9ce784",
  "sources": [
   {
    "id": "openwire",
@@ -8227,6 +8227,9 @@
      "label": "Serial lanes",
      "description": "Serial transmit and receive pairs of the quad and the reference clock from its IBUFDS_GTE5.",
      "externalOnly": true,
+     "clockSignals": [
+      "refclk"
+     ],
      "signals": {
       "tx_p": "Gt_TxP",
       "tx_n": "Gt_TxN",

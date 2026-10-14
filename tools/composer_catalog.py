@@ -937,9 +937,12 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 ctx.err(iwhere, f"required signal '{sname}' of type {tid} not mapped")
         out = {"name": iname, "type": tid, "role": role}
         for key in ("clock", "label", "description", "mustServe", "externalOnly", "enabledBy", "sideband",
-                    "params", "vector", "tieOff", "carry", "userFields", "needsLast"):
+                    "params", "vector", "tieOff", "carry", "userFields", "needsLast", "clockSignals"):
             if key in itf:
                 out[key] = itf[key]
+        for cs in itf.get("clockSignals") or []:
+            if cs not in signals or role != "pins":
+                ctx.err(iwhere, f"clockSignals: {cs} is not a signal of these pins")
         if itf.get("needsLast") and (role != "sink" or "last" not in signals):
             ctx.err(iwhere, "needsLast is for a sink with a last signal")
         for uf in itf.get("userFields") or []:
