@@ -267,18 +267,24 @@ const overlays = new WeakMap();
 
 /**
  * The catalog of a design: the catalog itself, or one with a block per subsystem definition of the design. The
- * same definitions give the same catalog object (cached), so it can be computed on every call.
+ * same definitions give the same catalog object (cached), so it can be computed on every call. A design without
+ * subsystems, such as a definition resolved inside the catalog of its system, keeps the catalog it is given; a
+ * design with other definitions than the given catalog gets its own, built on the block catalog.
  * @param {Catalog} cat
  * @param {Design} d
  * @returns {Catalog}
  */
 export function withSubsystems(cat, d) {
   const defs = d.subsystems;
-  if (!defs || Object.keys(defs).length === 0 || /** @type {any} */ (cat).subsystemInfo) return cat;
+  if (!defs || Object.keys(defs).length === 0) return cat;
+  const given = /** @type {any} */ (cat);
+  if (given.subsystemDefs === defs) return cat;
+  /** @type {Catalog} */
+  const base = given.baseCatalog ?? cat;
   const hit = overlays.get(defs);
-  if (hit && /** @type {any} */ (hit).baseCatalog === cat) return hit;
-  const ov = /** @type {Catalog} */ (Object.create(cat));
-  ov.blocks = new Map(cat.blocks);
+  if (hit && /** @type {any} */ (hit).baseCatalog === base) return hit;
+  const ov = /** @type {Catalog} */ (Object.create(base));
+  ov.blocks = new Map(base.blocks);
   /** @type {Map<string, SubsystemInfo>} */
   const info = new Map();
   /** @type {string[]} */
@@ -290,7 +296,7 @@ export function withSubsystems(cat, d) {
   } catch (e) {
     errors.push(e instanceof Error ? e.message : String(e));
   }
-  Object.assign(ov, { subsystemInfo: info, subsystemErrors: errors, baseCatalog: cat });
+  Object.assign(ov, { subsystemInfo: info, subsystemErrors: errors, baseCatalog: base, subsystemDefs: defs });
   for (const name of order) {
     // the definitions of the system hold all subsystems; those a definition carries itself (a system opened as a tab)
     // play no part

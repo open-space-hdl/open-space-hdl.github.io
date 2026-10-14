@@ -127,6 +127,24 @@ test('the VHDL export of the fixture matches its golden files: one entity and sc
   assert.equal(noCatalog(doc.agent.brief), noCatalog(readFileSync(`${GOLDEN}dual_rmap_node.brief.md`, 'utf-8')));
 });
 
+test('a file opens with the catalog of another system with subsystems', () => {
+  // the page reads a file with the catalog of the active tab, which holds the subsystems of that tab
+  let other = createDesign('other');
+  other = addInstance(other, cat, 'openwire/owr_core', { x: 0, y: 0 }).design;
+  let host = { ...createDesign('host'), subsystems: { other } };
+  host = addInstance(host, cat, 'subsystem/other', { x: 0, y: 0 }).design;
+  const active = withSubsystems(cat, host);
+  assert.ok(active.blocks.has('subsystem/other'));
+  const { design, warnings } = fromText(text, active);
+  assert.deepEqual(warnings, []);
+  assert.equal(toText(design, active), text);
+  const own = withSubsystems(active, design);
+  assert.notEqual(own, active);
+  assert.ok(own.blocks.has('subsystem/rmap_node') && !own.blocks.has('subsystem/other'));
+  // a definition resolved inside the catalog of its system keeps it
+  assert.equal(withSubsystems(own, /** @type {any} */ (design.subsystems).rmap_node), own);
+});
+
 test('a cycle or a missing definition is a format error', () => {
   const cycle = fixtureDoc();
   cycle.subsystems[0].instances.push({ id: 'loop0', subsystem: 'rmap_node', clocks: {} });
