@@ -1,4 +1,12 @@
-{%- comment -%} Tagline of a project: its items joined with " · ", a line breaks only between two items. {%- endcomment -%}
+{%- comment -%}
+  Tagline of a project: its items joined with " · ". A line breaks only after a separator, so the separator stays at
+  the end of the line and an item is never split. The space after a separator is an output tag, because Liquid drops
+  a block that contains only white space.
+{%- endcomment -%}
 {%- for item in include.items -%}
-<span class="nowrap">{{ item | escape }}</span>{% unless forloop.last %} · {% endunless %}
+{%- if forloop.last -%}
+<span class="nowrap">{{ item | escape }}</span>
+{%- else -%}
+<span class="nowrap">{{ item | escape }} ·</span>{{ ' ' }}
+{%- endif -%}
 {%- endfor -%}
