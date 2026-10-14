@@ -942,18 +942,22 @@ export class Resolution {
       } else seen.set(key, tp.ref ?? tp.kind);
     }
     // constraints
-    const external = d.clockDomains.filter((c) => c.source.kind === 'external' && this.topPorts.some((p) => p.domain === c.id));
     const clockNames = (/** @type {string[]} */ ids) => [...new Set(ids)].sort().map((id) => {
       const dom = this.domainMap.get(id);
       return dom?.source.kind === 'block' ? `${dom.source.instance}.${dom.source.port}` : `Clk_${id}`;
     });
-    if (external.length > 1) this.constraints.push({ kind: 'async_clock_groups', clocks: external.map((c) => `Clk_${c.id}`).sort() });
     if (d.instances.length > 0) this.constraints.push({ kind: 'false_path', from: [RESET_PORT], note: 'Asynchronous reset input; the reset generators synchronise its release.' });
     // the constraints of the blocks in terms of the top level: ports of external interfaces by their top-level name,
     // clocks by their clock domain
     const topOf = (/** @type {string} */ inst, /** @type {string} */ port) => this.topPorts.find((tp) => tp.port === `${inst}.${port}`)?.name ?? `${inst}.${port}`;
     /** @type {Set<string>} */
     const seenConstraints = new Set(this.constraints.map((c) => JSON.stringify(c)));
+    /** @type {Map<string, Set<string>>} crossed pairs of clock domains "a|b" (a < b) and the blocks that cross them */
+    const pairs = new Map();
+    const crossing = (/** @type {string} */ a, /** @type {string} */ b, /** @type {string} */ who) => {
+      const key = `${a}|${b}`;
+      pairs.set(key, (pairs.get(key) ?? new Set()).add(who));
+    };
     const add = (/** @type {Record<string, unknown>} */ c) => {
       const key = JSON.stringify(c);
       if (seenConstraints.has(key)) return;
@@ -969,22 +973,10 @@ export class Resolution {
         if (k.kind === 'false_path') {
           const from = (k.fromPorts ?? []).filter((/** @type {string} */ p) => !resetPorts.has(p)).map((/** @type {string} */ p) => topOf(inst.id, p));
           if (from.length) add({ kind: 'false_path', from, instance: inst.id, note: k.note ?? `Inputs that ${inst.id} synchronises itself.` });
-        } else if (k.kind === 'async_clock_groups') {
-          const clocks = clockNames((k.clocks ?? []).map((/** @type {string} */ c) => rec.clocks[c]).filter(Boolean));
-          if (clocks.length > 1) add({ kind: 'async_clock_groups', clocks });
         } else if (k.kind === 'max_delay_pairs') {
-          // every pair of the clock domains of the block, both directions: the period of the faster clock
-          const doms = [...new Set((k.clocks ?? []).map((/** @type {string} */ c) => rec.clocks[c]).filter(Boolean))].sort();
-          for (const a of doms) {
-            for (const b of doms) {
-              if (a === b) continue;
-              const fa = this.domainMap.get(a)?.frequencyHz ?? 0;
-              const fb = this.domainMap.get(b)?.frequencyHz ?? 0;
-              if (!(fa > 0 && fb > 0)) continue;
-              const ns = Math.round(1e12 / Math.max(fa, fb)) / 1000;
-              add({ kind: 'max_delay', from: clockNames([a])[0], to: clockNames([b])[0], ns, datapathOnly: true, instance: inst.id, note: k.note ?? `Clock crossings inside ${inst.id}: period of the faster clock.` });
-            }
-          }
+          // every pair of the clock domains of the block (its internal crossings)
+          const doms = [...new Set((k.clocks ?? []).map((/** @type {string} */ c) => rec.clocks[c]).filter(Boolean))];
+          for (const a of doms) for (const b of doms) if (a < b) crossing(a, b, inst.id);
         } else if (Array.isArray(k.ports)) {
           add({ ...k, ports: k.ports.map((/** @type {string} */ p) => topOf(inst.id, p)), instance: inst.id });
         } else if (k.kind === 'vendor_scoped') {
@@ -994,14 +986,28 @@ export class Resolution {
         }
       }
     }
+    // the clock crossings inserted by the Composer
+    for (const a of this.autos) {
+      if (a.role !== 'cdc') continue;
+      const doms = [...new Set(Object.values(a.clocks).filter(Boolean))];
+      if (doms.length === 2) crossing(doms[0] < doms[1] ? doms[0] : doms[1], doms[0] < doms[1] ? doms[1] : doms[0], a.id);
+    }
+    // every crossed pair of clock domains, both directions: the period of the faster clock, data path only (Open Logic
+    // clock crossing principles); asynchronous clock groups would override these limits in Vivado
+    for (const [key, users] of [...pairs].sort((x, y) => x[0].localeCompare(y[0]))) {
+      const [a, b] = key.split('|');
+      const fa = this.domainMap.get(a)?.frequencyHz ?? 0;
+      const fb = this.domainMap.get(b)?.frequencyHz ?? 0;
+      if (!(fa > 0 && fb > 0)) continue;
+      const ns = Math.round(1e12 / Math.max(fa, fb)) / 1000;
+      const note = `Clock crossings of ${[...users].sort().join(', ')}: the period of the faster clock.`;
+      for (const [from, to] of [[a, b], [b, a]]) {
+        add({ kind: 'max_delay', from: clockNames([from])[0], to: clockNames([to])[0], ns, datapathOnly: true, instances: [...users].sort(), note });
+      }
+    }
     if (this.autos.some((a) => a.role === 'cdc' || a.role === 'reset')) {
       add({ kind: 'vendor_scoped', file: 'tools/vivado/all_constraints_amd.tcl', note: 'AMD Vivado: source the script of Open Logic once for the scoped constraints of its clock crossings.' });
     }
-    // a group of asynchronous clocks inside a larger group says nothing more
-    const groups = this.constraints.filter((c) => c.kind === 'async_clock_groups');
-    this.constraints = this.constraints.filter((c) => c.kind !== 'async_clock_groups' || !groups.some((g) => g !== c
-      && /** @type {string[]} */ (c.clocks).every((x) => /** @type {string[]} */ (g.clocks).includes(x))
-      && (/** @type {string[]} */ (g.clocks).length > /** @type {string[]} */ (c.clocks).length || groups.indexOf(g) < groups.indexOf(c))));
   }
 
   /**

@@ -861,7 +861,7 @@
         },
         "constraints": {
           "type": "array",
-          "description": "Timing and placement constraints in terms of the top level: async_clock_groups (clocks; a group inside a larger one is left out), max_delay (from, to, ns, datapathOnly: the maximum delay between the clocks of two clock domains, for the clock crossings inside a block), false_path (from), io_register (ports), vendor_scoped (file of Open Logic).",
+          "description": "Timing and placement constraints in terms of the top level: max_delay (from, to, ns, datapathOnly, instances: for every pair of clock domains with a clock crossing, both directions, the period of the faster clock, data path only; no asynchronous clock groups, which would override these limits in Vivado), false_path (from), io_register (ports), vendor_scoped (file of Open Logic with its scoped constraints).",
           "items": {
             "type": "object",
             "required": [

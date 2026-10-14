@@ -74,7 +74,6 @@ GENERIC_CHECKS = {"pow2", "multiple8", "multiple16"}
 # constraints of the blocks (translated to the top level by the resolver) with their required keys
 CONSTRAINT_KINDS = {
     "false_path": ("fromPorts",),
-    "async_clock_groups": ("clocks",),
     "max_delay_pairs": ("clocks",),
     "io_register": ("ports",),
     "vendor_scoped": ("file",),

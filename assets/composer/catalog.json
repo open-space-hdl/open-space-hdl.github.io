@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "2afcffd8a5f3",
+ "id": "ab38ed52cf22",
  "sources": [
   {
    "id": "openwire",
@@ -9,7 +9,7 @@
    "repo": "openwire",
    "url": "https://github.com/open-space-hdl/openwire",
    "doc": "https://openspacehdl.org/openwire/",
-   "commit": "e9f8aa2d1cf73a577d520a0b34c57c2a09cf2366",
+   "commit": "b6c1a516e895f74b1b2699a41bf6ed45a11f3a84",
    "library": "openwire",
    "fileList": "component_list.txt",
    "fileListFormat": "modules",
@@ -10864,12 +10864,13 @@
      ]
     },
     {
-     "kind": "async_clock_groups",
+     "kind": "max_delay_pairs",
      "clocks": [
       "UserClk",
       "LinkClk",
       "MgmtClk"
-     ]
+     ],
+     "note": "Clock crossings inside the core (Open Logic FT FIFOs and synchronisers): for every pair of its clocks, in both directions, the period of the faster clock; no asynchronous clock groups."
     },
     {
      "kind": "io_register",

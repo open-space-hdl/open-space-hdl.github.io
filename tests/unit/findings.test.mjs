@@ -40,14 +40,23 @@ test('every port names its clock domain; the registers of a multi-clock block ru
   assert.equal(port('spw0', 'S_Tc_TValid').default, "'0'");
 });
 
-test('no reset generator without a synchronous reset, and one group of asynchronous clocks', () => {
+test('no reset generator without a synchronous reset; a maximum delay for every crossed pair of clocks', () => {
   const r = example('spw_rmap_node').resolved;
   // the link clock domain holds only the asynchronous reset of the SpaceWire port
   assert.deepEqual(r.resets.map((/** @type {any} */ x) => x.generator), ['auto_rst_sys']);
   assert.ok(!r.instances.some((/** @type {any} */ i) => i.id === 'auto_rst_link'));
   for (const x of r.resets) assert.ok(r.signals.some((/** @type {any} */ s) => s.name === x.output), `${x.output} is declared`);
   const two = example('spp_over_spw_two_clocks').resolved;
-  assert.deepEqual(two.constraints.filter((/** @type {any} */ c) => c.kind === 'async_clock_groups').map((/** @type {any} */ c) => c.clocks), [['Clk_link', 'Clk_spw', 'Clk_sys']]);
+  // the port crosses link and spw inside, the two FIFOs cross spw and sys: both directions, the faster period
+  assert.deepEqual(two.constraints.filter((/** @type {any} */ c) => c.kind === 'max_delay').map((/** @type {any} */ c) => [c.from, c.to, c.ns, c.instances.join('+')]), [
+    ['Clk_link', 'Clk_spw', 5, 'spw0'],
+    ['Clk_spw', 'Clk_link', 5, 'spw0'],
+    ['Clk_spw', 'Clk_sys', 10, 'auto_cdc_c5+auto_cdc_c6'],
+    ['Clk_sys', 'Clk_spw', 10, 'auto_cdc_c5+auto_cdc_c6'],
+  ]);
+  assert.ok(!two.constraints.some((/** @type {any} */ c) => c.kind === 'async_clock_groups'));
+  assert.ok(two.constraints.some((/** @type {any} */ c) => c.kind === 'vendor_scoped'));
+  assert.ok(two.constraints.some((/** @type {any} */ c) => c.kind === 'false_path' && c.from.includes('Rst')));
 });
 
 test('field maps: the user bits of external ports and the side band constants, field by field', () => {

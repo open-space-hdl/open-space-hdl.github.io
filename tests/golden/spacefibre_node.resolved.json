@@ -1,5 +1,5 @@
 {
-  "catalog": "2afcffd8a5f3",
+  "catalog": "ab38ed52cf22",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -5266,8 +5266,10 @@
       "to": "Clk_sys",
       "ns": 5,
       "datapathOnly": true,
-      "instance": "ofb0",
-      "note": "Clock crossings inside the core (Open Logic): for every pair of its clocks, in both directions, the period of the faster clock."
+      "instances": [
+        "ofb0"
+      ],
+      "note": "Clock crossings of ofb0: the period of the faster clock."
     },
     {
       "kind": "max_delay",
@@ -5275,8 +5277,10 @@
       "to": "pa0.LaneClk",
       "ns": 5,
       "datapathOnly": true,
-      "instance": "ofb0",
-      "note": "Clock crossings inside the core (Open Logic): for every pair of its clocks, in both directions, the period of the faster clock."
+      "instances": [
+        "ofb0"
+      ],
+      "note": "Clock crossings of ofb0: the period of the faster clock."
     },
     {
       "kind": "vendor_scoped",
