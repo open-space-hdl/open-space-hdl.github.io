@@ -16,6 +16,7 @@
 import { ADAPTER_HEIGHT, ADAPTER_WIDTH, blockGeometry, DOMAIN_HEAD, DOMAIN_PAD } from './layout.js';
 import { borderCrossings, CLEARANCE, inflate, nudge, overlaps, pathLength, pointAt, routePath } from './router.js';
 import { formatHz } from './rules.js';
+import { withSubsystems } from './subsystems.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./catalog.js').PortView} PortView */
@@ -105,6 +106,7 @@ function instanceOf(ref) {
  * @returns {Map<string, SceneBlock>}
  */
 export function sceneBlocks(cat, d, res) {
+  cat = withSubsystems(cat, d);
   /** @type {Map<string, SceneBlock>} */
   const out = new Map();
   for (const inst of d.instances) {
@@ -307,6 +309,7 @@ export function crossingPlace(route, srcBox, dstBox) {
  * @returns {Scene}
  */
 export function buildScene(cat, d, res, opts = {}) {
+  cat = withSubsystems(cat, d);
   const cache = opts.cache;
   const blocks = sceneBlocks(cat, d, res);
   const domains = sceneDomains(d, res, blocks);

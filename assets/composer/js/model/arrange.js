@@ -15,6 +15,7 @@ import { setDomainBox } from './design.js';
 import { ADAPTER_WIDTH, BLOCK_WIDTH, DOMAIN_HEAD, DOMAIN_PAD, freeSpot, GRID } from './layout.js';
 import { resolve } from './resolver.js';
 import { ADAPTER_OFFSET, boxAround, sceneBlocks, sceneDomains } from './scene.js';
+import { withSubsystems } from './subsystems.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./design.js').Design} Design */
@@ -118,6 +119,7 @@ function gridAway(v) {
  * @returns {Design}
  */
 export function tidy(cat, d, opts = {}) {
+  cat = withSubsystems(cat, d);
   if (d.instances.length === 0) return d;
   const res = resolve(cat, d);
   let blocks = sceneBlocks(cat, d, res);
@@ -329,6 +331,7 @@ function wrapRuns(ncol, colX, right, inner, layer) {
  * @returns {Design}
  */
 export function arrange(cat, d) {
+  cat = withSubsystems(cat, d);
   if (d.instances.length === 0) return d;
   const res = resolve(cat, d);
   const blocks = sceneBlocks(cat, d, res);
@@ -556,6 +559,7 @@ export function arrange(cat, d) {
  * @returns {Design | null}
  */
 export function placeBetween(cat, d, drv, rcv, id, sink) {
+  cat = withSubsystems(cat, d);
   const res = resolve(cat, d);
   const blocks = sceneBlocks(cat, d, res);
   const A = blocks.get(instanceOf(drv));
@@ -596,6 +600,7 @@ export function needsArrange(d) {
  * @param {Design} d
  */
 export function domainRects(cat, d) {
+  cat = withSubsystems(cat, d);
   const res = resolve(cat, d);
   const doms = sceneDomains(d, res, sceneBlocks(cat, d, res));
   /** @type {Map<string, Rect>} */

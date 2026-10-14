@@ -70,7 +70,7 @@ export const CATALOG_VERSION = 1;
 /**
  * @typedef {object} BlockDef
  * @property {string} id
- * @property {'core'|'module'|'olo'} kind
+ * @property {'core'|'module'|'olo'|'subsystem'} kind
  * @property {string} name
  * @property {string} group
  * @property {string} source

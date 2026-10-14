@@ -50,15 +50,16 @@ jobs:
         with:
           version: latest
           backend: mcode
-      # Every example is exported with the command line tool and analysed with GHDL file by file in the order of its
-      # compile order file, then its top level is elaborated and run to 0 ns. Open Logic is analysed with -frelaxed:
-      # its RAMs use a shared variable without a protected type (the RAM inference pattern of Open Logic, upstream code
-      # that stays as it is). The cores and the generated top levels are analysed strictly. Vendor-specific blocks are
-      # replaced by a stub of their entity (tools/composer_hdl_check.py).
-      - name: VHDL export of the examples, analysed, elaborated and run to 0 ns with GHDL
+      # Every example, and the fixture of subsystems (two levels, the outer one used twice), is exported with the
+      # command line tool and analysed with GHDL file by file in the order of its compile order file, then its top level
+      # is elaborated and run to 0 ns. Open Logic is analysed with -frelaxed: its RAMs use a shared variable without a
+      # protected type (the RAM inference pattern of Open Logic, upstream code that stays as it is). The cores, the
+      # generated subsystems and top levels are analysed strictly. Vendor-specific blocks are replaced by a stub of
+      # their entity (tools/composer_hdl_check.py).
+      - name: VHDL export of the examples and subsystems, analysed, elaborated and run to 0 ns with GHDL
         run: |
           set -e
-          for f in site/assets/composer/examples/*.composer.json; do
+          for f in site/assets/composer/examples/*.composer.json site/tests/fixtures/subsystems/*.composer.json; do
             n=$(basename "$f" .composer.json)
             node site/tools/composer_hdl.mjs "$f" "export/$n"
             python site/tools/composer_hdl_check.py "export/$n" --sources sources --checkout-from .

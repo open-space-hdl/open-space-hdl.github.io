@@ -60,7 +60,8 @@ test('broken files are rejected with clear messages', () => {
   assert.throws(() => fromText('{', cat), /not valid JSON/);
   assert.throws(() => fromText('[]', cat), /JSON object/);
   assert.throws(bad((d) => { d.format = 'x'; }), /not an Open Space Composer system file/);
-  assert.throws(bad((d) => { d.formatVersion = 2; }), /format version 2/);
+  assert.throws(bad((d) => { d.formatVersion = 3; }), /format version 3/);
+  assert.throws(bad((d) => { d.subsystems = []; }), /only a file of format version 2 has subsystems/);
   assert.throws(bad((d) => { d.system.name = 'Bad Name'; }), /system.name/);
   assert.throws(bad((d) => { d.instances[0].block = 'openwire/nothing'; }), /unknown block/);
   assert.throws(bad((d) => { d.instances[1].id = 'spw0'; }), /duplicate id/);

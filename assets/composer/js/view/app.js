@@ -13,11 +13,13 @@ import {
   setAdapterGeneric, setConstant, setDomainBox, setExternal, setGeneric, setSideband, setSystem, setViewport,
   sidebandDefaults, updateDomain,
 } from '../model/design.js';
-import { exportHdl } from '../model/hdl.js';
+import { designComments, exportHdl } from '../model/hdl.js';
 import { ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, freeSpot, freeSpotIn, snap } from '../model/layout.js';
 import { netlist } from '../model/netlist.js';
+import { sha256 } from '../model/sha256.js';
 import { resolve } from '../model/resolver.js';
 import { FormatError, fromText, GENERATOR, toText } from '../model/serialize.js';
+import { withSubsystems } from '../model/subsystems.js';
 import { loadSnapshot, saveSnapshot, Workspace } from '../model/workspace.js';
 import { zipStore } from '../model/zip.js';
 import { CanvasView } from './canvas.js';
@@ -51,7 +53,8 @@ export class App {
    */
   constructor(root, catalog, opts) {
     this.root = root;
-    this.catalog = catalog;
+    /** the block catalog; the catalog of a system adds its subsystems (see catalog) */
+    this.baseCatalog = catalog;
     this.projects = opts.projects;
     this.examplesUrl = opts.examplesUrl;
     /** @type {{ file: string, name: string, title: string, description: string }[]} */
@@ -162,6 +165,16 @@ export class App {
   /** @returns {Design} */
   get design() {
     return /** @type {Design} */ (this.ws.active?.design);
+  }
+
+  /**
+   * The catalog of the active design: the block catalog with a block for every subsystem the design holds (the same
+   * object as long as the definitions do not change).
+   * @returns {Catalog}
+   */
+  get catalog() {
+    const d = this.ws.active?.design;
+    return d ? withSubsystems(this.baseCatalog, d) : this.baseCatalog;
   }
 
   get tabId() {
@@ -992,20 +1005,11 @@ export class App {
     }
     const text = toText(d, this.catalog);
     const input = `${d.name}.composer.json`;
-    let sha256;
-    try {
-      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-      sha256 = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-    } catch {
-      this.notify('Export HDL needs a secure page (https) for the hash of the system file.', 'error');
-      return;
-    }
     const { files, problems } = exportHdl(this.catalog, /** @type {any} */ (resolved), {
       generator: `${GENERATOR.name} ${GENERATOR.version}`,
       input,
-      sha256,
-      description: d.description,
-      connections: d.connections.map((c) => ({ id: c.id, from: c.from, to: c.to })),
+      sha256: sha256(text),
+      ...designComments(d),
     });
     if (problems.length) {
       await this.ask('Export HDL is not possible', problems, [{ label: 'Close', value: 'ok', primary: true }]);

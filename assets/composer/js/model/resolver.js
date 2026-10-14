@@ -17,6 +17,10 @@ import { absentValue, isDriver } from './catalog.js';
 import { typedEndpoint } from './compat.js';
 import { tryEvaluate } from './expr.js';
 import { runRules } from './rules.js';
+import { netlist } from './netlist.js';
+import {
+  bindingChecks, registerSubsystemModel, SUBSYSTEM_PREFIX, subsystemChecks, subsystemName, withSubsystems,
+} from './subsystems.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./catalog.js').BlockDef} BlockDef */
@@ -205,8 +209,14 @@ export function packAll(f) {
  * @returns {Resolved}
  */
 export function resolve(cat, d) {
-  return new Resolution(cat, d).run();
+  cat = withSubsystems(cat, d);
+  const res = new Resolution(cat, d).run();
+  if (d.subsystems && Object.keys(d.subsystems).length > 0) res.checks.push(...subsystemChecks(cat, d));
+  return res;
 }
+
+// a definition is resolved without the checks of the subsystems: the system that uses it reports them once
+registerSubsystemModel({ resolve: (cat, d) => new Resolution(cat, d).run(), netlist });
 
 export class Resolution {
   /**
@@ -311,6 +321,9 @@ export class Resolution {
           if (first) clocks[c.port] = first;
         }
       }
+      // a subsystem: its clock inputs on one domain of this system
+      const sub = subsystemName(b.id);
+      if (sub) for (const f of bindingChecks(this.cat, inst.id, sub, clocks, this.d.clockDomains)) this.check(f.severity, f.rule, f.message, { instance: inst.id });
       const primary = b.clocks.find((c) => c.primary)?.port;
       this.byId.set(inst.id, {
         id: inst.id,
@@ -565,9 +578,15 @@ export class Resolution {
       if (!fd.type.generic && !fr.type.generic && fd.type.id !== fr.type.id) {
         const acc = (fr.type.accepts ?? []).find((a) => a.type === fd.type.id);
         if (acc?.condition === 'liteWhen') {
-          const conds = /** @type {{generic: string, value: unknown}[]} */ (drv.port.itf.params?.liteWhen ?? []);
+          // a subsystem decides the condition inside: true or false instead of the conditions
+          const lite = drv.port.itf.params?.liteWhen;
+          const conds = /** @type {{generic: string, value: unknown}[]} */ (Array.isArray(lite) ? lite : []);
           const failing = conds.filter((x) => drv.rec.generics[x.generic] !== x.value);
-          if (conds.length === 0 || failing.length > 0) {
+          if (lite === false) {
+            this.check('error', 'accepts',
+              `${fr.type.name} at ${c.to} needs single transfers from ${c.from}: set them on the block inside the subsystem ${drv.rec.block.slice(SUBSYSTEM_PREFIX.length)}.`,
+              { connection: c.id, instance: drv.rec.id });
+          } else if (lite !== true && (conds.length === 0 || failing.length > 0)) {
             const need = failing.map((x) => `${x.generic} = ${String(x.value)}`).join(' and ');
             this.check('error', 'accepts',
               `${fr.type.name} at ${c.to} needs single transfers from ${c.from}: set ${need || 'single transfers'} on ${drv.rec.id}.`,

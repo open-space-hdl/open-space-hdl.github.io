@@ -1,0 +1,1735 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openspacehdl.org/composer/schema/system-2.json",
+  "title": "Open Space Composer system, format version 2",
+  "description": "One FPGA system built from Open Space HDL cores, Open Logic blocks and subsystems: what the user designed (system, instances, connections, externals, layout, and the definitions of the subsystems it uses) and, optionally, what the Composer derived from it (resolved, checks, agent). The Composer writes version 2 only for a system that uses subsystems; every other system is a version 1 file. The format reference is https://openspacehdl.org/composer/format/.",
+  "type": "object",
+  "required": [
+    "format",
+    "formatVersion",
+    "system",
+    "instances",
+    "connections",
+    "subsystems"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "format": {
+      "const": "open-space-composer-system"
+    },
+    "formatVersion": {
+      "const": 2
+    },
+    "generator": {
+      "type": "object",
+      "description": "Tool that wrote the file and the identifier of the block catalog it used.",
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "catalog": {
+          "type": "string"
+        }
+      }
+    },
+    "system": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/identifier",
+          "description": "Name of the top-level entity."
+        },
+        "description": {
+          "type": "string"
+        },
+        "faultTolerance": {
+          "type": "boolean",
+          "description": "Adapters the Composer inserts use the fault-tolerant Open Logic entities and triplicated synchronisers."
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "description": "Repositories of the blocks used, pinned to the commit the catalog was checked against.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "url",
+          "commit",
+          "library",
+          "fileList"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "tag": {
+            "type": "string"
+          },
+          "commit": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "library": {
+            "$ref": "#/$defs/vhdlName",
+            "description": "VHDL library the sources are compiled into."
+          },
+          "fileList": {
+            "type": "string",
+            "description": "File of the repository with the sources in compile order."
+          },
+          "fileListFormat": {
+            "enum": [
+              "modules",
+              "files"
+            ],
+            "description": "modules: one module directory per line, relative to the repository root (blank lines and lines starting with # are ignored), its sources in <module>/src/*.vhd without a given order inside the module (packages first, then in dependency order, or let the tool order them); files: one VHDL file per line, in compile order."
+          },
+          "verifiedWith": {
+            "type": "string",
+            "description": "Open Logic FT tag the repository is verified with (its open-logic submodule); the system compiles one olo library, see the note of the olo source."
+          }
+        }
+      }
+    },
+    "clockDomains": {
+      "$ref": "#/$defs/clockDomains"
+    },
+    "instances": {
+      "$ref": "#/$defs/instances"
+    },
+    "connections": {
+      "$ref": "#/$defs/connections"
+    },
+    "externals": {
+      "$ref": "#/$defs/externals"
+    },
+    "subsystems": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The definition of every subsystem the system uses, also inside other definitions, each once, leaves first: a definition comes after those it uses. Each becomes an entity of its name in the library of the top level.",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "hash",
+          "system",
+          "clockDomains",
+          "instances",
+          "connections",
+          "externals"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/identifier",
+            "description": "Name of the subsystem and of its entity."
+          },
+          "hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "SHA-256 of the canonical JSON of the definition without hash: keys sorted, no white space, UTF-8. A definition whose hash does not match was edited outside the Composer."
+          },
+          "system": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/identifier",
+                "description": "Name of the subsystem, as name."
+              },
+              "description": {
+                "type": "string"
+              },
+              "faultTolerance": {
+                "type": "boolean",
+                "description": "Adapters the Composer inserts use the fault-tolerant Open Logic entities and triplicated synchronisers."
+              }
+            }
+          },
+          "clockDomains": {
+            "$ref": "#/$defs/clockDomains"
+          },
+          "instances": {
+            "$ref": "#/$defs/instances"
+          },
+          "connections": {
+            "$ref": "#/$defs/connections"
+          },
+          "externals": {
+            "$ref": "#/$defs/externals"
+          }
+        }
+      }
+    },
+    "layout": {
+      "type": "object",
+      "description": "Positions on the canvas; not relevant for the hardware.",
+      "properties": {
+        "instances": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "x",
+              "y"
+            ],
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "viewport": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "zoom": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "domains": {
+          "type": "object",
+          "description": "Placeholder boxes of clock domains without blocks.",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "x",
+              "y",
+              "w",
+              "h"
+            ],
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "w": {
+                "type": "number"
+              },
+              "h": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    },
+    "resolved": {
+      "type": "object",
+      "description": "Derived by the Composer from the system: the netlist of the VHDL top level. Write a signal per entry of signals, instantiate every entry of instances with its generic map and port map, and write every net as a concurrent assignment \"to <= from;\". See https://openspacehdl.org/composer/format/.",
+      "required": [
+        "catalog",
+        "entity",
+        "ports",
+        "clocks",
+        "resets",
+        "instances",
+        "signals",
+        "nets",
+        "packing",
+        "constraints",
+        "compile",
+        "problems",
+        "context"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "catalog": {
+          "type": "string",
+          "description": "Content identifier of the block catalog the system was resolved with."
+        },
+        "entity": {
+          "$ref": "#/$defs/identifier",
+          "description": "Name of the top-level entity."
+        },
+        "ports": {
+          "type": "array",
+          "description": "Ports of the top-level entity, in order.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "dir",
+              "type",
+              "kind"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/vhdlName"
+              },
+              "dir": {
+                "enum": [
+                  "in",
+                  "out",
+                  "inout"
+                ]
+              },
+              "type": {
+                "type": "string",
+                "description": "VHDL type with evaluated bounds: std_logic or std_logic_vector(<hi> downto 0)."
+              },
+              "kind": {
+                "enum": [
+                  "reset",
+                  "clock",
+                  "interface"
+                ],
+                "description": "reset: asynchronous system reset, high-active; clock: clock of an external clock domain; interface: a signal of an external interface."
+              },
+              "interface": {
+                "$ref": "#/$defs/endpoint",
+                "description": "External interface of the port."
+              },
+              "domain": {
+                "$ref": "#/$defs/identifier",
+                "description": "Clock domain of the port: the domain of a clock port, or of the clock of the interface of the port."
+              },
+              "signal": {
+                "type": "string",
+                "description": "Logical signal of the interface that the port carries (data, keep, last, user, valid, ready, a field)."
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "label",
+                    "lsb",
+                    "bits"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Meaning of the field."
+                    },
+                    "lsb": {
+                      "type": "integer",
+                      "description": "Lowest bit of the field in the signal."
+                    },
+                    "bits": {
+                      "type": "integer"
+                    },
+                    "value": {
+                      "type": [
+                        "integer",
+                        "boolean"
+                      ],
+                      "description": "Value of the field (constants only)."
+                    }
+                  }
+                },
+                "description": "Meaning of the bits of the port (the side band of a send port, the user bits of a stream)."
+              }
+            }
+          }
+        },
+        "clocks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "frequencyHz",
+              "actual",
+              "source"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/identifier"
+              },
+              "name": {
+                "type": "string"
+              },
+              "frequencyHz": {
+                "type": "number"
+              },
+              "actual": {
+                "type": "string",
+                "description": "Port actual of the clock inputs of the domain: a top-level port or the signal of a clock output."
+              },
+              "source": {
+                "type": "string",
+                "description": "\"top\" or the clock output <instance>.<port> that drives the domain."
+              }
+            }
+          }
+        },
+        "resets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "domain",
+              "generator",
+              "input",
+              "output"
+            ],
+            "properties": {
+              "domain": {
+                "$ref": "#/$defs/identifier"
+              },
+              "generator": {
+                "$ref": "#/$defs/identifier",
+                "description": "Instance of olo_base_reset_gen."
+              },
+              "input": {
+                "type": "string"
+              },
+              "output": {
+                "type": "string",
+                "description": "Signal with the synchronous reset of the domain."
+              }
+            }
+          }
+        },
+        "instances": {
+          "type": "array",
+          "description": "Every instance of the top level: placed blocks, inserted adapters and reset generators.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "entity",
+              "library",
+              "block",
+              "origin",
+              "generics",
+              "ports"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/identifier"
+              },
+              "entity": {
+                "$ref": "#/$defs/vhdlName"
+              },
+              "library": {
+                "$ref": "#/$defs/vhdlName"
+              },
+              "block": {
+                "type": "string"
+              },
+              "origin": {
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              "role": {
+                "enum": [
+                  "cdc",
+                  "wconv",
+                  "reset"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "connection": {
+                "type": "string"
+              },
+              "domain": {
+                "$ref": "#/$defs/identifier"
+              },
+              "generics": {
+                "type": "array",
+                "description": "Every generic of the entity, in order. Put the ones with default false into the generic map.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "value",
+                    "vhdl",
+                    "default"
+                  ],
+                  "properties": {
+                    "name": {
+                      "$ref": "#/$defs/vhdlName"
+                    },
+                    "value": {
+                      "description": "Value as JSON (null for a generic the Composer cannot represent)."
+                    },
+                    "vhdl": {
+                      "type": "string",
+                      "description": "VHDL literal of the value."
+                    },
+                    "default": {
+                      "type": "boolean",
+                      "description": "The value is the VHDL default."
+                    }
+                  }
+                }
+              },
+              "ports": {
+                "type": "array",
+                "description": "Every port of the entity, in order, with its actual.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "dir",
+                    "type",
+                    "actual"
+                  ],
+                  "properties": {
+                    "name": {
+                      "$ref": "#/$defs/vhdlName"
+                    },
+                    "dir": {
+                      "enum": [
+                        "in",
+                        "out",
+                        "inout"
+                      ]
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "VHDL type with evaluated bounds: std_logic or std_logic_vector(<hi> downto 0)."
+                    },
+                    "actual": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "A signal, a top-level clock or reset port, \"open\", or null for a port that keeps its VHDL default."
+                    },
+                    "useDefault": {
+                      "type": "boolean",
+                      "description": "Leave the port out of the port map."
+                    },
+                    "default": {
+                      "type": "string",
+                      "description": "The VHDL default of a port that keeps it (always given with useDefault)."
+                    },
+                    "domain": {
+                      "$ref": "#/$defs/identifier",
+                      "description": "Clock domain of the port: of its clock, of its synchronous reset or of the clock of its interface. Asynchronous resets and ports outside an interface have none."
+                    },
+                    "reset": {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "note"
+                      ],
+                      "additionalProperties": false,
+                      "description": "A reset input: synchronous (from the reset generator of its domain) or asynchronous (the block synchronises the release itself), and why.",
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "sync",
+                            "async"
+                          ]
+                        },
+                        "note": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "signals": {
+          "type": "array",
+          "description": "Signals of the architecture, one per port with a signal actual, named <instance>_<port>_s.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "type"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/vhdlName"
+              },
+              "type": {
+                "type": "string",
+                "description": "VHDL type with evaluated bounds: std_logic or std_logic_vector(<hi> downto 0)."
+              }
+            }
+          }
+        },
+        "nets": {
+          "type": "array",
+          "description": "Concurrent assignments \"to <= from;\" of the architecture.",
+          "items": {
+            "type": "object",
+            "required": [
+              "to",
+              "from",
+              "kind"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "to": {
+                "type": "string",
+                "description": "Signal, slice or bit of a signal, or a top-level output port."
+              },
+              "from": {
+                "type": "string",
+                "description": "Signal, slice, bit, top-level input port or constant (VHDL expression)."
+              },
+              "kind": {
+                "enum": [
+                  "connection",
+                  "constant",
+                  "top",
+                  "tie-off"
+                ]
+              },
+              "connection": {
+                "type": "string",
+                "description": "Connection id of the system."
+              },
+              "signal": {
+                "type": "string",
+                "description": "Logical signal of the interface (data, keep, last, user, valid, ready, a field) or the port."
+              },
+              "reason": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "label",
+                    "lsb",
+                    "bits"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Meaning of the field."
+                    },
+                    "lsb": {
+                      "type": "integer",
+                      "description": "Lowest bit of the field in the signal."
+                    },
+                    "bits": {
+                      "type": "integer"
+                    },
+                    "value": {
+                      "type": [
+                        "integer",
+                        "boolean"
+                      ],
+                      "description": "Value of the field (constants only)."
+                    }
+                  }
+                },
+                "description": "Field map of a constant: the side band constants of a connection or the constants of an instance."
+              }
+            }
+          }
+        },
+        "packing": {
+          "type": "array",
+          "description": "Bit fields of the packed data words (clock crossings and Open Logic blocks that carry a typed stream).",
+          "items": {
+            "type": "object",
+            "required": [
+              "instance",
+              "interface",
+              "width",
+              "fields"
+            ],
+            "properties": {
+              "instance": {
+                "$ref": "#/$defs/identifier"
+              },
+              "interface": {
+                "type": "string"
+              },
+              "width": {
+                "type": "integer"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "signal",
+                    "lsb",
+                    "width"
+                  ],
+                  "properties": {
+                    "signal": {
+                      "type": "string"
+                    },
+                    "lsb": {
+                      "type": "integer"
+                    },
+                    "width": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "description": "Timing and placement constraints in terms of the top level: max_delay (from, to, ns, datapathOnly, instances: for every pair of clock domains with a clock crossing, both directions, the period of the faster clock, data path only; no asynchronous clock groups, which would override these limits in Vivado), false_path (from), io_register (ports), vendor_scoped (file of Open Logic with its scoped constraints).",
+          "items": {
+            "type": "object",
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "compile": {
+          "type": "array",
+          "description": "VHDL libraries in compile order with their pinned sources.",
+          "items": {
+            "type": "object",
+            "required": [
+              "library",
+              "source",
+              "url",
+              "fileList",
+              "fileListFormat",
+              "entities"
+            ],
+            "properties": {
+              "library": {
+                "$ref": "#/$defs/vhdlName"
+              },
+              "source": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "tag": {
+                "type": "string"
+              },
+              "commit": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "fileList": {
+                "type": "string"
+              },
+              "fileListFormat": {
+                "enum": [
+                  "files",
+                  "modules"
+                ],
+                "description": "modules: one module directory per line, relative to the repository root (blank lines and lines starting with # are ignored), its sources in <module>/src/*.vhd without a given order inside the module (packages first, then in dependency order, or let the tool order them); files: one VHDL file per line, in compile order."
+              },
+              "verifiedWith": {
+                "type": "string",
+                "description": "Open Logic FT tag the repository is verified with (as sources[].verifiedWith)."
+              },
+              "note": {
+                "type": "string"
+              },
+              "entities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "problems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Inconsistencies found while building the netlist (none for a correct catalog)."
+        },
+        "context": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Context clause of the top level: library ieee with std_logic_1164, every library of compile, and a use clause for every package whose constants a generic map names."
+        },
+        "subsystems": {
+          "type": "array",
+          "description": "The netlist of every subsystem definition, leaves first, flat: each has the form of resolved, without subsystems.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "netlist"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/identifier"
+              },
+              "netlist": {
+                "$ref": "#/$defs/netlist"
+              }
+            }
+          }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "description": "Derived by the Composer: results of the structural checks and the design rules, errors first in importance.",
+      "items": {
+        "type": "object",
+        "required": [
+          "severity",
+          "rule",
+          "message"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "severity": {
+            "enum": [
+              "error",
+              "warning",
+              "info"
+            ]
+          },
+          "rule": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "connection": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "description": "Derived by the Composer: build instructions for an AI agent or an engineer.",
+      "required": [
+        "brief"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "brief": {
+          "type": "string",
+          "description": "Markdown: sources and compile order, the top-level entity, how to write the architecture from resolved, clocks and resets, constraints, notes of the user guides, open checks and a verification plan."
+        }
+      }
+    },
+    "catalogSubset": {
+      "type": "object",
+      "required": [
+        "id",
+        "types",
+        "blocks"
+      ],
+      "description": "Derived by the Composer: the catalog entries of the blocks of the system (placed and inserted) and of their interface types, so that the file explains itself; id is the content identifier of the whole catalog, for change detection.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "kind"
+            ]
+          }
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "entity",
+              "library",
+              "ports",
+              "interfaces"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z](?:_?[a-z0-9])*$",
+      "maxLength": 40,
+      "description": "Lower-case VHDL basic identifier without double or trailing underscore."
+    },
+    "vhdlName": {
+      "type": "string",
+      "pattern": "^[A-Za-z](?:_?[A-Za-z0-9])*$"
+    },
+    "endpoint": {
+      "type": "string",
+      "pattern": "^[a-z](?:_?[a-z0-9])*\\.[A-Za-z][A-Za-z0-9_]*(?:\\[[0-9]+\\])?$",
+      "description": "<instance id>.<interface name>, with [index] for an element of a vector interface."
+    },
+    "blockInstance": {
+      "type": "object",
+      "required": [
+        "id",
+        "block"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier",
+          "description": "Instance label in the top level."
+        },
+        "block": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*/[a-z][a-z0-9_]*$",
+          "description": "Catalog block id <source>/<entity>."
+        },
+        "preset": {
+          "type": "string"
+        },
+        "generics": {
+          "type": "object",
+          "description": "Generic values that differ from the catalog default and the preset. std_logic as \"0\" or \"1\", std_logic_vector and integer_vector as VHDL literals, string generics without quotes.",
+          "propertyNames": {
+            "$ref": "#/$defs/vhdlName"
+          },
+          "additionalProperties": {
+            "type": [
+              "boolean",
+              "number",
+              "string"
+            ]
+          }
+        },
+        "clocks": {
+          "type": "object",
+          "description": "Clock port of the block -> clock domain id.",
+          "propertyNames": {
+            "$ref": "#/$defs/vhdlName"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "constants": {
+          "type": "object",
+          "description": "Constants of unconnected interfaces whose inputs are constants of the instance (for example the key slot of ocr_framer): interface -> field -> value.",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "integer",
+                "boolean"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "subsystemInstance": {
+      "type": "object",
+      "description": "An instance of a subsystem defined in subsystems. It has no generics: a subsystem is not parameterisable.",
+      "required": [
+        "id",
+        "subsystem",
+        "clocks"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier",
+          "description": "Instance label in the top level."
+        },
+        "subsystem": {
+          "$ref": "#/$defs/identifier",
+          "description": "Name of the definition in subsystems."
+        },
+        "clocks": {
+          "type": "object",
+          "description": "Clock domain of every clock input Clk_<domain> of the subsystem (one per clock domain of the definition with an external clock).",
+          "additionalProperties": {
+            "$ref": "#/$defs/identifier"
+          }
+        }
+      }
+    },
+    "instances": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/blockInstance"
+          },
+          {
+            "$ref": "#/$defs/subsystemInstance"
+          }
+        ]
+      }
+    },
+    "clockDomains": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "frequencyHz",
+          "source"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/identifier"
+          },
+          "name": {
+            "type": "string"
+          },
+          "frequencyHz": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "source": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "external"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "instance",
+                  "port"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "block"
+                  },
+                  "instance": {
+                    "$ref": "#/$defs/identifier"
+                  },
+                  "port": {
+                    "$ref": "#/$defs/vhdlName"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "description": "Clock domains: external clocks (a top-level clock port Clk_<id>) or the clock output of a block. Every clock input of every instance is assigned to one domain; the Composer inserts clock crossings between domains and one reset generator per domain."
+    },
+    "connections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "from",
+          "to"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+          },
+          "from": {
+            "$ref": "#/$defs/endpoint",
+            "description": "Driving interface (source, master, event output)."
+          },
+          "to": {
+            "$ref": "#/$defs/endpoint",
+            "description": "Receiving interface (sink, slave, event input)."
+          },
+          "sideband": {
+            "type": "object",
+            "description": "Constants of a side band the receiving interface needs, for example the APID of an OpenSPP send port.",
+            "additionalProperties": {
+              "type": [
+                "boolean",
+                "integer"
+              ]
+            }
+          },
+          "adapters": {
+            "type": "object",
+            "description": "Generic values of the adapters the Composer inserts on the connection: cdc (clock crossing, for example Depth_g of an asynchronous FIFO) and wconv (width converter).",
+            "additionalProperties": false,
+            "properties": {
+              "cdc": {
+                "type": "object",
+                "propertyNames": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_]*_g$"
+                },
+                "additionalProperties": {
+                  "type": [
+                    "number",
+                    "boolean"
+                  ]
+                }
+              },
+              "wconv": {
+                "type": "object",
+                "propertyNames": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_]*_g$"
+                },
+                "additionalProperties": {
+                  "type": [
+                    "number",
+                    "boolean"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "externals": {
+      "type": "array",
+      "description": "Interfaces that become ports of the top level.",
+      "items": {
+        "type": "object",
+        "required": [
+          "interface",
+          "prefix"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "interface": {
+            "$ref": "#/$defs/endpoint"
+          },
+          "prefix": {
+            "type": "string",
+            "pattern": "^[A-Za-z](?:_?[A-Za-z0-9])*_?$"
+          }
+        }
+      }
+    },
+    "netlist": {
+      "type": "object",
+      "description": "Derived by the Composer from the system: the netlist of the VHDL top level. Write a signal per entry of signals, instantiate every entry of instances with its generic map and port map, and write every net as a concurrent assignment \"to <= from;\". See https://openspacehdl.org/composer/format/.",
+      "required": [
+        "catalog",
+        "entity",
+        "ports",
+        "clocks",
+        "resets",
+        "instances",
+        "signals",
+        "nets",
+        "packing",
+        "constraints",
+        "compile",
+        "problems",
+        "context"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "catalog": {
+          "type": "string",
+          "description": "Content identifier of the block catalog the system was resolved with."
+        },
+        "entity": {
+          "$ref": "#/$defs/identifier",
+          "description": "Name of the top-level entity."
+        },
+        "ports": {
+          "type": "array",
+          "description": "Ports of the top-level entity, in order.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "dir",
+              "type",
+              "kind"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/vhdlName"
+              },
+              "dir": {
+                "enum": [
+                  "in",
+                  "out",
+                  "inout"
+                ]
+              },
+              "type": {
+                "type": "string",
+                "description": "VHDL type with evaluated bounds: std_logic or std_logic_vector(<hi> downto 0)."
+              },
+              "kind": {
+                "enum": [
+                  "reset",
+                  "clock",
+                  "interface"
+                ],
+                "description": "reset: asynchronous system reset, high-active; clock: clock of an external clock domain; interface: a signal of an external interface."
+              },
+              "interface": {
+                "$ref": "#/$defs/endpoint",
+                "description": "External interface of the port."
+              },
+              "domain": {
+                "$ref": "#/$defs/identifier",
+                "description": "Clock domain of the port: the domain of a clock port, or of the clock of the interface of the port."
+              },
+              "signal": {
+                "type": "string",
+                "description": "Logical signal of the interface that the port carries (data, keep, last, user, valid, ready, a field)."
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "label",
+                    "lsb",
+                    "bits"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Meaning of the field."
+                    },
+                    "lsb": {
+                      "type": "integer",
+                      "description": "Lowest bit of the field in the signal."
+                    },
+                    "bits": {
+                      "type": "integer"
+                    },
+                    "value": {
+                      "type": [
+                        "integer",
+                        "boolean"
+                      ],
+                      "description": "Value of the field (constants only)."
+                    }
+                  }
+                },
+                "description": "Meaning of the bits of the port (the side band of a send port, the user bits of a stream)."
+              }
+            }
+          }
+        },
+        "clocks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "frequencyHz",
+              "actual",
+              "source"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/identifier"
+              },
+              "name": {
+                "type": "string"
+              },
+              "frequencyHz": {
+                "type": "number"
+              },
+              "actual": {
+                "type": "string",
+                "description": "Port actual of the clock inputs of the domain: a top-level port or the signal of a clock output."
+              },
+              "source": {
+                "type": "string",
+                "description": "\"top\" or the clock output <instance>.<port> that drives the domain."
+              }
+            }
+          }
+        },
+        "resets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "domain",
+              "generator",
+              "input",
+              "output"
+            ],
+            "properties": {
+              "domain": {
+                "$ref": "#/$defs/identifier"
+              },
+              "generator": {
+                "$ref": "#/$defs/identifier",
+                "description": "Instance of olo_base_reset_gen."
+              },
+              "input": {
+                "type": "string"
+              },
+              "output": {
+                "type": "string",
+                "description": "Signal with the synchronous reset of the domain."
+              }
+            }
+          }
+        },
+        "instances": {
+          "type": "array",
+          "description": "Every instance of the top level: placed blocks, inserted adapters and reset generators.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "entity",
+              "library",
+              "block",
+              "origin",
+              "generics",
+              "ports"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/identifier"
+              },
+              "entity": {
+                "$ref": "#/$defs/vhdlName"
+              },
+              "library": {
+                "$ref": "#/$defs/vhdlName"
+              },
+              "block": {
+                "type": "string"
+              },
+              "origin": {
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              "role": {
+                "enum": [
+                  "cdc",
+                  "wconv",
+                  "reset"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "connection": {
+                "type": "string"
+              },
+              "domain": {
+                "$ref": "#/$defs/identifier"
+              },
+              "generics": {
+                "type": "array",
+                "description": "Every generic of the entity, in order. Put the ones with default false into the generic map.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "value",
+                    "vhdl",
+                    "default"
+                  ],
+                  "properties": {
+                    "name": {
+                      "$ref": "#/$defs/vhdlName"
+                    },
+                    "value": {
+                      "description": "Value as JSON (null for a generic the Composer cannot represent)."
+                    },
+                    "vhdl": {
+                      "type": "string",
+                      "description": "VHDL literal of the value."
+                    },
+                    "default": {
+                      "type": "boolean",
+                      "description": "The value is the VHDL default."
+                    }
+                  }
+                }
+              },
+              "ports": {
+                "type": "array",
+                "description": "Every port of the entity, in order, with its actual.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "dir",
+                    "type",
+                    "actual"
+                  ],
+                  "properties": {
+                    "name": {
+                      "$ref": "#/$defs/vhdlName"
+                    },
+                    "dir": {
+                      "enum": [
+                        "in",
+                        "out",
+                        "inout"
+                      ]
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "VHDL type with evaluated bounds: std_logic or std_logic_vector(<hi> downto 0)."
+                    },
+                    "actual": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "A signal, a top-level clock or reset port, \"open\", or null for a port that keeps its VHDL default."
+                    },
+                    "useDefault": {
+                      "type": "boolean",
+                      "description": "Leave the port out of the port map."
+                    },
+                    "default": {
+                      "type": "string",
+                      "description": "The VHDL default of a port that keeps it (always given with useDefault)."
+                    },
+                    "domain": {
+                      "$ref": "#/$defs/identifier",
+                      "description": "Clock domain of the port: of its clock, of its synchronous reset or of the clock of its interface. Asynchronous resets and ports outside an interface have none."
+                    },
+                    "reset": {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "note"
+                      ],
+                      "additionalProperties": false,
+                      "description": "A reset input: synchronous (from the reset generator of its domain) or asynchronous (the block synchronises the release itself), and why.",
+                      "properties": {
+                        "kind": {
+                          "enum": [
+                            "sync",
+                            "async"
+                          ]
+                        },
+                        "note": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "signals": {
+          "type": "array",
+          "description": "Signals of the architecture, one per port with a signal actual, named <instance>_<port>_s.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "type"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/vhdlName"
+              },
+              "type": {
+                "type": "string",
+                "description": "VHDL type with evaluated bounds: std_logic or std_logic_vector(<hi> downto 0)."
+              }
+            }
+          }
+        },
+        "nets": {
+          "type": "array",
+          "description": "Concurrent assignments \"to <= from;\" of the architecture.",
+          "items": {
+            "type": "object",
+            "required": [
+              "to",
+              "from",
+              "kind"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "to": {
+                "type": "string",
+                "description": "Signal, slice or bit of a signal, or a top-level output port."
+              },
+              "from": {
+                "type": "string",
+                "description": "Signal, slice, bit, top-level input port or constant (VHDL expression)."
+              },
+              "kind": {
+                "enum": [
+                  "connection",
+                  "constant",
+                  "top",
+                  "tie-off"
+                ]
+              },
+              "connection": {
+                "type": "string",
+                "description": "Connection id of the system."
+              },
+              "signal": {
+                "type": "string",
+                "description": "Logical signal of the interface (data, keep, last, user, valid, ready, a field) or the port."
+              },
+              "reason": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "label",
+                    "lsb",
+                    "bits"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Meaning of the field."
+                    },
+                    "lsb": {
+                      "type": "integer",
+                      "description": "Lowest bit of the field in the signal."
+                    },
+                    "bits": {
+                      "type": "integer"
+                    },
+                    "value": {
+                      "type": [
+                        "integer",
+                        "boolean"
+                      ],
+                      "description": "Value of the field (constants only)."
+                    }
+                  }
+                },
+                "description": "Field map of a constant: the side band constants of a connection or the constants of an instance."
+              }
+            }
+          }
+        },
+        "packing": {
+          "type": "array",
+          "description": "Bit fields of the packed data words (clock crossings and Open Logic blocks that carry a typed stream).",
+          "items": {
+            "type": "object",
+            "required": [
+              "instance",
+              "interface",
+              "width",
+              "fields"
+            ],
+            "properties": {
+              "instance": {
+                "$ref": "#/$defs/identifier"
+              },
+              "interface": {
+                "type": "string"
+              },
+              "width": {
+                "type": "integer"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "signal",
+                    "lsb",
+                    "width"
+                  ],
+                  "properties": {
+                    "signal": {
+                      "type": "string"
+                    },
+                    "lsb": {
+                      "type": "integer"
+                    },
+                    "width": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "description": "Timing and placement constraints in terms of the top level: max_delay (from, to, ns, datapathOnly, instances: for every pair of clock domains with a clock crossing, both directions, the period of the faster clock, data path only; no asynchronous clock groups, which would override these limits in Vivado), false_path (from), io_register (ports), vendor_scoped (file of Open Logic with its scoped constraints).",
+          "items": {
+            "type": "object",
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "compile": {
+          "type": "array",
+          "description": "VHDL libraries in compile order with their pinned sources.",
+          "items": {
+            "type": "object",
+            "required": [
+              "library",
+              "source",
+              "url",
+              "fileList",
+              "fileListFormat",
+              "entities"
+            ],
+            "properties": {
+              "library": {
+                "$ref": "#/$defs/vhdlName"
+              },
+              "source": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "tag": {
+                "type": "string"
+              },
+              "commit": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "fileList": {
+                "type": "string"
+              },
+              "fileListFormat": {
+                "enum": [
+                  "files",
+                  "modules"
+                ],
+                "description": "modules: one module directory per line, relative to the repository root (blank lines and lines starting with # are ignored), its sources in <module>/src/*.vhd without a given order inside the module (packages first, then in dependency order, or let the tool order them); files: one VHDL file per line, in compile order."
+              },
+              "verifiedWith": {
+                "type": "string",
+                "description": "Open Logic FT tag the repository is verified with (as sources[].verifiedWith)."
+              },
+              "note": {
+                "type": "string"
+              },
+              "entities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "problems": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Inconsistencies found while building the netlist (none for a correct catalog)."
+        },
+        "context": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Context clause of the top level: library ieee with std_logic_1164, every library of compile, and a use clause for every package whose constants a generic map names."
+        }
+      }
+    }
+  }
+}

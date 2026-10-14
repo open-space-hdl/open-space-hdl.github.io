@@ -102,5 +102,8 @@ test('the file format page is linked from the editor and documents the parts of 
   expect(schema.ok()).toBe(true);
   const s = await schema.json();
   expect(Object.keys(s.properties)).toEqual(expect.arrayContaining(['resolved', 'checks', 'agent']));
+  const schema2 = await fmt.request.get('/composer/schema/system-2.json');
+  expect(schema2.ok()).toBe(true);
+  expect(Object.keys((await schema2.json()).properties)).toEqual(expect.arrayContaining(['subsystems', 'resolved']));
   await fmt.close();
 });

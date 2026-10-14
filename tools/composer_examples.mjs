@@ -3,10 +3,11 @@
 // and the brief of every example are also written to tests/golden/, where the unit tests compare them: a change of
 // the resolver shows up as a reviewable difference of these files. So are the files of the VHDL export of every
 // example (top level, compile order, constraints), once the catalog has the file lists of all its sources.
+// The test fixtures of subsystems (tests/fixtures/subsystems/) are written the same way, with their golden files in
+// tests/golden/subsystems/.
 //
 //   node tools/composer_examples.mjs              all examples
 //   node tools/composer_examples.mjs <name> ...   only the named examples (system names = file names without extension)
-import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { arrange } from '../assets/composer/js/model/arrange.js';
 import { Catalog } from '../assets/composer/js/model/catalog.js';
@@ -15,8 +16,9 @@ import {
   addConnection, addDomain, addInstance, assignClock, createDesign, moveToDomain, renameDomain, setExternal, setGeneric,
   setSystem, sidebandDefaults, updateDomain,
 } from '../assets/composer/js/model/design.js';
-import { exportHdl } from '../assets/composer/js/model/hdl.js';
+import { designComments, exportHdl } from '../assets/composer/js/model/hdl.js';
 import { GENERATOR, toDocument, toText } from '../assets/composer/js/model/serialize.js';
+import { sha256 } from '../assets/composer/js/model/sha256.js';
 
 const cat = new Catalog(JSON.parse(readFileSync(new URL('../assets/composer/catalog.json', import.meta.url), 'utf-8')));
 
@@ -205,32 +207,84 @@ function linkDomain(d, spw, hz) {
   examples.push(['spacefibre_node', 'SpaceFibre node', d]);
 }
 
-// a subset of the examples by name (the others keep their files)
-const only = process.argv.slice(2);
-for (const name of only) if (!examples.some(([file]) => file === name)) throw new Error(`unknown example ${name}`);
-for (let k = 0; k < examples.length; k += 1) {
-  const [file, title, d0] = examples[k];
-  const d = arrange(cat, d0);
-  examples[k] = [file, title, d];
-  if (only.length > 0 && !only.includes(file)) continue;
-  const path = new URL(`../assets/composer/examples/${file}.composer.json`, import.meta.url);
-  const text = toText(d, cat);
-  writeFileSync(path, text);
+/** @type {[string, import('../assets/composer/js/model/design.js').Design][]} */
+const fixtures = [];
+
+{
+  // two levels of subsystems, the inner one used inside the outer, the outer one used twice: a SpaceWire port
+  let port = base('spw_port', 'A SpaceWire port with its packet interfaces and registers.', [['openwire/owr_core', undefined]]);
+  port = linkDomain(port, 'spw0', 200e6);
+  port = external(port, { 'spw0.M_Pkt': 'rx_', 'spw0.S_Pkt': 'tx_', 'spw0.S_AxiLite': 'reg_' });
+  // an RMAP target behind such a port
+  let node = setSystem(createDesign('rmap_node'), { description: 'An RMAP target behind a SpaceWire port subsystem.' });
+  node = { ...node, subsystems: { spw_port: port } };
+  node = addInstance(node, cat, 'subsystem/spw_port', { x: 0, y: 0 }).design;
+  node = addInstance(node, cat, 'openrmap/omap_core', { x: 0, y: 0 }, 'target').design;
+  {
+    const r = addDomain(node, { name: 'Link clock', frequencyHz: 200e6 });
+    node = renameDomain(assignClock(r.design, cat, 'spw_port0', 'Clk_link', r.id), r.id, 'link');
+  }
+  node = link(node, 'spw_port0.rx', 'rmap0.S_Pkt');
+  node = link(node, 'rmap0.M_Pkt', 'spw_port0.tx');
+  node = external(node, { 'rmap0.M_Axi': 'mem_', 'spw_port0.reg': 'spw_reg_', 'rmap0.S_AxiLite': 'rmap_reg_' });
+  // two nodes in one system
+  let d = setSystem(createDesign('dual_rmap_node'), { description: 'Two RMAP nodes, each a subsystem with a SpaceWire port subsystem inside.' });
+  d = { ...d, subsystems: { spw_port: port, rmap_node: node } };
+  d = addInstance(d, cat, 'subsystem/rmap_node', { x: 0, y: 0 }).design;
+  d = addInstance(d, cat, 'subsystem/rmap_node', { x: 0, y: 0 }).design;
+  {
+    const r = addDomain(d, { name: 'Link clock', frequencyHz: 200e6 });
+    d = renameDomain(r.design, r.id, 'link');
+  }
+  for (const k of [0, 1]) {
+    d = assignClock(d, cat, `rmap_node${k}`, 'Clk_link', 'link');
+    d = external(d, { [`rmap_node${k}.mem`]: `n${k}_`, [`rmap_node${k}.spw_reg`]: `n${k}_`, [`rmap_node${k}.rmap_reg`]: `n${k}_` });
+  }
+  fixtures.push(['dual_rmap_node', d]);
+}
+
+/**
+ * Writes the golden files of a system: resolved netlist, brief and the files of the VHDL export.
+ * @param {string} file
+ * @param {import('../assets/composer/js/model/design.js').Design} d
+ * @param {string} text   the system file
+ * @param {URL} golden    directory
+ */
+function writeGolden(file, d, text, golden) {
   const doc = /** @type {any} */ (toDocument(d, cat));
-  const golden = new URL('../tests/golden/', import.meta.url);
   mkdirSync(golden, { recursive: true });
   writeFileSync(new URL(`${file}.resolved.json`, golden), `${JSON.stringify(doc.resolved, null, 2)}\n`);
   writeFileSync(new URL(`${file}.brief.md`, golden), doc.agent.brief);
   const hdl = exportHdl(cat, doc.resolved, {
     generator: `${GENERATOR.name} ${GENERATOR.version}`,
     input: `${file}.composer.json`,
-    sha256: createHash('sha256').update(text).digest('hex'),
-    description: d.description,
-    connections: d.connections,
+    sha256: sha256(text),
+    ...designComments(d),
   });
   if (hdl.problems.length) console.log(`${file}: no golden files of the VHDL export (${hdl.problems.join(' ')})`);
   else for (const f of hdl.files) writeFileSync(new URL(f.name, golden), f.text);
   console.log(`wrote ${file}.composer.json and its golden files`);
+}
+
+// a subset of the examples and fixtures by name (the others keep their files)
+const only = process.argv.slice(2);
+for (const name of only) if (![...examples, ...fixtures].some(([file]) => file === name)) throw new Error(`unknown example ${name}`);
+for (let k = 0; k < examples.length; k += 1) {
+  const [file, title, d0] = examples[k];
+  const d = arrange(cat, d0);
+  examples[k] = [file, title, d];
+  if (only.length > 0 && !only.includes(file)) continue;
+  const text = toText(d, cat);
+  writeFileSync(new URL(`../assets/composer/examples/${file}.composer.json`, import.meta.url), text);
+  writeGolden(file, d, text, new URL('../tests/golden/', import.meta.url));
+}
+for (const [file, d0] of fixtures) {
+  if (only.length > 0 && !only.includes(file)) continue;
+  const d = arrange(cat, d0);
+  const text = toText(d, cat);
+  mkdirSync(new URL('../tests/fixtures/subsystems/', import.meta.url), { recursive: true });
+  writeFileSync(new URL(`../tests/fixtures/subsystems/${file}.composer.json`, import.meta.url), text);
+  writeGolden(file, d, text, new URL('../tests/golden/subsystems/', import.meta.url));
 }
 
 // Index for the Examples menu of the page

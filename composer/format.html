@@ -17,8 +17,9 @@ permalink: /composer/format/
       repositories alone.
     </p>
     <p>
-      Format version 1. JSON schema:
-      <a href="{{ '/composer/schema/system-1.json' | relative_url }}"><code>/composer/schema/system-1.json</code></a>.
+      Format version 1, and version 2 for a system that uses <a href="#subsystems">subsystems</a>. JSON schemas:
+      <a href="{{ '/composer/schema/system-1.json' | relative_url }}"><code>/composer/schema/system-1.json</code></a>
+      and <a href="{{ '/composer/schema/system-2.json' | relative_url }}"><code>/composer/schema/system-2.json</code></a>.
       Examples: <a href="{{ '/assets/composer/examples/index.json' | relative_url }}">the example systems of the Composer</a>,
       for instance
       <a href="{{ '/assets/composer/examples/encrypted_spp_over_spw.composer.json' | relative_url }}"><code>encrypted_spp_over_spw.composer.json</code></a>.
@@ -30,7 +31,7 @@ permalink: /composer/format/
         <thead><tr><th scope="col">Key</th><th scope="col">Content</th><th scope="col">Written by</th></tr></thead>
         <tbody>
           <tr><td data-label="Key"><code>$schema</code></td><td data-label="Content">Address of the JSON schema</td><td data-label="Written by">Editor</td></tr>
-          <tr><td data-label="Key"><code>format</code>, <code>formatVersion</code></td><td data-label="Content"><code>open-space-composer-system</code>, <code>1</code></td><td data-label="Written by">Editor</td></tr>
+          <tr><td data-label="Key"><code>format</code>, <code>formatVersion</code></td><td data-label="Content"><code>open-space-composer-system</code>, <code>1</code> (<code>2</code> with subsystems)</td><td data-label="Written by">Editor</td></tr>
           <tr><td data-label="Key"><code>generator</code></td><td data-label="Content">Composer version and the content identifier of the block catalog</td><td data-label="Written by">Editor</td></tr>
           <tr><td data-label="Key"><code>system</code></td><td data-label="Content">Name of the top-level entity, description, fault tolerance of the inserted blocks</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>sources</code></td><td data-label="Content">Repositories of the blocks with their pinned commit or tag, VHDL library and the Open Logic FT tag they were verified with (<code>verifiedWith</code>)</td><td data-label="Written by">Editor</td></tr>
@@ -38,6 +39,7 @@ permalink: /composer/format/
           <tr><td data-label="Key"><code>instances</code></td><td data-label="Content">Placed blocks with generics that differ from the defaults, clock assignment and constants</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>connections</code></td><td data-label="Content">Connections from a driving to a receiving interface, side band constants, adapter settings</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>externals</code></td><td data-label="Content">Interfaces that become ports of the top level, with a name prefix</td><td data-label="Written by">User</td></tr>
+          <tr><td data-label="Key"><code>subsystems</code></td><td data-label="Content">Version 2: the definitions of the subsystems the system uses, each with its hash</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>resolved</code></td><td data-label="Content">Netlist of the top level: ports, instances with generic and port maps, signals, assignments, packing, clocks, resets, constraints, compile order</td><td data-label="Written by">Derived</td></tr>
           <tr><td data-label="Key"><code>checks</code></td><td data-label="Content">Results of the structural checks and the design rules</td><td data-label="Written by">Derived</td></tr>
           <tr><td data-label="Key"><code>agent.brief</code></td><td data-label="Content">Build brief in Markdown</td><td data-label="Written by">Derived</td></tr>
@@ -79,6 +81,64 @@ permalink: /composer/format/
       <li>Values of generics: booleans and numbers as JSON, <code>std_logic</code> as <code>"0"</code> or
         <code>"1"</code>, vectors as VHDL literals (<code>"x\"FE\""</code>), strings without quotes.</li>
     </ul>
+
+    <h2 id="subsystems">Subsystems</h2>
+    <p>
+      A system can be placed in another system as a block of its own, a subsystem. A file with subsystems has
+      <code>formatVersion</code> 2 and holds in <code>subsystems</code> the definition of every subsystem it uses, also
+      of those used inside other definitions, each once and leaves first: a definition comes after those it uses. A
+      definition holds the edited parts of a system: <code>name</code>, <code>hash</code>, <code>system</code>,
+      <code>clockDomains</code>, <code>instances</code>, <code>connections</code> and <code>externals</code>, without a
+      layout and without derived parts. The Composer writes version 2 only when the system uses a subsystem; a system
+      whose last subsystem is removed is written as version 1 again.
+    </p>
+<pre><code>"instances": [
+  { "id": "rmap_node0", "subsystem": "rmap_node", "clocks": { "Clk_sys": "sys", "Clk_link": "link" } }
+],
+"subsystems": [
+  { "name": "spw_port", "hash": "36f3a4c3...", "system": { "name": "spw_port", ... }, "clockDomains": [ ... ],
+    "instances": [ ... ], "connections": [ ... ], "externals": [ ... ] },
+  { "name": "rmap_node", "hash": "737ff30b...", ... }
+]</code></pre>
+    <p>The boundary of a subsystem, as the system that places it sees it:</p>
+    <ul>
+      <li>Interfaces: every external interface of the definition, with its type, role, widths and signals. Its name is
+        the prefix without the trailing underscore (<code>spw_reg_</code> gives <code>spw_reg</code>); a pins
+        interface that is external without a prefix of the user is named by its instance. Two prefixes that give the
+        same name are an error.</li>
+      <li>Clock inputs: one per clock domain of the definition with an external clock, named like its port,
+        <code>Clk_&lt;domain&gt;</code>. An instance binds each one to a clock domain of the system around it. The clock
+        domain an input is bound to has the frequency of the domain in the definition, because the frequency generics
+        of its blocks and its timing exceptions are fixed in the definition (rule
+        <code>subsystem_clock_frequency</code>). A subsystem has no clock outputs: an external interface in a clock
+        domain that a block of the definition drives is an error.</li>
+      <li>Reset: the input <code>Rst</code> gets the unsynchronised <code>Rst</code> of the system around it. The
+        subsystem synchronises its release in each of its clock domains with reset generators of its own.</li>
+      <li>No generics: a subsystem is not parameterisable.</li>
+    </ul>
+    <p>
+      The name of a subsystem is a VHDL identifier and not a reserved word. Every subsystem becomes an entity of its
+      name in the library of the top level, so the name differs from the name of the system and from every library the
+      generated files can see (<code>ieee</code>, <code>std</code>, <code>work</code>, <code>olo</code> and the libraries
+      of the cores).
+    </p>
+    <p>
+      <code>hash</code> is the SHA-256 of the canonical JSON of the definition without its <code>hash</code> key: the
+      keys of every object sorted, no white space, numbers and strings as JSON writes them (integers without a
+      fraction), encoded as UTF-8. In Python:
+      <code>hashlib.sha256(json.dumps(d, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf-8')).hexdigest()</code>.
+      A definition whose hash does not match was edited outside the Composer: the file opens with a warning, and the
+      Composer writes a new hash when it saves. A cycle, a missing and a duplicate definition are format errors.
+    </p>
+    <p>
+      The Composer resolves every definition on its own, leaves first. Its checks appear once per definition, prefixed
+      with its name (<code>rmap_node/...</code>); the checks of an instance, such as its clock binding, appear for the
+      instance. Two clock inputs of one instance on the same clock domain are an error (rule
+      <code>subsystem_clocks</code>) when the subsystem crosses between them, also inside the subsystems it uses: its
+      scoped timing exceptions state a maximum delay, data path only, between the two clocks, and with one clock this
+      would apply to every path of that clock and remove its hold checks. Without a crossing between them it is a
+      remark.
+    </p>
 
     <h2 id="resolved">The resolved netlist</h2>
     <p>
@@ -122,6 +182,7 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
           <tr><td data-label="Entry"><code>constraints</code></td><td data-label="Meaning">In terms of the top level: a maximum delay for every pair of clock domains with a clock crossing, in both directions, the period of the faster clock, data path only (<code>max_delay</code>, the Open Logic clock crossing principles); false paths, I/O registers and the scoped constraint script of Open Logic. There are no asynchronous clock groups: in Vivado they would override the delay limits.</td></tr>
           <tr><td data-label="Entry"><code>compile</code></td><td data-label="Meaning">VHDL libraries in compile order with repository, commit or tag, file list and its format, and the entities used. <code>files</code>: one VHDL file per line in compile order. <code>modules</code>: one module directory per line, relative to the repository root; blank lines and lines starting with <code>#</code> are ignored; the sources of a module are its <code>src/*.vhd</code> files, which have no given order inside the module (packages first, then in dependency order, or let the tool order them). <code>verifiedWith</code> is the Open Logic FT tag the repository was verified with.</td></tr>
           <tr><td data-label="Entry"><code>problems</code></td><td data-label="Meaning">Inconsistencies found while building the netlist; empty for a correct catalog.</td></tr>
+          <tr><td data-label="Entry"><code>subsystems</code></td><td data-label="Meaning">Version 2: the netlist of every subsystem definition, leaves first, flat, each in the form described here. An instance of a subsystem has the library <code>work</code> and the entity named after it. <code>compile</code> also lists the libraries used inside the subsystems; <code>context</code> holds the libraries of the instances of the top level only.</td></tr>
         </tbody>
       </table>
     </div>
@@ -170,6 +231,8 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
           <tr><td data-label="File"><code>&lt;system&gt;_compile_order.txt</code></td><td data-label="Content">The source repositories at their pinned commits and every synthesis source in compile order with its library; the top level last, in a library named after the system.</td></tr>
           <tr><td data-label="File"><code>&lt;system&gt;.xdc</code></td><td data-label="Content">Timing exceptions of the system (maximum delays between the clocks of every clock crossing, false paths), written for <code>read_xdc -ref &lt;system&gt;</code>: valid when the system is the top level and inside a larger design.</td></tr>
           <tr><td data-label="File"><code>&lt;system&gt;_top.xdc</code></td><td data-label="Content">What applies only when the system is the top level of the FPGA, or synthesised on its own: the clocks of its clock ports and the I/O registers. A board design creates its clocks and places its I/O registers itself.</td></tr>
+          <tr><td data-label="File"><code>&lt;subsystem&gt;.vhd</code></td><td data-label="Content">For every subsystem the system uses: its entity, written like the top level, in the library of the top level. An instance of it reads <code>entity work.&lt;subsystem&gt;</code>. Instances of one subsystem share the entity.</td></tr>
+          <tr><td data-label="File"><code>&lt;subsystem&gt;.xdc</code></td><td data-label="Content">The timing exceptions of the subsystem, in terms of its ports, for <code>read_xdc -ref &lt;subsystem&gt;</code>. The false paths and I/O registers of the blocks inside also appear in the files of the system, for its own ports.</td></tr>
         </tbody>
       </table>
     </div>
@@ -183,7 +246,8 @@ file &lt;library&gt; &lt;path&gt;</code></pre>
       A <code>source</code> line names a repository: clone it into the directory of that name in a sources root and
       check out the commit (<code>recursive</code>: with its submodules). A <code>file</code> line names a VHDL-2008
       file and its library, in compile order; the sources relative to the sources root, the top level relative to the
-      compile order file. The file lists come from <code>compile_order.txt</code> of every repository at its pinned
+      compile order file. The subsystems follow the sources in the library of the top level, leaves first, and the top
+      level comes last. The file lists come from <code>compile_order.txt</code> of every repository at its pinned
       commit; the notes at the end name what a build needs beyond the files, for example the transceiver wizard of a
       vendor-specific block and the scoped constraint script of Open Logic.
     </p>
@@ -210,7 +274,7 @@ file &lt;library&gt; &lt;path&gt;</code></pre>
       order, elaborates the top level and runs it to 0 ns, so that the assertions of the cores on their generics fire.
       Open Logic is analysed with <code>-frelaxed</code> (the shared variable of its RAMs), the cores and the top level
       strictly; a vendor-specific block is replaced by a stub of its entity. The continuous integration of the website
-      runs it for every example.
+      runs it for every example and for a system with two levels of subsystems.
     </p>
 
     <h2 id="versions">Versions and the catalog</h2>

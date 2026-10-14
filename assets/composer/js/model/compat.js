@@ -5,6 +5,7 @@
 
 import { isDriver, splitEndpoint } from './catalog.js';
 import { getInstance } from './design.js';
+import { withSubsystems } from './subsystems.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./catalog.js').PortView} PortView */
@@ -31,6 +32,7 @@ const PAIRS = { source: 'sink', master: 'slave', event_out: 'event_in' };
  * @param {string} ref
  */
 export function resolveEndpoint(cat, d, ref) {
+  cat = withSubsystems(cat, d);
   const e = splitEndpoint(ref);
   if (!e) return null;
   const inst = getInstance(d, e.instance);
@@ -59,6 +61,7 @@ function instanceOf(ref) {
  * @returns {{ ref: string, type: TypeDef } | null}
  */
 export function typedEndpoint(cat, d, ref, ignoreConnection) {
+  cat = withSubsystems(cat, d);
   const start = resolveEndpoint(cat, d, ref);
   if (!start) return null;
   if (!start.port.type.generic) return { ref, type: start.port.type };
@@ -104,6 +107,7 @@ export function typedEndpoint(cat, d, ref, ignoreConnection) {
  * @returns {TypeDef | null} null if the port does not exist
  */
 export function effectiveType(cat, d, ref, ignoreConnection) {
+  cat = withSubsystems(cat, d);
   const typed = typedEndpoint(cat, d, ref, ignoreConnection);
   if (typed) return typed.type;
   return resolveEndpoint(cat, d, ref)?.port.type ?? null;
@@ -119,6 +123,7 @@ export function effectiveType(cat, d, ref, ignoreConnection) {
  * @returns {Check}
  */
 export function checkConnection(cat, d, a, b, opts = {}) {
+  cat = withSubsystems(cat, d);
   /** @type {string[]} */
   const notes = [];
   const ea = resolveEndpoint(cat, d, a);
@@ -178,9 +183,14 @@ export function checkConnection(cat, d, a, b, opts = {}) {
       const acc = (tRcv.accepts ?? []).find((x) => x.type === tDrv.id);
       if (acc) {
         if (acc.condition === 'liteWhen') {
-          const conds = /** @type {{generic: string, value: unknown}[]} */ (drv.port.itf.params?.liteWhen ?? []);
+          // a subsystem decides the condition inside: true or false instead of the conditions
+          const lite = drv.port.itf.params?.liteWhen;
+          const conds = /** @type {{generic: string, value: unknown}[]} */ (Array.isArray(lite) ? lite : []);
           const failing = conds.filter((c) => drv.values[c.generic] !== c.value);
-          if (conds.length === 0 || failing.length > 0) {
+          if (lite === false) {
+            return { ok: false, reason: `${tRcv.name} needs single transfers: set them on the block inside ${drv.inst.id}.`, notes };
+          }
+          if (lite !== true && (conds.length === 0 || failing.length > 0)) {
             const need = (failing.length ? failing : conds).map((c) => `${c.generic} = ${c.value}`).join(' and ');
             return {
               ok: false,
@@ -221,6 +231,7 @@ export function checkConnection(cat, d, a, b, opts = {}) {
  * @returns {{ ref: string, check: Check }[]}
  */
 export function candidates(cat, d, ref) {
+  cat = withSubsystems(cat, d);
   const out = [];
   for (const inst of d.instances) {
     if (inst.id === instanceOf(ref)) continue;

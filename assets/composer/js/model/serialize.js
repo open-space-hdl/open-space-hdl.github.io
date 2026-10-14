@@ -1,7 +1,9 @@
 // @ts-check
 /**
- * The .composer.json file format, version 1: writing a design and reading it back with full validation.
- * The JSON schema is published at /composer/schema/system-1.json. No DOM dependency.
+ * The .composer.json file format: writing a design and reading it back with full validation. Version 1 is a system of
+ * blocks; version 2 adds the definitions of the subsystems it uses and is written only when it uses one, so that every
+ * other system stays a version 1 file. The JSON schemas are published at /composer/schema/system-1.json and
+ * system-2.json. No DOM dependency.
  */
 
 import { agentBrief } from './brief.js';
@@ -10,13 +12,18 @@ import { createDesign, DEFAULT_DOMAIN, identifierProblem } from './design.js';
 import { validateValue } from './generics.js';
 import { netlist } from './netlist.js';
 import { resolve } from './resolver.js';
+import {
+  definitionDocument, definitionHash, definitionOrder, directSubsystems, subsystemBlockId, subsystemsOf, withSubsystems,
+} from './subsystems.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./design.js').Design} Design */
 
 export const FORMAT = 'open-space-composer-system';
-export const FORMAT_VERSION = 1;
+/** Highest format version this Composer reads; it writes version 1 unless the system uses subsystems. */
+export const FORMAT_VERSION = 2;
 export const SCHEMA_URL = 'https://openspacehdl.org/composer/schema/system-1.json';
+export const SCHEMA_URL_2 = 'https://openspacehdl.org/composer/schema/system-2.json';
 export const GENERATOR = { name: 'Open Space Composer', version: '0.2.0-beta' };
 
 export class FormatError extends Error {
@@ -32,13 +39,15 @@ const PREFIX_RE = /^[A-Za-z](?:_?[A-Za-z0-9])*_?$/;
 const ENDPOINT_RE = /^[a-z](?:_?[a-z0-9])*\.[A-Za-z]\w*(?:\[\d+\])?$/;
 
 /**
- * Sources (repositories) that the instances of a design use, in catalog order, with the Open Logic library.
+ * Sources (repositories) that the instances of a design and of its subsystems use, in catalog order, with the Open
+ * Logic library.
  * @param {Catalog} cat
- * @param {Design} d
+ * @param {Design[]} designs   the system and the definitions it uses
  */
-function usedSources(cat, d) {
-  const used = new Set(d.instances.map((i) => cat.blocks.get(i.block)?.source).filter(Boolean));
-  if (d.instances.length > 0) used.add('olo');
+function usedSources(cat, designs) {
+  const instances = designs.flatMap((d) => d.instances);
+  const used = new Set(instances.map((i) => cat.blocks.get(i.block)?.source).filter(Boolean));
+  if (instances.length > 0) used.add('olo');
   return cat.sources
     .filter((s) => used.has(s.id))
     .map((s) => {
@@ -55,14 +64,15 @@ function usedSources(cat, d) {
 }
 
 /**
- * The catalog entries of the blocks that a resolved design uses (inserted adapters and reset generators included) and
- * of their interface types, so that a file explains itself without the catalog it was made with.
+ * The catalog entries of the blocks that a resolved design uses (inserted adapters and reset generators included, also
+ * those inside its subsystems) and of their interface types, so that a file explains itself without the catalog it was
+ * made with. A subsystem has no entry: its definition is in the file.
  * @param {Catalog} cat
- * @param {import('./resolver.js').Resolved} res
+ * @param {import('./resolver.js').Resolved[]} all   the resolution of the system and of every definition it uses
  */
-function catalogSubset(cat, res) {
-  const ids = [...new Set(res.instances.map((r) => r.block))];
-  const blocks = ids.map((id) => cat.blocks.get(id)).filter((b) => b !== undefined);
+function catalogSubset(cat, all) {
+  const ids = [...new Set(all.flatMap((res) => res.instances.map((r) => r.block)))];
+  const blocks = ids.map((id) => cat.blocks.get(id)).filter((b) => b !== undefined).filter((b) => b.kind !== 'subsystem');
   const typeIds = new Set(blocks.flatMap((b) => b.interfaces.map((i) => i.type)));
   return {
     id: cat.id,
@@ -81,35 +91,29 @@ function catalogSubset(cat, res) {
  * @param {{ full?: boolean }} [opts]
  */
 export function toDocument(d, cat, opts = {}) {
-  const doc = {
-    $schema: SCHEMA_URL,
-    format: FORMAT,
-    formatVersion: FORMAT_VERSION,
-    generator: { ...GENERATOR, catalog: cat.id },
-    system: { name: d.name, description: d.description, faultTolerance: d.faultTolerance },
-    sources: usedSources(cat, d),
-    clockDomains: d.clockDomains.map((c) => ({ id: c.id, name: c.name, frequencyHz: c.frequencyHz, source: { ...c.source } })),
-    instances: d.instances.map((i) => {
-      /** @type {Record<string, unknown>} */
-      const o = { id: i.id, block: i.block };
-      if (i.preset) o.preset = i.preset;
-      o.generics = { ...i.generics };
-      o.clocks = { ...i.clocks };
-      const constants = Object.entries(i.constants ?? {}).filter(([, v]) => Object.keys(v).length > 0);
-      if (constants.length) o.constants = Object.fromEntries(constants.map(([k, v]) => [k, { ...v }]));
-      return o;
-    }),
-    connections: d.connections.map((c) => {
-      /** @type {Record<string, unknown>} */
-      const o = { id: c.id, from: c.from, to: c.to };
-      if (c.sideband) o.sideband = { ...c.sideband };
-      if (c.adapters) o.adapters = JSON.parse(JSON.stringify(c.adapters));
-      return o;
-    }),
-    externals: d.externals.map((e) => ({ interface: e.interface, prefix: e.prefix })),
-  };
+  // the definitions the system uses, also inside them, leaves first; those it no longer uses are not written
+  const names = d.subsystems ? definitionOrder(d.subsystems, directSubsystems(d)) : [];
+  const defs = names.map((n) => /** @type {Record<string, Design>} */ (d.subsystems)[n]);
+  const body = definitionDocument(d);
   /** @type {Record<string, unknown>} */
-  const out = { ...doc };
+  const out = {
+    $schema: names.length ? SCHEMA_URL_2 : SCHEMA_URL,
+    format: FORMAT,
+    formatVersion: names.length ? 2 : 1,
+    generator: { ...GENERATOR, catalog: cat.id },
+    system: body.system,
+    sources: usedSources(cat, [d, ...defs]),
+    clockDomains: body.clockDomains,
+    instances: body.instances,
+    connections: body.connections,
+    externals: body.externals,
+  };
+  if (names.length) {
+    out.subsystems = defs.map((def) => {
+      const { name, ...rest } = definitionDocument(def);
+      return { name, hash: definitionHash({ name, ...rest }), ...rest };
+    });
+  }
   if (opts.full !== false) {
     const res = resolve(cat, d);
     const resolved = netlist(cat, d, res);
@@ -118,7 +122,7 @@ export function toDocument(d, cat, opts = {}) {
     out.resolved = resolved;
     out.checks = checks.map((c) => ({ ...c }));
     out.agent = { brief: agentBrief(cat, d, res, resolved, checks) };
-    out.catalogSubset = catalogSubset(cat, res);
+    out.catalogSubset = catalogSubset(cat, [res, ...subsystemsOf(withSubsystems(cat, d), d).map((s) => s.res)]);
   }
   out.layout = {
     instances: Object.fromEntries(d.instances.map((i) => [i.id, { ...(d.layout.instances[i.id] ?? { x: 0, y: 0 }) }])),
@@ -185,30 +189,15 @@ export function fromText(text, cat) {
 }
 
 /**
- * Reads a design from a document object, checking structure, identifiers, generics and connections.
- * @param {unknown} doc
- * @param {Catalog} cat
- * @returns {{ design: Design, warnings: string[], unplaced: string[] }}   unplaced: blocks without a position
+ * Reads the system part, the clock domains and the instances of a system or of a subsystem definition into a design.
+ * @param {Design} d
+ * @param {Record<string, any>} o   the document, or a definition of its subsystems
+ * @param {Catalog} cat   the catalog with the blocks of the definitions read so far
+ * @param {string[]} errors
+ * @param {string[]} warnings
  */
-export function fromDocument(doc, cat) {
-  /** @type {string[]} */
-  const errors = [];
-  /** @type {string[]} */
-  const warnings = [];
-  if (!isObject(doc)) throw new FormatError(['The file does not contain a JSON object.']);
-  const o = /** @type {Record<string, any>} */ (doc);
-  if (o.format !== FORMAT) throw new FormatError(['This is not an Open Space Composer system file (format field missing).']);
-  if (o.formatVersion !== FORMAT_VERSION) {
-    throw new FormatError([
-      typeof o.formatVersion === 'number' && o.formatVersion > FORMAT_VERSION
-        ? `The file has format version ${o.formatVersion}; this Composer reads version ${FORMAT_VERSION}.`
-        : `Unsupported format version ${String(o.formatVersion)}.`,
-    ]);
-  }
-  const otherCatalog = Boolean(isObject(o.generator) && o.generator.catalog && o.generator.catalog !== cat.id);
-
+function readParts(d, o, cat, errors, warnings) {
   // system
-  const d = createDesign();
   if (!isObject(o.system)) errors.push('system: missing.');
   else {
     const s = o.system;
@@ -233,7 +222,7 @@ export function fromDocument(doc, cat) {
     d.clockDomains.push({ id: c.id, name: c.name, frequencyHz: c.frequencyHz, source: { ...c.source } });
   }
 
-  // instances
+  // instances: a block of the catalog, or a subsystem of the file (version 2)
   if (!Array.isArray(o.instances)) errors.push('instances: must be a list.');
   for (const [k, inst] of (Array.isArray(o.instances) ? o.instances : []).entries()) {
     const where = `instances[${k}]`;
@@ -250,9 +239,18 @@ export function fromDocument(doc, cat) {
       errors.push(`${where}: duplicate id "${inst.id}".`);
       continue;
     }
-    const b = typeof inst.block === 'string' ? cat.blocks.get(inst.block) : undefined;
+    const sub = inst.subsystem;
+    if (sub !== undefined && inst.block !== undefined) {
+      errors.push(`${where} (${inst.id}): either a block or a subsystem, not both.`);
+      continue;
+    }
+    const b = sub !== undefined
+      ? (typeof sub === 'string' ? cat.blocks.get(subsystemBlockId(sub)) : undefined)
+      : (typeof inst.block === 'string' && !inst.block.startsWith('subsystem/') ? cat.blocks.get(inst.block) : undefined);
     if (!b) {
-      errors.push(`${where} (${inst.id}): unknown block "${String(inst.block)}".`);
+      errors.push(sub !== undefined
+        ? `${where} (${inst.id}): unknown subsystem "${String(sub)}"; its definition belongs in subsystems.`
+        : `${where} (${inst.id}): unknown block "${String(inst.block)}".`);
       continue;
     }
     if (inst.preset !== undefined && !(b.presets ?? []).some((p) => p.id === inst.preset)) {
@@ -322,29 +320,15 @@ export function fromDocument(doc, cat) {
     }
     d.instances.push(rec);
   }
+}
 
-  // layout
-  const lay = isObject(o.layout) ? o.layout : {};
-  const pos = isObject(lay.instances) ? lay.instances : {};
-  /** @type {string[]} */
-  const unplaced = [];
-  d.instances.forEach((inst, k) => {
-    const p = pos[inst.id];
-    if (isObject(p) && isFiniteNumber(p.x) && isFiniteNumber(p.y)) d.layout.instances[inst.id] = { x: Math.round(p.x), y: Math.round(p.y) };
-    else {
-      // a grid for now; the editor arranges a system with unplaced blocks
-      d.layout.instances[inst.id] = { x: 80 + (k % 4) * 320, y: 80 + Math.floor(k / 4) * 260 };
-      unplaced.push(inst.id);
-    }
-  });
-  const boxes = isObject(lay.domains) ? lay.domains : {};
-  for (const c of d.clockDomains) {
-    const bx = boxes[c.id];
-    if (isObject(bx) && [bx.x, bx.y, bx.w, bx.h].every(isFiniteNumber) && bx.w > 0 && bx.h > 0) {
-      d.layout.domains[c.id] = { x: Math.round(bx.x), y: Math.round(bx.y), w: Math.round(bx.w), h: Math.round(bx.h) };
-    }
-  }
-  // a domain with a block as source needs that block and its clock output
+/**
+ * Checks that every clock domain with a block as source has that block and its clock output.
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {string[]} errors
+ */
+function checkDomainSources(d, cat, errors) {
   for (const c of d.clockDomains) {
     const src = /** @type {{ kind: string, instance?: string, port?: string }} */ (c.source);
     if (src.kind === 'external') continue;
@@ -354,14 +338,22 @@ export function fromDocument(doc, cat) {
       errors.push(`Clock domain ${c.id}: its source must be a clock output of an instance.`);
     }
   }
-  if (isObject(lay.viewport) && isFiniteNumber(lay.viewport.x) && isFiniteNumber(lay.viewport.y) && isFiniteNumber(lay.viewport.zoom) && lay.viewport.zoom > 0) {
-    d.layout.viewport = { x: lay.viewport.x, y: lay.viewport.y, zoom: Math.min(4, Math.max(0.1, lay.viewport.zoom)) };
+}
+
+/**
+ * Reads the connections and the externals of a system or of a subsystem definition into a design, each connection
+ * checked against the rules.
+ * @param {Design} d
+ * @param {Record<string, any>} o
+ * @param {Catalog} cat
+ * @param {string[]} errors
+ * @param {string[]} warnings
+ */
+function readWiring(d, o, cat, errors, warnings) {
+  if (o.connections !== undefined && !Array.isArray(o.connections)) {
+    errors.push('connections: must be a list.');
+    return;
   }
-
-  if (errors.length > 0) throw new FormatError(errors);
-
-  // connections, checked one by one against the rules
-  if (o.connections !== undefined && !Array.isArray(o.connections)) throw new FormatError(['connections: must be a list.']);
   for (const [k, c] of (o.connections ?? []).entries()) {
     const where = `connections[${k}]`;
     if (!isObject(c) || typeof c.id !== 'string' || !/^[A-Za-z]\w*$/.test(c.id) || typeof c.from !== 'string' || typeof c.to !== 'string' || !ENDPOINT_RE.test(c.from) || !ENDPOINT_RE.test(c.to)) {
@@ -414,9 +406,139 @@ export function fromDocument(doc, cat) {
     }
     d.externals.push({ interface: e.interface, prefix: e.prefix });
   }
+}
+
+/**
+ * Reads the subsystem definitions of a version 2 document, leaves first: each one is read against the catalog with
+ * the definitions it uses. A cycle, a missing or a duplicate definition is a format error; a definition whose hash does
+ * not match was edited outside the Composer, which is a warning (the hash is written new on saving).
+ * @param {Record<string, any>} o
+ * @param {Catalog} cat
+ * @param {string[]} warnings
+ * @returns {Record<string, Design>}
+ */
+function readSubsystems(o, cat, warnings) {
+  if (o.subsystems === undefined) return {};
+  if (!Array.isArray(o.subsystems)) throw new FormatError(['subsystems: must be a list.']);
+  /** @type {string[]} */
+  const errors = [];
+  /** @type {Map<string, Record<string, any>>} */
+  const raw = new Map();
+  for (const [k, s] of o.subsystems.entries()) {
+    if (!isObject(s) || typeof s.name !== 'string') {
+      errors.push(`subsystems[${k}]: needs a name.`);
+      continue;
+    }
+    const problem = identifierProblem(s.name);
+    if (problem) errors.push(`subsystems[${k}].name: ${problem}`);
+    else if (raw.has(s.name)) errors.push(`subsystems[${k}]: duplicate name "${s.name}".`);
+    else raw.set(s.name, s);
+  }
+  if (errors.length > 0) throw new FormatError(errors);
+  // the order in which they can be read, from the subsystems their instances name
+  /** @type {Record<string, Design>} */
+  const shapes = {};
+  for (const [name, s] of raw) {
+    const shape = createDesign(name);
+    for (const inst of Array.isArray(s.instances) ? s.instances : []) {
+      if (isObject(inst) && typeof inst.subsystem === 'string') shape.instances.push({ id: 'x', block: subsystemBlockId(inst.subsystem), generics: {}, clocks: {} });
+    }
+    shapes[name] = shape;
+  }
+  /** @type {string[]} */
+  let order;
+  try {
+    order = definitionOrder(shapes, [...raw.keys()]);
+  } catch (e) {
+    throw new FormatError([e instanceof Error ? e.message : String(e)]);
+  }
+  /** @type {Record<string, Design>} */
+  const defs = {};
+  for (const name of order) {
+    const s = /** @type {Record<string, any>} */ (raw.get(name));
+    const scat = Object.keys(defs).length ? withSubsystems(cat, /** @type {Design} */ ({ subsystems: { ...defs } })) : cat;
+    /** @type {string[]} */
+    const errs = [];
+    /** @type {string[]} */
+    const warns = [];
+    const def = createDesign(name);
+    readParts(def, s, scat, errs, warns);
+    if (isObject(s.system) && s.system.name !== name) errs.push(`system.name: must be ${name}, the name of the subsystem.`);
+    checkDomainSources(def, scat, errs);
+    if (errs.length === 0) readWiring(def, s, scat, errs, warns);
+    if (errs.length > 0) throw new FormatError(errs.map((e) => `Subsystem ${name}: ${e}`));
+    warnings.push(...warns.map((w) => `Subsystem ${name}: ${w}`));
+    if (typeof s.hash !== 'string' || s.hash !== definitionHash(s)) {
+      warnings.push(`Subsystem ${name}: the definition was edited outside the Composer (its hash does not match); the Composer saves it with a new hash.`);
+    }
+    defs[name] = def;
+  }
+  return defs;
+}
+
+/**
+ * Reads a design from a document object, checking structure, identifiers, generics and connections.
+ * @param {unknown} doc
+ * @param {Catalog} cat
+ * @returns {{ design: Design, warnings: string[], unplaced: string[] }}   unplaced: blocks without a position
+ */
+export function fromDocument(doc, cat) {
+  /** @type {string[]} */
+  const errors = [];
+  /** @type {string[]} */
+  const warnings = [];
+  if (!isObject(doc)) throw new FormatError(['The file does not contain a JSON object.']);
+  const o = /** @type {Record<string, any>} */ (doc);
+  if (o.format !== FORMAT) throw new FormatError(['This is not an Open Space Composer system file (format field missing).']);
+  if (o.formatVersion !== 1 && o.formatVersion !== 2) {
+    throw new FormatError([
+      typeof o.formatVersion === 'number' && o.formatVersion > FORMAT_VERSION
+        ? `The file has format version ${o.formatVersion}; this Composer reads versions 1 and 2.`
+        : `Unsupported format version ${String(o.formatVersion)}.`,
+    ]);
+  }
+  if (o.formatVersion === 1 && o.subsystems !== undefined) throw new FormatError(['subsystems: only a file of format version 2 has subsystems.']);
+  const otherCatalog = Boolean(isObject(o.generator) && o.generator.catalog && o.generator.catalog !== cat.id);
+
+  // the subsystems first: the instances of the system refer to them
+  const defs = readSubsystems(o, cat, warnings);
+  const scat = Object.keys(defs).length ? withSubsystems(cat, /** @type {Design} */ ({ subsystems: defs })) : cat;
+
+  const d = createDesign();
+  readParts(d, o, scat, errors, warnings);
+
+  // layout
+  const lay = isObject(o.layout) ? o.layout : {};
+  const pos = isObject(lay.instances) ? lay.instances : {};
+  /** @type {string[]} */
+  const unplaced = [];
+  d.instances.forEach((inst, k) => {
+    const p = pos[inst.id];
+    if (isObject(p) && isFiniteNumber(p.x) && isFiniteNumber(p.y)) d.layout.instances[inst.id] = { x: Math.round(p.x), y: Math.round(p.y) };
+    else {
+      // a grid for now; the editor arranges a system with unplaced blocks
+      d.layout.instances[inst.id] = { x: 80 + (k % 4) * 320, y: 80 + Math.floor(k / 4) * 260 };
+      unplaced.push(inst.id);
+    }
+  });
+  const boxes = isObject(lay.domains) ? lay.domains : {};
+  for (const c of d.clockDomains) {
+    const bx = boxes[c.id];
+    if (isObject(bx) && [bx.x, bx.y, bx.w, bx.h].every(isFiniteNumber) && bx.w > 0 && bx.h > 0) {
+      d.layout.domains[c.id] = { x: Math.round(bx.x), y: Math.round(bx.y), w: Math.round(bx.w), h: Math.round(bx.h) };
+    }
+  }
+  checkDomainSources(d, scat, errors);
+  if (isObject(lay.viewport) && isFiniteNumber(lay.viewport.x) && isFiniteNumber(lay.viewport.y) && isFiniteNumber(lay.viewport.zoom) && lay.viewport.zoom > 0) {
+    d.layout.viewport = { x: lay.viewport.x, y: lay.viewport.y, zoom: Math.min(4, Math.max(0.1, lay.viewport.zoom)) };
+  }
 
   if (errors.length > 0) throw new FormatError(errors);
-  // "resolved" is derived: the Composer resolves the system again and says so when the stored netlist differs
+  readWiring(d, o, scat, errors, warnings);
+  if (errors.length > 0) throw new FormatError(errors);
+  // the same object as the catalog above, so that the definitions are resolved once
+  if (Object.keys(defs).length) d.subsystems = defs;
+
   // "resolved" is derived: the Composer resolves the system again. A file of another catalog version gets a remark
   // only when the system resolves differently now (a catalog that only gained other blocks changes nothing).
   const same = () => {
