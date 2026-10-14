@@ -157,6 +157,25 @@ blocks:
       - Enable the safe implementation of state machines in the synthesis tool (Vivado FSM_SAFE_STATE = default_state on the state registers, Synplify syn_encoding = safe).
       - Read ID (0x0FB10007) and GENERICS after the reset; start the link with LANE_CTRL = 0x63 at one end (LaneStart, AutoStart, TxEn, RxEn) and wait for DL_STATUS bits 1:0 = 3 (programming sequence of the user guide).
       - All four clocks must run for the reset to complete; CoreClk may be the lane clock (as in the VCK190 reference design).
+    rates:
+      evidence: "user guide section 7; TC-NI-07 (virtual channel ports), TC-CORE-16 (link efficiency), TC-CORE-15 (CoreClk); rowEff derived from the link efficiency of TC-CORE-16 (words of 4 bytes, packets of 1 to 1024 B) and the row model of TC-NI-07"
+      packet: packet
+      vars: { B: 4 * NumLanes_g }
+      interfaces:
+        S_Vc: { bytesPerBeat: B, overheadCycles: "1 - min(1, n mod B)" }   # a full last beat needs one more row for the end marker
+        M_Vc: { bytesPerBeat: B, overheadCycles: "1" }                      # at most one more beat for the bytes of the last row
+      links:
+        - interface: Phy
+          from: S_Vc
+          to: M_Vc
+          # a packet of n bytes takes cdiv(n + 1, B) rows of B characters; eff is the share of row slots that carry
+          # data rows (rowEff, from the efficiency measured with packets of 1 to 1024 bytes on 4 virtual channels)
+          capacity: "eff * Freq_LaneClk * n / cdiv(n + 1, B)"
+          efficiency:
+            by: NumLanes_g
+            oneDirection: { 1: 0.946, 2: 0.946, 4: 0.948 }
+            bothDirections: { 1: 0.905, 2: 0.909, 4: 0.908 }
+          note: "measured with packets of 1 to 1024 B, conservative above"
 
   - id: openfibre/ofb_pa_gty
     kind: module

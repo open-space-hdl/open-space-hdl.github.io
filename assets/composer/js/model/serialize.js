@@ -8,7 +8,7 @@
 
 import { agentBrief } from './brief.js';
 import { checkConnection } from './compat.js';
-import { createDesign, DEFAULT_DOMAIN, identifierProblem } from './design.js';
+import { createDesign, DEFAULT_DOMAIN, identifierProblem, trafficProblem } from './design.js';
 import { validateValue } from './generics.js';
 import { netlist } from './netlist.js';
 import { resolve } from './resolver.js';
@@ -24,7 +24,7 @@ export const FORMAT = 'open-space-composer-system';
 export const FORMAT_VERSION = 2;
 export const SCHEMA_URL = 'https://openspacehdl.org/composer/schema/system-1.json';
 export const SCHEMA_URL_2 = 'https://openspacehdl.org/composer/schema/system-2.json';
-export const GENERATOR = { name: 'Open Space Composer', version: '0.2.0-beta' };
+export const GENERATOR = { name: 'Open Space Composer', version: '0.3.0-beta' };
 
 export class FormatError extends Error {
   /** @param {string[]} problems */
@@ -404,7 +404,14 @@ function readWiring(d, o, cat, errors, warnings) {
       errors.push(`externals[${k}]: needs interface ("instance.Interface") and a VHDL identifier prefix.`);
       continue;
     }
-    d.externals.push({ interface: e.interface, prefix: e.prefix });
+    /** @type {import('./design.js').External} */
+    const ext = { interface: e.interface, prefix: e.prefix };
+    if (e.traffic !== undefined) {
+      const problem = trafficProblem(e.traffic);
+      if (problem) errors.push(`externals[${k}].traffic: ${problem}`);
+      else ext.traffic = { packetBytes: e.traffic.packetBytes, ...(e.traffic.bitsPerSecond !== undefined ? { bitsPerSecond: e.traffic.bitsPerSecond } : {}) };
+    }
+    d.externals.push(ext);
   }
 }
 

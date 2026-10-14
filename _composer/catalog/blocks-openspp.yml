@@ -132,6 +132,20 @@ blocks:
       - Hold the side band (TUser) of a send port constant during an SDU.
       - A last beat without valid bytes (Keep all zero) ends an SDU or packet at the inputs; an SDU without any byte is rejected (0x02). The outputs never carry a beat without valid bytes.
       - The user supplies the packet secondary header at the start of the Octet String and keeps the secondary header flag of an APID static.
+    rates:
+      evidence: "user guide section 7; TC-CO-12 (throughput at 32, 64 and 128 bit), TC-CO-08, TC-SE-10"
+      packet: SDU
+      # H: bytes a send port adds to an SDU: the Space Packet header of the Octet String Service (assumed at every
+      # port, the longer case) and the CPTP header with the longest target address
+      vars: { B: DataWidth_g / 8, H: "6 + Encapsulation_g * (4 + SpwAddrBytes_g)" }
+      interfaces:
+        S_Tx: { bytesPerBeat: B, maxBytes: TxBufferBytes_g }
+        M_Link: { cycles: "max(cdiv(n, B) + 1, 5)" }                         # all send ports together
+        S_Link: { bytesPerBeat: B, overheadCycles: "1" }
+        M_Rx: { cycles: "max(cdiv(n + 6, B) + 1, 5)" }                       # all receive ports together
+      routes:
+        - { from: S_Tx, to: M_Link, addBytes: H }
+        - { from: S_Link, to: M_Rx, addBytes: "-H" }
 
   - id: openspp/spp_nchar
     kind: module
@@ -189,3 +203,14 @@ blocks:
     notes:
       - A received end of packet marker without data characters is discarded.
       - A link packet that ends with a beat without valid bytes gets its marker after the bytes of the earlier beats; a link packet without any byte sends nothing.
+    rates:
+      evidence: "user guide section 7.5; TC-AD-03 (1731 characters in 1780 cycles at 128 bit, 1638 in 1638 at 8 bit)"
+      packet: packet
+      interfaces:
+        S_Link: { cycles: "n + 1 + min(1, DataWidth_g / 16)" }               # n + 2 cycles, n + 1 at 8 bit
+        M_NChar: { cycles: "n + 1 + min(1, DataWidth_g / 16)" }
+        S_NChar: { bytesPerBeat: 1, extraBeats: 1 }
+      routes:
+        - { from: S_Link, to: M_NChar, addBytes: "0" }
+        # one N-Char per cycle in; the words of M_Link carry at least one byte each, so M_Link never limits more
+        - { from: S_NChar, to: M_Link, addBytes: "0", paced: true }

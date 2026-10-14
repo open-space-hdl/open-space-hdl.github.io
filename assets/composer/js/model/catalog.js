@@ -96,6 +96,7 @@ export const CATALOG_VERSION = 1;
  * @property {InterfaceDef[]} interfaces
  * @property {{name: string, dir: string, vhdlType: string, width: string|null, default?: string}[]} ports
  * @property {{port: string, value: string}[]} [tieOffs]
+ * @property {any} [rates]   throughput data: evidence, interfaces, routes, links, chains (model/throughput.js)
  * @property {{id: string, name: string, summary: string, generics?: Record<string, unknown>}[]} [presets]
  */
 

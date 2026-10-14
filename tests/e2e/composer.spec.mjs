@@ -139,7 +139,9 @@ test('an example opens in its own tab', async ({ page }) => {
   expect(d.name).toBe('spp_over_spw');
   expect(d.instances).toHaveLength(4);
   await expect(page.getByRole('tab', { name: /spp_over_spw/ })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('.cmp-check-none')).toHaveText('No problems found.');
+  // no error and no warning; the RMAP target has no rate data yet, which is a note
+  await expect(page.locator('.cmp-check-item.cmp-sev-error, .cmp-check-item.cmp-sev-warning')).toHaveCount(0);
+  await expect(page.locator('.cmp-check-item.cmp-sev-info')).toHaveText(['Note: No rate data for omap_core (rmap0): the paths through it are not checked.']);
 });
 
 test('a broken file is rejected with its problems', async ({ page }) => {

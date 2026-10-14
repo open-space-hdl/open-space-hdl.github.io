@@ -44,7 +44,7 @@ test('Export HDL downloads the top level, compile order and constraints with the
   // the hash in the header is the hash of the system file in the archive
   const sha = createHash('sha256').update(text('spw_rmap_node.composer.json')).digest('hex');
   expect(text('spw_rmap_node.vhd')).toContain(`SHA-256 of spw_rmap_node.composer.json: ${sha}`);
-  await expect(page.locator('.cmp-sr')).toContainText('Exported spw_rmap_node_hdl.zip');
+  await expect(page.getByRole('status')).toContainText('Exported spw_rmap_node_hdl.zip');
 });
 
 test('a system with errors is not exported; the button says why', async ({ page }) => {

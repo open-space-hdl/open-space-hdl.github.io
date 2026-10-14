@@ -77,6 +77,92 @@ FIELD_KEYS = {"name", "label", "lsb", "bits", "kind", "default", "enabledBy", "b
 INIT_CONDITIONS = ("when", "unless", "unlessAll")
 GENERIC_CHECKS = {"pow2", "multiple8", "multiple16"}
 # constraints of the blocks (translated to the top level by the resolver) with their required keys
+# Throughput data of a block (rates): keys and the names an expression may use besides the generics
+RATE_INTERFACE_KEYS = {"bytesPerBeat", "beatsPerCycle", "extraBeats", "overheadCycles", "cycles", "maxBytes"}
+RATE_ROUTE_KEYS = {"from", "to", "addBytes", "chunk", "paced"}
+RATE_LINK_KEYS = {"interface", "from", "to", "capacity", "capacityBoth", "efficiency", "note"}
+RATE_CHAIN_KEYS = {"from", "to", "cycles", "evidence"}
+EXPR_WORDS = {"mod", "rem", "abs"}
+
+
+def check_rates(ctx: "Context", where: str, rates: object, gen_names: set, itf_names: set, clock_ports: set) -> None:
+    """The throughput data of a block: known keys, interfaces of the block, and expressions that name only generics,
+    the variables of vars, n (bytes of the packet), eff (efficiency of a link) and Freq_<clock port>."""
+    if not isinstance(rates, dict):
+        ctx.err(where, "rates must be a mapping")
+        return
+    unknown = set(rates) - {"evidence", "packet", "vars", "interfaces", "routes", "links", "chains"}
+    if unknown:
+        ctx.err(where, f"rates: unknown keys {', '.join(sorted(unknown))}")
+    if not isinstance(rates.get("evidence"), str) or not rates["evidence"].strip():
+        ctx.err(where, "rates needs evidence (the test case or measurement behind the numbers)")
+    names = {g.lower() for g in gen_names} | {"n"} | {f"freq_{c}".lower() for c in clock_ports}
+    names |= {k.lower() for k in (rates.get("vars") or {})}
+    funcs = {f.lower() for f in FUNCTIONS} | EXPR_WORDS
+
+    def expr(what: str, value: object, extra: set = frozenset()) -> None:
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return
+        if not isinstance(value, str):
+            ctx.err(where, f"rates: {what} must be a number or an expression")
+            return
+        for name in re.findall(r"[A-Za-z]\w*", re.sub(r"\d+#[0-9a-fA-F_]+#|\d[\d_]*(\.\d[\d_]*)?([eE][+-]?\d+)?", " ", value)):
+            if name.lower() not in names | funcs | extra:
+                ctx.err(where, f"rates: {what} names {name}, which is no generic, variable, n or clock frequency")
+
+    for k, v in (rates.get("vars") or {}).items():
+        expr(f"vars.{k}", v)
+    itfs = rates.get("interfaces") or {}
+    for iname, entry in itfs.items():
+        if iname not in itf_names:
+            ctx.err(where, f"rates: unknown interface {iname}")
+        if not isinstance(entry, dict):
+            ctx.err(where, f"rates: interface {iname} must be a mapping")
+            continue
+        if set(entry) - RATE_INTERFACE_KEYS:
+            ctx.err(where, f"rates: interface {iname}: unknown keys {', '.join(sorted(set(entry) - RATE_INTERFACE_KEYS))}")
+        if "cycles" not in entry and "bytesPerBeat" not in entry:
+            ctx.err(where, f"rates: interface {iname} needs cycles or bytesPerBeat")
+        for key in RATE_INTERFACE_KEYS:
+            if key in entry and not (key == "bytesPerBeat" and entry[key] == "carried"):
+                expr(f"{iname}.{key}", entry[key])
+    for r in rates.get("routes") or []:
+        if set(r) - RATE_ROUTE_KEYS or "from" not in r or "to" not in r:
+            ctx.err(where, "rates: a route needs from and to and knows addBytes, chunk and paced")
+            continue
+        for end in ("from", "to"):
+            if r[end] not in itfs and not (end == "to" and r.get("paced") and r[end] in itf_names):
+                ctx.err(where, f"rates: route {r['from']} to {r['to']}: {r[end]} has no rate entry")
+        for key in ("addBytes", "chunk"):
+            if key in r:
+                expr(f"route {r['from']} to {r['to']}: {key}", r[key])
+    for lk in rates.get("links") or []:
+        if set(lk) - RATE_LINK_KEYS or "interface" not in lk or "capacity" not in lk:
+            ctx.err(where, "rates: a link needs interface and capacity")
+            continue
+        if lk["interface"] not in itf_names:
+            ctx.err(where, f"rates: link: unknown interface {lk['interface']}")
+        for end in ("from", "to"):
+            if end in lk and lk[end] not in itfs:
+                ctx.err(where, f"rates: link {lk['interface']}: {lk[end]} has no rate entry")
+        eff = lk.get("efficiency")
+        if eff is not None and (not isinstance(eff, dict) or eff.get("by") not in gen_names
+                                or not isinstance(eff.get("oneDirection"), dict) or not isinstance(eff.get("bothDirections"), dict)):
+            ctx.err(where, f"rates: link {lk['interface']}: efficiency needs by (a generic), oneDirection and bothDirections")
+        for key in ("capacity", "capacityBoth"):
+            if key in lk:
+                expr(f"link {lk['interface']}: {key}", lk[key], {"eff"} if eff else set())
+    for ch in rates.get("chains") or []:
+        if set(ch) - RATE_CHAIN_KEYS or not isinstance(ch.get("to"), dict) or "cycles" not in ch or "from" not in ch:
+            ctx.err(where, "rates: a chain needs from, to (block, in, out, when) and cycles")
+            continue
+        if ch["from"] not in itfs:
+            ctx.err(where, f"rates: chain from {ch['from']} has no rate entry")
+        if set(ch["to"]) - {"block", "in", "out", "when"} or not all(k in ch["to"] for k in ("block", "in", "out")):
+            ctx.err(where, "rates: chain to needs block, in and out (when optional)")
+        expr(f"chain from {ch['from']}: cycles", ch["cycles"])
+
+
 CONSTRAINT_KINDS = {
     "false_path": ("fromPorts",),
     "max_delay_pairs": ("clocks",),
@@ -152,6 +238,9 @@ FUNCTIONS = {
     "ecccodewordwidth": lambda a: int(a) + eccparitybits(int(a)) + 1,
     "eccparitybits": lambda a: eccparitybits(int(a)),
     "slotbits": lambda a: max(1, log2ceil(a)),
+    "ceil": lambda a: math.ceil(a),
+    "floor": lambda a: math.floor(a),
+    "cdiv": lambda a, b: math.ceil(a / b),
 }
 
 
@@ -1216,6 +1305,9 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             if pn not in port_names:
                 ctx.err(where, f"constraint {kind}: unknown port {pn}")
 
+    if "rates" in b:
+        check_rates(ctx, where, b["rates"], gen_names, itf_names, clock_ports)
+
     # Presets
     presets = []
     for pr in b.get("presets") or []:
@@ -1238,7 +1330,7 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         "summary": b["summary"],
         "idPrefix": b.get("idPrefix") or re.sub(r"^(olo_(base|ft|axi)_)", "", ent.name).split("_")[0],
     }
-    for key in ("doc", "project", "vendor", "notes", "rules", "constraints", "idRegister", "init", "endToEnd"):
+    for key in ("doc", "project", "vendor", "notes", "rules", "constraints", "idRegister", "init", "endToEnd", "rates"):
         if key in b:
             block[key] = b[key]
     # software initialisation: steps with optional conditions on boolean generics

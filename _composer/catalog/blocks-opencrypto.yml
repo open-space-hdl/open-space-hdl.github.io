@@ -128,6 +128,17 @@ blocks:
       - Load every key slot in use through the registers before sending contexts (programming sequence of the user guide).
       - Without the release buffer, discard every decrypted message whose last beat carries the error flag or whose status is not OK.
       - Save the invocation counter of every slot with generated IVs regularly ahead of the operational value (GCM 9.1).
+    rates:
+      evidence: "TC-CO-10 and TC-CO-11 (back-to-back encryptions and decryptions without stall cycles, hdl/ocr_core/docs/verification_report.md)"
+      packet: message
+      # a message of n bytes in, without AAD; encryption with a generated IV assumed, the longest output (IV 12, tag 16)
+      vars: { B: DataWidth_g / 8 }
+      interfaces:
+        S_In: { bytesPerBeat: B }
+        # sectioned: IV, data and tag each start a beat; dense: packed, at most one cycle more per message (TC-CO-10)
+        M_Out: { cycles: "DenseOutput_g * (cdiv(n, B) + 1) + (1 - DenseOutput_g) * (cdiv(12, B) + cdiv(n - 28, B) + cdiv(16, B))" }
+      routes:
+        - { from: S_In, to: M_Out, addBytes: "28" }
 
   - id: opencrypto/ocr_framer
     kind: module
@@ -213,3 +224,12 @@ blocks:
       - The slot Cfg_Slot is loaded for generated IVs and stays unchanged while the framer holds chunks.
       - Every chunk consumes one invocation of the slot; save the counter regularly (GCM 9.1).
       - A receiver decrypts every chunk on its own (IV bytes 0 to 11, AAD bytes 12 to 15, tag the last 16 bytes), orders the chunks by the invocation counter and finds the packet boundaries in the positions.
+    rates:
+      evidence: "TC-FR-03 (four long packets without stall cycles, at most AadBeats + 2 cycles per chunk, hdl/ocr_framer/docs/verification_report.md)"
+      packet: chunk
+      vars: { B: DataWidth_g / 8 }
+      interfaces:
+        S_In: { bytesPerBeat: B, overheadCycles: "cdiv(n, ChunkBytes_g) * (cdiv(4, B) + 2)" }   # input pauses per chunk
+        M_Out: { cycles: "cdiv(4, B) + cdiv(n - 4, B)" }                    # AAD (position) and the chunk
+      routes:
+        - { from: S_In, to: M_Out, chunk: ChunkBytes_g, addBytes: "4" }

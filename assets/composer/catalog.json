@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "fe9ca9f239a2",
+ "id": "780580b99b1b",
  "sources": [
   {
    "id": "openwire",
@@ -1628,6 +1628,24 @@
      "note": "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)."
     }
    ],
+   "rates": {
+    "evidence": "Open Logic test BackToBack of olo_ft_fifo_async_tb (one word per cycle on each side)",
+    "interfaces": {
+     "In": {
+      "bytesPerBeat": "carried"
+     },
+     "Out": {
+      "bytesPerBeat": "carried"
+     }
+    },
+    "routes": [
+     {
+      "from": "In",
+      "to": "Out",
+      "addBytes": "0"
+     }
+    ]
+   },
    "generics": [
     {
      "name": "Width_g",
@@ -2447,6 +2465,24 @@
      "note": "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)."
     }
    ],
+   "rates": {
+    "evidence": "Open Logic test TwoWordsWriteAndRead of olo_base_fifo_async_tb (words in consecutive cycles on each side)",
+    "interfaces": {
+     "In": {
+      "bytesPerBeat": "carried"
+     },
+     "Out": {
+      "bytesPerBeat": "carried"
+     }
+    },
+    "routes": [
+     {
+      "from": "In",
+      "to": "Out",
+      "addBytes": "0"
+     }
+    ]
+   },
    "generics": [
     {
      "name": "Width_g",
@@ -3160,6 +3196,24 @@
      "of": "InWidth_g"
     }
    ],
+   "rates": {
+    "evidence": "Open Logic documentation of olo_base_wconv_n2xn (back-to-back conversions); test FullThrottle of olo_base_wconv_n2xn_tb",
+    "interfaces": {
+     "In": {
+      "bytesPerBeat": "InWidth_g / 8"
+     },
+     "Out": {
+      "bytesPerBeat": "OutWidth_g / 8"
+     }
+    },
+    "routes": [
+     {
+      "from": "In",
+      "to": "Out",
+      "addBytes": "0"
+     }
+    ]
+   },
    "generics": [
     {
      "name": "InWidth_g",
@@ -3340,6 +3394,24 @@
      "of": "OutWidth_g"
     }
    ],
+   "rates": {
+    "evidence": "Open Logic documentation of olo_base_wconv_xn2n (back-to-back conversions); test FullThrottle of olo_base_wconv_xn2n_tb",
+    "interfaces": {
+     "In": {
+      "bytesPerBeat": "InWidth_g / 8"
+     },
+     "Out": {
+      "bytesPerBeat": "OutWidth_g / 8"
+     }
+    },
+    "routes": [
+     {
+      "from": "In",
+      "to": "Out",
+      "addBytes": "0"
+     }
+    ]
+   },
    "generics": [
     {
      "name": "InWidth_g",
@@ -3527,6 +3599,24 @@
      "when": "UseBe_g"
     }
    ],
+   "rates": {
+    "evidence": "Open Logic documentation of olo_base_wconv_n2m (back-to-back conversions); tests RateLimit-Input and RateLimit-Output of olo_base_wconv_n2m_tb",
+    "interfaces": {
+     "In": {
+      "bytesPerBeat": "InWidth_g / 8"
+     },
+     "Out": {
+      "bytesPerBeat": "OutWidth_g / 8"
+     }
+    },
+    "routes": [
+     {
+      "from": "In",
+      "to": "Out",
+      "addBytes": "0"
+     }
+    ]
+   },
    "generics": [
     {
      "name": "InWidth_g",
@@ -3939,6 +4029,26 @@
      "note": "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)."
     }
    ],
+   "rates": {
+    "evidence": "Open Logic documentation of olo_base_cc_simple (data rate at most the slower clock / (3 + SyncStages_g)); test MaxRate of olo_base_cc_simple_tb",
+    "interfaces": {
+     "In": {
+      "bytesPerBeat": "carried",
+      "beatsPerCycle": "min(Freq_In_Clk, Freq_Out_Clk) / Freq_In_Clk / (3 + SyncStages_g)"
+     },
+     "Out": {
+      "bytesPerBeat": "carried",
+      "beatsPerCycle": "min(Freq_In_Clk, Freq_Out_Clk) / Freq_Out_Clk / (3 + SyncStages_g)"
+     }
+    },
+    "routes": [
+     {
+      "from": "In",
+      "to": "Out",
+      "addBytes": "0"
+     }
+    ]
+   },
    "generics": [
     {
      "name": "Width_g",
@@ -6647,6 +6757,28 @@
     }
    ],
    "endToEnd": "Load the key slot, send a packet and check the output: with generated IVs the first 4 bytes of every message are IV_FIXED, the next 8 the invocation counter; decrypt it with AES-GCM in the test bench (or a second core) and compare.",
+   "rates": {
+    "evidence": "TC-CO-10 and TC-CO-11 (back-to-back encryptions and decryptions without stall cycles, hdl/ocr_core/docs/verification_report.md)",
+    "packet": "message",
+    "vars": {
+     "B": "DataWidth_g / 8"
+    },
+    "interfaces": {
+     "S_In": {
+      "bytesPerBeat": "B"
+     },
+     "M_Out": {
+      "cycles": "DenseOutput_g * (cdiv(n, B) + 1) + (1 - DenseOutput_g) * (cdiv(12, B) + cdiv(n - 28, B) + cdiv(16, B))"
+     }
+    },
+    "routes": [
+     {
+      "from": "S_In",
+      "to": "M_Out",
+      "addBytes": "28"
+     }
+    ]
+   },
    "packages": [
     "ocr_pkg"
    ],
@@ -7308,6 +7440,30 @@
      "text": "Load the key slot Cfg_Slot of the AES-GCM core for generated IVs (KEY_LOAD with IV_GEN = '1', see the core) before the first packet; without a loaded slot every chunk fails with KEY."
     }
    ],
+   "rates": {
+    "evidence": "TC-FR-03 (four long packets without stall cycles, at most AadBeats + 2 cycles per chunk, hdl/ocr_framer/docs/verification_report.md)",
+    "packet": "chunk",
+    "vars": {
+     "B": "DataWidth_g / 8"
+    },
+    "interfaces": {
+     "S_In": {
+      "bytesPerBeat": "B",
+      "overheadCycles": "cdiv(n, ChunkBytes_g) * (cdiv(4, B) + 2)"
+     },
+     "M_Out": {
+      "cycles": "cdiv(4, B) + cdiv(n - 4, B)"
+     }
+    },
+    "routes": [
+     {
+      "from": "S_In",
+      "to": "M_Out",
+      "chunk": "ChunkBytes_g",
+      "addBytes": "4"
+     }
+    ]
+   },
    "packages": [
     "ocr_pkg"
    ],
@@ -7772,6 +7928,45 @@
     }
    ],
    "endToEnd": "Connect two nodes (in a simulation without the transceiver models: two cores joined by tb/ofb_tb_pa_model.vhd of OpenFibre), start the link at one end and send a packet on a virtual channel; it arrives on the same virtual channel at the other end.",
+   "rates": {
+    "evidence": "user guide section 7; TC-NI-07 (virtual channel ports), TC-CORE-16 (link efficiency), TC-CORE-15 (CoreClk); rowEff derived from the link efficiency of TC-CORE-16 (words of 4 bytes, packets of 1 to 1024 B) and the row model of TC-NI-07",
+    "packet": "packet",
+    "vars": {
+     "B": "4 * NumLanes_g"
+    },
+    "interfaces": {
+     "S_Vc": {
+      "bytesPerBeat": "B",
+      "overheadCycles": "1 - min(1, n mod B)"
+     },
+     "M_Vc": {
+      "bytesPerBeat": "B",
+      "overheadCycles": "1"
+     }
+    },
+    "links": [
+     {
+      "interface": "Phy",
+      "from": "S_Vc",
+      "to": "M_Vc",
+      "capacity": "eff * Freq_LaneClk * n / cdiv(n + 1, B)",
+      "efficiency": {
+       "by": "NumLanes_g",
+       "oneDirection": {
+        "1": 0.946,
+        "2": 0.946,
+        "4": 0.948
+       },
+       "bothDirections": {
+        "1": 0.905,
+        "2": 0.909,
+        "4": 0.908
+       }
+      },
+      "note": "measured with packets of 1 to 1024 B, conservative above"
+     }
+    ]
+   },
    "generics": [
     {
      "name": "NumVc_g",
@@ -10272,6 +10467,42 @@
     }
    ],
    "endToEnd": "Send one SDU on a send port (APID 0x123, for example) and expect it on receive port 0 with the same APID in user bits 10:0, once the APID tables are ready.",
+   "rates": {
+    "evidence": "user guide section 7; TC-CO-12 (throughput at 32, 64 and 128 bit), TC-CO-08, TC-SE-10",
+    "packet": "SDU",
+    "vars": {
+     "B": "DataWidth_g / 8",
+     "H": "6 + Encapsulation_g * (4 + SpwAddrBytes_g)"
+    },
+    "interfaces": {
+     "S_Tx": {
+      "bytesPerBeat": "B",
+      "maxBytes": "TxBufferBytes_g"
+     },
+     "M_Link": {
+      "cycles": "max(cdiv(n, B) + 1, 5)"
+     },
+     "S_Link": {
+      "bytesPerBeat": "B",
+      "overheadCycles": "1"
+     },
+     "M_Rx": {
+      "cycles": "max(cdiv(n + 6, B) + 1, 5)"
+     }
+    },
+    "routes": [
+     {
+      "from": "S_Tx",
+      "to": "M_Link",
+      "addBytes": "H"
+     },
+     {
+      "from": "S_Link",
+      "to": "M_Rx",
+      "addBytes": "-H"
+     }
+    ]
+   },
    "packages": [
     "spp_pkg"
    ],
@@ -11058,6 +11289,35 @@
      "of": 8
     }
    ],
+   "rates": {
+    "evidence": "user guide section 7.5; TC-AD-03 (1731 characters in 1780 cycles at 128 bit, 1638 in 1638 at 8 bit)",
+    "packet": "packet",
+    "interfaces": {
+     "S_Link": {
+      "cycles": "n + 1 + min(1, DataWidth_g / 16)"
+     },
+     "M_NChar": {
+      "cycles": "n + 1 + min(1, DataWidth_g / 16)"
+     },
+     "S_NChar": {
+      "bytesPerBeat": 1,
+      "extraBeats": 1
+     }
+    },
+    "routes": [
+     {
+      "from": "S_Link",
+      "to": "M_NChar",
+      "addBytes": "0"
+     },
+     {
+      "from": "S_NChar",
+      "to": "M_Link",
+      "addBytes": "0",
+      "paced": true
+     }
+    ]
+   },
    "packages": [
     "spp_pkg"
    ],
@@ -11427,6 +11687,30 @@
     }
    ],
    "endToEnd": "Loop the SpaceWire line back (Spw_DOut to Spw_DIn, Spw_SOut to Spw_SIn) or connect a second port, start the link and wait for PORT_STATUS LINK_STATE = 5 (Run).",
+   "rates": {
+    "evidence": "user guide section 7; TC-DL-43 (one N-Char per UserClk cycle at the packet ports), TC-DL-40 and TC-CORE-11 (link rate in one and in both directions), TC-EN-03 (run dividers)",
+    "packet": "packet",
+    "interfaces": {
+     "S_Pkt": {
+      "bytesPerBeat": 1,
+      "extraBeats": 1
+     },
+     "M_Pkt": {
+      "bytesPerBeat": 1,
+      "extraBeats": 1
+     }
+    },
+    "links": [
+     {
+      "interface": "Spw",
+      "from": "S_Pkt",
+      "to": "M_Pkt",
+      "capacity": "n * Freq_LinkClk / RunDiv_g / (10 * n + 4)",
+      "capacityBoth": "n * Freq_LinkClk / RunDiv_g / (10.5 * n + 4.5)",
+      "note": "the bit rate follows RunDiv_g, the reset value of LINK_SPEED.RUN_DIV; software can change it"
+     }
+    ]
+   },
    "generics": [
     {
      "name": "LinkClkFreq_g",
