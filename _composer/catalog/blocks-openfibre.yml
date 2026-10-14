@@ -210,6 +210,7 @@ blocks:
         type: spfi.serial
         role: pins
         externalOnly: true
+        clockSignals: [refclk]
         description: Serial transmit and receive pairs of the quad and the reference clock from its IBUFDS_GTE5.
         signals:
           tx_p: { port: Gt_TxP, dir: out }

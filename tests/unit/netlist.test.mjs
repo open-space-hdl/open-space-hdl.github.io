@@ -133,3 +133,25 @@ test('VHDL literals and bit expressions', () => {
   assert.equal(bitsExpr({ ...b, lo: 0, width: 1, total: 1 }), 's(0)');
   assert.equal(bitsExpr({ ...b, vector: false, lo: 0, width: 1, total: 1 }), 's');
 });
+
+test('no clock passes through an assignment: clock ports, clock outputs and clock pins are port actuals only', () => {
+  for (const f of files) {
+    const r = load(f).resolved;
+    // the actuals of every clock input and clock output of the blocks, and of the clock pins
+    const clocks = new Set(r.ports.filter((/** @type {any} */ p) => p.kind === 'clock').map((/** @type {any} */ p) => p.name));
+    for (const inst of r.instances) {
+      const b = cat.blocks.get(inst.block);
+      const clockPorts = new Set([
+        ...(b?.clocks ?? []).map((c) => c.port),
+        ...(b?.interfaces ?? []).flatMap((i) => (i.clockSignals ?? []).map((s) => i.signals[s])),
+      ]);
+      for (const p of inst.ports) if (clockPorts.has(p.name) && p.actual && p.actual !== 'open') clocks.add(p.actual);
+    }
+    for (const n of r.nets) {
+      assert.ok(!clocks.has(n.to) && !clocks.has(n.from), `${f}: ${n.to} <= ${n.from} assigns a clock`);
+    }
+  }
+  // the reference clock pin of the GTY adapter is the actual of its port itself
+  const pa0 = load('spacefibre_node.composer.json').resolved.instances.find((/** @type {any} */ i) => i.id === 'pa0');
+  assert.equal(pa0.ports.find((/** @type {any} */ p) => p.name === 'RefClk').actual, 'pa0_RefClk');
+});

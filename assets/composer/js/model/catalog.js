@@ -63,6 +63,8 @@ export const CATALOG_VERSION = 1;
  * @property {'native' | 'packed'} [carry]
  * @property {{name: string, label: string, lsb: number, bits: number}[]} [userFields]   meaning of the bits of user
  * @property {boolean} [needsLast]   a generic sink that needs packet boundaries
+ * @property {string[]} [clockSignals]   signals of pins that are clocks: the block port takes the top-level port as its
+ *           actual, without a signal and an assignment between them
  */
 
 /**
