@@ -34,6 +34,13 @@ const CASES = [
   ['ocr_gcm.vhd: release depth of at least one beat', 'opencrypto/ocr_core', undefined, [['DataWidth_g', 64], ['ReleaseBytes_g', 4]], /ReleaseBytes_g = 4 must be at least DataWidth_g \/ 8 = 8/],
   ['olo_ft_private_scrubber.vhd: scrub period of 1 ms or more', 'opencrypto/ocr_core', undefined, [['ScrubPeriod_g', 0.0005]], /ScrubPeriod_g = 0.0005 must be at least 0.001, or 0/],
   ['olo_ft_private_scrubber.vhd: scrubbing in every free cycle', 'opencrypto/ocr_core', undefined, [['ScrubPeriod_g', 0]], null],
+  // OpenWire: a flow control token needs room for 8 N-Chars plus the reserved EEP place; FIFO_DEPTHS and FIFO_LEVELS
+  // are 16-bit fields
+  ['owr_core: receive FIFO too small for a flow control token', 'openwire/owr_core', undefined, [['RxFifoDepth_g', 8]], /^spw0: RxFifoDepth_g = 8 must be at least 16 \(the port never has room for a flow control token: 8 N-Chars plus the reserved EEP place; it receives no data\)\.$/],
+  ['owr_core: receive FIFO of 16', 'openwire/owr_core', undefined, [['RxFifoDepth_g', 16]], null],
+  ['owr_core: receive FIFO beyond the 16-bit fields', 'openwire/owr_core', undefined, [['RxFifoDepth_g', 65536]], /^spw0: RxFifoDepth_g = 65536 must be at most 32768 \(FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields\)\.$/],
+  ['owr_core: transmit FIFO beyond the 16-bit fields', 'openwire/owr_core', undefined, [['TxFifoDepth_g', 65536]], /^spw0: TxFifoDepth_g = 65536 must be at most 32768 \(FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields\)\.$/],
+  ['owr_core: both FIFOs at 32768', 'openwire/owr_core', undefined, [['RxFifoDepth_g', 32768], ['TxFifoDepth_g', 32768]], null],
   // OpenFibre ofb_dl_erb.vhd and the output VC buffer
   ['ofb_dl_erb.vhd: rows a power of two', 'openfibre/ofb_core', undefined, [['ErbRows_g', 48]], /ErbRows_g = 48 must be a power of two times 2; the next valid value is 64\./],
   ['ofb_dl_vc_out.vhd: output VC buffer a power of two', 'openfibre/ofb_core', undefined, [['VcOutDepth_g', 100]], /VcOutDepth_g = 100 must be a power of two; the next valid value is 128\./],

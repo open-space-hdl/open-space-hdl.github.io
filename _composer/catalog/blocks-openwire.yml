@@ -128,6 +128,11 @@ blocks:
     rules:
       - { kind: clock_freq_multiple, clock: LinkClk, multipleHz: 10.0e6, tolerance: 0.1 }
       - { kind: run_rate, clock: LinkClk, divider: RunDiv_g, sampling: 1.2, message: "A receiver samples a bit period that is longer than 1.2 of its LinkClk periods (user guide, section 3)" }
+      # a flow control token needs room for 8 N-Chars plus the place the receiver keeps for an EEP
+      - { kind: generic_range, generic: RxFifoDepth_g, min: 16, message: "the port never has room for a flow control token: 8 N-Chars plus the reserved EEP place; it receives no data" }
+      # the register map reports depth and fill level of both FIFOs in 16-bit fields
+      - { kind: generic_range, generic: RxFifoDepth_g, max: 32768, message: "FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields" }
+      - { kind: generic_range, generic: TxFifoDepth_g, max: 32768, message: "FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields" }
     idRegister: { address: "0x00", value: "0x4F575201" }
     init:
       - { text: "Optionally write LINK_SPEED (0x14) bits 7:0 RUN_DIV: the bit period in the Run state in LinkClk cycles (reset value RunDiv_g); choose it for the far end, which samples at most about LinkClk / 1.2." }
