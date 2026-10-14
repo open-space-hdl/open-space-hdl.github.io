@@ -7,10 +7,11 @@ import { readFileSync } from 'node:fs';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
 import {
   addConnection, addDomain, addInstance, assignClock, createDesign, setExternal, setGeneric, setTraffic, sidebandDefaults,
+  trafficFields, trafficFromFields,
 } from '../../assets/composer/js/model/design.js';
 import { resolve } from '../../assets/composer/js/model/resolver.js';
 import { FormatError, fromText, toDocument, toText } from '../../assets/composer/js/model/serialize.js';
-import { analyseThroughput, formatNumber, formatRate } from '../../assets/composer/js/model/throughput.js';
+import { analyseThroughput, formatNumber, formatRate, pathAt } from '../../assets/composer/js/model/throughput.js';
 import { Catalog } from '../../assets/composer/js/model/catalog.js';
 import { loadCatalog, loadCatalogJson, ROOT } from './helpers.mjs';
 
@@ -275,4 +276,46 @@ test('rate data that cannot be evaluated is a finding with its reason, in the ch
   g = setExternal(g, 'ofb0.S_Vc[0]', 'vc0_');
   const problems = /** @type {any} */ (resolve(broken, g).throughput).problems;
   assert.ok(problems.some((/** @type {string} */ x) => /^Rate data of ofb0 \(ofb_core\) cannot be evaluated: variable B: .*NoSuchGeneric_g.*; the paths through it are not computed\.$/.test(x)), problems.join('\n'));
+});
+
+test('the fields of the editor convert Mbit/s to the bit/s of the file and back, in one place', () => {
+  for (const [mbit, bps] of /** @type {[string, number][]} */ ([['1600', 1.6e9], ['1234.5', 1234500000], ['0.3', 300000], ['4000', 4e9], ['0.000001', 1]])) {
+    const r = trafficFromFields('1024', mbit);
+    assert.ok('traffic' in r && r.traffic, mbit);
+    assert.deepEqual(r.traffic, { packetBytes: 1024, bitsPerSecond: bps }, mbit);
+    assert.deepEqual(trafficFields(r.traffic), { bytes: '1024', mbit }, mbit);
+  }
+  // through the file: the value written is bit/s, read back it shows the same Mbit/s
+  const r = /** @type {{ traffic: import('../../assets/composer/js/model/design.js').Traffic }} */ (trafficFromFields(' 512 ', '1600'));
+  const d = setTraffic(example('spacefibre_node'), 'spp0.S_Tx[0]', r.traffic);
+  const doc = JSON.parse(toText(d, cat));
+  assert.deepEqual(doc.externals.find((/** @type {any} */ e) => e.interface === 'spp0.S_Tx[0]').traffic, { packetBytes: 512, bitsPerSecond: 1600000000 });
+  const back = fromText(JSON.stringify(doc), cat).design.externals.find((e) => e.interface === 'spp0.S_Tx[0]')?.traffic;
+  assert.deepEqual(trafficFields(back), { bytes: '512', mbit: '1600' });
+  // a length without a rate, nothing, and wrong input
+  assert.deepEqual(trafficFromFields('64', ''), { traffic: { packetBytes: 64 } });
+  assert.deepEqual(trafficFields({ packetBytes: 64 }), { bytes: '64', mbit: '' });
+  assert.deepEqual(trafficFromFields('', ''), { traffic: null });
+  assert.deepEqual(trafficFields(undefined), { bytes: '', mbit: '' });
+  assert.deepEqual(trafficFromFields('', '100'), { error: 'Give the packet length in whole bytes.' });
+  assert.deepEqual(trafficFromFields('10.5', ''), { error: 'Give the packet length in whole bytes.' });
+  assert.deepEqual(trafficFromFields('64', '-1'), { error: 'Give the rate in Mbit/s, above zero, or leave it empty.' });
+});
+
+test('the limits of stated traffic give the checks and the bottleneck marker from one analysis', () => {
+  const d = setTraffic(example('spacefibre_node'), 'spp0.S_Tx[0]', { packetBytes: 1024, bitsPerSecond: 5e9 });
+  const res = resolve(cat, d);
+  const t = /** @type {import('../../assets/composer/js/model/throughput.js').Throughput} */ (res.throughput);
+  assert.equal(t.limits.length, 1);
+  const warning = res.checks.find((c) => c.rule === 'throughput' && c.severity === 'warning');
+  assert.equal(warning?.message, t.limits[0].message);
+  assert.deepEqual([...t.bottlenecks], [['ofb0', t.limits[0].message]]);
+  // the length the editor shows a path at: the stated one, else 1024 bytes
+  const p = t.paths.find((x) => x.source.key === 'spp0.S_Tx[0]');
+  assert.ok(p);
+  assert.deepEqual([pathAt(t, p).bytes, pathAt(t, p).stated], [1024, true]);
+  const q = t.paths.find((x) => x.sink.key === 'spp0.M_Rx[0]');
+  assert.ok(q);
+  assert.deepEqual([pathAt(t, q).bytes, pathAt(t, q).stated], [1024, false]);
+  assert.equal(pathAt(t, q).point, q.at(1024));
 });

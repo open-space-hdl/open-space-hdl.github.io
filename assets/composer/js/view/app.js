@@ -10,8 +10,8 @@ import { checkConnection, resolveEndpoint } from '../model/compat.js';
 import {
   addConnection, addDomain, addInstance, adoptAdapter, assignClock, clearGeneric, DesignError, getInstance,
   moveInstances, moveToDomain, removeConnections, removeDomain, removeInstances, renameDomain, renameInstance,
-  setAdapterGeneric, setConstant, setDomainBox, setExternal, setGeneric, setSideband, setSystem, setViewport,
-  sidebandDefaults, updateDomain,
+  setAdapterGeneric, setConstant, setDomainBox, setExternal, setGeneric, setSideband, setSystem, setTraffic,
+  setViewport, sidebandDefaults, updateDomain,
 } from '../model/design.js';
 import { designComments, exportHdl } from '../model/hdl.js';
 import { ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, freeSpot, freeSpotIn, snap } from '../model/layout.js';
@@ -642,6 +642,25 @@ export class App {
    */
   setExternal(ref, prefix) {
     return this.tryApply(prefix === null ? 'internal interface' : 'external interface', (d) => setExternal(d, ref, prefix));
+  }
+
+  /**
+   * Sets or removes the stated traffic of an external interface (throughput budget).
+   * @param {string} ref
+   * @param {import('../model/design.js').Traffic | null} traffic
+   * @returns {string | null}
+   */
+  setTraffic(ref, traffic) {
+    return this.tryApply(traffic ? 'traffic' : 'no traffic', (d) => setTraffic(d, ref, traffic));
+  }
+
+  /**
+   * Instances of the system that limit a path below its stated traffic (a subsystem for an element inside it) -> the
+   * finding: from the throughput analysis of the resolution, the same as the checks and the brief.
+   * @returns {Map<string, string>}
+   */
+  get bottlenecks() {
+    return this.resolved.throughput?.bottlenecks ?? new Map();
   }
 
   /**

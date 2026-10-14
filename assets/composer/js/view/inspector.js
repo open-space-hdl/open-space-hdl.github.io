@@ -11,9 +11,10 @@
  */
 
 import { candidates, checkConnection, effectiveType, resolveEndpoint } from '../model/compat.js';
-import { connectionsAt, getInstance, PREFIX_RE } from '../model/design.js';
+import { connectionsAt, getInstance, PREFIX_RE, trafficFields, trafficFromFields } from '../model/design.js';
 import { formatReal, formatValue, isEditable, isEnabled, parseInput } from '../model/generics.js';
 import { formatHz } from '../model/rules.js';
+import { formatRate, pathAt } from '../model/throughput.js';
 import { glyphPath, h, replace, s } from './dom.js';
 
 /** @typedef {import('./app.js').App} App */
@@ -412,6 +413,7 @@ export class InspectorView {
     }
     if (ext || this.prefixOpen.has(ref)) {
       body.push(this.prefixField(ref, ext?.prefix ?? `${instId}_`, Boolean(ext?.implicit), p.itf.role === 'pins'));
+      if (ext && type.kind === 'stream') body.push(this.trafficField(ref));
     } else if (p.itf.role !== 'pins' && (conns.length === 0 || (type.kind === 'event' && p.side === 'right'))) {
       const options = candidates(cat, d, ref).filter((c) => c.check.ok || c.check.bridge);
       if (options.length > 0) {
@@ -489,6 +491,73 @@ export class InspectorView {
   // ------------------------------------------------------------------------------------------------------------------
 
   /** @param {string} id */
+  /**
+   * The stated traffic of an external stream interface and the capacity of its paths.
+   * @param {string} ref
+   */
+  trafficField(ref) {
+    const d = this.app.design;
+    const t = this.app.resolved.throughput;
+    const fields = trafficFields(d.externals.find((e) => e.interface === ref)?.traffic);
+    const fid = `cmp-tr-${ref.replace(/[.[\]]/g, '-')}`;
+    const len = h('input', { id: `${fid}-len`, class: 'cmp-input', type: 'number', min: '1', step: '1', value: fields.bytes, placeholder: 'bytes', 'aria-describedby': `${fid}-err` });
+    const rate = h('input', { id: `${fid}-rate`, class: 'cmp-input', type: 'number', min: '0', step: 'any', value: fields.mbit, placeholder: 'Mbit/s', 'aria-describedby': `${fid}-err` });
+    const err = this.errorLine(`${fid}-err`, len);
+    const apply = () => {
+      const r = trafficFromFields(len.value, rate.value);
+      err.show('error' in r ? r.error : this.app.setTraffic(ref, r.traffic));
+    };
+    // the two values take effect together: with Enter, or when the focus leaves the pair (Tab from the length to the
+    // rate does not draw the inspector again)
+    for (const inp of [len, rate]) {
+      inp.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          apply();
+        }
+      });
+    }
+    // the paths from or to the interface at the stated length, else at 1024 bytes
+    const lines = [];
+    for (const p of t?.paths ?? []) {
+      if (!t || (p.source.key !== ref && p.sink.key !== ref)) continue;
+      const { bytes, point } = pathAt(t, p);
+      if (!point) continue;
+      const other = p.source.key === ref ? `to ${p.sink.label}` : `from ${p.source.label}`;
+      lines.push(h('li', {}, `${other}: ${formatRate(point.bitsPerSecond)} at ${bytes} B packets, limited by ${p.elements[point.bottleneck].label}${p.split ? ' (assuming every packet takes this path)' : ''}`));
+    }
+    const pair = h('div', { class: 'cmp-traffic-row' },
+      h('label', { for: `${fid}-len` }, 'Packet length (B)'), len,
+      h('label', { for: `${fid}-rate` }, 'Rate (Mbit/s)'), rate);
+    pair.addEventListener('focusout', (/** @type {FocusEvent} */ e) => {
+      if (!pair.contains(/** @type {Node | null} */ (e.relatedTarget))) apply();
+    });
+    return h('div', { class: 'cmp-field cmp-traffic' },
+      h('span', { class: 'cmp-g-label' }, 'Stated traffic'),
+      pair,
+      err.el,
+      lines.length
+        ? h('ul', { class: 'cmp-notes cmp-traffic-paths', role: 'list', 'aria-label': 'Capacity of its paths' }, lines)
+        : h('p', { class: 'cmp-help' }, 'No path with rate data passes this interface.'));
+  }
+
+  /**
+   * The paths over a connection with their capacity at the stated length of their source or sink, else at 1024 bytes.
+   * @param {{ from: string, to: string }} c
+   */
+  connectionThroughput(c) {
+    const t = this.app.resolved.throughput;
+    const paths = (t?.paths ?? []).filter((p) => p.nodes.includes(c.from) && p.nodes.includes(c.to));
+    if (!paths.length) return null;
+    return h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-tp' },
+      h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-tp' }, 'Throughput'),
+      h('ul', { class: 'cmp-notes', role: 'list' }, paths.map((p) => {
+        const { bytes, stated, point } = pathAt(/** @type {import('../model/throughput.js').Throughput} */ (t), p);
+        if (!point) return h('li', {}, `${p.source.label} to ${p.sink.label}: the rate data cannot be evaluated (see the checks).`);
+        return h('li', {}, `${p.source.label} to ${p.sink.label}: ${formatRate(point.bitsPerSecond)} at ${bytes} B packets${stated ? '' : ' (reference length)'}, limited by ${p.elements[point.bottleneck].label}${p.split ? '; assuming every packet takes this path' : ''}.`);
+      })));
+  }
+
   connectionPanel(id) {
     const d = this.app.design;
     const cat = this.app.catalog;
@@ -521,6 +590,7 @@ export class InspectorView {
       chk.notes.length || checks.length
         ? h('ul', { class: 'cmp-notes', role: 'list' }, [...chk.notes.map((n) => h('li', {}, n)), ...checks.map((x) => h('li', { class: `cmp-sev-${x.severity}` }, x.message))])
         : null,
+      this.connectionThroughput(c),
       sb && c.sideband
         ? h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-sb' },
           h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-sb' }, 'Side band constants'),

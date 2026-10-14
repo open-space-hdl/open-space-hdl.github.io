@@ -123,7 +123,19 @@ export const REFERENCE_BYTES = [64, 1024];
  * @property {Check[]} checks
  * @property {Map<string, { packetBytes: number, bitsPerSecond?: number }>} traffic   stated traffic by node key
  * @property {string[]} problems   rate data that cannot be evaluated, as sentences
+ * @property {Limit[]} limits      paths whose stated traffic they do not sustain
+ * @property {Map<string, string>} bottlenecks   instance of the system (a subsystem for an element inside it) that
+ *           limits a path below its stated traffic -> the finding
  */
+
+/**
+ * @typedef {object} Limit
+ * @property {Path} path
+ * @property {Point} point      the path at the source length of the stated traffic
+ * @property {'source' | 'sink'} side   which end states the traffic
+ * @property {{ packetBytes: number, bitsPerSecond?: number }} stated
+ * @property {number} sustained  bit/s at the stated end
+ * @property {string} message
 
 /**
  * A rate in bit/s with three significant digits and an SI prefix (factor 1000).
@@ -575,6 +587,19 @@ function instanceOf(el) {
 }
 
 /**
+ * The length at which the editor shows a path: the stated length of its source or sink, else 1024 bytes (a reference
+ * point), and the path at that length.
+ * @param {Throughput} t
+ * @param {Path} p
+ * @returns {{ bytes: number, stated: boolean, point: Point | null }}
+ */
+export function pathAt(t, p) {
+  const s = t.traffic.get(p.source.key) ?? t.traffic.get(p.sink.key);
+  const bytes = s?.packetBytes ?? 1024;
+  return { bytes, stated: Boolean(s), point: p.at(bytes) };
+}
+
+/**
  * The throughput analysis of a system.
  * @param {Catalog} cat   the catalog of the design (withSubsystems)
  * @param {Design} d
@@ -652,6 +677,8 @@ export function analyseThroughput(cat, d, res, opts = {}) {
   /** @type {Check[]} */
   const checks = [];
   const assume = (/** @type {Path} */ p) => (p.split ? ` Assuming every packet of ${p.source.label} reaches ${p.sink.label}.` : '');
+  /** @type {Limit[]} */
+  const limits = [];
   // stated rates of sources
   for (const p of paths) {
     const t = g.traffic.get(p.source.key);
@@ -660,11 +687,13 @@ export function analyseThroughput(cat, d, res, opts = {}) {
     if (!pt || pt.bitsPerSecond >= t.bitsPerSecond) continue;
     const bn = p.elements[pt.bottleneck];
     const loss = p.source.noReady ? ' Without back pressure the excess is lost.' : '';
-    checks.push({
-      severity: 'warning',
-      rule: 'throughput',
+    limits.push({
+      path: p,
+      point: pt,
+      side: 'source',
+      stated: t,
+      sustained: pt.bitsPerSecond,
       message: `${p.source.label} needs ${formatRate(t.bitsPerSecond)} at ${t.packetBytes} B packets; the path ${p.source.label} to ${p.sink.label} sustains ${formatRate(pt.bitsPerSecond)} at ${t.packetBytes} B packets, limited by ${bn.label} (${elementText(p, pt, pt.bottleneck)}).${loss} To meet it, ${advice(bn)}.${assume(p)}`,
-      ...instanceOf(bn),
     });
   }
   // stated rates of sinks: at the length the source gives the stated length at the sink
@@ -692,12 +721,23 @@ export function analyseThroughput(cat, d, res, opts = {}) {
     const atSink = pt.packetsPerSecond * 8 * t.packetBytes;
     if (atSink >= t.bitsPerSecond) continue;
     const bn = p.elements[pt.bottleneck];
-    checks.push({
-      severity: 'warning',
-      rule: 'throughput',
+    limits.push({
+      path: p,
+      point: pt,
+      side: 'sink',
+      stated: t,
+      sustained: atSink,
       message: `${p.sink.label} needs ${formatRate(t.bitsPerSecond)} at ${t.packetBytes} B packets; the path ${p.source.label} to ${p.sink.label} delivers at most ${formatRate(atSink)} at ${t.packetBytes} B packets (${bytes} B at the source), limited by ${bn.label} (${elementText(p, pt, pt.bottleneck)}). To meet it, ${advice(bn)}.${assume(p)}`,
-      ...instanceOf(bn),
     });
+  }
+  // the findings of the limits, and the instances of the system that limit a path (the marker of the editor)
+  /** @type {Map<string, string>} */
+  const bottlenecks = new Map();
+  for (const l of limits) {
+    const bn = l.path.elements[l.point.bottleneck];
+    checks.push({ severity: 'warning', rule: 'throughput', message: l.message, ...instanceOf(bn) });
+    const id = bn.node.key.split('/')[0].split('.')[0];
+    if (!bottlenecks.has(id)) bottlenecks.set(id, l.message);
   }
   // shared elements: the stated packet rates of their sources together
   for (const [, e] of byElement) {
@@ -738,5 +778,5 @@ export function analyseThroughput(cat, d, res, opts = {}) {
   if (stopped) {
     checks.push({ severity: 'info', rule: 'throughput', message: `Throughput analysis stopped after ${stopped} paths (limit ${maxPaths} paths or ${maxMs / 1000} s); the brief lists the paths analysed.` });
   }
-  return { paths, shared, missing, stopped, checks, traffic: g.traffic, problems: [...g.problems.values()] };
+  return { paths, shared, missing, stopped, checks, traffic: g.traffic, problems: [...g.problems.values()], limits, bottlenecks };
 }

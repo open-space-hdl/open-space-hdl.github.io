@@ -476,6 +476,38 @@ export function trafficProblem(t) {
 }
 
 /**
+ * Stated traffic from the two fields of the editor: the packet length in bytes and the rate in Mbit/s. The file
+ * stores the rate in bit/s; this and trafficFields are the one place that converts. Both fields empty: no traffic.
+ * @param {string} bytesText
+ * @param {string} mbitText
+ * @returns {{ traffic: Traffic | null } | { error: string }}
+ */
+export function trafficFromFields(bytesText, mbitText) {
+  const b = bytesText.trim();
+  const r = mbitText.trim();
+  if (!b && !r) return { traffic: null };
+  const packetBytes = Number(b);
+  if (!b || !Number.isInteger(packetBytes) || packetBytes < 1) return { error: 'Give the packet length in whole bytes.' };
+  if (!r) return { traffic: { packetBytes } };
+  const mbit = Number(r);
+  if (!(Number.isFinite(mbit) && mbit > 0)) return { error: 'Give the rate in Mbit/s, above zero, or leave it empty.' };
+  // whole bit/s: 1600 Mbit/s are 1600000000 bit/s exactly
+  return { traffic: { packetBytes, bitsPerSecond: Math.round(mbit * 1e6) } };
+}
+
+/**
+ * The fields of the editor for stated traffic: the packet length in bytes and the rate in Mbit/s.
+ * @param {Traffic | undefined} traffic
+ * @returns {{ bytes: string, mbit: string }}
+ */
+export function trafficFields(traffic) {
+  return {
+    bytes: traffic ? String(traffic.packetBytes) : '',
+    mbit: traffic?.bitsPerSecond ? String(Number((traffic.bitsPerSecond / 1e6).toPrecision(15))) : '',
+  };
+}
+
+/**
  * Sets or removes the stated traffic of an external interface (throughput budget).
  * @param {Design} d
  * @param {string} ref
@@ -488,7 +520,9 @@ export function setTraffic(d, ref, traffic) {
     const problem = trafficProblem(traffic);
     if (problem) throw new DesignError(`Traffic of ${ref}: ${problem}`);
   }
-  const { traffic: _old, ...rest } = d.externals[k];
+  const { traffic: old, ...rest } = d.externals[k];
+  // the same values again: no change, no undo step
+  if (JSON.stringify(old ?? null) === JSON.stringify(traffic)) return d;
   const ext = traffic === null ? rest : { ...rest, traffic: { ...traffic } };
   return { ...d, externals: d.externals.map((e, j) => (j === k ? ext : e)) };
 }
