@@ -15,11 +15,22 @@ layout: default
 <section class="projects" id="projects">
   <div class="wrap">
     <h2>Projects</h2>
-    <div class="card-grid">
-      {%- for project in site.data.projects %}
-      {% include project-card.html project=project %}
-      {%- endfor %}
-    </div>
+    {%- for group in site.data.project_groups %}
+    {%- assign members = site.data.projects | where: "group", group.id %}
+    {%- if members.size > 0 %}
+    <section class="project-group" id="{{ group.id }}" aria-labelledby="group-{{ group.id }}">
+      <div class="group-head">
+        <h3 id="group-{{ group.id }}">{{ group.title | escape }}</h3>
+        <p class="group-summary">{{ group.summary }}</p>
+      </div>
+      <div class="card-grid">
+        {%- for project in members %}
+        {% include project-card.html project=project %}
+        {%- endfor %}
+      </div>
+    </section>
+    {%- endif %}
+    {%- endfor %}
   </div>
 </section>
 

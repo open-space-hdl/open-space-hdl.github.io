@@ -49,7 +49,7 @@ main { flex: 1 0 auto; }
 a { color: var(--orange-text); text-underline-offset: 0.2em; }
 a:hover { color: var(--navy); }
 
-h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; }
+h1, h2, h3, h4 { line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; }
 
 .nowrap { white-space: nowrap; }
 
@@ -146,6 +146,16 @@ h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; }
 .projects { padding: 72px 0 88px; }
 .projects h2 { margin: 0 0 28px; font-size: 1.75rem; }
 
+/* Groups of project cards (_data/project_groups.yml) */
+.project-group + .project-group { margin-top: 48px; }
+.group-head {
+  margin: 0 0 18px;
+  padding-left: 14px;
+  border-left: 3px solid var(--orange);
+}
+.group-head h3 { margin: 0; font-size: 1.5rem; }
+.group-summary { margin: 4px 0 0; color: var(--text-muted); }
+
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -199,7 +209,7 @@ h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; font-weight: 600; }
   justify-content: space-between;
   gap: 12px;
 }
-.card h3 { margin: 0; font-size: 1.35rem; }
+.card h4 { margin: 0; font-size: 1.35rem; }
 
 .badge {
   flex-shrink: 0;
