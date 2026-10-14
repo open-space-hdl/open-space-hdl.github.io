@@ -13,10 +13,13 @@ import {
   setAdapterGeneric, setConstant, setDomainBox, setExternal, setGeneric, setSideband, setSystem, setViewport,
   sidebandDefaults, updateDomain,
 } from '../model/design.js';
+import { exportHdl } from '../model/hdl.js';
 import { ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, freeSpot, freeSpotIn, snap } from '../model/layout.js';
+import { netlist } from '../model/netlist.js';
 import { resolve } from '../model/resolver.js';
-import { FormatError, fromText, toText } from '../model/serialize.js';
+import { FormatError, fromText, GENERATOR, toText } from '../model/serialize.js';
 import { loadSnapshot, saveSnapshot, Workspace } from '../model/workspace.js';
+import { zipStore } from '../model/zip.js';
 import { CanvasView } from './canvas.js';
 import { ChecksView } from './checks.js';
 import { h, replace } from './dom.js';
@@ -37,6 +40,7 @@ import { TabsView } from './tabs.js';
  * @property {string} [domain]   clock domain
  */
 
+const EXPORT_TITLE = 'Export the VHDL top level, its compile order and constraints, with the system file, as a ZIP archive';
 const AUTOSAVE_DELAY = 400;
 
 export class App {
@@ -82,6 +86,7 @@ export class App {
     this.btnDelete = btn('Delete', () => this.deleteSelection(), { title: 'Delete the selection (Delete)' });
     this.examplesMenu = h('div', { class: 'cmp-menu', role: 'menu', hidden: true, 'aria-label': 'Examples' });
     this.btnExamples = btn('Examples', () => this.toggleExamples(), { 'aria-haspopup': 'menu', 'aria-expanded': 'false', title: 'Open an example system' });
+    this.btnExport = btn('Export HDL', () => { void this.exportHdl(); }, { title: EXPORT_TITLE });
     const toolbar = h('div', { class: 'cmp-toolbar', role: 'toolbar', 'aria-label': 'System' },
       h('div', { class: 'cmp-brand' },
         h('h1', { class: 'cmp-title' }, 'Composer'),
@@ -90,6 +95,7 @@ export class App {
         btn('New', () => this.newSystem(), { title: 'New system (Alt+N)' }),
         btn('Open', () => this.fileInput.click(), { title: 'Open a .composer.json file (Ctrl+O)' }),
         btn('Save', () => this.save(), { title: 'Save the system as a .composer.json file (Ctrl+S)' }),
+        this.btnExport,
         h('div', { class: 'cmp-menu-wrap' }, this.btnExamples, this.examplesMenu)),
       h('div', { class: 'cmp-toolgroup' }, this.btnUndo, this.btnRedo, this.btnDelete),
       h('div', { class: 'cmp-toolgroup' },
@@ -222,6 +228,10 @@ export class App {
     this.btnUndo.title = tab?.history.canUndo ? `Undo ${tab.history.undoLabel} (Ctrl+Z)` : 'Undo (Ctrl+Z)';
     this.btnRedo.title = tab?.history.canRedo ? `Redo ${tab.history.redoLabel} (Ctrl+Y)` : 'Redo (Ctrl+Y)';
     this.btnDelete.disabled = this.selection.instances.size + this.selection.connections.size === 0;
+    // a system with errors is not exported: the button stays focusable and says why
+    const errors = tab ? this.resolved.checks.filter((c) => c.severity === 'error').length : 0;
+    this.btnExport.setAttribute('aria-disabled', String(!tab || errors > 0));
+    this.btnExport.title = errors > 0 ? `Export HDL: the system has ${errors} error${errors > 1 ? 's' : ''} (see Checks); fix ${errors > 1 ? 'them' : 'it'} first` : EXPORT_TITLE;
   }
 
   /**
@@ -963,6 +973,53 @@ export class App {
     this.tabs.render();
     this.scheduleAutosave();
     this.notify(`Saved ${tab.design.name}.composer.json.`);
+  }
+
+  /**
+   * Downloads the VHDL export of the active system as one ZIP archive: the top level, its compile order, its
+   * constraints and the system file the export was made from (the hashes in the headers refer to it).
+   */
+  async exportHdl() {
+    const tab = this.ws.active;
+    if (!tab) return;
+    const d = tab.design;
+    const res = this.resolved;
+    const resolved = netlist(this.catalog, d, res);
+    const errors = [...res.checks.filter((c) => c.severity === 'error').map((c) => c.message), ...resolved.problems];
+    if (errors.length) {
+      await this.ask('Export HDL: the system has errors', errors.slice(0, 12), [{ label: 'Close', value: 'ok', primary: true }]);
+      return;
+    }
+    const text = toText(d, this.catalog);
+    const input = `${d.name}.composer.json`;
+    let sha256;
+    try {
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+      sha256 = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    } catch {
+      this.notify('Export HDL needs a secure page (https) for the hash of the system file.', 'error');
+      return;
+    }
+    const { files, problems } = exportHdl(this.catalog, /** @type {any} */ (resolved), {
+      generator: `${GENERATOR.name} ${GENERATOR.version}`,
+      input,
+      sha256,
+      description: d.description,
+      connections: d.connections.map((c) => ({ id: c.id, from: c.from, to: c.to })),
+    });
+    if (problems.length) {
+      await this.ask('Export HDL is not possible', problems, [{ label: 'Close', value: 'ok', primary: true }]);
+      return;
+    }
+    const zip = zipStore([...files.map((f) => ({ name: f.name, data: f.text })), { name: input, data: text }]);
+    const blob = new Blob([/** @type {Uint8Array<ArrayBuffer>} */ (zip)], { type: 'application/zip' });
+    const url = URL.createObjectURL(blob);
+    const a = h('a', { href: url, download: `${d.name}_hdl.zip` });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    this.notify(`Exported ${d.name}_hdl.zip: the top level, its compile order and constraints, and the system file.`);
   }
 
   async onFileChosen() {
