@@ -4,10 +4,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { checkConnection } from '../../assets/composer/js/model/compat.js';
 import { addInstance, createDesign, setGeneric } from '../../assets/composer/js/model/design.js';
 import { resolve } from '../../assets/composer/js/model/resolver.js';
 import { fromText, toDocument } from '../../assets/composer/js/model/serialize.js';
-import { loadCatalog, ROOT } from './helpers.mjs';
+import { connect, loadCatalog, ROOT } from './helpers.mjs';
 
 const cat = loadCatalog();
 
@@ -124,4 +125,23 @@ test('SpaceWire: a run rate above what a port with the same link clock samples i
   for (const name of ['spw_rmap_node', 'spp_over_spw', 'spp_over_spw_two_clocks', 'encrypted_spp_over_spw']) {
     assert.deepEqual(example(name).checks.filter((/** @type {any} */ c) => c.severity !== 'info'), [], name);
   }
+});
+
+test('the brief initialises a block whose register port hangs on a decoder port, also at an indexed interface', () => {
+  let d = createDesign('regs_behind_decoder');
+  for (const [block, preset] of /** @type {[string, string | undefined][]} */ ([['olo/olo_axi_lite_decoder', undefined], ['openspp/spp_core', undefined], ['opencrypto/ocr_core', undefined], ['openwire/owr_core', undefined]])) {
+    d = addInstance(d, cat, block, { x: 0, y: 0 }, preset).design;
+  }
+  d = setGeneric(d, cat, 'dec0', 'Ports_g', 2).design;
+  for (const [a, b] of [['dec0.M_AxiLite[0]', 'spp0.S_AxiLite'], ['dec0.M_AxiLite[1]', 'ocr0.S_AxiLite']]) {
+    const c = checkConnection(cat, d, a, b);
+    assert.ok(c.ok, c.reason);
+    d = connect(d, c);
+  }
+  const brief = /** @type {any} */ (toDocument(d, cat)).agent.brief;
+  const init = brief.slice(brief.indexOf('## 7.'), brief.indexOf('## 8.'));
+  assert.match(init, /\*\*`spp0`\*\* \(Space Packet node, `spp_core`\) through `dec0\.M_AxiLite\[0\]` \(connection c1\):/);
+  assert.match(init, /\*\*`ocr0`\*\* \([^)]*`ocr_core`\) through `dec0\.M_AxiLite\[1\]` \(connection c2\):/);
+  // a register port without connection and not external is still reported
+  assert.match(init, /\*\*`spw0`\*\* \([^)]*\) \(its register port `S_AxiLite` is not connected/);
 });
