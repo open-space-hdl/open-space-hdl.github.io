@@ -1,5 +1,5 @@
 {
-  "catalog": "42a93b9ce784",
+  "catalog": "7e96bac83387",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -5283,11 +5283,11 @@
       "library": "olo",
       "source": "olo",
       "url": "https://github.com/open-space-hdl/open-logic-ft",
-      "tag": "4.7.0-ft.3",
-      "commit": "a3c86207790fa91d89e5f02a657f6345de31656e",
+      "tag": "4.7.0-ft.4",
+      "commit": "441bcd5d6f881eeeff359ba8bb5f51cce1f12824",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.3 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 and changes no other source, so the cores verified with 4.7.0-ft.2 use it unchanged.",
+      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.4 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3) and fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4); it changes no other source, so the cores verified with 4.7.0-ft.2 or 4.7.0-ft.3 use it unchanged.",
       "entities": [
         "olo_base_reset_gen"
       ]
@@ -5296,10 +5296,10 @@
       "library": "openrmap",
       "source": "openrmap",
       "url": "https://github.com/open-space-hdl/openrmap",
-      "commit": "4ae4bfe31395ecbc31d5076796fd94bd7cb9de0e",
-      "fileList": "component_list.txt",
-      "fileListFormat": "modules",
-      "verifiedWith": "4.7.0-ft.2",
+      "commit": "afb40c72afd5a7cc64e733c9ffcdfe78630d1125",
+      "fileList": "compile_order.txt",
+      "fileListFormat": "files",
+      "verifiedWith": "4.7.0-ft.4",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
       "entities": [
         "omap_core"
@@ -5323,11 +5323,11 @@
       "library": "openfibre",
       "source": "openfibre",
       "url": "https://github.com/open-space-hdl/openfibre",
-      "commit": "35424172bd9761cfbacc2e0449a803ab6c60fe8c",
-      "fileList": "component_list.txt",
-      "fileListFormat": "modules",
+      "commit": "bd4d80b1f05ee5fda67a97ff4c760952a25a79a7",
+      "fileList": "compile_order.txt",
+      "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.2",
-      "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. component_list.txt lists the technology-independent modules; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).",
+      "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. compile_order.txt lists the technology-independent sources; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).",
       "entities": [
         "ofb_core",
         "ofb_pa_gty"
