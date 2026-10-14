@@ -6,7 +6,8 @@
  *   blocks     user blocks with their port positions and clock chips
  *   domains    clock domain boxes around their blocks, with the header tab
  *   adapters   blocks the resolver inserts: a clock crossing centred where its connection crosses the border between
- *              the two domain boxes, a width converter right next to its source port
+ *              the two domain boxes, a width converter right next to its source port, a reset generator on the top
+ *              border of the box of its clock domain
  *   edges      connections routed orthogonally around blocks, headers and adapters (router.js), one polyline per hop
  *              from the driver through the adapters to the receiver
  *   externals  stubs of external interfaces with the prefix of their top-level ports
@@ -55,7 +56,7 @@ export const EXTERNAL_STUB = 28;
 /**
  * @typedef {object} SceneAdapter
  * @property {string} id
- * @property {string} connection
+ * @property {string} connection   empty for a reset generator, which belongs to a clock domain
  * @property {number} x            centre
  * @property {number} y
  * @property {'h' | 'v'} orient    on a horizontal or a vertical part of its connection
@@ -352,6 +353,16 @@ export function buildScene(cat, d, res, opts = {}) {
       const shape = adapterShape(x, y, place.orient, place.reverse);
       adapters.set(ad.id, { id: ad.id, connection: p.c.id, x, y, orient: place.orient, reverse: place.reverse, rect: shape.rect });
     });
+  }
+  // reset generators: on the top border of the box of their clock domain, at its right end and clear of the header
+  // tab, as a clock crossing sits on the border between two domains (the asynchronous reset enters the domain there)
+  for (const dom of res.domains) {
+    const rec = dom.resetGen ? res.byId.get(dom.resetGen) : undefined;
+    const sd = domains.get(dom.id);
+    if (!rec || !sd?.box || !sd.head) continue;
+    const left = Math.max(sd.head.x + sd.head.w + 12, sd.box.x + sd.box.w - ADAPTER_WIDTH - 16);
+    const shape = adapterShape(left + ADAPTER_WIDTH / 2, sd.box.y, 'h', false);
+    adapters.set(rec.id, { id: rec.id, connection: '', x: left + ADAPTER_WIDTH / 2, y: sd.box.y, orient: 'h', reverse: false, rect: shape.rect });
   }
   // adapters do not overlap each other, a block or a domain header: move aside, across the direction of flow
   /** @type {Rect[]} */

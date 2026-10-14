@@ -65,6 +65,7 @@ const ROLE_LABEL = {
   olo_base_wconv_n2xn: 'Width converter',
   olo_base_wconv_xn2n: 'Width converter',
   olo_base_wconv_n2m: 'Width converter',
+  olo_base_reset_gen: 'Reset generator',
 };
 
 /**
@@ -849,7 +850,7 @@ export class CanvasView {
       const sig = JSON.stringify([rec.entity, rec.generics.Width_g, rec.generics.Depth_g, rec.generics.InWidth_g, rec.generics.OutWidth_g, rec.reason, ad.orient, ad.reverse, tints]);
       let entry = this.autoEls.get(ad.id);
       if (!entry || entry.sig !== sig) {
-        const el = entry?.el ?? /** @type {SVGGElement} */ (s('g', { class: 'cmp-auto', 'data-auto': ad.id, tabindex: '0', role: 'button' }));
+        const el = entry?.el ?? /** @type {SVGGElement} */ (s('g', { class: `cmp-auto cmp-auto-${rec.role}`, 'data-auto': ad.id, tabindex: '0', role: 'button' }));
         const inner = entry?.inner ?? /** @type {SVGGElement} */ (s('g', { class: 'cmp-auto-inner' }));
         if (!entry) {
           el.append(inner);
@@ -954,7 +955,10 @@ export class CanvasView {
     const w = ADAPTER_WIDTH;
     const hgt = ADAPTER_HEIGHT;
     const label = /** @type {Record<string, string>} */ (ROLE_LABEL)[rec.entity] ?? rec.entity;
-    const detail = rec.role === 'wconv'
+    const domainName = this.app.design.clockDomains.find((c) => c.id === rec.domain)?.name ?? rec.domain ?? '';
+    const detail = rec.role === 'reset'
+      ? domainName
+      : rec.role === 'wconv'
       ? `${rec.generics.InWidth_g} to ${rec.generics.OutWidth_g} bit`
       : rec.entity === 'olo_ft_fifo_async' || rec.entity === 'olo_base_fifo_async'
         ? `${rec.generics.Width_g} bit, ${rec.generics.Depth_g} deep`
@@ -990,8 +994,8 @@ export class CanvasView {
       s('g', { class: 'cmp-auto-badge', transform: `translate(${w / 2 - 34} ${-hgt / 2 - 8})` },
         s('rect', { width: 30, height: 15, rx: 7.5 }),
         s('text', { x: 15, y: 11, 'text-anchor': 'middle' }, 'auto')),
-      s('circle', { class: 'cmp-auto-port', cx: shape.in.x, cy: shape.in.y, r: 4 }),
-      s('circle', { class: 'cmp-auto-port', cx: shape.out.x, cy: shape.out.y, r: 4 }),
+      ...(rec.role === 'reset' ? [] : [s('circle', { class: 'cmp-auto-port', cx: shape.in.x, cy: shape.in.y, r: 4 }),
+        s('circle', { class: 'cmp-auto-port', cx: shape.out.x, cy: shape.out.y, r: 4 })]),
       s('title', {}, `${rec.entity} (${rec.id}), inserted automatically. ${rec.reason ?? ''}`));
   }
 
