@@ -1,5 +1,5 @@
 {
-  "catalog": "4a5bef7a4f02",
+  "catalog": "2afcffd8a5f3",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -5315,7 +5315,7 @@
       "library": "openspp",
       "source": "openspp",
       "url": "https://github.com/open-space-hdl/openspp",
-      "commit": "8060076a91ac4f73406ce932c08dcda9515d3e6f",
+      "commit": "d8ba9744277f4ccd2a01f64476a5a91743246f7a",
       "fileList": "component_list.txt",
       "fileListFormat": "modules",
       "verifiedWith": "4.7.0-ft.2",

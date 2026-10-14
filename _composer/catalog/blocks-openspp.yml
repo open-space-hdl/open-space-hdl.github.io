@@ -128,6 +128,7 @@ blocks:
       - Serve every receive port, or place a buffer behind a port whose user can stall for long.
       - TxBufferBytes_g holds the longest SDU of a port, RxBufferBytes_g the longest Space Packet.
       - Hold the side band (TUser) of a send port constant during an SDU.
+      - A last beat without valid bytes (Keep all zero) ends an SDU or packet at the inputs; an SDU without any byte is rejected (0x02). The outputs never carry a beat without valid bytes.
       - The user supplies the packet secondary header at the start of the Octet String and keeps the secondary header flag of an APID static.
 
   - id: openspp/spp_nchar
@@ -182,3 +183,4 @@ blocks:
           - { name: eep, label: "Error end of packet (EEP), valid with last", lsb: 0, bits: 1 }
     notes:
       - A received end of packet marker without data characters is discarded.
+      - A link packet that ends with a beat without valid bytes gets its marker after the bytes of the earlier beats; a link packet without any byte sends nothing.

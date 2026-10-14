@@ -39,7 +39,7 @@ sources:
     repo: openspp
     url: https://github.com/open-space-hdl/openspp
     doc: https://openspacehdl.org/openspp/
-    commit: 8060076a91ac4f73406ce932c08dcda9515d3e6f
+    commit: d8ba9744277f4ccd2a01f64476a5a91743246f7a
     library: openspp
     file_list: component_list.txt
     file_list_format: modules

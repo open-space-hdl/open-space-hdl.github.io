@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "4a5bef7a4f02",
+ "id": "2afcffd8a5f3",
  "sources": [
   {
    "id": "openwire",
@@ -35,7 +35,7 @@
    "repo": "openspp",
    "url": "https://github.com/open-space-hdl/openspp",
    "doc": "https://openspacehdl.org/openspp/",
-   "commit": "8060076a91ac4f73406ce932c08dcda9515d3e6f",
+   "commit": "d8ba9744277f4ccd2a01f64476a5a91743246f7a",
    "library": "openspp",
    "fileList": "component_list.txt",
    "fileListFormat": "modules",
@@ -9727,6 +9727,7 @@
     "Serve every receive port, or place a buffer behind a port whose user can stall for long.",
     "TxBufferBytes_g holds the longest SDU of a port, RxBufferBytes_g the longest Space Packet.",
     "Hold the side band (TUser) of a send port constant during an SDU.",
+    "A last beat without valid bytes (Keep all zero) ends an SDU or packet at the inputs; an SDU without any byte is rejected (0x02). The outputs never carry a beat without valid bytes.",
     "The user supplies the packet secondary header at the start of the Octet String and keeps the secondary header flag of an APID static."
    ],
    "rules": [
@@ -10543,7 +10544,8 @@
    "doc": "https://openspacehdl.org/openspp/docs/user_guide.html",
    "project": "OpenSPP",
    "notes": [
-    "A received end of packet marker without data characters is discarded."
+    "A received end of packet marker without data characters is discarded.",
+    "A link packet that ends with a beat without valid bytes gets its marker after the bytes of the earlier beats; a link packet without any byte sends nothing."
    ],
    "packages": [
     "spp_pkg"
