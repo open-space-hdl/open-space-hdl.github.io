@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "ceff5ab75104",
+ "id": "1ff11ead36c6",
  "sources": [
   {
    "id": "openwire",
@@ -1377,8 +1377,8 @@
    "constraints": [
     {
      "kind": "vendor_scoped",
-     "file": "tools/vivado/all_constraints_amd.tcl",
-     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
+     "file": "src/base/tcl/olo_base_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)."
     }
    ],
    "generics": [
@@ -2183,8 +2183,8 @@
    "constraints": [
     {
      "kind": "vendor_scoped",
-     "file": "tools/vivado/all_constraints_amd.tcl",
-     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
+     "file": "src/base/tcl/olo_base_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)."
     }
    ],
    "generics": [
@@ -2574,8 +2574,8 @@
    "constraints": [
     {
      "kind": "vendor_scoped",
-     "file": "tools/vivado/all_constraints_amd.tcl",
-     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
+     "file": "src/base/tcl/olo_base_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)."
     }
    ],
    "generics": [
@@ -2725,8 +2725,8 @@
    "constraints": [
     {
      "kind": "vendor_scoped",
-     "file": "tools/vivado/all_constraints_amd.tcl",
-     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
+     "file": "src/base/tcl/olo_base_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)."
     }
    ],
    "generics": [
@@ -3433,8 +3433,8 @@
    "constraints": [
     {
      "kind": "vendor_scoped",
-     "file": "tools/vivado/all_constraints_amd.tcl",
-     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
+     "file": "src/base/tcl/olo_base_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)."
     }
    ],
    "generics": [
@@ -3647,8 +3647,8 @@
    "constraints": [
     {
      "kind": "vendor_scoped",
-     "file": "tools/vivado/all_constraints_amd.tcl",
-     "note": "AMD Vivado: source the script once; it applies the scoped constraints of all Open Logic clock crossings."
+     "file": "src/base/tcl/olo_base_constraints_amd.tcl",
+     "note": "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)."
     }
    ],
    "generics": [
