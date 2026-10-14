@@ -22,10 +22,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out the site
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: site
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Python packages
@@ -34,7 +34,7 @@ jobs:
         run: python site/tools/composer_catalog.py clone
       - name: Catalog check (YAML against the VHDL entities at the pinned commits, catalog.json current, examples valid)
         run: python site/tools/composer_catalog.py check
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - name: Node packages
@@ -57,7 +57,7 @@ jobs:
         browser: [chromium, firefox, webkit]
     steps:
       - name: Check out the site
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
@@ -69,7 +69,7 @@ jobs:
         env:
           BUNDLE_GEMFILE: tests/jekyll/Gemfile
         run: bundle exec jekyll build
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - name: Node packages
@@ -83,7 +83,7 @@ jobs:
         run: npx playwright test --project=${{ matrix.browser }}
       - name: Traces of failed tests
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-${{ matrix.browser }}
           path: tests/test-results/
