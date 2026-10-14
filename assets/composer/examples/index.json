@@ -17,6 +17,12 @@
       "name": "spp_over_spw_two_clocks",
       "title": "Space Packets over SpaceWire, two clocks",
       "description": "Space Packets over SpaceWire with two clock domains: the SpaceWire side runs on a 50 MHz port clock, the Space Packet node on the 100 MHz system clock. The Composer inserts asynchronous FIFOs for the packet links."
+    },
+    {
+      "file": "encrypted-spp-over-spw.composer.json",
+      "name": "encrypted_spp_over_spw",
+      "title": "Encrypted packets over SpaceWire",
+      "description": "Encrypted packets over SpaceWire: the OpenCrypto framer cuts every input packet (for example a compressed image) into chunks, the AES-GCM core encrypts every chunk with a generated IV and a 4-byte position in the AAD, and OpenSPP sends every encrypted chunk as one Space Packet through an N-Char adapter and an OpenWire port."
     }
   ]
 }

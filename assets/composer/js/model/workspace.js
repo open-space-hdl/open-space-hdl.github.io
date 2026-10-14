@@ -146,7 +146,7 @@ export class Workspace {
       format: SNAPSHOT_FORMAT,
       formatVersion: 1,
       active: Math.max(0, this.tabs.findIndex((t) => t.id === this.activeId)),
-      tabs: this.tabs.map((t) => ({ document: toDocument(t.design, this.cat), dirty: t.dirty })),
+      tabs: this.tabs.map((t) => ({ document: toDocument(t.design, this.cat, { full: false }), dirty: t.dirty })),
     };
   }
 

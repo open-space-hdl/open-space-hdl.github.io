@@ -248,8 +248,28 @@ a.trl:hover .trl-val { background: var(--orange); }
 
 .prose { max-width: 920px; }
 .prose h2 { margin: 48px 0 16px; font-size: 1.5rem; }
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  font-variant-ligatures: none;
+  overflow-wrap: break-word;
+}
+.prose pre {
+  margin: 20px 0;
+  padding: 16px 18px;
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+.prose pre code {
+  font-size: inherit;
+  overflow-wrap: normal;
+}
 
-/* Tables of the TRL page: framed, navy header, phase groups, stacked cards on narrow screens */
+/* Framed tables (TRL page, Composer file format): navy header, phase groups, stacked cards on narrow screens */
 .table-frame {
   margin: 24px 0 0;
   border: 1px solid var(--border);

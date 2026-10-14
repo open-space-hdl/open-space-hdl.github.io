@@ -43,7 +43,7 @@ export class App {
   /**
    * @param {HTMLElement} root
    * @param {Catalog} catalog
-   * @param {{ examplesUrl: string, projects: any[] }} opts
+   * @param {{ examplesUrl: string, formatUrl?: string, projects: any[] }} opts
    */
   constructor(root, catalog, opts) {
     this.root = root;
@@ -101,7 +101,10 @@ export class App {
         btn('Fit', () => this.fit(), { title: 'Fit the system into the view (0)' })),
       h('div', { class: 'cmp-toolgroup cmp-toolgroup-end' },
         this.btnLegend = btn('Legend', () => this.toggleLegend(), { 'aria-pressed': 'false', title: 'Colours and symbols of the interface types (L)' }),
-        btn('Keys', () => this.showShortcuts(), { title: 'Keyboard shortcuts (?)' })),
+        btn('Keys', () => this.showShortcuts(), { title: 'Keyboard shortcuts (?)' }),
+        opts.formatUrl
+          ? h('a', { class: 'cmp-tool', href: opts.formatUrl, target: '_blank', rel: 'noopener', title: 'The .composer.json file format: how an agent or an engineer builds the top level from a saved system (new tab)' }, 'File format')
+          : null),
       this.fileInput);
     this.tabs = new TabsView(this);
     this.palette = new PaletteView(this);

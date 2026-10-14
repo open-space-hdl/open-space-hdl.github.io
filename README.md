@@ -51,10 +51,11 @@ The Composer is a browser editor for systems built from the cores and from Open 
 |---|---|
 | `_composer/catalog/` | Catalog source: interface types, pinned source repositories, palette, block descriptions |
 | `tools/composer_catalog.py` | Builds `assets/composer/catalog.json` from the catalog source and the VHDL entities at the pinned commits, and checks them |
-| `tools/composer_examples.mjs` | Writes the example systems in `assets/composer/examples/` (laid out by Arrange) |
-| `assets/composer/js/model/` | Catalog access, design model, connection rules, resolver (adapters, clock domains, resets, top level), design rules, file format, scene and router (placement and orthogonal routes), Arrange and tidy, scene differences and springs for the animations (no DOM, unit tested) |
+| `tools/composer_examples.mjs` | Writes the example systems in `assets/composer/examples/` (laid out by Arrange) and their golden netlists and build briefs in `tests/golden/` |
+| `assets/composer/js/model/` | Catalog access, design model, connection rules, resolver (adapters, clock domains, resets, top level), design rules, resolved netlist and build brief, file format, scene and router (placement and orthogonal routes), Arrange and tidy, scene differences and springs for the animations (no DOM, unit tested) |
 | `assets/composer/js/view/` | Editor: palette, canvas with clock domains and animations, inspector, checks, legend, tabs |
 | `composer/schema/system-1.json` | JSON schema of the `.composer.json` files |
+| `composer/format.html` | The file format for agents and engineers (`/composer/format/`) |
 | `tests/` | Unit tests (`node --test`), type check (TypeScript) and browser tests (Playwright) |
 
 The catalog reads the entities from sibling clones of the source repositories (`../openwire`, `../openrmap`, ...).
@@ -65,6 +66,9 @@ python tools/composer_catalog.py build    # requires PyYAML
 python tools/composer_catalog.py check    # requires jsonschema for the example files
 node tools/composer_examples.mjs
 ```
+
+A changed golden file in `tests/golden/` shows how the update changes the netlists of the example systems; review it
+before committing.
 
 Tests (from `tests/`, after `npm install` and `npx playwright install chromium firefox webkit`):
 

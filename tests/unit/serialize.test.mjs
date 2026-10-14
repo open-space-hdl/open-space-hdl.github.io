@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
-import { addDomain, moveToDomain, setAdapterGeneric, setExternal, setGeneric, setSideband } from '../../assets/composer/js/model/design.js';
+import { addDomain, addInstance, createDesign, moveToDomain, setAdapterGeneric, setConstant, setExternal, setGeneric, setSideband } from '../../assets/composer/js/model/design.js';
 import { FormatError, fromDocument, fromText, toDocument, toText } from '../../assets/composer/js/model/serialize.js';
 import { loadSnapshot, saveSnapshot, Workspace } from '../../assets/composer/js/model/workspace.js';
 import { connect, designWith, loadCatalog } from './helpers.mjs';
@@ -170,4 +170,32 @@ test('invalid clock domains and adapter settings are rejected', () => {
   assert.throws(bad((x) => { x.instances[0].clocks.UserClk = 'nope'; }), /unknown clock domain/);
   assert.throws(bad((x) => { x.connections[0].adapters = { fifo: { Depth_g: 4 } }; }), /unknown adapter "fifo"/);
   assert.throws(bad((x) => { x.connections[0].adapters = { cdc: { Depth_g: 'x' } }; }), /not a generic value/);
+});
+
+test('instance constants and the derived parts of a file', () => {
+  let d = createDesign('enc');
+  d = addInstance(d, cat, 'opencrypto/ocr_framer', { x: 0, y: 0 }).design;
+  d = setConstant(d, cat, 'frm0', 'Cfg', 'slot', 2);
+  const text = toText(d, cat);
+  const doc = JSON.parse(text);
+  assert.deepEqual(doc.instances[0].constants, { Cfg: { slot: 2 } });
+  assert.ok(doc.resolved && Array.isArray(doc.checks) && typeof doc.agent.brief === 'string');
+  assert.ok(doc.agent.brief.startsWith('# enc: build brief'));
+  const back = fromText(text, cat);
+  assert.deepEqual(back.design.instances[0].constants, { Cfg: { slot: 2 } });
+  assert.deepEqual(back.warnings, []);
+  assert.equal(toText(back.design, cat), text);
+  // the autosave leaves the derived parts out
+  const lean = toDocument(d, cat, { full: false });
+  assert.ok(!('resolved' in lean) && !('agent' in lean) && !('checks' in lean));
+  // a netlist edited by hand is reported and resolved again
+  const edited = structuredClone(doc);
+  edited.resolved.nets = [];
+  assert.match(fromDocument(edited, cat).warnings.join(' '), /resolved netlist in the file differs/);
+  // invalid constants are refused
+  const bad = structuredClone(doc);
+  bad.instances[0].constants = { Cfg: { slot: 300 } };
+  assert.throws(() => fromDocument(bad, cat), /integer from 0 to 255/);
+  bad.instances[0].constants = { S_In: { slot: 1 } };
+  assert.throws(() => fromDocument(bad, cat), /no interface with constants/);
 });

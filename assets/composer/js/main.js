@@ -11,6 +11,7 @@ async function start() {
   if (!root) return;
   const catalogUrl = root.dataset.catalog ?? '';
   const examplesUrl = root.dataset.examples ?? '';
+  const formatUrl = root.dataset.format ?? '';
   /** @type {any[]} */
   let projects = [];
   try {
@@ -22,7 +23,7 @@ async function start() {
     const res = await fetch(catalogUrl);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const catalog = new Catalog(await res.json());
-    const app = new App(root, catalog, { examplesUrl, projects });
+    const app = new App(root, catalog, { examplesUrl, formatUrl, projects });
     // exposed for automated tests and the browser console
     Object.defineProperty(window, 'composer', { value: app, configurable: true });
   } catch (e) {

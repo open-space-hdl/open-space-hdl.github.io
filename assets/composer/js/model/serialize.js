@@ -4,9 +4,12 @@
  * The JSON schema is published at /composer/schema/system-1.json. No DOM dependency.
  */
 
+import { agentBrief } from './brief.js';
 import { checkConnection } from './compat.js';
 import { createDesign, DEFAULT_DOMAIN, identifierProblem } from './design.js';
 import { validateValue } from './generics.js';
+import { netlist } from './netlist.js';
+import { resolve } from './resolver.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./design.js').Design} Design */
@@ -52,12 +55,15 @@ function usedSources(cat, d) {
 }
 
 /**
- * Document object of a design (deterministic key order, so that saving twice gives the same text).
+ * Document object of a design (deterministic key order, so that saving twice gives the same text). A full document
+ * also holds what the design resolves to: the netlist ("resolved"), the checks and the brief for an agent; the
+ * autosave of the browser leaves them out.
  * @param {Design} d
  * @param {Catalog} cat
+ * @param {{ full?: boolean }} [opts]
  */
-export function toDocument(d, cat) {
-  return {
+export function toDocument(d, cat, opts = {}) {
+  const doc = {
     $schema: SCHEMA_URL,
     format: FORMAT,
     formatVersion: FORMAT_VERSION,
@@ -71,6 +77,8 @@ export function toDocument(d, cat) {
       if (i.preset) o.preset = i.preset;
       o.generics = { ...i.generics };
       o.clocks = { ...i.clocks };
+      const constants = Object.entries(i.constants ?? {}).filter(([, v]) => Object.keys(v).length > 0);
+      if (constants.length) o.constants = Object.fromEntries(constants.map(([k, v]) => [k, { ...v }]));
       return o;
     }),
     connections: d.connections.map((c) => {
@@ -81,12 +89,24 @@ export function toDocument(d, cat) {
       return o;
     }),
     externals: d.externals.map((e) => ({ interface: e.interface, prefix: e.prefix })),
-    layout: {
-      instances: Object.fromEntries(d.instances.map((i) => [i.id, { ...(d.layout.instances[i.id] ?? { x: 0, y: 0 }) }])),
-      domains: Object.fromEntries(d.clockDomains.filter((c) => d.layout.domains?.[c.id]).map((c) => [c.id, { ...d.layout.domains[c.id] }])),
-      viewport: { ...d.layout.viewport },
-    },
   };
+  /** @type {Record<string, unknown>} */
+  const out = { ...doc };
+  if (opts.full !== false) {
+    const res = resolve(cat, d);
+    const resolved = netlist(cat, d, res);
+    /** @type {import('./resolver.js').Check[]} */
+    const checks = [...res.checks, ...resolved.problems.map((p) => ({ severity: /** @type {const} */ ('error'), rule: 'netlist', message: p }))];
+    out.resolved = resolved;
+    out.checks = checks.map((c) => ({ ...c }));
+    out.agent = { brief: agentBrief(cat, d, res, resolved, checks) };
+  }
+  out.layout = {
+    instances: Object.fromEntries(d.instances.map((i) => [i.id, { ...(d.layout.instances[i.id] ?? { x: 0, y: 0 }) }])),
+    domains: Object.fromEntries(d.clockDomains.filter((c) => d.layout.domains?.[c.id]).map((c) => [c.id, { ...d.layout.domains[c.id] }])),
+    viewport: { ...d.layout.viewport },
+  };
+  return out;
 }
 
 /**
@@ -259,6 +279,30 @@ export function fromDocument(doc, cat) {
     /** @type {import('./design.js').Instance} */
     const rec = { id: inst.id, block: b.id, generics, clocks };
     if (inst.preset !== undefined) rec.preset = inst.preset;
+    // constants of interfaces whose inputs are constants of the instance
+    if (inst.constants !== undefined) {
+      if (!isObject(inst.constants)) errors.push(`${inst.id}.constants: must be an object.`);
+      /** @type {Record<string, Record<string, number | boolean>>} */
+      const constants = {};
+      for (const [itfRef, fields] of Object.entries(isObject(inst.constants) ? inst.constants : {})) {
+        const itf = b.interfaces.find((x) => x.name === itfRef.replace(/\[\d+\]$/, ''));
+        const sb = itf?.tieOff === 'constant' ? itf.sideband : undefined;
+        if (!sb || !isObject(fields)) {
+          errors.push(`${inst.id}.constants.${itfRef}: ${b.entity} has no interface with constants of that name.`);
+          continue;
+        }
+        for (const [name, value] of Object.entries(/** @type {Record<string, unknown>} */ (fields))) {
+          const fd = sb.fields.find((x) => x.name === name);
+          const ok = fd && (fd.kind === 'boolean' ? typeof value === 'boolean' : Number.isInteger(value) && Number(value) >= 0 && Number(value) < 2 ** fd.bits);
+          if (!fd || !ok) {
+            errors.push(`${inst.id}.constants.${itfRef}.${name}: ${fd ? `expected ${fd.kind === 'boolean' ? 'true or false' : `an integer from 0 to ${2 ** fd.bits - 1}`}` : 'unknown field'}.`);
+            continue;
+          }
+          constants[itfRef] = { ...(constants[itfRef] ?? {}), [name]: /** @type {number | boolean} */ (value) };
+        }
+      }
+      if (Object.keys(constants).length) rec.constants = constants;
+    }
     d.instances.push(rec);
   }
 
@@ -355,5 +399,12 @@ export function fromDocument(doc, cat) {
   }
 
   if (errors.length > 0) throw new FormatError(errors);
+  // "resolved" is derived: the Composer resolves the system again and says so when the stored netlist differs
+  if (isObject(o.resolved) && !(isObject(o.generator) && o.generator.catalog && o.generator.catalog !== cat.id)) {
+    const fresh = netlist(cat, d, resolve(cat, d));
+    if (JSON.stringify(fresh) !== JSON.stringify(o.resolved)) {
+      warnings.push('The resolved netlist in the file differs from the system it describes (it was edited outside the Composer); the Composer resolves the system again and saves the new netlist.');
+    }
+  }
   return { design: d, warnings, unplaced };
 }

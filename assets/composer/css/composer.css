@@ -116,6 +116,11 @@
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
+a.cmp-tool {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
 .cmp-tool:hover:not(:disabled),
 .cmp-btn:hover:not(:disabled) { border-color: var(--navy); }
 .cmp-tool:disabled,
