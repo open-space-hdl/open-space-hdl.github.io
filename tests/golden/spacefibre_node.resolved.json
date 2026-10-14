@@ -1,5 +1,5 @@
 {
-  "catalog": "ab38ed52cf22",
+  "catalog": "7f69dfab5b09",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -5306,7 +5306,7 @@
       "library": "openrmap",
       "source": "openrmap",
       "url": "https://github.com/open-space-hdl/openrmap",
-      "commit": "e337a6d315519aa8cbd467a72fa62b8c0577923b",
+      "commit": "4ae4bfe31395ecbc31d5076796fd94bd7cb9de0e",
       "fileList": "component_list.txt",
       "fileListFormat": "modules",
       "verifiedWith": "4.7.0-ft.2",
@@ -5319,7 +5319,7 @@
       "library": "openspp",
       "source": "openspp",
       "url": "https://github.com/open-space-hdl/openspp",
-      "commit": "d8ba9744277f4ccd2a01f64476a5a91743246f7a",
+      "commit": "da4e97b7ad9e0e8ee1af234d18210cbfdcdac492",
       "fileList": "component_list.txt",
       "fileListFormat": "modules",
       "verifiedWith": "4.7.0-ft.2",
