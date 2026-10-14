@@ -137,6 +137,8 @@ blocks:
       - { kind: clock_relation, faster: CoreClk, slower: LaneClk, message: CoreClk must run at least as fast as LaneClk; a slower CoreClk loses received rows (DL_ERRORS bit 10). }
       - { kind: clock_relation, faster: UserClk, slower: LaneClk, severity: warning, message: "UserClk slower than LaneClk limits the throughput of the virtual channels (one beat of NumLanes_g words per cycle)." }
       - { kind: generic_multiple, generic: VcInDepth_g, of: 64 * NumLanes_g }
+      # until ofb_core has an input for the TX ready of the adapter: the adapter notes require holding the core in reset
+      - { kind: with_block, block: openfibre/ofb_pa_gty, severity: warning, message: "ofb_core leaves reset before the transceivers are ready: the lane initialisation can start against a transmitter that is still in reset, and the Composer cannot couple LaneRst of the adapter to the reset of the core yet." }
     idRegister: { address: "0x000", value: "0x0FB10007" }
     init:
       - { text: "Start the link at one end: write LANE_CTRL (0x100 + 0x20 i) of every lane i = 0x63 (LaneStart, AutoStart, TxEn, RxEn); the reset value 0x62 (AutoStart) starts when the far end sends." }

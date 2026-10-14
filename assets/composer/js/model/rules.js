@@ -14,6 +14,7 @@
  *                        (and into the release buffer of the via block; packet: the size of the packets the sink sends)
  *   flag_dropped         a flag bit of user is not passed on (unless a generic or an interface of the block catches it)
  *   run_rate             the transmit rate (clock / divider) exceeds what a receiver with the same clock samples
+ *   with_block           the system also contains an instance of another block (a coupling the catalog cannot express yet)
  */
 
 import { typedEndpoint } from './compat.js';
@@ -147,6 +148,11 @@ export function runRules(res) {
           const v = rec.generics[rule.generic];
           const both = Object.entries(rec.generics).filter(([k]) => /^(Target_g|Initiator_g)$/.test(k)).every(([, x]) => x === true);
           if (both && typeof v === 'number' && v > 1) res.check('info', rule.kind, `${inst.id}: ${rule.message}`, where);
+          break;
+        }
+        case 'with_block': {
+          const other = res.d.instances.filter((i) => i.block === rule.block).map((i) => i.id);
+          if (other.length) res.check(rule.severity ?? 'error', rule.kind, `${inst.id} with ${other.join(', ')}: ${rule.message}`, where);
           break;
         }
         case 'same_domain':
