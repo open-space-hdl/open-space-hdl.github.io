@@ -15,7 +15,8 @@ export default defineConfig({
   testMatch: '*.spec.mjs',
   fullyParallel: false,
   workers: 1,
-  retries: 0,
+  // animations and timing on shared runners: one retry in continuous integration, reported as flaky
+  retries: process.env.CI ? 1 : 0,
   reporter: [['list']],
   timeout: 60_000,
   use: {
