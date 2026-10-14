@@ -28,6 +28,13 @@ test('header and footer of every page lead to the Composer, marked as beta', asy
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Composer Beta' })).toHaveAttribute('aria-current', 'page');
 });
 
+test('the start page carries the name of the site as its title, the other pages add their own', async ({ page }) => {
+  await page.goto('/');
+  await expect(page).toHaveTitle('Open Space HDL');
+  await page.goto('/trl/');
+  await expect(page).toHaveTitle('Technology readiness levels · Open Space HDL');
+});
+
 test('the start page groups the projects and shows every project exactly once', async ({ page }) => {
   // all projects of _data/projects.yml, as the Composer page embeds them
   await page.goto('/composer/');
