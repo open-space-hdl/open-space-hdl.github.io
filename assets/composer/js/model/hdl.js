@@ -10,6 +10,11 @@
  *   <system>_top.xdc             what applies only when the system is the top level of the FPGA: the clocks of its
  *                                clock ports and the I/O registers
  *
+ * A system with subsystems also gets, for every definition it uses (resolved.subsystems):
+ *
+ *   <subsystem>.vhd              its entity, in the library of the top level, written as a top level is
+ *   <subsystem>.xdc              its timing exceptions, for read_xdc -ref <subsystem>
+ *
  * The same netlist and the same input give the same text, byte by byte.
  */
 
@@ -34,6 +39,8 @@ const INNER_RULE = `    ${'-'.repeat(95)}`;
  * @property {{ id: string, from: string, to: string }[]} [connections]   connections of the system (for the comments)
  * @property {Record<string, { files: string[], submodules?: boolean }>} [fileLists]   file lists of sources read from
  *           local checkouts (source id -> files in compile order), instead of the lists of the catalog
+ * @property {Record<string, { description?: string, connections?: { id: string, from: string, to: string }[] }>} [subsystems]
+ *           description and connections of every subsystem definition (for the comments)
  */
 
 /**
@@ -131,21 +138,24 @@ function contextLines(context) {
  * @param {Record<string, any>} inst
  */
 function instanceTitle(cat, inst) {
+  if (String(inst.block).startsWith('subsystem/')) return `${inst.id}: subsystem ${inst.entity}`;
   const name = cat.blocks.get(inst.block)?.name;
   const what = `${inst.entity} (${inst.library}${name ? `, ${name}` : ''})`;
   return inst.origin === 'user' ? `${inst.id}: ${what}` : `${inst.id}: ${what}, inserted by the Composer: ${inst.reason ?? inst.role}`;
 }
 
 /**
- * The top level.
+ * The top level, or the entity of a subsystem.
  * @param {Catalog} cat
  * @param {ResolvedNetlist} resolved
- * @param {ExportInfo} info
+ * @param {ExportInfo} info   for a subsystem: description and connections of the definition
+ * @param {string} [parent]   for a subsystem: the system it belongs to
  */
-function topLevel(cat, resolved, info) {
+function topLevel(cat, resolved, info, parent) {
   const entity = resolved.entity;
+  const title = parent ? `-- ${entity}: subsystem of ${parent}` : `-- ${entity}: top level of the system`;
   /** @type {string[]} */
-  const out = [RULE, `-- ${entity}: top level of the system`, '--', ...headerLines(resolved, info).map((l) => `-- ${l}`), RULE];
+  const out = [RULE, title, '--', ...headerLines(resolved, info).map((l) => `-- ${l}`), RULE];
   if (info.description) out.push('', RULE, '-- Description', RULE, ...comment('--', info.description));
   out.push('', RULE, '-- Libraries', RULE, ...contextLines(resolved.context));
 
@@ -328,7 +338,7 @@ function compileOrder(cat, resolved, info, problems) {
     for (const f of list.files) out.push(`file ${c.library} ${dir}/${f}`);
     // blocks whose file is not part of the file list of the repository (vendor-specific adapters)
     const extra = new Map();
-    for (const inst of resolved.instances) {
+    for (const inst of [...resolved.instances, ...(resolved.subsystems ?? []).flatMap((s) => s.netlist.instances)]) {
       const b = cat.blocks.get(inst.block);
       if (b && b.source === c.source && !list.files.includes(b.path) && !extra.has(b.path)) extra.set(b.path, b);
     }
@@ -337,10 +347,20 @@ function compileOrder(cat, resolved, info, problems) {
       for (const n of b.notes ?? []) blockNotes.push(`${b.entity}: ${n}`);
     }
   });
+  // the subsystems in the library of the top level, leaves first, then the top level
+  for (const s of resolved.subsystems ?? []) out.push(`file ${entity} ${s.name}.vhd`);
   out.push(`file ${entity} ${entity}.vhd`);
   const olo = resolved.compile.find((c) => c.source === 'olo');
-  for (const con of resolved.constraints) {
-    if (con.kind === 'vendor_scoped') blockNotes.push(`${olo ? `${sourceDir(cat, olo)}: ` : ''}${con.note} File ${con.file}.`);
+  /** @type {Set<string>} */
+  const scripts = new Set();
+  for (const con of [...resolved.constraints, ...(resolved.subsystems ?? []).flatMap((s) => s.netlist.constraints)]) {
+    if (con.kind !== 'vendor_scoped' || scripts.has(con.file)) continue;
+    scripts.add(con.file);
+    blockNotes.push(`${olo ? `${sourceDir(cat, olo)}: ` : ''}${con.note} File ${con.file}.`);
+  }
+  if (resolved.subsystems?.length) {
+    const names = resolved.subsystems.map((s) => s.name);
+    blockNotes.push(`Subsystems: ${names.join(', ')}. Each has its timing exceptions in a file of its own, read scoped to its entity: ${names.map((n) => `read_xdc -ref ${n} ${n}.xdc`).join('; ')}.`);
   }
   notes.push(...blockNotes);
   if (notes.length) {
@@ -369,20 +389,29 @@ function portList(ports) {
 }
 
 /**
- * The timing exceptions, scoped to the entity of the system.
+ * The timing exceptions, scoped to the entity of the system or of a subsystem.
  * @param {ResolvedNetlist} resolved
  * @param {ExportInfo} info
+ * @param {string} [parent]   for a subsystem: the system it belongs to
  */
-function exceptions(resolved, info) {
+function exceptions(resolved, info, parent) {
   const entity = resolved.entity;
   /** @type {string[]} */
   const out = [...headerLines(resolved, info).map((l) => `# ${l}`), '#'];
   out.push(
-    ...comment('#', `Timing exceptions of ${entity}, in terms of its ports and instances. Read the file scoped to the entity, alone or with the system inside a larger design: read_xdc -ref ${entity} ${entity}.xdc (in a project: set_property SCOPED_TO_REF ${entity} [get_files ${entity}.xdc]). The clocks come from the design around the system, or from ${entity}_top.xdc when the system is the top level.`),
+    ...comment('#', parent
+      ? `Timing exceptions of the subsystem ${entity} of ${parent}, in terms of its ports and instances. Read the file scoped to the entity: read_xdc -ref ${entity} ${entity}.xdc (in a project: set_property SCOPED_TO_REF ${entity} [get_files ${entity}.xdc]). The clocks come from ${parent}.`
+      : `Timing exceptions of ${entity}, in terms of its ports and instances. Read the file scoped to the entity, alone or with the system inside a larger design: read_xdc -ref ${entity} ${entity}.xdc (in a project: set_property SCOPED_TO_REF ${entity} [get_files ${entity}.xdc]). The clocks come from the design around the system, or from ${entity}_top.xdc when the system is the top level.`),
   );
+  if (!parent && resolved.subsystems?.length) {
+    out.push('#', ...comment('#', `The subsystems have their own files, read scoped to their entities as well: ${resolved.subsystems.map((s) => `${s.name}.xdc`).join(', ')}.`));
+  }
   const io = resolved.constraints.filter((c) => c.kind === 'io_register');
   if (io.length) {
-    out.push('#', ...comment('#', `I/O registers: when the system is not the top level, place the output flip-flops of ${io.flatMap((c) => c.ports).join(', ')} in the I/O blocks at the pins of the top level (${entity}_top.xdc does it when the system is the top level).`));
+    const ports = io.flatMap((c) => c.ports).join(', ');
+    out.push('#', ...comment('#', parent
+      ? `I/O registers: the output flip-flops of ${ports} belong in the I/O blocks at the pins of the top level; ${parent}_top.xdc places them when ${parent} is the top level.`
+      : `I/O registers: when the system is not the top level, place the output flip-flops of ${ports} in the I/O blocks at the pins of the top level (${entity}_top.xdc does it when the system is the top level).`));
   }
   // one variable per clock that a constraint refers to
   /** @type {Map<string, string>} */
@@ -404,7 +433,8 @@ function exceptions(resolved, info) {
       body.push('', ...comment('#', c.note), `set_max_delay${c.datapathOnly ? ' -datapath_only' : ''} -from ${clockVar(c.from)} -to ${clockVar(c.to)} ${Number(c.ns).toFixed(3)}`);
     } else if (c.kind === 'false_path') {
       body.push('', ...comment('#', c.note), `set_false_path -from ${portList(c.from)}`);
-    } else if (c.kind === 'vendor_scoped') {
+    } else if (c.kind === 'vendor_scoped' && !parent) {
+      // once, in the file of the system
       body.push('', ...comment('#', `${c.note} The script ${c.file} is part of the Open Logic sources; add it to the project once (see the compile order).`));
     }
   }
@@ -492,6 +522,21 @@ export function netlistDiff(before, after) {
 }
 
 /**
+ * Description and connections of a system and of its subsystem definitions, for the comments of the export.
+ * @param {import('./design.js').Design} d
+ * @returns {Pick<ExportInfo, 'description' | 'connections' | 'subsystems'>}
+ */
+export function designComments(d) {
+  const conns = (/** @type {import('./design.js').Design} */ x) => x.connections.map((c) => ({ id: c.id, from: c.from, to: c.to }));
+  /** @type {Pick<ExportInfo, 'description' | 'connections' | 'subsystems'>} */
+  const out = { description: d.description, connections: conns(d) };
+  if (d.subsystems) {
+    out.subsystems = Object.fromEntries(Object.entries(d.subsystems).map(([n, s]) => [n, { description: s.description, connections: conns(s) }]));
+  }
+  return out;
+}
+
+/**
  * The files of the export of a system.
  * @param {Catalog} cat
  * @param {ResolvedNetlist} resolved
@@ -508,5 +553,11 @@ export function exportHdl(cat, resolved, info) {
     { name: `${entity}.xdc`, text: exceptions(resolved, info) },
     { name: `${entity}_top.xdc`, text: topConstraints(resolved, info) },
   ];
+  for (const s of resolved.subsystems ?? []) {
+    problems.push(...s.netlist.problems.map((x) => `${s.name}/${x}`));
+    const own = { ...info, description: info.subsystems?.[s.name]?.description, connections: info.subsystems?.[s.name]?.connections };
+    files.push({ name: `${s.name}.vhd`, text: topLevel(cat, s.netlist, own, entity) });
+    files.push({ name: `${s.name}.xdc`, text: exceptions(s.netlist, own, entity) });
+  }
   return { files, problems };
 }

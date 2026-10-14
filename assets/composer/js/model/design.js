@@ -7,6 +7,7 @@
 import { splitEndpoint } from './catalog.js';
 import { tryEvaluate } from './expr.js';
 import { validateValue, sameValue } from './generics.js';
+import { withSubsystems } from './subsystems.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 
@@ -54,6 +55,7 @@ import { validateValue, sameValue } from './generics.js';
  * @property {Connection[]} connections
  * @property {External[]} externals
  * @property {{ instances: Record<string, {x: number, y: number}>, domains: Record<string, {x: number, y: number, w: number, h: number}>, viewport: {x: number, y: number, zoom: number} }} layout
+ * @property {Record<string, Design>} [subsystems]   definitions of the subsystems used, also inside them, by name
  */
 
 export class DesignError extends Error {
@@ -175,6 +177,7 @@ function withDefaultDomain(d) {
  * @param {string} id
  */
 export function primaryDomain(d, cat, id) {
+  cat = withSubsystems(cat, d);
   const inst = getInstance(d, id);
   const b = inst && cat.blocks.get(inst.block);
   const primary = b?.clocks.find((c) => c.primary);
@@ -193,6 +196,7 @@ export function primaryDomain(d, cat, id) {
  * @returns {{ design: Design, id: string }}
  */
 export function addInstance(d, cat, blockId, pos, presetId, opts = {}) {
+  cat = withSubsystems(cat, d);
   const b = cat.block(blockId);
   if (presetId && !(b.presets ?? []).some((p) => p.id === presetId)) {
     throw new DesignError(`Block ${blockId} has no preset "${presetId}".`);
@@ -353,6 +357,7 @@ export function removeDomain(d, id, target) {
  * @param {string} domain
  */
 export function assignClock(d, cat, instId, port, domain) {
+  cat = withSubsystems(cat, d);
   const inst = getInstance(d, instId);
   if (!inst) throw new DesignError(`Unknown instance "${instId}".`);
   const b = cat.block(inst.block);
@@ -370,6 +375,7 @@ export function assignClock(d, cat, instId, port, domain) {
  * @param {string} domain
  */
 export function moveToDomain(d, cat, instId, domain) {
+  cat = withSubsystems(cat, d);
   const inst = getInstance(d, instId);
   if (!inst) throw new DesignError(`Unknown instance "${instId}".`);
   if (!d.clockDomains.some((c) => c.id === domain)) throw new DesignError(`Unknown clock domain "${domain}".`);
@@ -410,6 +416,7 @@ export function setDomainBox(d, id, box) {
  * @param {number | boolean} value
  */
 export function setConstant(d, cat, instId, itfRef, field, value) {
+  cat = withSubsystems(cat, d);
   const inst = getInstance(d, instId);
   if (!inst) throw new DesignError(`Unknown instance ${instId}.`);
   const b = cat.block(inst.block);
@@ -518,6 +525,7 @@ export function renameInstance(d, oldId, newId) {
  * @returns {Connection[]}
  */
 export function danglingConnections(d, cat) {
+  cat = withSubsystems(cat, d);
   /** @type {Map<string, Set<string>>} */
   const portsOf = new Map();
   for (const inst of d.instances) {
@@ -543,6 +551,7 @@ export function danglingConnections(d, cat) {
  * @returns {{ design: Design, removed: Connection[] }}
  */
 export function setGeneric(d, cat, id, name, value) {
+  cat = withSubsystems(cat, d);
   const inst = getInstance(d, id);
   if (!inst) throw new DesignError(`Unknown instance "${id}".`);
   const b = cat.block(inst.block);
@@ -571,6 +580,7 @@ export function setGeneric(d, cat, id, name, value) {
  * @returns {{ design: Design, removed: Connection[] }}
  */
 export function clearGeneric(d, cat, id, name) {
+  cat = withSubsystems(cat, d);
   const inst = getInstance(d, id);
   if (!inst) throw new DesignError(`Unknown instance "${id}".`);
   if (!(name in inst.generics)) return { design: d, removed: [] };
@@ -593,6 +603,7 @@ export function clearGeneric(d, cat, id, name) {
  * @returns {{ design: Design, id: string }}
  */
 export function adoptAdapter(d, cat, rec, pos) {
+  cat = withSubsystems(cat, d);
   const conn = d.connections.find((c) => c.id === rec.connection);
   if (!conn) throw new DesignError('The adapter belongs to no connection.');
   const b = cat.block(rec.block);

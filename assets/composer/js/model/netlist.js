@@ -13,7 +13,10 @@
  *                the side band constants, the tie-offs and the top-level ports
  *   packing      the bit fields of every packed data word
  *   context      the context clause of the top level (ieee and the libraries; package constants are qualified)
- *   clocks, resets, constraints, compile (libraries in order with their pinned sources)
+ *   clocks, resets, constraints, compile (libraries in order with their pinned sources, also those used inside the
+ *                subsystems)
+ *   subsystems   the netlist of every subsystem definition the system uses, also inside them, leaves first (only
+ *                when it uses subsystems); their entities live in the library of the top level
  *
  * Every port of the top level and of an instance names its clock domain (a port of a block with several clocks: the
  * domain of the clock of its interface); a reset port says whether it is synchronous or asynchronous and why, and a
@@ -26,6 +29,7 @@ import { absentValue } from './catalog.js';
 import { formatReal, sameValue } from './generics.js';
 import { tryEvaluate } from './expr.js';
 import { packFields, RESET_PORT, vhdlType } from './resolver.js';
+import { subsystemName, usedDefinitions, withSubsystems } from './subsystems.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./catalog.js').BlockDef} BlockDef */
@@ -78,6 +82,7 @@ export function signalName(inst, port) {
  * @property {Record<string, any>[]} compile
  * @property {string[]} context  context clause of the top level
  * @property {string[]} problems   inconsistencies found while building the netlist (none in a correct catalog)
+ * @property {{ name: string, netlist: ResolvedNetlist }[]} [subsystems]   definitions used, leaves first (top only)
  */
 
 /** @param {string} ref */
@@ -147,6 +152,7 @@ function constExpr(b, value, w = b.width) {
  * @param {Resolved} res
  */
 export function netlist(cat, d, res) {
+  cat = withSubsystems(cat, d);
   return new Netlist(cat, d, res).build();
 }
 
@@ -470,9 +476,16 @@ class Netlist {
     const clocks = res.domains.map((dm) => ({ id: dm.id, name: dm.name, frequencyHz: dm.frequencyHz, actual: clockOf(dm.id), source: dm.source.kind === 'block' ? `${dm.source.instance}.${dm.source.port}` : 'top' }))
       .filter((c) => res.instances.some((r) => Object.values(r.clocks).includes(c.id)));
     const resets = res.domains.filter((dm) => dm.resetGen).map((dm) => ({ domain: dm.id, generator: dm.resetGen, input: RESET_PORT, output: signalName(dm.resetGen, 'RstOut') }));
-    const libs = new Set(res.instances.map((r) => r.library));
+    // the libraries of the instances and those of the subsystems: a subsystem lives in the library of the top level
+    // (work), the cores inside it in theirs
+    /** @type {Map<string, Set<string>>} */
+    const entities = new Map();
+    const use = (/** @type {string} */ lib, /** @type {string} */ ent) => entities.set(lib, (entities.get(lib) ?? new Set()).add(ent));
+    for (const r of res.instances) if (!subsystemName(r.block)) use(r.library, r.entity);
+    const defs = usedDefinitions(this.cat, this.d);
+    for (const s of defs) for (const c of s.resolved.compile) for (const e of c.entities) use(c.library, e);
     const compile = this.cat.sources
-      .filter((s) => libs.has(s.library))
+      .filter((s) => entities.has(s.library))
       .sort((a, b) => (a.library === 'olo' ? -1 : b.library === 'olo' ? 1 : 0))
       .map((s) => {
         /** @type {Record<string, unknown>} */
@@ -483,12 +496,14 @@ class Netlist {
         o.fileListFormat = s.fileListFormat;
         if (s.verifiedWith) o.verifiedWith = s.verifiedWith;
         if (s.note) o.note = s.note;
-        o.entities = [...new Set(res.instances.filter((r) => r.library === s.library).map((r) => r.entity))].sort();
+        o.entities = [...(entities.get(s.library) ?? [])].sort();
         return o;
       });
-    // context clause: ieee and every library. A generic map names package constants fully qualified (the catalog
-    // writes them so), so the top level needs no use clause of a package, and two packages may declare the same name.
-    const context = ['library ieee;', 'use ieee.std_logic_1164.all;', ...compile.map((c) => `library ${c.library};`)];
+    // context clause: ieee and every library of an instance. A generic map names package constants fully qualified
+    // (the catalog writes them so), so the top level needs no use clause of a package, and two packages may declare
+    // the same name.
+    const direct = new Set(res.instances.map((r) => r.library));
+    const context = ['library ieee;', 'use ieee.std_logic_1164.all;', ...compile.filter((c) => direct.has(String(c.library))).map((c) => `library ${c.library};`)];
     const top = new Set(res.topPorts.map((tp) => tp.name.toLowerCase()));
     for (const sg of signals) if (top.has(sg.name.toLowerCase())) this.problems.push(`Signal ${sg.name} has the name of a top-level port.`);
     return {
@@ -521,6 +536,8 @@ class Netlist {
       compile,
       context,
       problems: this.problems,
+      // the definitions, flat at the top level; a definition itself lists none
+      ...(this.d.subsystems && defs.length ? { subsystems: defs.map((s) => ({ name: s.name, netlist: s.resolved })) } : {}),
     };
   }
 }

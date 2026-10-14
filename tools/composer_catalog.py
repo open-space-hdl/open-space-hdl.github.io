@@ -34,8 +34,9 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG_DIR = ROOT / "_composer" / "catalog"
 OUT_FILE = ROOT / "assets" / "composer" / "catalog.json"
-SCHEMA_FILE = ROOT / "composer" / "schema" / "system-1.json"
+SCHEMA_FILES = {1: ROOT / "composer" / "schema" / "system-1.json", 2: ROOT / "composer" / "schema" / "system-2.json"}
 EXAMPLES_DIR = ROOT / "assets" / "composer" / "examples"
+SUBSYSTEM_FIXTURES_DIR = ROOT / "tests" / "fixtures" / "subsystems"
 
 CATALOG_FORMAT = "open-space-composer-catalog"
 CATALOG_VERSION = 1
@@ -1436,26 +1437,59 @@ def cmd_clone(ctx: Context) -> int:
     return 0
 
 
+def definition_hash(definition: dict) -> str:
+    """SHA-256 of the canonical JSON of a subsystem definition without its hash (format reference, section Subsystems):
+    keys sorted, no white space, UTF-8. The Composer computes it with its own implementation; this is the cross-check."""
+    rest = {k: v for k, v in definition.items() if k != "hash"}
+    text = json.dumps(rest, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 def check_examples(ctx: Context, catalog: dict) -> None:
-    if not SCHEMA_FILE.exists():
-        ctx.err("schema", f"{SCHEMA_FILE.relative_to(ROOT)} missing")
+    """The examples (version 1) and the fixtures of subsystems (version 2) against the schema of their version, their
+    blocks against the catalog and the hashes of their definitions against hashlib."""
+    missing = [f for f in SCHEMA_FILES.values() if not f.exists()]
+    for f in missing:
+        ctx.err("schema", f"{f.relative_to(ROOT)} missing")
+    if missing:
         return
     try:
         import jsonschema
     except ImportError:
         ctx.warn("schema", "jsonschema not installed: examples not validated")
         return
-    schema = json.loads(SCHEMA_FILE.read_text(encoding="utf-8"))
-    jsonschema.Draft202012Validator.check_schema(schema)
-    validator = jsonschema.Draft202012Validator(schema)
+    validators = {}
+    for version, f in SCHEMA_FILES.items():
+        schema = json.loads(f.read_text(encoding="utf-8"))
+        jsonschema.Draft202012Validator.check_schema(schema)
+        validators[version] = jsonschema.Draft202012Validator(schema)
     block_ids = {b["id"] for b in catalog["blocks"]}
-    for f in sorted(EXAMPLES_DIR.glob("*.composer.json")):
+    files = sorted(EXAMPLES_DIR.glob("*.composer.json")) + sorted(SUBSYSTEM_FIXTURES_DIR.glob("*.composer.json"))
+    for f in files:
         doc = json.loads(f.read_text(encoding="utf-8"))
+        validator = validators.get(doc.get("formatVersion"))
+        if validator is None:
+            ctx.err(f.name, f"unknown formatVersion {doc.get('formatVersion')}")
+            continue
         for e in validator.iter_errors(doc):
             ctx.err(f.name, f"{'/'.join(str(p) for p in e.absolute_path)}: {e.message}")
-        for inst in doc.get("instances", []):
-            if inst.get("block") not in block_ids:
-                ctx.err(f.name, f"instance {inst.get('id')}: unknown block {inst.get('block')}")
+        definitions = doc.get("subsystems", [])
+        names = [s.get("name") for s in definitions]
+        for k, s in enumerate(definitions):
+            if s.get("hash") != definition_hash(s):
+                ctx.err(f.name, f"subsystems[{k}] ({s.get('name')}): hash differs from the SHA-256 of its canonical JSON")
+            # leaves first: a definition uses only those before it
+            for inst in s.get("instances", []):
+                if "subsystem" in inst and inst["subsystem"] not in names[:k]:
+                    ctx.err(f.name, f"subsystems[{k}] ({s.get('name')}): {inst['subsystem']} is not defined before it")
+        for where, inst in [("", i) for i in doc.get("instances", [])] + [
+            (f"{s.get('name')}/", i) for s in definitions for i in s.get("instances", [])
+        ]:
+            if "subsystem" in inst:
+                if inst["subsystem"] not in names:
+                    ctx.err(f.name, f"instance {where}{inst.get('id')}: unknown subsystem {inst['subsystem']}")
+            elif inst.get("block") not in block_ids:
+                ctx.err(f.name, f"instance {where}{inst.get('id')}: unknown block {inst.get('block')}")
 
 
 def report(ctx: Context) -> None:

@@ -7,6 +7,7 @@
  */
 
 import { formatHz } from './rules.js';
+import { subsystemsOf, withSubsystems } from './subsystems.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./catalog.js').BlockDef} BlockDef */
@@ -91,6 +92,9 @@ function applies(step, generics) {
  * @returns {string}
  */
 export function agentBrief(cat, d, res, resolved, checks) {
+  cat = withSubsystems(cat, d);
+  // the subsystem definitions, leaves first
+  const subs = subsystemsOf(cat, d);
   const L = [];
   const errors = checks.filter((c) => c.severity === 'error');
   const warnings = checks.filter((c) => c.severity === 'warning');
@@ -131,8 +135,11 @@ export function agentBrief(cat, d, res, resolved, checks) {
   L.push(
     '- With GHDL: analyse Open Logic file by file (`ghdl -a --std=08 -frelaxed --work=olo <file>`), import the files of a core library (`ghdl -i --std=08 -frelaxed --work=<library> <files>`) and let `ghdl -m --std=08 -frelaxed <top>` find the order. `-frelaxed` is needed for Open Logic, whose RAMs use a shared variable without a protected type (`olo_base_ram_sdp`); the cores and the top level also analyse as strict VHDL-2008.',
     '- With other tools follow the order of the table.',
-    '',
   );
+  if (subs.length > 0) {
+    L.push(`- The subsystems ${subs.map((s) => `\`${s.name}\``).join(', ')} are entities of this system: compile them into the library of the top level (\`${d.name}\`) after the libraries above and before the top level, in this order (section 3).`);
+  }
+  L.push('');
 
   // 2. top level
   L.push('## 2. Top-level entity', '');
@@ -181,6 +188,17 @@ export function agentBrief(cat, d, res, resolved, checks) {
     i.domain ?? '',
     i.reason ?? '',
   ])), '');
+  if (subs.length > 0) {
+    L.push(
+      `Subsystems: \`resolved.subsystems\` holds the netlist of every subsystem, leaves first. Build each one like the top level (steps 1 to 4) as the entity \`<name>\` in the library of the top level, and instantiate it as \`entity work.<name>\`. Its \`Rst\` input gets the unsynchronised \`Rst\` of the system around it; it has reset generators of its own.`,
+      '',
+    );
+    L.push(table(['Subsystem', 'Instances', 'Uses'], subs.map((s) => [
+      `\`${s.name}\``,
+      String(s.resolved.instances.length),
+      [...new Set(s.design.instances.map((i) => cat.blocks.get(i.block)?.entity ?? i.block))].sort().map((e) => `\`${e}\``).join(', '),
+    ])), '');
+  }
   L.push('Generics that differ from the VHDL default:', '');
   for (const i of resolved.instances) {
     const g = i.generics.filter((/** @type {any} */ x) => !x.default);
@@ -231,15 +249,23 @@ export function agentBrief(cat, d, res, resolved, checks) {
     else if (c.kind === 'vendor_scoped') L.push(`- ${c.note ?? ''} File \`${c.file}\` of Open Logic.`);
     else L.push(`- \`${c.kind}\`${c.instance ? ` for \`${c.instance}\`` : ''}: ${Object.entries(c).filter(([k]) => k !== 'kind' && k !== 'instance').map(([k, v]) => `${k} ${Array.isArray(v) ? v.join(', ') : String(v)}`).join('; ')}`);
   }
+  if (subs.length > 0) {
+    L.push(`- Every subsystem has the constraints of its own crossings and inputs in its netlist (\`resolved.subsystems[].netlist.constraints\`), in terms of its ports, scoped to its entity (${subs.map((s) => `\`${s.name}.xdc\``).join(', ')}).`);
+  }
   L.push('');
 
   // 6. notes of the user guides
   L.push('## 6. Notes from the user guides', '');
-  const blocks = [...new Set(d.instances.map((i) => i.block))];
+  // the blocks of the system and those inside its subsystems (named <subsystem>/<instance>)
+  const placed = [
+    ...d.instances.map((i) => ({ block: i.block, name: i.id })),
+    ...subs.flatMap((s) => s.design.instances.map((i) => ({ block: i.block, name: `${s.name}/${i.id}` }))),
+  ].filter((x) => cat.blocks.get(x.block)?.kind !== 'subsystem');
+  const blocks = [...new Set(placed.map((x) => x.block))];
   for (const id of blocks) {
     const b = cat.blocks.get(id);
     if (!b) continue;
-    const users = d.instances.filter((i) => i.block === id).map((i) => `\`${i.id}\``).join(', ');
+    const users = placed.filter((x) => x.block === id).map((x) => `\`${x.name}\``).join(', ');
     L.push(`**${b.name}** (\`${b.entity}\`, ${users})${b.doc ? `: ${b.doc}` : ''}`, '');
     for (const n of b.notes ?? []) L.push(`- ${n}`);
     if (!(b.notes ?? []).length) L.push(`- ${b.summary}`);
@@ -249,28 +275,31 @@ export function agentBrief(cat, d, res, resolved, checks) {
   // 7. initialisation by software
   L.push('## 7. Initialisation by software', '');
   L.push('Register addresses are byte addresses of the AXI4-Lite port of the block; write registers as 32-bit words and wait for the write response before a read that depends on it.', '');
-  for (const inst of d.instances) {
-    const b = cat.blocks.get(inst.block);
-    const rec = res.byId.get(inst.id);
-    if (!b || !rec || (!b.init && !b.idRegister)) continue;
-    const regs = b.interfaces.find((x) => x.type === 'axi4lite' && x.role === 'slave');
-    const ref = regs ? `${inst.id}.${regs.name}` : '';
-    const ext = regs ? d.externals.find((e) => e.interface === ref) : undefined;
-    // the register port of a block behind a bus master of the system, for example a port of an AXI4-Lite decoder
-    const conn = regs ? d.connections.find((c) => c.to === ref || c.from === ref) : undefined;
-    const master = conn ? (conn.to === ref ? conn.from : conn.to) : '';
-    const via = !regs
-      ? ''
-      : ext
-        ? ` through the top-level ports \`${ext.prefix}${commonPrefix(Object.values(regs.signals))}*\``
-        : conn
-          ? ` through \`${master}\` (connection ${conn.id})`
-          : ` (its register port \`${regs.name}\` is not connected: without it the block runs with its reset values)`;
-    L.push(`**\`${inst.id}\`** (${b.name}, \`${b.entity}\`)${via}:`, '');
-    let k = 0;
-    if (b.idRegister) L.push(`${(k += 1)}. Read ID (${b.idRegister.address}): it reads ${b.idRegister.value}.`);
-    for (const step of b.init ?? []) if (applies(step, rec.generics)) L.push(`${(k += 1)}. ${step.text}`);
-    L.push('');
+  // the blocks of the system, then those inside every subsystem (in each of its instances)
+  for (const [dd, rr, sub] of /** @type {[Design, Resolved, string][]} */ ([[d, res, ''], ...subs.map((s) => [s.design, s.res, s.name])])) {
+    for (const inst of dd.instances) {
+      const b = cat.blocks.get(inst.block);
+      const rec = rr.byId.get(inst.id);
+      if (!b || !rec || (!b.init && !b.idRegister)) continue;
+      const regs = b.interfaces.find((x) => x.type === 'axi4lite' && x.role === 'slave');
+      const ref = regs ? `${inst.id}.${regs.name}` : '';
+      const ext = regs ? dd.externals.find((e) => e.interface === ref) : undefined;
+      // the register port of a block behind a bus master of the system, for example a port of an AXI4-Lite decoder
+      const conn = regs ? dd.connections.find((c) => c.to === ref || c.from === ref) : undefined;
+      const master = conn ? (conn.to === ref ? conn.from : conn.to) : '';
+      const via = !regs
+        ? ''
+        : ext
+          ? ` through the ${sub ? 'ports' : 'top-level ports'} \`${ext.prefix}${commonPrefix(Object.values(regs.signals))}*\`${sub ? ` of \`${sub}\`` : ''}`
+          : conn
+            ? ` through \`${master}\` (connection ${conn.id})`
+            : ` (its register port \`${regs.name}\` is not connected: without it the block runs with its reset values)`;
+      L.push(`**\`${sub ? `${sub}/` : ''}${inst.id}\`** (${b.name}, \`${b.entity}\`${sub ? `, in every instance of the subsystem \`${sub}\`` : ''})${via}:`, '');
+      let k = 0;
+      if (b.idRegister) L.push(`${(k += 1)}. Read ID (${b.idRegister.address}): it reads ${b.idRegister.value}.`);
+      for (const step of b.init ?? []) if (applies(step, rec.generics)) L.push(`${(k += 1)}. ${step.text}`);
+      L.push('');
+    }
   }
 
   // 8. checks

@@ -15,15 +15,15 @@
 // Exit status: 0 exported, 1 the stored netlist differs from the new resolution, 2 the file, the system or the
 // sources have errors (nothing is written then).
 import { execFileSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Catalog } from '../assets/composer/js/model/catalog.js';
-import { exportHdl, netlistDiff } from '../assets/composer/js/model/hdl.js';
+import { designComments, exportHdl, netlistDiff } from '../assets/composer/js/model/hdl.js';
 import { netlist } from '../assets/composer/js/model/netlist.js';
 import { resolve } from '../assets/composer/js/model/resolver.js';
 import { fromText, GENERATOR } from '../assets/composer/js/model/serialize.js';
+import { sha256 as sha256Of } from '../assets/composer/js/model/sha256.js';
 
 const USAGE = 'usage: node tools/composer_hdl.mjs <system.composer.json> <out dir> [--resolve] [--sources <root>] [--catalog <file>]';
 
@@ -119,7 +119,7 @@ function main() {
   }
   const bytes = readFileSync(args.input);
   const text = bytes.toString('utf-8');
-  const sha256 = createHash('sha256').update(bytes).digest('hex');
+  const sha256 = sha256Of(bytes);
   const cat = new Catalog(JSON.parse(readFileSync(args.catalog, 'utf-8')));
 
   let loaded;
@@ -180,8 +180,7 @@ function main() {
     generator: `${GENERATOR.name} ${GENERATOR.version}`,
     input: basename(args.input),
     sha256,
-    description: design.description,
-    connections: design.connections.map((c) => ({ id: c.id, from: c.from, to: c.to })),
+    ...designComments(design),
     fileLists,
   });
   if (problems.length) {
