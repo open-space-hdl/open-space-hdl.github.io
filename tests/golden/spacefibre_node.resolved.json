@@ -1,0 +1,5356 @@
+{
+  "catalog": "ab38ed52cf22",
+  "entity": "spacefibre_node",
+  "ports": [
+    {
+      "name": "Rst",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "reset"
+    },
+    {
+      "name": "Clk_sys",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "clock",
+      "domain": "sys"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_AwAddr",
+      "dir": "in",
+      "type": "std_logic_vector(9 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwAddr"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_AwValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwValid"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_AwReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwReady"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_WData",
+      "dir": "in",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WData"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_WStrb",
+      "dir": "in",
+      "type": "std_logic_vector(3 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WStrb"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_WValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WValid"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_WReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WReady"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_BResp",
+      "dir": "out",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BResp"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_BValid",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BValid"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_BReady",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BReady"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_ArAddr",
+      "dir": "in",
+      "type": "std_logic_vector(9 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArAddr"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_ArValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArValid"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_ArReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArReady"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_RData",
+      "dir": "out",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RData"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_RResp",
+      "dir": "out",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RResp"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_RValid",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RValid"
+    },
+    {
+      "name": "rmap_reg_S_AxiLite_RReady",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RReady"
+    },
+    {
+      "name": "mem_M_Axi_AwAddr",
+      "dir": "out",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "AwAddr"
+    },
+    {
+      "name": "mem_M_Axi_AwLen",
+      "dir": "out",
+      "type": "std_logic_vector(7 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "AwLen"
+    },
+    {
+      "name": "mem_M_Axi_AwSize",
+      "dir": "out",
+      "type": "std_logic_vector(2 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "AwSize"
+    },
+    {
+      "name": "mem_M_Axi_AwBurst",
+      "dir": "out",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "AwBurst"
+    },
+    {
+      "name": "mem_M_Axi_AwLock",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "AwLock"
+    },
+    {
+      "name": "mem_M_Axi_AwCache",
+      "dir": "out",
+      "type": "std_logic_vector(3 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "AwCache"
+    },
+    {
+      "name": "mem_M_Axi_AwProt",
+      "dir": "out",
+      "type": "std_logic_vector(2 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "AwProt"
+    },
+    {
+      "name": "mem_M_Axi_AwValid",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "AwValid"
+    },
+    {
+      "name": "mem_M_Axi_AwReady",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "AwReady"
+    },
+    {
+      "name": "mem_M_Axi_WData",
+      "dir": "out",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "WData"
+    },
+    {
+      "name": "mem_M_Axi_WStrb",
+      "dir": "out",
+      "type": "std_logic_vector(3 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "WStrb"
+    },
+    {
+      "name": "mem_M_Axi_WLast",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "WLast"
+    },
+    {
+      "name": "mem_M_Axi_WValid",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "WValid"
+    },
+    {
+      "name": "mem_M_Axi_WReady",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "WReady"
+    },
+    {
+      "name": "mem_M_Axi_BResp",
+      "dir": "in",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "BResp"
+    },
+    {
+      "name": "mem_M_Axi_BValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "BValid"
+    },
+    {
+      "name": "mem_M_Axi_BReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "BReady"
+    },
+    {
+      "name": "mem_M_Axi_ArAddr",
+      "dir": "out",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "ArAddr"
+    },
+    {
+      "name": "mem_M_Axi_ArLen",
+      "dir": "out",
+      "type": "std_logic_vector(7 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "ArLen"
+    },
+    {
+      "name": "mem_M_Axi_ArSize",
+      "dir": "out",
+      "type": "std_logic_vector(2 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "ArSize"
+    },
+    {
+      "name": "mem_M_Axi_ArBurst",
+      "dir": "out",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "ArBurst"
+    },
+    {
+      "name": "mem_M_Axi_ArLock",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "ArLock"
+    },
+    {
+      "name": "mem_M_Axi_ArCache",
+      "dir": "out",
+      "type": "std_logic_vector(3 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "ArCache"
+    },
+    {
+      "name": "mem_M_Axi_ArProt",
+      "dir": "out",
+      "type": "std_logic_vector(2 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "ArProt"
+    },
+    {
+      "name": "mem_M_Axi_ArValid",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "ArValid"
+    },
+    {
+      "name": "mem_M_Axi_ArReady",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "ArReady"
+    },
+    {
+      "name": "mem_M_Axi_RData",
+      "dir": "in",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "RData"
+    },
+    {
+      "name": "mem_M_Axi_RResp",
+      "dir": "in",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "RResp"
+    },
+    {
+      "name": "mem_M_Axi_RLast",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "RLast"
+    },
+    {
+      "name": "mem_M_Axi_RValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "RValid"
+    },
+    {
+      "name": "mem_M_Axi_RReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "rmap0.M_Axi",
+      "domain": "sys",
+      "signal": "RReady"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_AwAddr",
+      "dir": "in",
+      "type": "std_logic_vector(11 downto 0)",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwAddr"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_AwValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwValid"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_AwReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwReady"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_WData",
+      "dir": "in",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WData"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_WStrb",
+      "dir": "in",
+      "type": "std_logic_vector(3 downto 0)",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WStrb"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_WValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WValid"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_WReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WReady"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_BResp",
+      "dir": "out",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BResp"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_BValid",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BValid"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_BReady",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BReady"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_ArAddr",
+      "dir": "in",
+      "type": "std_logic_vector(11 downto 0)",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArAddr"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_ArValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArValid"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_ArReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArReady"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_RData",
+      "dir": "out",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RData"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_RResp",
+      "dir": "out",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RResp"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_RValid",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RValid"
+    },
+    {
+      "name": "ofb_reg_S_AxiLite_RReady",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "ofb0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RReady"
+    },
+    {
+      "name": "pa0_Gt_TxP",
+      "dir": "out",
+      "type": "std_logic_vector(0 downto 0)",
+      "kind": "interface",
+      "interface": "pa0.Gt",
+      "signal": "tx_p"
+    },
+    {
+      "name": "pa0_Gt_TxN",
+      "dir": "out",
+      "type": "std_logic_vector(0 downto 0)",
+      "kind": "interface",
+      "interface": "pa0.Gt",
+      "signal": "tx_n"
+    },
+    {
+      "name": "pa0_Gt_RxP",
+      "dir": "in",
+      "type": "std_logic_vector(0 downto 0)",
+      "kind": "interface",
+      "interface": "pa0.Gt",
+      "signal": "rx_p"
+    },
+    {
+      "name": "pa0_Gt_RxN",
+      "dir": "in",
+      "type": "std_logic_vector(0 downto 0)",
+      "kind": "interface",
+      "interface": "pa0.Gt",
+      "signal": "rx_n"
+    },
+    {
+      "name": "pa0_RefClk",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "pa0.Gt",
+      "signal": "refclk"
+    },
+    {
+      "name": "tx0_S_Tx_Data_0",
+      "dir": "in",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "data"
+    },
+    {
+      "name": "tx0_S_Tx_Keep_0",
+      "dir": "in",
+      "type": "std_logic_vector(3 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "keep"
+    },
+    {
+      "name": "tx0_S_Tx_Last_0",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "last"
+    },
+    {
+      "name": "tx0_S_Tx_User_0",
+      "dir": "in",
+      "type": "std_logic_vector(27 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "user",
+      "fields": [
+        {
+          "name": "apid",
+          "label": "APID",
+          "lsb": 0,
+          "bits": 11
+        },
+        {
+          "name": "shi",
+          "label": "Secondary header flag",
+          "lsb": 11,
+          "bits": 1
+        },
+        {
+          "name": "type",
+          "label": "Packet type (telecommand)",
+          "lsb": 12,
+          "bits": 1
+        },
+        {
+          "name": "nameValid",
+          "label": "Packet name instead of sequence count",
+          "lsb": 13,
+          "bits": 1
+        },
+        {
+          "name": "name",
+          "label": "Packet name",
+          "lsb": 14,
+          "bits": 14
+        }
+      ]
+    },
+    {
+      "name": "tx0_S_Tx_Valid_0",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "valid"
+    },
+    {
+      "name": "tx0_S_Tx_Ready_0",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_Tx[0]",
+      "domain": "sys",
+      "signal": "ready"
+    },
+    {
+      "name": "rx0_M_Rx_Data_0",
+      "dir": "out",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "data"
+    },
+    {
+      "name": "rx0_M_Rx_Keep_0",
+      "dir": "out",
+      "type": "std_logic_vector(3 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "keep"
+    },
+    {
+      "name": "rx0_M_Rx_Last_0",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "last"
+    },
+    {
+      "name": "rx0_M_Rx_User_0",
+      "dir": "out",
+      "type": "std_logic_vector(21 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "user",
+      "fields": [
+        {
+          "name": "apid",
+          "label": "APID",
+          "lsb": 0,
+          "bits": 11
+        },
+        {
+          "name": "shi",
+          "label": "Secondary Header Indicator (Octet String Service)",
+          "lsb": 11,
+          "bits": 1
+        },
+        {
+          "name": "loss",
+          "label": "Packet Loss or Data Loss Indicator",
+          "lsb": 12,
+          "bits": 1
+        },
+        {
+          "name": "error",
+          "label": "Double bit error in the receive buffer during this SDU, valid with last",
+          "lsb": 13,
+          "bits": 1
+        },
+        {
+          "name": "ua",
+          "label": "User Application value of the CPTP packet (0 without the CPTP layer)",
+          "lsb": 14,
+          "bits": 8
+        }
+      ]
+    },
+    {
+      "name": "rx0_M_Rx_Valid_0",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "valid"
+    },
+    {
+      "name": "rx0_M_Rx_Ready_0",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.M_Rx[0]",
+      "domain": "sys",
+      "signal": "ready"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_AwAddr",
+      "dir": "in",
+      "type": "std_logic_vector(10 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwAddr"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_AwValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwValid"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_AwReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwReady"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_WData",
+      "dir": "in",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WData"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_WStrb",
+      "dir": "in",
+      "type": "std_logic_vector(3 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WStrb"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_WValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WValid"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_WReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WReady"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_BResp",
+      "dir": "out",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BResp"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_BValid",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BValid"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_BReady",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BReady"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_ArAddr",
+      "dir": "in",
+      "type": "std_logic_vector(10 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArAddr"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_ArValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArValid"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_ArReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArReady"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_RData",
+      "dir": "out",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RData"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_RResp",
+      "dir": "out",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RResp"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_RValid",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RValid"
+    },
+    {
+      "name": "spp_reg_S_AxiLite_RReady",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "spp0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RReady"
+    }
+  ],
+  "clocks": [
+    {
+      "id": "sys",
+      "name": "System clock",
+      "frequencyHz": 200000000,
+      "actual": "Clk_sys",
+      "source": "top"
+    },
+    {
+      "id": "lane",
+      "name": "pa0 Lane clock",
+      "frequencyHz": 156250000,
+      "actual": "pa0_LaneClk_s",
+      "source": "pa0.LaneClk"
+    }
+  ],
+  "resets": [
+    {
+      "domain": "sys",
+      "generator": "auto_rst_sys",
+      "input": "Rst",
+      "output": "auto_rst_sys_RstOut_s"
+    }
+  ],
+  "instances": [
+    {
+      "id": "rmap0",
+      "entity": "omap_core",
+      "library": "openrmap",
+      "block": "openrmap/omap_core",
+      "origin": "user",
+      "domain": "sys",
+      "generics": [
+        {
+          "name": "Target_g",
+          "value": true,
+          "vhdl": "true",
+          "default": true
+        },
+        {
+          "name": "Initiator_g",
+          "value": false,
+          "vhdl": "false",
+          "default": false
+        },
+        {
+          "name": "Passthrough_g",
+          "value": true,
+          "vhdl": "true",
+          "default": true
+        },
+        {
+          "name": "AxiAddrWidth_g",
+          "value": 32,
+          "vhdl": "32",
+          "default": true
+        },
+        {
+          "name": "AxiDataWidth_g",
+          "value": 32,
+          "vhdl": "32",
+          "default": true
+        },
+        {
+          "name": "AxiMaxBeats_g",
+          "value": 16,
+          "vhdl": "16",
+          "default": true
+        },
+        {
+          "name": "BufferBytes_g",
+          "value": 256,
+          "vhdl": "256",
+          "default": true
+        },
+        {
+          "name": "ChunkBytes_g",
+          "value": 32,
+          "vhdl": "32",
+          "default": true
+        },
+        {
+          "name": "Windows_g",
+          "value": 4,
+          "vhdl": "4",
+          "default": true
+        },
+        {
+          "name": "ExtAuth_g",
+          "value": false,
+          "vhdl": "false",
+          "default": true
+        },
+        {
+          "name": "TgtAddrBytes_g",
+          "value": 8,
+          "vhdl": "8",
+          "default": true
+        },
+        {
+          "name": "Transactions_g",
+          "value": 8,
+          "vhdl": "8",
+          "default": true
+        },
+        {
+          "name": "La0_g",
+          "value": "x\"FE\"",
+          "vhdl": "x\"FE\"",
+          "default": true
+        },
+        {
+          "name": "La1_g",
+          "value": "x\"FE\"",
+          "vhdl": "x\"FE\"",
+          "default": true
+        },
+        {
+          "name": "DefLaEn_g",
+          "value": "1",
+          "vhdl": "'1'",
+          "default": true
+        },
+        {
+          "name": "Key_g",
+          "value": "x\"00\"",
+          "vhdl": "x\"00\"",
+          "default": true
+        },
+        {
+          "name": "TickCycles_g",
+          "value": 99,
+          "vhdl": "99",
+          "default": true
+        },
+        {
+          "name": "Timeout_g",
+          "value": 0,
+          "vhdl": "0",
+          "default": true
+        },
+        {
+          "name": "WinInit_g",
+          "value": null,
+          "vhdl": "WinInitOpen_c",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "name": "Clk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "Clk_sys"
+        },
+        {
+          "name": "Rst",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain System clock (clock Clk): the output of the reset generator auto_rst_sys."
+          },
+          "actual": "auto_rst_sys_RstOut_s"
+        },
+        {
+          "name": "S_Pkt_TData",
+          "dir": "in",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_S_Pkt_TData_s"
+        },
+        {
+          "name": "S_Pkt_TLast",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_Pkt_TLast_s"
+        },
+        {
+          "name": "S_Pkt_TValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_Pkt_TValid_s"
+        },
+        {
+          "name": "S_Pkt_TReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_Pkt_TReady_s"
+        },
+        {
+          "name": "M_Pkt_TData",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Pkt_TData_s"
+        },
+        {
+          "name": "M_Pkt_TLast",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Pkt_TLast_s"
+        },
+        {
+          "name": "M_Pkt_TValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Pkt_TValid_s"
+        },
+        {
+          "name": "M_Pkt_TReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Pkt_TReady_s"
+        },
+        {
+          "name": "M_User_TData",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_User_TLast",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_User_TValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_User_TReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "'1'"
+        },
+        {
+          "name": "S_User_TData",
+          "dir": "in",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "S_User_TLast",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "'0'"
+        },
+        {
+          "name": "S_User_TValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "'0'"
+        },
+        {
+          "name": "S_User_TReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "S_AxiLite_ArAddr",
+          "dir": "in",
+          "type": "std_logic_vector(9 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_ArAddr_s"
+        },
+        {
+          "name": "S_AxiLite_ArValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_ArValid_s"
+        },
+        {
+          "name": "S_AxiLite_ArReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_ArReady_s"
+        },
+        {
+          "name": "S_AxiLite_AwAddr",
+          "dir": "in",
+          "type": "std_logic_vector(9 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_AwAddr_s"
+        },
+        {
+          "name": "S_AxiLite_AwValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_AwValid_s"
+        },
+        {
+          "name": "S_AxiLite_AwReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_AwReady_s"
+        },
+        {
+          "name": "S_AxiLite_WData",
+          "dir": "in",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_WData_s"
+        },
+        {
+          "name": "S_AxiLite_WStrb",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_WStrb_s"
+        },
+        {
+          "name": "S_AxiLite_WValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_WValid_s"
+        },
+        {
+          "name": "S_AxiLite_WReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_WReady_s"
+        },
+        {
+          "name": "S_AxiLite_BResp",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_BResp_s"
+        },
+        {
+          "name": "S_AxiLite_BValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_BValid_s"
+        },
+        {
+          "name": "S_AxiLite_BReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_BReady_s"
+        },
+        {
+          "name": "S_AxiLite_RData",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_RData_s"
+        },
+        {
+          "name": "S_AxiLite_RResp",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_RResp_s"
+        },
+        {
+          "name": "S_AxiLite_RValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_RValid_s"
+        },
+        {
+          "name": "S_AxiLite_RReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_S_AxiLite_RReady_s"
+        },
+        {
+          "name": "Irq",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_Axi_AwAddr",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_AwAddr_s"
+        },
+        {
+          "name": "M_Axi_AwLen",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_AwLen_s"
+        },
+        {
+          "name": "M_Axi_AwSize",
+          "dir": "out",
+          "type": "std_logic_vector(2 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_AwSize_s"
+        },
+        {
+          "name": "M_Axi_AwBurst",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_AwBurst_s"
+        },
+        {
+          "name": "M_Axi_AwLock",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_AwLock_s"
+        },
+        {
+          "name": "M_Axi_AwCache",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_AwCache_s"
+        },
+        {
+          "name": "M_Axi_AwProt",
+          "dir": "out",
+          "type": "std_logic_vector(2 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_AwProt_s"
+        },
+        {
+          "name": "M_Axi_AwValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_AwValid_s"
+        },
+        {
+          "name": "M_Axi_AwReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_AwReady_s"
+        },
+        {
+          "name": "M_Axi_WData",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_WData_s"
+        },
+        {
+          "name": "M_Axi_WStrb",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_WStrb_s"
+        },
+        {
+          "name": "M_Axi_WLast",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_WLast_s"
+        },
+        {
+          "name": "M_Axi_WValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_WValid_s"
+        },
+        {
+          "name": "M_Axi_WReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_WReady_s"
+        },
+        {
+          "name": "M_Axi_BResp",
+          "dir": "in",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_BResp_s"
+        },
+        {
+          "name": "M_Axi_BValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_BValid_s"
+        },
+        {
+          "name": "M_Axi_BReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_BReady_s"
+        },
+        {
+          "name": "M_Axi_ArAddr",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_ArAddr_s"
+        },
+        {
+          "name": "M_Axi_ArLen",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_ArLen_s"
+        },
+        {
+          "name": "M_Axi_ArSize",
+          "dir": "out",
+          "type": "std_logic_vector(2 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_ArSize_s"
+        },
+        {
+          "name": "M_Axi_ArBurst",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_ArBurst_s"
+        },
+        {
+          "name": "M_Axi_ArLock",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_ArLock_s"
+        },
+        {
+          "name": "M_Axi_ArCache",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_ArCache_s"
+        },
+        {
+          "name": "M_Axi_ArProt",
+          "dir": "out",
+          "type": "std_logic_vector(2 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_ArProt_s"
+        },
+        {
+          "name": "M_Axi_ArValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_ArValid_s"
+        },
+        {
+          "name": "M_Axi_ArReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_ArReady_s"
+        },
+        {
+          "name": "M_Axi_RData",
+          "dir": "in",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_RData_s"
+        },
+        {
+          "name": "M_Axi_RResp",
+          "dir": "in",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_RResp_s"
+        },
+        {
+          "name": "M_Axi_RLast",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_RLast_s"
+        },
+        {
+          "name": "M_Axi_RValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_RValid_s"
+        },
+        {
+          "name": "M_Axi_RReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "rmap0_M_Axi_RReady_s"
+        },
+        {
+          "name": "Auth_Valid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Auth_Tla",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Auth_Instr",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Auth_Key",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Auth_Ila",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Auth_Tid",
+          "dir": "out",
+          "type": "std_logic_vector(15 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Auth_Addr",
+          "dir": "out",
+          "type": "std_logic_vector(39 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Auth_Len",
+          "dir": "out",
+          "type": "std_logic_vector(23 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Auth_RspValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "'0'"
+        },
+        {
+          "name": "Auth_RspAccept",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "'0'"
+        },
+        {
+          "name": "Ind_Valid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Ind_Tla",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Ind_Instr",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Ind_Ila",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Ind_Tid",
+          "dir": "out",
+          "type": "std_logic_vector(15 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Ind_Addr",
+          "dir": "out",
+          "type": "std_logic_vector(39 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Ind_Len",
+          "dir": "out",
+          "type": "std_logic_vector(23 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Ind_Status",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Ind_Replied",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "S_Req_Valid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "'0'"
+        },
+        {
+          "name": "S_Req_Ready",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "S_Req_Code",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "\"0000\""
+        },
+        {
+          "name": "S_Req_TgtAddr",
+          "dir": "in",
+          "type": "std_logic_vector(63 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "S_Req_TgtAddrLen",
+          "dir": "in",
+          "type": "std_logic_vector(4 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "S_Req_Tla",
+          "dir": "in",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "x\"FE\""
+        },
+        {
+          "name": "S_Req_Key",
+          "dir": "in",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "x\"00\""
+        },
+        {
+          "name": "S_Req_ReplyAddr",
+          "dir": "in",
+          "type": "std_logic_vector(95 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "S_Req_ReplyAddrLen",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "S_Req_Ila",
+          "dir": "in",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "x\"FE\""
+        },
+        {
+          "name": "S_Req_Tid",
+          "dir": "in",
+          "type": "std_logic_vector(15 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "S_Req_Addr",
+          "dir": "in",
+          "type": "std_logic_vector(39 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "S_Req_Len",
+          "dir": "in",
+          "type": "std_logic_vector(23 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "S_ReqData_TData",
+          "dir": "in",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "S_ReqData_TValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "'0'"
+        },
+        {
+          "name": "S_ReqData_TReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_Conf_Valid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_Conf_Ready",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "'1'"
+        },
+        {
+          "name": "M_Conf_Tid",
+          "dir": "out",
+          "type": "std_logic_vector(15 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_Conf_Instr",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_Conf_Status",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_Conf_Len",
+          "dir": "out",
+          "type": "std_logic_vector(23 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_Conf_Error",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_RepData_TData",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_RepData_TLast",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_RepData_TValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_RepData_TReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "'1'"
+        }
+      ]
+    },
+    {
+      "id": "nchar0",
+      "entity": "spp_nchar",
+      "library": "openspp",
+      "block": "openspp/spp_nchar",
+      "origin": "user",
+      "domain": "sys",
+      "generics": [
+        {
+          "name": "DataWidth_g",
+          "value": 32,
+          "vhdl": "32",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "name": "Clk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "Clk_sys"
+        },
+        {
+          "name": "Rst",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain System clock (clock Clk): the output of the reset generator auto_rst_sys."
+          },
+          "actual": "auto_rst_sys_RstOut_s"
+        },
+        {
+          "name": "S_Link_Valid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_S_Link_Valid_s"
+        },
+        {
+          "name": "S_Link_Ready",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_S_Link_Ready_s"
+        },
+        {
+          "name": "S_Link_Data",
+          "dir": "in",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "nchar0_S_Link_Data_s"
+        },
+        {
+          "name": "S_Link_Keep",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "nchar0_S_Link_Keep_s"
+        },
+        {
+          "name": "S_Link_Last",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_S_Link_Last_s"
+        },
+        {
+          "name": "S_Link_User",
+          "dir": "in",
+          "type": "std_logic_vector(4 downto 0)",
+          "domain": "sys",
+          "actual": "nchar0_S_Link_User_s"
+        },
+        {
+          "name": "M_NChar_Valid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_M_NChar_Valid_s"
+        },
+        {
+          "name": "M_NChar_Ready",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_M_NChar_Ready_s"
+        },
+        {
+          "name": "M_NChar_Data",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "nchar0_M_NChar_Data_s"
+        },
+        {
+          "name": "M_NChar_Last",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_M_NChar_Last_s"
+        },
+        {
+          "name": "S_NChar_Valid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_S_NChar_Valid_s"
+        },
+        {
+          "name": "S_NChar_Ready",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_S_NChar_Ready_s"
+        },
+        {
+          "name": "S_NChar_Data",
+          "dir": "in",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "nchar0_S_NChar_Data_s"
+        },
+        {
+          "name": "S_NChar_Last",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_S_NChar_Last_s"
+        },
+        {
+          "name": "M_Link_Valid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_M_Link_Valid_s"
+        },
+        {
+          "name": "M_Link_Ready",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_M_Link_Ready_s"
+        },
+        {
+          "name": "M_Link_Data",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "nchar0_M_Link_Data_s"
+        },
+        {
+          "name": "M_Link_Keep",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "nchar0_M_Link_Keep_s"
+        },
+        {
+          "name": "M_Link_Last",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "nchar0_M_Link_Last_s"
+        },
+        {
+          "name": "M_Link_User",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
+          "actual": "nchar0_M_Link_User_s"
+        }
+      ]
+    },
+    {
+      "id": "ofb0",
+      "entity": "ofb_core",
+      "library": "openfibre",
+      "block": "openfibre/ofb_core",
+      "origin": "user",
+      "domain": "sys",
+      "generics": [
+        {
+          "name": "NumVc_g",
+          "value": 2,
+          "vhdl": "2",
+          "default": false
+        },
+        {
+          "name": "NumLanes_g",
+          "value": 1,
+          "vhdl": "1",
+          "default": true
+        },
+        {
+          "name": "LaneClkFreq_g",
+          "value": 156250000,
+          "vhdl": "156.25e6",
+          "default": true
+        },
+        {
+          "name": "CoreClkFreq_g",
+          "value": 156250000,
+          "vhdl": "156.25e6",
+          "default": false
+        },
+        {
+          "name": "VcOutDepth_g",
+          "value": 128,
+          "vhdl": "128",
+          "default": true
+        },
+        {
+          "name": "VcInDepth_g",
+          "value": 256,
+          "vhdl": "256",
+          "default": true
+        },
+        {
+          "name": "ErbRows_g",
+          "value": 512,
+          "vhdl": "512",
+          "default": true
+        },
+        {
+          "name": "InitPrbsWords_g",
+          "value": 64,
+          "vhdl": "64",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "name": "Rst",
+          "dir": "in",
+          "type": "std_logic",
+          "reset": {
+            "kind": "async",
+            "note": "Asynchronous reset; a reset generator per clock domain releases it synchronously, so all four clocks must run for the reset to complete."
+          },
+          "actual": "Rst"
+        },
+        {
+          "name": "UserClk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "Clk_sys"
+        },
+        {
+          "name": "CoreClk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "lane",
+          "actual": "pa0_LaneClk_s"
+        },
+        {
+          "name": "LaneClk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "lane",
+          "actual": "pa0_LaneClk_s"
+        },
+        {
+          "name": "MgmtClk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "Clk_sys"
+        },
+        {
+          "name": "S_Vc_TData",
+          "dir": "in",
+          "type": "std_logic_vector(63 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_Vc_TData_s"
+        },
+        {
+          "name": "S_Vc_TKeep",
+          "dir": "in",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_Vc_TKeep_s"
+        },
+        {
+          "name": "S_Vc_TLast",
+          "dir": "in",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_Vc_TLast_s"
+        },
+        {
+          "name": "S_Vc_TUser",
+          "dir": "in",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_Vc_TUser_s"
+        },
+        {
+          "name": "S_Vc_TValid",
+          "dir": "in",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_Vc_TValid_s"
+        },
+        {
+          "name": "S_Vc_TReady",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_Vc_TReady_s"
+        },
+        {
+          "name": "M_Vc_TData",
+          "dir": "out",
+          "type": "std_logic_vector(63 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_M_Vc_TData_s"
+        },
+        {
+          "name": "M_Vc_TKeep",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_M_Vc_TKeep_s"
+        },
+        {
+          "name": "M_Vc_TLast",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_M_Vc_TLast_s"
+        },
+        {
+          "name": "M_Vc_TUser",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_M_Vc_TUser_s"
+        },
+        {
+          "name": "M_Vc_TValid",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_M_Vc_TValid_s"
+        },
+        {
+          "name": "M_Vc_TReady",
+          "dir": "in",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_M_Vc_TReady_s"
+        },
+        {
+          "name": "S_Bc_TData",
+          "dir": "in",
+          "type": "std_logic_vector(63 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_Bc_TData_s"
+        },
+        {
+          "name": "S_Bc_TUser",
+          "dir": "in",
+          "type": "std_logic_vector(16 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_Bc_TUser_s"
+        },
+        {
+          "name": "S_Bc_TValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_S_Bc_TValid_s"
+        },
+        {
+          "name": "S_Bc_TReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_Bc_TData",
+          "dir": "out",
+          "type": "std_logic_vector(63 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_Bc_TUser",
+          "dir": "out",
+          "type": "std_logic_vector(17 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_Bc_TValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "M_Bc_TReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_M_Bc_TReady_s"
+        },
+        {
+          "name": "S_Sched_Slot",
+          "dir": "in",
+          "type": "std_logic_vector(5 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "S_Sched_Valid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "'0'"
+        },
+        {
+          "name": "S_AxiLite_ArAddr",
+          "dir": "in",
+          "type": "std_logic_vector(11 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_ArAddr_s"
+        },
+        {
+          "name": "S_AxiLite_ArValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_ArValid_s"
+        },
+        {
+          "name": "S_AxiLite_ArReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_ArReady_s"
+        },
+        {
+          "name": "S_AxiLite_AwAddr",
+          "dir": "in",
+          "type": "std_logic_vector(11 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_AwAddr_s"
+        },
+        {
+          "name": "S_AxiLite_AwValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_AwValid_s"
+        },
+        {
+          "name": "S_AxiLite_AwReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_AwReady_s"
+        },
+        {
+          "name": "S_AxiLite_WData",
+          "dir": "in",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_WData_s"
+        },
+        {
+          "name": "S_AxiLite_WStrb",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_WStrb_s"
+        },
+        {
+          "name": "S_AxiLite_WValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_WValid_s"
+        },
+        {
+          "name": "S_AxiLite_WReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_WReady_s"
+        },
+        {
+          "name": "S_AxiLite_BResp",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_BResp_s"
+        },
+        {
+          "name": "S_AxiLite_BValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_BValid_s"
+        },
+        {
+          "name": "S_AxiLite_BReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_BReady_s"
+        },
+        {
+          "name": "S_AxiLite_RData",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_RData_s"
+        },
+        {
+          "name": "S_AxiLite_RResp",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_RResp_s"
+        },
+        {
+          "name": "S_AxiLite_RValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_RValid_s"
+        },
+        {
+          "name": "S_AxiLite_RReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "ofb0_S_AxiLite_RReady_s"
+        },
+        {
+          "name": "Irq",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "PhyTx_Data",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_PhyTx_Data_s"
+        },
+        {
+          "name": "PhyTx_K",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_PhyTx_K_s"
+        },
+        {
+          "name": "PhyRx_Data",
+          "dir": "in",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_PhyRx_Data_s"
+        },
+        {
+          "name": "PhyRx_K",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_PhyRx_K_s"
+        },
+        {
+          "name": "PhyRx_CodeErr",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_PhyRx_CodeErr_s"
+        },
+        {
+          "name": "PhyRx_DispErr",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_PhyRx_DispErr_s"
+        },
+        {
+          "name": "PhyRx_Valid",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_PhyRx_Valid_s"
+        },
+        {
+          "name": "Phy_TxEnable",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_TxEnable_s"
+        },
+        {
+          "name": "Phy_RxEnable",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_RxEnable_s"
+        },
+        {
+          "name": "Phy_CdrEnable",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_CdrEnable_s"
+        },
+        {
+          "name": "Phy_RxInvert",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_RxInvert_s"
+        },
+        {
+          "name": "Phy_NoSignal",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_NoSignal_s"
+        },
+        {
+          "name": "Phy_BitSync",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_BitSync_s"
+        },
+        {
+          "name": "Phy_SerialNearLoopback",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_SerialNearLoopback_s"
+        },
+        {
+          "name": "Phy_SerialFarLoopback",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_SerialFarLoopback_s"
+        },
+        {
+          "name": "Phy_PrbsTxSel",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_PrbsTxSel_s"
+        },
+        {
+          "name": "Phy_PrbsRxSel",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_PrbsRxSel_s"
+        },
+        {
+          "name": "Phy_PrbsForceErr",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_PrbsForceErr_s"
+        },
+        {
+          "name": "Phy_PrbsCntReset",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_PrbsCntReset_s"
+        },
+        {
+          "name": "Phy_PrbsErr",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_PrbsErr_s"
+        },
+        {
+          "name": "Phy_PrbsLocked",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_PrbsLocked_s"
+        }
+      ]
+    },
+    {
+      "id": "pa0",
+      "entity": "ofb_pa_gty",
+      "library": "openfibre",
+      "block": "openfibre/ofb_pa_gty",
+      "origin": "user",
+      "domain": "sys",
+      "generics": [
+        {
+          "name": "NumLanes_g",
+          "value": 1,
+          "vhdl": "1",
+          "default": false
+        },
+        {
+          "name": "SimDevice_g",
+          "value": "VERSAL_AI_CORE",
+          "vhdl": "\"VERSAL_AI_CORE\"",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "name": "FreeRunClk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "Clk_sys"
+        },
+        {
+          "name": "Rst",
+          "dir": "in",
+          "type": "std_logic",
+          "reset": {
+            "kind": "async",
+            "note": "Asynchronous reset of the transceivers and their reset controller."
+          },
+          "actual": "Rst"
+        },
+        {
+          "name": "RefClk",
+          "dir": "in",
+          "type": "std_logic",
+          "actual": "pa0_RefClk_s"
+        },
+        {
+          "name": "LaneClk",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "lane",
+          "actual": "pa0_LaneClk_s"
+        },
+        {
+          "name": "LaneRst",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "lane",
+          "actual": "open"
+        },
+        {
+          "name": "Gt_TxP",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "actual": "pa0_Gt_TxP_s"
+        },
+        {
+          "name": "Gt_TxN",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "actual": "pa0_Gt_TxN_s"
+        },
+        {
+          "name": "Gt_RxP",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "actual": "pa0_Gt_RxP_s"
+        },
+        {
+          "name": "Gt_RxN",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "actual": "pa0_Gt_RxN_s"
+        },
+        {
+          "name": "PhyTx_Data",
+          "dir": "in",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_PhyTx_Data_s"
+        },
+        {
+          "name": "PhyTx_K",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_PhyTx_K_s"
+        },
+        {
+          "name": "PhyRx_Data",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_PhyRx_Data_s"
+        },
+        {
+          "name": "PhyRx_K",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_PhyRx_K_s"
+        },
+        {
+          "name": "PhyRx_CodeErr",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_PhyRx_CodeErr_s"
+        },
+        {
+          "name": "PhyRx_DispErr",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_PhyRx_DispErr_s"
+        },
+        {
+          "name": "PhyRx_Valid",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_PhyRx_Valid_s"
+        },
+        {
+          "name": "Phy_TxEnable",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_TxEnable_s"
+        },
+        {
+          "name": "Phy_RxEnable",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_RxEnable_s"
+        },
+        {
+          "name": "Phy_CdrEnable",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_CdrEnable_s"
+        },
+        {
+          "name": "Phy_RxInvert",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_RxInvert_s"
+        },
+        {
+          "name": "Phy_NoSignal",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_NoSignal_s"
+        },
+        {
+          "name": "Phy_SerialNearLoopback",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_SerialNearLoopback_s"
+        },
+        {
+          "name": "Phy_SerialFarLoopback",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_SerialFarLoopback_s"
+        },
+        {
+          "name": "Phy_PrbsTxSel",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_PrbsTxSel_s"
+        },
+        {
+          "name": "Phy_PrbsRxSel",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_PrbsRxSel_s"
+        },
+        {
+          "name": "Phy_PrbsForceErr",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_PrbsForceErr_s"
+        },
+        {
+          "name": "Phy_PrbsCntReset",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_PrbsCntReset_s"
+        },
+        {
+          "name": "Phy_PrbsErr",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_PrbsErr_s"
+        },
+        {
+          "name": "Phy_PrbsLocked",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Phy_PrbsLocked_s"
+        },
+        {
+          "name": "Stat_TxReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "lane",
+          "actual": "open"
+        },
+        {
+          "name": "Stat_RxReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "lane",
+          "actual": "open"
+        },
+        {
+          "name": "Stat_Aligned",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Stat_Aligned_s"
+        },
+        {
+          "name": "Stat_RxBufErr",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "open"
+        },
+        {
+          "name": "Stat_ClkCor",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "open"
+        }
+      ]
+    },
+    {
+      "id": "spp0",
+      "entity": "spp_core",
+      "library": "openspp",
+      "block": "openspp/spp_core",
+      "origin": "user",
+      "domain": "sys",
+      "generics": [
+        {
+          "name": "DataWidth_g",
+          "value": 32,
+          "vhdl": "32",
+          "default": true
+        },
+        {
+          "name": "NumTx_g",
+          "value": 1,
+          "vhdl": "1",
+          "default": true
+        },
+        {
+          "name": "NumRx_g",
+          "value": 1,
+          "vhdl": "1",
+          "default": true
+        },
+        {
+          "name": "TxOctetString_g",
+          "value": "(others => '1')",
+          "vhdl": "(others => '1')",
+          "default": true
+        },
+        {
+          "name": "RxOctetString_g",
+          "value": "(others => '1')",
+          "vhdl": "(others => '1')",
+          "default": true
+        },
+        {
+          "name": "TxBufferBytes_g",
+          "value": 4096,
+          "vhdl": "4096",
+          "default": true
+        },
+        {
+          "name": "TxMaxPackets_g",
+          "value": 8,
+          "vhdl": "8",
+          "default": true
+        },
+        {
+          "name": "RxBufferBytes_g",
+          "value": 4096,
+          "vhdl": "4096",
+          "default": true
+        },
+        {
+          "name": "RxMaxPackets_g",
+          "value": 8,
+          "vhdl": "8",
+          "default": true
+        },
+        {
+          "name": "Encapsulation_g",
+          "value": true,
+          "vhdl": "true",
+          "default": true
+        },
+        {
+          "name": "NumDest_g",
+          "value": 1,
+          "vhdl": "1",
+          "default": true
+        },
+        {
+          "name": "SpwAddrBytes_g",
+          "value": 4,
+          "vhdl": "4",
+          "default": true
+        },
+        {
+          "name": "MaxLength_g",
+          "value": 65542,
+          "vhdl": "65542",
+          "default": true
+        },
+        {
+          "name": "RoundRobin_g",
+          "value": "0",
+          "vhdl": "'0'",
+          "default": true
+        },
+        {
+          "name": "Tla_g",
+          "value": "x\"FE\"",
+          "vhdl": "x\"FE\"",
+          "default": true
+        },
+        {
+          "name": "TxPathDefault_g",
+          "value": true,
+          "vhdl": "true",
+          "default": true
+        },
+        {
+          "name": "RxPathDefault_g",
+          "value": true,
+          "vhdl": "true",
+          "default": true
+        },
+        {
+          "name": "ClkFreqHz_g",
+          "value": 200000000,
+          "vhdl": "200.0e6",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "name": "Clk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "Clk_sys"
+        },
+        {
+          "name": "Rst",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain System clock (clock Clk): the output of the reset generator auto_rst_sys."
+          },
+          "actual": "auto_rst_sys_RstOut_s"
+        },
+        {
+          "name": "S_Tx_Valid",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_Tx_Valid_s"
+        },
+        {
+          "name": "S_Tx_Ready",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_Tx_Ready_s"
+        },
+        {
+          "name": "S_Tx_Data",
+          "dir": "in",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_Tx_Data_s"
+        },
+        {
+          "name": "S_Tx_Keep",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_Tx_Keep_s"
+        },
+        {
+          "name": "S_Tx_Last",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_Tx_Last_s"
+        },
+        {
+          "name": "S_Tx_User",
+          "dir": "in",
+          "type": "std_logic_vector(27 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_Tx_User_s"
+        },
+        {
+          "name": "M_Rx_Valid",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_M_Rx_Valid_s"
+        },
+        {
+          "name": "M_Rx_Ready",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_M_Rx_Ready_s"
+        },
+        {
+          "name": "M_Rx_Data",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_M_Rx_Data_s"
+        },
+        {
+          "name": "M_Rx_Keep",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_M_Rx_Keep_s"
+        },
+        {
+          "name": "M_Rx_Last",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_M_Rx_Last_s"
+        },
+        {
+          "name": "M_Rx_User",
+          "dir": "out",
+          "type": "std_logic_vector(21 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_M_Rx_User_s"
+        },
+        {
+          "name": "M_Link_Valid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_M_Link_Valid_s"
+        },
+        {
+          "name": "M_Link_Ready",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_M_Link_Ready_s"
+        },
+        {
+          "name": "M_Link_Data",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_M_Link_Data_s"
+        },
+        {
+          "name": "M_Link_Keep",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_M_Link_Keep_s"
+        },
+        {
+          "name": "M_Link_Last",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_M_Link_Last_s"
+        },
+        {
+          "name": "M_Link_User",
+          "dir": "out",
+          "type": "std_logic_vector(4 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_M_Link_User_s"
+        },
+        {
+          "name": "S_Link_Valid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_Link_Valid_s"
+        },
+        {
+          "name": "S_Link_Ready",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_Link_Ready_s"
+        },
+        {
+          "name": "S_Link_Data",
+          "dir": "in",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_Link_Data_s"
+        },
+        {
+          "name": "S_Link_Keep",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_Link_Keep_s"
+        },
+        {
+          "name": "S_Link_Last",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_Link_Last_s"
+        },
+        {
+          "name": "S_Link_User",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_Link_User_s"
+        },
+        {
+          "name": "S_AxiLite_ArAddr",
+          "dir": "in",
+          "type": "std_logic_vector(10 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_ArAddr_s"
+        },
+        {
+          "name": "S_AxiLite_ArValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_ArValid_s"
+        },
+        {
+          "name": "S_AxiLite_ArReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_ArReady_s"
+        },
+        {
+          "name": "S_AxiLite_AwAddr",
+          "dir": "in",
+          "type": "std_logic_vector(10 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_AwAddr_s"
+        },
+        {
+          "name": "S_AxiLite_AwValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_AwValid_s"
+        },
+        {
+          "name": "S_AxiLite_AwReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_AwReady_s"
+        },
+        {
+          "name": "S_AxiLite_WData",
+          "dir": "in",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_WData_s"
+        },
+        {
+          "name": "S_AxiLite_WStrb",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_WStrb_s"
+        },
+        {
+          "name": "S_AxiLite_WValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_WValid_s"
+        },
+        {
+          "name": "S_AxiLite_WReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_WReady_s"
+        },
+        {
+          "name": "S_AxiLite_BResp",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_BResp_s"
+        },
+        {
+          "name": "S_AxiLite_BValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_BValid_s"
+        },
+        {
+          "name": "S_AxiLite_BReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_BReady_s"
+        },
+        {
+          "name": "S_AxiLite_RData",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_RData_s"
+        },
+        {
+          "name": "S_AxiLite_RResp",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_RResp_s"
+        },
+        {
+          "name": "S_AxiLite_RValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_RValid_s"
+        },
+        {
+          "name": "S_AxiLite_RReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "spp0_S_AxiLite_RReady_s"
+        },
+        {
+          "name": "Irq",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Err_Valid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Err_Code",
+          "dir": "out",
+          "type": "std_logic_vector(4 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Err_Port",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Err_Apid",
+          "dir": "out",
+          "type": "std_logic_vector(10 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        }
+      ]
+    },
+    {
+      "id": "auto_rst_sys",
+      "entity": "olo_base_reset_gen",
+      "library": "olo",
+      "block": "olo/olo_base_reset_gen",
+      "origin": "auto",
+      "role": "reset",
+      "reason": "Synchronous reset of System clock.",
+      "domain": "sys",
+      "generics": [
+        {
+          "name": "RstPulseCycles_g",
+          "value": 3,
+          "vhdl": "3",
+          "default": true
+        },
+        {
+          "name": "RstInPolarity_g",
+          "value": "1",
+          "vhdl": "'1'",
+          "default": true
+        },
+        {
+          "name": "AsyncResetOutput_g",
+          "value": false,
+          "vhdl": "false",
+          "default": true
+        },
+        {
+          "name": "SyncStages_g",
+          "value": 2,
+          "vhdl": "2",
+          "default": true
+        },
+        {
+          "name": "SyncTmr_g",
+          "value": true,
+          "vhdl": "true",
+          "default": false
+        }
+      ],
+      "ports": [
+        {
+          "name": "Clk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "Clk_sys"
+        },
+        {
+          "name": "RstOut",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "auto_rst_sys_RstOut_s"
+        },
+        {
+          "name": "RstIn",
+          "dir": "in",
+          "type": "std_logic",
+          "reset": {
+            "kind": "async",
+            "note": "Asynchronous reset input (polarity from RstInPolarity_g)."
+          },
+          "actual": "Rst"
+        }
+      ]
+    }
+  ],
+  "signals": [
+    {
+      "name": "auto_rst_sys_RstOut_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_M_Link_Data_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "nchar0_M_Link_Keep_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "nchar0_M_Link_Last_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_M_Link_Ready_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_M_Link_User_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "nchar0_M_Link_Valid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_M_NChar_Data_s",
+      "type": "std_logic_vector(7 downto 0)"
+    },
+    {
+      "name": "nchar0_M_NChar_Last_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_M_NChar_Ready_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_M_NChar_Valid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_S_Link_Data_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "nchar0_S_Link_Keep_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "nchar0_S_Link_Last_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_S_Link_Ready_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_S_Link_User_s",
+      "type": "std_logic_vector(4 downto 0)"
+    },
+    {
+      "name": "nchar0_S_Link_Valid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_S_NChar_Data_s",
+      "type": "std_logic_vector(7 downto 0)"
+    },
+    {
+      "name": "nchar0_S_NChar_Last_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_S_NChar_Ready_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "nchar0_S_NChar_Valid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_M_Bc_TReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_M_Vc_TData_s",
+      "type": "std_logic_vector(63 downto 0)"
+    },
+    {
+      "name": "ofb0_M_Vc_TKeep_s",
+      "type": "std_logic_vector(7 downto 0)"
+    },
+    {
+      "name": "ofb0_M_Vc_TLast_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "ofb0_M_Vc_TReady_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "ofb0_M_Vc_TUser_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "ofb0_M_Vc_TValid_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_BitSync_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_CdrEnable_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_NoSignal_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_PrbsCntReset_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_PrbsErr_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_PrbsForceErr_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_PrbsLocked_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_PrbsRxSel_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_PrbsTxSel_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_RxEnable_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_RxInvert_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_SerialFarLoopback_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_SerialNearLoopback_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_TxEnable_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_PhyRx_CodeErr_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "ofb0_PhyRx_Data_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "ofb0_PhyRx_DispErr_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "ofb0_PhyRx_K_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "ofb0_PhyRx_Valid_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_PhyTx_Data_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "ofb0_PhyTx_K_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "ofb0_S_AxiLite_ArAddr_s",
+      "type": "std_logic_vector(11 downto 0)"
+    },
+    {
+      "name": "ofb0_S_AxiLite_ArReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_S_AxiLite_ArValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_S_AxiLite_AwAddr_s",
+      "type": "std_logic_vector(11 downto 0)"
+    },
+    {
+      "name": "ofb0_S_AxiLite_AwReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_S_AxiLite_AwValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_S_AxiLite_BReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_S_AxiLite_BResp_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "ofb0_S_AxiLite_BValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_S_AxiLite_RData_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "ofb0_S_AxiLite_RReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_S_AxiLite_RResp_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "ofb0_S_AxiLite_RValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_S_AxiLite_WData_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "ofb0_S_AxiLite_WReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_S_AxiLite_WStrb_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "ofb0_S_AxiLite_WValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_S_Bc_TData_s",
+      "type": "std_logic_vector(63 downto 0)"
+    },
+    {
+      "name": "ofb0_S_Bc_TUser_s",
+      "type": "std_logic_vector(16 downto 0)"
+    },
+    {
+      "name": "ofb0_S_Bc_TValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_S_Vc_TData_s",
+      "type": "std_logic_vector(63 downto 0)"
+    },
+    {
+      "name": "ofb0_S_Vc_TKeep_s",
+      "type": "std_logic_vector(7 downto 0)"
+    },
+    {
+      "name": "ofb0_S_Vc_TLast_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "ofb0_S_Vc_TReady_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "ofb0_S_Vc_TUser_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "ofb0_S_Vc_TValid_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "pa0_Gt_RxN_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Gt_RxP_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Gt_TxN_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Gt_TxP_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_LaneClk_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "pa0_Phy_CdrEnable_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_NoSignal_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_PrbsCntReset_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_PrbsErr_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_PrbsForceErr_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_PrbsLocked_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_PrbsRxSel_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_PrbsTxSel_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_RxEnable_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_RxInvert_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_SerialFarLoopback_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_SerialNearLoopback_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Phy_TxEnable_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_PhyRx_CodeErr_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "pa0_PhyRx_Data_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "pa0_PhyRx_DispErr_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "pa0_PhyRx_K_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "pa0_PhyRx_Valid_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_PhyTx_Data_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "pa0_PhyTx_K_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "pa0_RefClk_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "pa0_Stat_Aligned_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_ArAddr_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_ArBurst_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_ArCache_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_ArLen_s",
+      "type": "std_logic_vector(7 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_ArLock_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_ArProt_s",
+      "type": "std_logic_vector(2 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_ArReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_ArSize_s",
+      "type": "std_logic_vector(2 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_ArValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_AwAddr_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_AwBurst_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_AwCache_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_AwLen_s",
+      "type": "std_logic_vector(7 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_AwLock_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_AwProt_s",
+      "type": "std_logic_vector(2 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_AwReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_AwSize_s",
+      "type": "std_logic_vector(2 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_AwValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_BReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_BResp_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_BValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_RData_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_RLast_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_RReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_RResp_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_RValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_WData_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_WLast_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_WReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Axi_WStrb_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Axi_WValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Pkt_TData_s",
+      "type": "std_logic_vector(7 downto 0)"
+    },
+    {
+      "name": "rmap0_M_Pkt_TLast_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Pkt_TReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_M_Pkt_TValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_AxiLite_ArAddr_s",
+      "type": "std_logic_vector(9 downto 0)"
+    },
+    {
+      "name": "rmap0_S_AxiLite_ArReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_AxiLite_ArValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_AxiLite_AwAddr_s",
+      "type": "std_logic_vector(9 downto 0)"
+    },
+    {
+      "name": "rmap0_S_AxiLite_AwReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_AxiLite_AwValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_AxiLite_BReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_AxiLite_BResp_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "rmap0_S_AxiLite_BValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_AxiLite_RData_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "rmap0_S_AxiLite_RReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_AxiLite_RResp_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "rmap0_S_AxiLite_RValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_AxiLite_WData_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "rmap0_S_AxiLite_WReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_AxiLite_WStrb_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "rmap0_S_AxiLite_WValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_Pkt_TData_s",
+      "type": "std_logic_vector(7 downto 0)"
+    },
+    {
+      "name": "rmap0_S_Pkt_TLast_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_Pkt_TReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "rmap0_S_Pkt_TValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_M_Link_Data_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "spp0_M_Link_Keep_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "spp0_M_Link_Last_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_M_Link_Ready_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_M_Link_User_s",
+      "type": "std_logic_vector(4 downto 0)"
+    },
+    {
+      "name": "spp0_M_Link_Valid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_M_Rx_Data_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "spp0_M_Rx_Keep_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "spp0_M_Rx_Last_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "spp0_M_Rx_Ready_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "spp0_M_Rx_User_s",
+      "type": "std_logic_vector(21 downto 0)"
+    },
+    {
+      "name": "spp0_M_Rx_Valid_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "spp0_S_AxiLite_ArAddr_s",
+      "type": "std_logic_vector(10 downto 0)"
+    },
+    {
+      "name": "spp0_S_AxiLite_ArReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_AxiLite_ArValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_AxiLite_AwAddr_s",
+      "type": "std_logic_vector(10 downto 0)"
+    },
+    {
+      "name": "spp0_S_AxiLite_AwReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_AxiLite_AwValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_AxiLite_BReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_AxiLite_BResp_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "spp0_S_AxiLite_BValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_AxiLite_RData_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "spp0_S_AxiLite_RReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_AxiLite_RResp_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "spp0_S_AxiLite_RValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_AxiLite_WData_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "spp0_S_AxiLite_WReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_AxiLite_WStrb_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "spp0_S_AxiLite_WValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_Link_Data_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "spp0_S_Link_Keep_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "spp0_S_Link_Last_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_Link_Ready_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_Link_User_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "spp0_S_Link_Valid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "spp0_S_Tx_Data_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "spp0_S_Tx_Keep_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "spp0_S_Tx_Last_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "spp0_S_Tx_Ready_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "spp0_S_Tx_User_s",
+      "type": "std_logic_vector(27 downto 0)"
+    },
+    {
+      "name": "spp0_S_Tx_Valid_s",
+      "type": "std_logic_vector(0 downto 0)"
+    }
+  ],
+  "nets": [
+    {
+      "to": "nchar0_S_NChar_Data_s",
+      "from": "rmap0_M_Pkt_TData_s",
+      "kind": "connection",
+      "connection": "c1",
+      "signal": "data"
+    },
+    {
+      "to": "nchar0_S_NChar_Last_s",
+      "from": "rmap0_M_Pkt_TLast_s",
+      "kind": "connection",
+      "connection": "c1",
+      "signal": "last"
+    },
+    {
+      "to": "rmap0_M_Pkt_TReady_s",
+      "from": "nchar0_S_NChar_Ready_s",
+      "kind": "connection",
+      "connection": "c1",
+      "signal": "ready"
+    },
+    {
+      "to": "nchar0_S_NChar_Valid_s",
+      "from": "rmap0_M_Pkt_TValid_s",
+      "kind": "connection",
+      "connection": "c1",
+      "signal": "valid"
+    },
+    {
+      "to": "rmap0_S_Pkt_TData_s",
+      "from": "nchar0_M_NChar_Data_s",
+      "kind": "connection",
+      "connection": "c2",
+      "signal": "data"
+    },
+    {
+      "to": "rmap0_S_Pkt_TLast_s",
+      "from": "nchar0_M_NChar_Last_s",
+      "kind": "connection",
+      "connection": "c2",
+      "signal": "last"
+    },
+    {
+      "to": "nchar0_M_NChar_Ready_s",
+      "from": "rmap0_S_Pkt_TReady_s",
+      "kind": "connection",
+      "connection": "c2",
+      "signal": "ready"
+    },
+    {
+      "to": "rmap0_S_Pkt_TValid_s",
+      "from": "nchar0_M_NChar_Valid_s",
+      "kind": "connection",
+      "connection": "c2",
+      "signal": "valid"
+    },
+    {
+      "to": "ofb0_S_Vc_TData_s(31 downto 0)",
+      "from": "nchar0_M_Link_Data_s",
+      "kind": "connection",
+      "connection": "c3",
+      "signal": "data"
+    },
+    {
+      "to": "ofb0_S_Vc_TKeep_s(3 downto 0)",
+      "from": "nchar0_M_Link_Keep_s",
+      "kind": "connection",
+      "connection": "c3",
+      "signal": "keep"
+    },
+    {
+      "to": "ofb0_S_Vc_TLast_s(0)",
+      "from": "nchar0_M_Link_Last_s",
+      "kind": "connection",
+      "connection": "c3",
+      "signal": "last"
+    },
+    {
+      "to": "nchar0_M_Link_Ready_s",
+      "from": "ofb0_S_Vc_TReady_s(0)",
+      "kind": "connection",
+      "connection": "c3",
+      "signal": "ready"
+    },
+    {
+      "to": "ofb0_S_Vc_TUser_s(0)",
+      "from": "nchar0_M_Link_User_s(0)",
+      "kind": "connection",
+      "connection": "c3",
+      "signal": "user"
+    },
+    {
+      "to": "ofb0_S_Vc_TValid_s(0)",
+      "from": "nchar0_M_Link_Valid_s",
+      "kind": "connection",
+      "connection": "c3",
+      "signal": "valid"
+    },
+    {
+      "to": "nchar0_S_Link_Data_s",
+      "from": "ofb0_M_Vc_TData_s(31 downto 0)",
+      "kind": "connection",
+      "connection": "c4",
+      "signal": "data"
+    },
+    {
+      "to": "nchar0_S_Link_Keep_s",
+      "from": "ofb0_M_Vc_TKeep_s(3 downto 0)",
+      "kind": "connection",
+      "connection": "c4",
+      "signal": "keep"
+    },
+    {
+      "to": "nchar0_S_Link_Last_s",
+      "from": "ofb0_M_Vc_TLast_s(0)",
+      "kind": "connection",
+      "connection": "c4",
+      "signal": "last"
+    },
+    {
+      "to": "ofb0_M_Vc_TReady_s(0)",
+      "from": "nchar0_S_Link_Ready_s",
+      "kind": "connection",
+      "connection": "c4",
+      "signal": "ready"
+    },
+    {
+      "to": "nchar0_S_Link_User_s(0)",
+      "from": "ofb0_M_Vc_TUser_s(0)",
+      "kind": "connection",
+      "connection": "c4",
+      "signal": "user"
+    },
+    {
+      "to": "nchar0_S_Link_User_s(4 downto 1)",
+      "from": "(others => '0')",
+      "kind": "constant",
+      "connection": "c4",
+      "signal": "user",
+      "reason": "user is narrower at ofb0.M_Vc[0]."
+    },
+    {
+      "to": "nchar0_S_Link_Valid_s",
+      "from": "ofb0_M_Vc_TValid_s(0)",
+      "kind": "connection",
+      "connection": "c4",
+      "signal": "valid"
+    },
+    {
+      "to": "ofb0_S_Vc_TData_s(63 downto 32)",
+      "from": "spp0_M_Link_Data_s",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "data"
+    },
+    {
+      "to": "ofb0_S_Vc_TKeep_s(7 downto 4)",
+      "from": "spp0_M_Link_Keep_s",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "keep"
+    },
+    {
+      "to": "ofb0_S_Vc_TLast_s(1)",
+      "from": "spp0_M_Link_Last_s",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "last"
+    },
+    {
+      "to": "spp0_M_Link_Ready_s",
+      "from": "ofb0_S_Vc_TReady_s(1)",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "ready"
+    },
+    {
+      "to": "ofb0_S_Vc_TUser_s(1)",
+      "from": "spp0_M_Link_User_s(0)",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "user"
+    },
+    {
+      "to": "ofb0_S_Vc_TValid_s(1)",
+      "from": "spp0_M_Link_Valid_s",
+      "kind": "connection",
+      "connection": "c5",
+      "signal": "valid"
+    },
+    {
+      "to": "spp0_S_Link_Data_s",
+      "from": "ofb0_M_Vc_TData_s(63 downto 32)",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "data"
+    },
+    {
+      "to": "spp0_S_Link_Keep_s",
+      "from": "ofb0_M_Vc_TKeep_s(7 downto 4)",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "keep"
+    },
+    {
+      "to": "spp0_S_Link_Last_s",
+      "from": "ofb0_M_Vc_TLast_s(1)",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "last"
+    },
+    {
+      "to": "ofb0_M_Vc_TReady_s(1)",
+      "from": "spp0_S_Link_Ready_s",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "ready"
+    },
+    {
+      "to": "spp0_S_Link_User_s(0)",
+      "from": "ofb0_M_Vc_TUser_s(1)",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "user"
+    },
+    {
+      "to": "spp0_S_Link_Valid_s",
+      "from": "ofb0_M_Vc_TValid_s(1)",
+      "kind": "connection",
+      "connection": "c6",
+      "signal": "valid"
+    },
+    {
+      "to": "ofb0_Phy_BitSync_s(0)",
+      "from": "pa0_Stat_Aligned_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "bit_sync"
+    },
+    {
+      "to": "pa0_Phy_CdrEnable_s(0)",
+      "from": "ofb0_Phy_CdrEnable_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "cdr_enable"
+    },
+    {
+      "to": "pa0_Phy_SerialFarLoopback_s(0)",
+      "from": "ofb0_Phy_SerialFarLoopback_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "far_loopback"
+    },
+    {
+      "to": "pa0_Phy_SerialNearLoopback_s(0)",
+      "from": "ofb0_Phy_SerialNearLoopback_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "near_loopback"
+    },
+    {
+      "to": "ofb0_Phy_NoSignal_s(0)",
+      "from": "pa0_Phy_NoSignal_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "no_signal"
+    },
+    {
+      "to": "pa0_Phy_PrbsCntReset_s(0)",
+      "from": "ofb0_Phy_PrbsCntReset_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "prbs_cnt_reset"
+    },
+    {
+      "to": "ofb0_Phy_PrbsErr_s(0)",
+      "from": "pa0_Phy_PrbsErr_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "prbs_err"
+    },
+    {
+      "to": "pa0_Phy_PrbsForceErr_s(0)",
+      "from": "ofb0_Phy_PrbsForceErr_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "prbs_force_err"
+    },
+    {
+      "to": "ofb0_Phy_PrbsLocked_s(0)",
+      "from": "pa0_Phy_PrbsLocked_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "prbs_locked"
+    },
+    {
+      "to": "pa0_Phy_PrbsRxSel_s",
+      "from": "ofb0_Phy_PrbsRxSel_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "prbs_rx_sel"
+    },
+    {
+      "to": "pa0_Phy_PrbsTxSel_s",
+      "from": "ofb0_Phy_PrbsTxSel_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "prbs_tx_sel"
+    },
+    {
+      "to": "ofb0_PhyRx_CodeErr_s",
+      "from": "pa0_PhyRx_CodeErr_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_code_err"
+    },
+    {
+      "to": "ofb0_PhyRx_Data_s",
+      "from": "pa0_PhyRx_Data_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_data"
+    },
+    {
+      "to": "ofb0_PhyRx_DispErr_s",
+      "from": "pa0_PhyRx_DispErr_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_disp_err"
+    },
+    {
+      "to": "pa0_Phy_RxEnable_s(0)",
+      "from": "ofb0_Phy_RxEnable_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_enable"
+    },
+    {
+      "to": "pa0_Phy_RxInvert_s(0)",
+      "from": "ofb0_Phy_RxInvert_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_invert"
+    },
+    {
+      "to": "ofb0_PhyRx_K_s",
+      "from": "pa0_PhyRx_K_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_k"
+    },
+    {
+      "to": "ofb0_PhyRx_Valid_s(0)",
+      "from": "pa0_PhyRx_Valid_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_valid"
+    },
+    {
+      "to": "pa0_PhyTx_Data_s",
+      "from": "ofb0_PhyTx_Data_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "tx_data"
+    },
+    {
+      "to": "pa0_Phy_TxEnable_s(0)",
+      "from": "ofb0_Phy_TxEnable_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "tx_enable"
+    },
+    {
+      "to": "pa0_PhyTx_K_s",
+      "from": "ofb0_PhyTx_K_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "tx_k"
+    },
+    {
+      "to": "rmap0_S_AxiLite_AwAddr_s",
+      "from": "rmap_reg_S_AxiLite_AwAddr",
+      "kind": "top",
+      "signal": "S_AxiLite_AwAddr"
+    },
+    {
+      "to": "rmap0_S_AxiLite_AwValid_s",
+      "from": "rmap_reg_S_AxiLite_AwValid",
+      "kind": "top",
+      "signal": "S_AxiLite_AwValid"
+    },
+    {
+      "to": "rmap_reg_S_AxiLite_AwReady",
+      "from": "rmap0_S_AxiLite_AwReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_AwReady"
+    },
+    {
+      "to": "rmap0_S_AxiLite_WData_s",
+      "from": "rmap_reg_S_AxiLite_WData",
+      "kind": "top",
+      "signal": "S_AxiLite_WData"
+    },
+    {
+      "to": "rmap0_S_AxiLite_WStrb_s",
+      "from": "rmap_reg_S_AxiLite_WStrb",
+      "kind": "top",
+      "signal": "S_AxiLite_WStrb"
+    },
+    {
+      "to": "rmap0_S_AxiLite_WValid_s",
+      "from": "rmap_reg_S_AxiLite_WValid",
+      "kind": "top",
+      "signal": "S_AxiLite_WValid"
+    },
+    {
+      "to": "rmap_reg_S_AxiLite_WReady",
+      "from": "rmap0_S_AxiLite_WReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_WReady"
+    },
+    {
+      "to": "rmap_reg_S_AxiLite_BResp",
+      "from": "rmap0_S_AxiLite_BResp_s",
+      "kind": "top",
+      "signal": "S_AxiLite_BResp"
+    },
+    {
+      "to": "rmap_reg_S_AxiLite_BValid",
+      "from": "rmap0_S_AxiLite_BValid_s",
+      "kind": "top",
+      "signal": "S_AxiLite_BValid"
+    },
+    {
+      "to": "rmap0_S_AxiLite_BReady_s",
+      "from": "rmap_reg_S_AxiLite_BReady",
+      "kind": "top",
+      "signal": "S_AxiLite_BReady"
+    },
+    {
+      "to": "rmap0_S_AxiLite_ArAddr_s",
+      "from": "rmap_reg_S_AxiLite_ArAddr",
+      "kind": "top",
+      "signal": "S_AxiLite_ArAddr"
+    },
+    {
+      "to": "rmap0_S_AxiLite_ArValid_s",
+      "from": "rmap_reg_S_AxiLite_ArValid",
+      "kind": "top",
+      "signal": "S_AxiLite_ArValid"
+    },
+    {
+      "to": "rmap_reg_S_AxiLite_ArReady",
+      "from": "rmap0_S_AxiLite_ArReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_ArReady"
+    },
+    {
+      "to": "rmap_reg_S_AxiLite_RData",
+      "from": "rmap0_S_AxiLite_RData_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RData"
+    },
+    {
+      "to": "rmap_reg_S_AxiLite_RResp",
+      "from": "rmap0_S_AxiLite_RResp_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RResp"
+    },
+    {
+      "to": "rmap_reg_S_AxiLite_RValid",
+      "from": "rmap0_S_AxiLite_RValid_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RValid"
+    },
+    {
+      "to": "rmap0_S_AxiLite_RReady_s",
+      "from": "rmap_reg_S_AxiLite_RReady",
+      "kind": "top",
+      "signal": "S_AxiLite_RReady"
+    },
+    {
+      "to": "mem_M_Axi_AwAddr",
+      "from": "rmap0_M_Axi_AwAddr_s",
+      "kind": "top",
+      "signal": "M_Axi_AwAddr"
+    },
+    {
+      "to": "mem_M_Axi_AwLen",
+      "from": "rmap0_M_Axi_AwLen_s",
+      "kind": "top",
+      "signal": "M_Axi_AwLen"
+    },
+    {
+      "to": "mem_M_Axi_AwSize",
+      "from": "rmap0_M_Axi_AwSize_s",
+      "kind": "top",
+      "signal": "M_Axi_AwSize"
+    },
+    {
+      "to": "mem_M_Axi_AwBurst",
+      "from": "rmap0_M_Axi_AwBurst_s",
+      "kind": "top",
+      "signal": "M_Axi_AwBurst"
+    },
+    {
+      "to": "mem_M_Axi_AwLock",
+      "from": "rmap0_M_Axi_AwLock_s",
+      "kind": "top",
+      "signal": "M_Axi_AwLock"
+    },
+    {
+      "to": "mem_M_Axi_AwCache",
+      "from": "rmap0_M_Axi_AwCache_s",
+      "kind": "top",
+      "signal": "M_Axi_AwCache"
+    },
+    {
+      "to": "mem_M_Axi_AwProt",
+      "from": "rmap0_M_Axi_AwProt_s",
+      "kind": "top",
+      "signal": "M_Axi_AwProt"
+    },
+    {
+      "to": "mem_M_Axi_AwValid",
+      "from": "rmap0_M_Axi_AwValid_s",
+      "kind": "top",
+      "signal": "M_Axi_AwValid"
+    },
+    {
+      "to": "rmap0_M_Axi_AwReady_s",
+      "from": "mem_M_Axi_AwReady",
+      "kind": "top",
+      "signal": "M_Axi_AwReady"
+    },
+    {
+      "to": "mem_M_Axi_WData",
+      "from": "rmap0_M_Axi_WData_s",
+      "kind": "top",
+      "signal": "M_Axi_WData"
+    },
+    {
+      "to": "mem_M_Axi_WStrb",
+      "from": "rmap0_M_Axi_WStrb_s",
+      "kind": "top",
+      "signal": "M_Axi_WStrb"
+    },
+    {
+      "to": "mem_M_Axi_WLast",
+      "from": "rmap0_M_Axi_WLast_s",
+      "kind": "top",
+      "signal": "M_Axi_WLast"
+    },
+    {
+      "to": "mem_M_Axi_WValid",
+      "from": "rmap0_M_Axi_WValid_s",
+      "kind": "top",
+      "signal": "M_Axi_WValid"
+    },
+    {
+      "to": "rmap0_M_Axi_WReady_s",
+      "from": "mem_M_Axi_WReady",
+      "kind": "top",
+      "signal": "M_Axi_WReady"
+    },
+    {
+      "to": "rmap0_M_Axi_BResp_s",
+      "from": "mem_M_Axi_BResp",
+      "kind": "top",
+      "signal": "M_Axi_BResp"
+    },
+    {
+      "to": "rmap0_M_Axi_BValid_s",
+      "from": "mem_M_Axi_BValid",
+      "kind": "top",
+      "signal": "M_Axi_BValid"
+    },
+    {
+      "to": "mem_M_Axi_BReady",
+      "from": "rmap0_M_Axi_BReady_s",
+      "kind": "top",
+      "signal": "M_Axi_BReady"
+    },
+    {
+      "to": "mem_M_Axi_ArAddr",
+      "from": "rmap0_M_Axi_ArAddr_s",
+      "kind": "top",
+      "signal": "M_Axi_ArAddr"
+    },
+    {
+      "to": "mem_M_Axi_ArLen",
+      "from": "rmap0_M_Axi_ArLen_s",
+      "kind": "top",
+      "signal": "M_Axi_ArLen"
+    },
+    {
+      "to": "mem_M_Axi_ArSize",
+      "from": "rmap0_M_Axi_ArSize_s",
+      "kind": "top",
+      "signal": "M_Axi_ArSize"
+    },
+    {
+      "to": "mem_M_Axi_ArBurst",
+      "from": "rmap0_M_Axi_ArBurst_s",
+      "kind": "top",
+      "signal": "M_Axi_ArBurst"
+    },
+    {
+      "to": "mem_M_Axi_ArLock",
+      "from": "rmap0_M_Axi_ArLock_s",
+      "kind": "top",
+      "signal": "M_Axi_ArLock"
+    },
+    {
+      "to": "mem_M_Axi_ArCache",
+      "from": "rmap0_M_Axi_ArCache_s",
+      "kind": "top",
+      "signal": "M_Axi_ArCache"
+    },
+    {
+      "to": "mem_M_Axi_ArProt",
+      "from": "rmap0_M_Axi_ArProt_s",
+      "kind": "top",
+      "signal": "M_Axi_ArProt"
+    },
+    {
+      "to": "mem_M_Axi_ArValid",
+      "from": "rmap0_M_Axi_ArValid_s",
+      "kind": "top",
+      "signal": "M_Axi_ArValid"
+    },
+    {
+      "to": "rmap0_M_Axi_ArReady_s",
+      "from": "mem_M_Axi_ArReady",
+      "kind": "top",
+      "signal": "M_Axi_ArReady"
+    },
+    {
+      "to": "rmap0_M_Axi_RData_s",
+      "from": "mem_M_Axi_RData",
+      "kind": "top",
+      "signal": "M_Axi_RData"
+    },
+    {
+      "to": "rmap0_M_Axi_RResp_s",
+      "from": "mem_M_Axi_RResp",
+      "kind": "top",
+      "signal": "M_Axi_RResp"
+    },
+    {
+      "to": "rmap0_M_Axi_RLast_s",
+      "from": "mem_M_Axi_RLast",
+      "kind": "top",
+      "signal": "M_Axi_RLast"
+    },
+    {
+      "to": "rmap0_M_Axi_RValid_s",
+      "from": "mem_M_Axi_RValid",
+      "kind": "top",
+      "signal": "M_Axi_RValid"
+    },
+    {
+      "to": "mem_M_Axi_RReady",
+      "from": "rmap0_M_Axi_RReady_s",
+      "kind": "top",
+      "signal": "M_Axi_RReady"
+    },
+    {
+      "to": "ofb0_S_AxiLite_AwAddr_s",
+      "from": "ofb_reg_S_AxiLite_AwAddr",
+      "kind": "top",
+      "signal": "S_AxiLite_AwAddr"
+    },
+    {
+      "to": "ofb0_S_AxiLite_AwValid_s",
+      "from": "ofb_reg_S_AxiLite_AwValid",
+      "kind": "top",
+      "signal": "S_AxiLite_AwValid"
+    },
+    {
+      "to": "ofb_reg_S_AxiLite_AwReady",
+      "from": "ofb0_S_AxiLite_AwReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_AwReady"
+    },
+    {
+      "to": "ofb0_S_AxiLite_WData_s",
+      "from": "ofb_reg_S_AxiLite_WData",
+      "kind": "top",
+      "signal": "S_AxiLite_WData"
+    },
+    {
+      "to": "ofb0_S_AxiLite_WStrb_s",
+      "from": "ofb_reg_S_AxiLite_WStrb",
+      "kind": "top",
+      "signal": "S_AxiLite_WStrb"
+    },
+    {
+      "to": "ofb0_S_AxiLite_WValid_s",
+      "from": "ofb_reg_S_AxiLite_WValid",
+      "kind": "top",
+      "signal": "S_AxiLite_WValid"
+    },
+    {
+      "to": "ofb_reg_S_AxiLite_WReady",
+      "from": "ofb0_S_AxiLite_WReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_WReady"
+    },
+    {
+      "to": "ofb_reg_S_AxiLite_BResp",
+      "from": "ofb0_S_AxiLite_BResp_s",
+      "kind": "top",
+      "signal": "S_AxiLite_BResp"
+    },
+    {
+      "to": "ofb_reg_S_AxiLite_BValid",
+      "from": "ofb0_S_AxiLite_BValid_s",
+      "kind": "top",
+      "signal": "S_AxiLite_BValid"
+    },
+    {
+      "to": "ofb0_S_AxiLite_BReady_s",
+      "from": "ofb_reg_S_AxiLite_BReady",
+      "kind": "top",
+      "signal": "S_AxiLite_BReady"
+    },
+    {
+      "to": "ofb0_S_AxiLite_ArAddr_s",
+      "from": "ofb_reg_S_AxiLite_ArAddr",
+      "kind": "top",
+      "signal": "S_AxiLite_ArAddr"
+    },
+    {
+      "to": "ofb0_S_AxiLite_ArValid_s",
+      "from": "ofb_reg_S_AxiLite_ArValid",
+      "kind": "top",
+      "signal": "S_AxiLite_ArValid"
+    },
+    {
+      "to": "ofb_reg_S_AxiLite_ArReady",
+      "from": "ofb0_S_AxiLite_ArReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_ArReady"
+    },
+    {
+      "to": "ofb_reg_S_AxiLite_RData",
+      "from": "ofb0_S_AxiLite_RData_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RData"
+    },
+    {
+      "to": "ofb_reg_S_AxiLite_RResp",
+      "from": "ofb0_S_AxiLite_RResp_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RResp"
+    },
+    {
+      "to": "ofb_reg_S_AxiLite_RValid",
+      "from": "ofb0_S_AxiLite_RValid_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RValid"
+    },
+    {
+      "to": "ofb0_S_AxiLite_RReady_s",
+      "from": "ofb_reg_S_AxiLite_RReady",
+      "kind": "top",
+      "signal": "S_AxiLite_RReady"
+    },
+    {
+      "to": "pa0_Gt_TxP(0)",
+      "from": "pa0_Gt_TxP_s(0)",
+      "kind": "top",
+      "signal": "Gt_TxP"
+    },
+    {
+      "to": "pa0_Gt_TxN(0)",
+      "from": "pa0_Gt_TxN_s(0)",
+      "kind": "top",
+      "signal": "Gt_TxN"
+    },
+    {
+      "to": "pa0_Gt_RxP_s(0)",
+      "from": "pa0_Gt_RxP(0)",
+      "kind": "top",
+      "signal": "Gt_RxP"
+    },
+    {
+      "to": "pa0_Gt_RxN_s(0)",
+      "from": "pa0_Gt_RxN(0)",
+      "kind": "top",
+      "signal": "Gt_RxN"
+    },
+    {
+      "to": "pa0_RefClk_s",
+      "from": "pa0_RefClk",
+      "kind": "top",
+      "signal": "RefClk"
+    },
+    {
+      "to": "spp0_S_Tx_Data_s",
+      "from": "tx0_S_Tx_Data_0",
+      "kind": "top",
+      "signal": "S_Tx_Data"
+    },
+    {
+      "to": "spp0_S_Tx_Keep_s",
+      "from": "tx0_S_Tx_Keep_0",
+      "kind": "top",
+      "signal": "S_Tx_Keep"
+    },
+    {
+      "to": "spp0_S_Tx_Last_s(0)",
+      "from": "tx0_S_Tx_Last_0",
+      "kind": "top",
+      "signal": "S_Tx_Last"
+    },
+    {
+      "to": "spp0_S_Tx_User_s",
+      "from": "tx0_S_Tx_User_0",
+      "kind": "top",
+      "signal": "S_Tx_User"
+    },
+    {
+      "to": "spp0_S_Tx_Valid_s(0)",
+      "from": "tx0_S_Tx_Valid_0",
+      "kind": "top",
+      "signal": "S_Tx_Valid"
+    },
+    {
+      "to": "tx0_S_Tx_Ready_0",
+      "from": "spp0_S_Tx_Ready_s(0)",
+      "kind": "top",
+      "signal": "S_Tx_Ready"
+    },
+    {
+      "to": "rx0_M_Rx_Data_0",
+      "from": "spp0_M_Rx_Data_s",
+      "kind": "top",
+      "signal": "M_Rx_Data"
+    },
+    {
+      "to": "rx0_M_Rx_Keep_0",
+      "from": "spp0_M_Rx_Keep_s",
+      "kind": "top",
+      "signal": "M_Rx_Keep"
+    },
+    {
+      "to": "rx0_M_Rx_Last_0",
+      "from": "spp0_M_Rx_Last_s(0)",
+      "kind": "top",
+      "signal": "M_Rx_Last"
+    },
+    {
+      "to": "rx0_M_Rx_User_0",
+      "from": "spp0_M_Rx_User_s",
+      "kind": "top",
+      "signal": "M_Rx_User"
+    },
+    {
+      "to": "rx0_M_Rx_Valid_0",
+      "from": "spp0_M_Rx_Valid_s(0)",
+      "kind": "top",
+      "signal": "M_Rx_Valid"
+    },
+    {
+      "to": "spp0_M_Rx_Ready_s(0)",
+      "from": "rx0_M_Rx_Ready_0",
+      "kind": "top",
+      "signal": "M_Rx_Ready"
+    },
+    {
+      "to": "spp0_S_AxiLite_AwAddr_s",
+      "from": "spp_reg_S_AxiLite_AwAddr",
+      "kind": "top",
+      "signal": "S_AxiLite_AwAddr"
+    },
+    {
+      "to": "spp0_S_AxiLite_AwValid_s",
+      "from": "spp_reg_S_AxiLite_AwValid",
+      "kind": "top",
+      "signal": "S_AxiLite_AwValid"
+    },
+    {
+      "to": "spp_reg_S_AxiLite_AwReady",
+      "from": "spp0_S_AxiLite_AwReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_AwReady"
+    },
+    {
+      "to": "spp0_S_AxiLite_WData_s",
+      "from": "spp_reg_S_AxiLite_WData",
+      "kind": "top",
+      "signal": "S_AxiLite_WData"
+    },
+    {
+      "to": "spp0_S_AxiLite_WStrb_s",
+      "from": "spp_reg_S_AxiLite_WStrb",
+      "kind": "top",
+      "signal": "S_AxiLite_WStrb"
+    },
+    {
+      "to": "spp0_S_AxiLite_WValid_s",
+      "from": "spp_reg_S_AxiLite_WValid",
+      "kind": "top",
+      "signal": "S_AxiLite_WValid"
+    },
+    {
+      "to": "spp_reg_S_AxiLite_WReady",
+      "from": "spp0_S_AxiLite_WReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_WReady"
+    },
+    {
+      "to": "spp_reg_S_AxiLite_BResp",
+      "from": "spp0_S_AxiLite_BResp_s",
+      "kind": "top",
+      "signal": "S_AxiLite_BResp"
+    },
+    {
+      "to": "spp_reg_S_AxiLite_BValid",
+      "from": "spp0_S_AxiLite_BValid_s",
+      "kind": "top",
+      "signal": "S_AxiLite_BValid"
+    },
+    {
+      "to": "spp0_S_AxiLite_BReady_s",
+      "from": "spp_reg_S_AxiLite_BReady",
+      "kind": "top",
+      "signal": "S_AxiLite_BReady"
+    },
+    {
+      "to": "spp0_S_AxiLite_ArAddr_s",
+      "from": "spp_reg_S_AxiLite_ArAddr",
+      "kind": "top",
+      "signal": "S_AxiLite_ArAddr"
+    },
+    {
+      "to": "spp0_S_AxiLite_ArValid_s",
+      "from": "spp_reg_S_AxiLite_ArValid",
+      "kind": "top",
+      "signal": "S_AxiLite_ArValid"
+    },
+    {
+      "to": "spp_reg_S_AxiLite_ArReady",
+      "from": "spp0_S_AxiLite_ArReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_ArReady"
+    },
+    {
+      "to": "spp_reg_S_AxiLite_RData",
+      "from": "spp0_S_AxiLite_RData_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RData"
+    },
+    {
+      "to": "spp_reg_S_AxiLite_RResp",
+      "from": "spp0_S_AxiLite_RResp_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RResp"
+    },
+    {
+      "to": "spp_reg_S_AxiLite_RValid",
+      "from": "spp0_S_AxiLite_RValid_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RValid"
+    },
+    {
+      "to": "spp0_S_AxiLite_RReady_s",
+      "from": "spp_reg_S_AxiLite_RReady",
+      "kind": "top",
+      "signal": "S_AxiLite_RReady"
+    },
+    {
+      "to": "ofb0_S_Bc_TData_s",
+      "from": "(others => '0')",
+      "kind": "tie-off",
+      "signal": "S_Bc_TData",
+      "reason": "ofb0.S_Bc is not connected."
+    },
+    {
+      "to": "ofb0_S_Bc_TUser_s",
+      "from": "(others => '0')",
+      "kind": "tie-off",
+      "signal": "S_Bc_TUser",
+      "reason": "ofb0.S_Bc is not connected."
+    },
+    {
+      "to": "ofb0_S_Bc_TValid_s",
+      "from": "'0'",
+      "kind": "tie-off",
+      "signal": "S_Bc_TValid",
+      "reason": "ofb0.S_Bc is not connected."
+    },
+    {
+      "to": "ofb0_M_Bc_TReady_s",
+      "from": "'0'",
+      "kind": "tie-off",
+      "signal": "M_Bc_TReady",
+      "reason": "ofb0.M_Bc is not connected."
+    }
+  ],
+  "packing": [],
+  "constraints": [
+    {
+      "kind": "false_path",
+      "from": [
+        "Rst"
+      ],
+      "note": "Asynchronous reset input; the reset generators synchronise its release."
+    },
+    {
+      "kind": "max_delay",
+      "from": "pa0.LaneClk",
+      "to": "Clk_sys",
+      "ns": 5,
+      "datapathOnly": true,
+      "instances": [
+        "ofb0"
+      ],
+      "note": "Clock crossings of ofb0: the period of the faster clock."
+    },
+    {
+      "kind": "max_delay",
+      "from": "Clk_sys",
+      "to": "pa0.LaneClk",
+      "ns": 5,
+      "datapathOnly": true,
+      "instances": [
+        "ofb0"
+      ],
+      "note": "Clock crossings of ofb0: the period of the faster clock."
+    },
+    {
+      "kind": "vendor_scoped",
+      "file": "tools/vivado/all_constraints_amd.tcl",
+      "note": "AMD Vivado: source the script of Open Logic once for the scoped constraints of its clock crossings."
+    }
+  ],
+  "compile": [
+    {
+      "library": "olo",
+      "source": "olo",
+      "url": "https://github.com/open-space-hdl/open-logic-ft",
+      "tag": "4.7.0-ft.3",
+      "commit": "a3c86207790fa91d89e5f02a657f6345de31656e",
+      "fileList": "compile_order.txt",
+      "fileListFormat": "files",
+      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.3 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 and changes no other source, so the cores verified with 4.7.0-ft.2 use it unchanged.",
+      "entities": [
+        "olo_base_reset_gen"
+      ]
+    },
+    {
+      "library": "openrmap",
+      "source": "openrmap",
+      "url": "https://github.com/open-space-hdl/openrmap",
+      "commit": "e337a6d315519aa8cbd467a72fa62b8c0577923b",
+      "fileList": "component_list.txt",
+      "fileListFormat": "modules",
+      "verifiedWith": "4.7.0-ft.2",
+      "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
+      "entities": [
+        "omap_core"
+      ]
+    },
+    {
+      "library": "openspp",
+      "source": "openspp",
+      "url": "https://github.com/open-space-hdl/openspp",
+      "commit": "d8ba9744277f4ccd2a01f64476a5a91743246f7a",
+      "fileList": "component_list.txt",
+      "fileListFormat": "modules",
+      "verifiedWith": "4.7.0-ft.2",
+      "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
+      "entities": [
+        "spp_core",
+        "spp_nchar"
+      ]
+    },
+    {
+      "library": "openfibre",
+      "source": "openfibre",
+      "url": "https://github.com/open-space-hdl/openfibre",
+      "commit": "35424172bd9761cfbacc2e0449a803ab6c60fe8c",
+      "fileList": "component_list.txt",
+      "fileListFormat": "modules",
+      "verifiedWith": "4.7.0-ft.2",
+      "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. component_list.txt lists the technology-independent modules; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).",
+      "entities": [
+        "ofb_core",
+        "ofb_pa_gty"
+      ]
+    }
+  ],
+  "context": [
+    "library ieee;",
+    "use ieee.std_logic_1164.all;",
+    "library olo;",
+    "library openrmap;",
+    "library openspp;",
+    "library openfibre;"
+  ],
+  "problems": []
+}

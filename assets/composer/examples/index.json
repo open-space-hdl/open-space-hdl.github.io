@@ -1,0 +1,34 @@
+{
+  "examples": [
+    {
+      "file": "spw_rmap_node.composer.json",
+      "name": "spw_rmap_node",
+      "title": "SpaceWire RMAP target",
+      "description": "SpaceWire RMAP target: an OpenWire port and an OpenRMAP target with its memory interface."
+    },
+    {
+      "file": "spp_over_spw.composer.json",
+      "name": "spp_over_spw",
+      "title": "Space Packets over SpaceWire",
+      "description": "Space Packets over SpaceWire: OpenSPP behind the pass-through port of an OpenRMAP target, which shares one OpenWire port."
+    },
+    {
+      "file": "spp_over_spw_two_clocks.composer.json",
+      "name": "spp_over_spw_two_clocks",
+      "title": "Space Packets over SpaceWire, two clocks",
+      "description": "Space Packets over SpaceWire with two clock domains: the SpaceWire side runs on a 50 MHz port clock, the Space Packet node on the 100 MHz system clock. The Composer inserts asynchronous FIFOs for the packet links."
+    },
+    {
+      "file": "encrypted_spp_over_spw.composer.json",
+      "name": "encrypted_spp_over_spw",
+      "title": "Encrypted packets over SpaceWire",
+      "description": "Encrypted packets over SpaceWire: the OpenCrypto framer cuts every input packet (for example a compressed image) into chunks, the AES-GCM core encrypts every chunk with a generated IV and a 4-byte position in the AAD, and OpenSPP sends every encrypted chunk as one Space Packet through an N-Char adapter and an OpenWire port."
+    },
+    {
+      "file": "spacefibre_node.composer.json",
+      "name": "spacefibre_node",
+      "title": "SpaceFibre node",
+      "description": "SpaceFibre node: an OpenFibre port with its AMD Versal GTY adapter carries RMAP on virtual channel 0 (an OpenRMAP target through an N-Char adapter) and Space Packets on virtual channel 1 (OpenSPP, directly on the channel). The assignment of the channels is a convention of this example, not of the cores: any channel carries any packets, and both ends of the link use the same assignment."
+    }
+  ]
+}

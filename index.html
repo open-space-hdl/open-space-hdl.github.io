@@ -22,3 +22,25 @@ layout: default
     </div>
   </div>
 </section>
+
+<section class="teaser" id="composer" aria-labelledby="composer-title">
+  <div class="wrap">
+    <div class="teaser-text">
+      <p class="eyebrow">Open Space Composer <span class="nav-badge">Beta</span></p>
+      <h2 id="composer-title">Compose an FPGA system from the cores</h2>
+      <p>
+        Place the cores and Open Logic blocks in the browser and connect matching interfaces. The Composer inserts
+        width converters, clock crossings and reset generators, checks the design rules and saves a file from which
+        a person or an AI agent builds the VHDL top level.
+      </p>
+      <p class="teaser-links">
+        <a class="button" href="{{ '/composer/' | relative_url }}">Open the Composer</a>
+        <a href="{{ '/composer/format/' | relative_url }}">The file format</a>
+      </p>
+    </div>
+    <figure class="teaser-shot">
+      <img src="{{ '/assets/img/composer-teaser.png' | relative_url }}" width="1680" height="660" loading="lazy" decoding="async"
+           alt="The Composer with a SpaceWire port, an RMAP target, an N-Char adapter and a Space Packet node in two clock domains, and the two asynchronous FIFOs that the Composer inserted on the border between the domains.">
+    </figure>
+  </div>
+</section>

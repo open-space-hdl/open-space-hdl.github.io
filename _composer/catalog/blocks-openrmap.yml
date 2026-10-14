@@ -1,0 +1,204 @@
+# OpenRMAP blocks. Ports and generics come from the VHDL entity at the pinned commit (sources.yml).
+
+blocks:
+  - id: openrmap/omap_core
+    kind: core
+    name: RMAP node
+    group: openrmap
+    project: OpenRMAP
+    source: openrmap
+    entity: omap_core
+    path: hdl/omap_core/src/omap_core.vhd
+    packages: [hdl/omap_pkg/src/omap_pkg.vhd]
+    idPrefix: rmap
+    doc: https://openspacehdl.org/openrmap/docs/user_guide.html
+    summary: >-
+      RMAP target and initiator according to ECSS-E-ST-50-52C on SpaceWire packet ports, with a memory master,
+      a pass-through port for other protocols and a register file.
+    clocks:
+      - { port: Clk, primary: true, label: Clock, description: All of the core; one character per cycle. }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: Target_g, label: Target, description: The node executes RMAP commands (ECSS 5.7.1). At least one of Target and Initiator. }
+      - { name: Initiator_g, label: Initiator, description: The node issues RMAP commands (ECSS 5.7.1). At least one of Target and Initiator. }
+      - { name: Passthrough_g, label: Pass-through port, description: User port for packets of other protocols; without it they are discarded and counted. }
+      - { name: AxiAddrWidth_g, label: Memory address width, description: Address width of the memory interface; RMAP address bits above it must be zero. }
+      - { name: AxiDataWidth_g, label: Memory data width, check: pow2, min: 8, max: 1024, description: Data width of the memory interface (power of 2); the memory word of single-address accesses. }
+      - { name: AxiMaxBeats_g, label: Maximum burst length, description: Maximum burst length of the memory interface; 1 makes the memory master usable as AXI4-Lite master. }
+      - { name: BufferBytes_g, label: Write buffer, unit: bytes, description: Maximum Data Length of a verified write. }
+      - { name: ChunkBytes_g, label: Write chunk, unit: bytes, description: Chunk of a non-verified write that is written to memory once it is complete in the buffer. }
+      - { name: Windows_g, label: Address windows, enabledBy: Target_g, description: Address windows of the target. }
+      - { name: ExtAuth_g, label: External authorisation, description: Every command that passes the internal checks is presented for authorisation. }
+      - { name: TgtAddrBytes_g, label: Target address bytes, advanced: true, enabledBy: Initiator_g, description: Maximum length of the target SpaceWire address of a request. }
+      - { name: Transactions_g, label: Transactions, enabledBy: Initiator_g, description: Entries of the transaction table of the initiator; 0 without table and timeout. }
+      - { name: La0_g, label: Logical address 0, description: Reset value of logical address 0 of the target (enabled after reset). }
+      - { name: La1_g, label: Logical address 1, advanced: true, description: Reset value of logical address 1 of the target (disabled after reset). }
+      - { name: DefLaEn_g, label: Default address enabled, advanced: true, description: Reset value of the enable of the default logical address 0xFE. }
+      - { name: Key_g, label: Key, description: Reset value of the key of the target. }
+      - { name: TickCycles_g, label: Tick period, advanced: true, description: Reset value of the tick period minus one, in cycles. }
+      - { name: Timeout_g, label: Reply timeout, advanced: true, description: Reset value of the reply timeout in ticks; 0 disables it. }
+      - { name: WinInit_g, label: Initial windows, advanced: true, description: Reset values of the windows (WinCfgArray_t of omap_pkg); window 0 open by default. }
+    interfaces:
+      - name: S_Pkt
+        label: Received packets
+        type: spw.nchar
+        role: sink
+        clock: Clk
+        signals: { data: S_Pkt_TData, last: S_Pkt_TLast, valid: S_Pkt_TValid, ready: S_Pkt_TReady }
+      - name: M_Pkt
+        label: Packets to send
+        type: spw.nchar
+        role: source
+        clock: Clk
+        mustServe: true
+        signals: { data: M_Pkt_TData, last: M_Pkt_TLast, valid: M_Pkt_TValid, ready: M_Pkt_TReady }
+      - name: M_User
+        label: Other protocols out
+        type: spw.nchar
+        role: source
+        clock: Clk
+        enabledBy: Passthrough_g
+        tieOff: default
+        description: Packets whose second character is not the protocol identifier 0x01; unconnected, every packet is accepted.
+        signals: { data: M_User_TData, last: M_User_TLast, valid: M_User_TValid, ready: M_User_TReady }
+      - name: S_User
+        label: Other protocols in
+        type: spw.nchar
+        role: sink
+        clock: Clk
+        enabledBy: Passthrough_g
+        tieOff: default
+        description: Packets of other protocols, sent unchanged between the RMAP packets.
+        signals: { data: S_User_TData, last: S_User_TLast, valid: S_User_TValid, ready: S_User_TReady }
+      - name: S_AxiLite
+        label: Registers
+        type: axi4lite
+        role: slave
+        clock: Clk
+        prefix: S_AxiLite_
+        params: { addrWidth: 10 }
+      - name: Irq
+        label: Interrupt
+        type: irq
+        role: event_out
+        clock: Clk
+        tieOff: open
+        signals: { irq: Irq }
+      - name: M_Axi
+        label: Target memory
+        type: axi4
+        role: master
+        clock: Clk
+        enabledBy: Target_g
+        prefix: M_Axi_
+        params:
+          addrWidth: AxiAddrWidth_g
+          dataWidth: AxiDataWidth_g
+          liteWhen: [{ generic: AxiMaxBeats_g, value: 1 }, { generic: AxiDataWidth_g, value: 32 }]
+      - name: Auth
+        label: Authorisation
+        type: rmap.auth
+        role: master
+        clock: Clk
+        enabledBy: ExtAuth_g
+        signals:
+          valid: Auth_Valid
+          rsp_valid: Auth_RspValid
+          rsp_accept: Auth_RspAccept
+          tla: Auth_Tla
+          instr: Auth_Instr
+          key: Auth_Key
+          ila: Auth_Ila
+          tid: Auth_Tid
+          addr: Auth_Addr
+          len: Auth_Len
+      - name: Ind
+        label: Command indications
+        type: rmap.ind
+        role: event_out
+        clock: Clk
+        tieOff: open
+        signals:
+          valid: Ind_Valid
+          tla: Ind_Tla
+          instr: Ind_Instr
+          ila: Ind_Ila
+          tid: Ind_Tid
+          addr: Ind_Addr
+          len: Ind_Len
+          status: Ind_Status
+          replied: Ind_Replied
+      - name: S_Req
+        label: Requests
+        type: rmap.req
+        role: sink
+        clock: Clk
+        enabledBy: Initiator_g
+        tieOff: default
+        signals:
+          valid: S_Req_Valid
+          ready: S_Req_Ready
+          code: S_Req_Code
+          tgt_addr: S_Req_TgtAddr
+          tgt_addr_len: S_Req_TgtAddrLen
+          tla: S_Req_Tla
+          key: S_Req_Key
+          reply_addr: S_Req_ReplyAddr
+          reply_addr_len: S_Req_ReplyAddrLen
+          ila: S_Req_Ila
+          tid: S_Req_Tid
+          addr: S_Req_Addr
+          len: S_Req_Len
+      - name: S_ReqData
+        label: Request data
+        type: rmap.reqdata
+        role: sink
+        clock: Clk
+        enabledBy: Initiator_g
+        tieOff: default
+        signals: { data: S_ReqData_TData, valid: S_ReqData_TValid, ready: S_ReqData_TReady }
+      - name: M_Conf
+        label: Confirmations
+        type: rmap.conf
+        role: source
+        clock: Clk
+        enabledBy: Initiator_g
+        tieOff: default
+        signals:
+          valid: M_Conf_Valid
+          ready: M_Conf_Ready
+          tid: M_Conf_Tid
+          instr: M_Conf_Instr
+          status: M_Conf_Status
+          len: M_Conf_Len
+          error: M_Conf_Error
+      - name: M_RepData
+        label: Reply data
+        type: rmap.repdata
+        role: source
+        clock: Clk
+        enabledBy: Initiator_g
+        tieOff: default
+        signals: { data: M_RepData_TData, last: M_RepData_TLast, valid: M_RepData_TValid, ready: M_RepData_TReady }
+    presets:
+      - id: target
+        name: RMAP target
+        summary: Executes RMAP commands on its memory interface; no initiator.
+        generics: { Initiator_g: false }
+      - id: initiator
+        name: RMAP initiator
+        summary: Issues RMAP commands and receives the replies; no target.
+        generics: { Target_g: false }
+    rules:
+      - { kind: generic_any_true, generics: [Target_g, Initiator_g], message: At least one of Target_g and Initiator_g must be true. }
+      - { kind: mutual_initiator, generic: Transactions_g, message: Two nodes that are initiator and target of each other on one link need Transactions_g = 1. }
+      - { kind: same_domain, interfaces: [S_Pkt, M_Pkt], message: "The RMAP node normally runs on the user clock of its SpaceWire port; an asynchronous FIFO was inserted instead." }
+    idRegister: { address: "0x000", value: "0x4F4D4101" }
+    init:
+      - { text: "None needed: with the default generics the target accepts every command to the logical address 0xFE with the key 0x00 on the whole address space (WinInit_g). A flight configuration narrows the logical addresses (TGT_LA 0x010), the key (TGT_KEY) and the windows (WIN_BASE, WIN_LAST, WIN_CTRL), see the register map." }
+    notes:
+      - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.
+      - M_RepData, M_Conf and M_User must be served when connected; a stalled output stalls the received packet stream and the link.
+      - RMAP address bits above AxiAddrWidth_g must be zero in the windows.
+      - With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'.

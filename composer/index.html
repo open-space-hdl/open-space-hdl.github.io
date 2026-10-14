@@ -1,0 +1,16 @@
+---
+layout: app
+title: Composer
+description: >-
+  Open Space Composer (beta): arrange Open Space HDL cores and Open Logic blocks into an FPGA system, connect matching
+  interfaces and save the system as a file that describes how to build it.
+permalink: /composer/
+---
+<div id="composer" class="cmp"
+     data-catalog="{{ '/assets/composer/catalog.json' | relative_url }}"
+     data-examples="{{ '/assets/composer/examples/index.json' | relative_url }}"
+     data-format="{{ '/composer/format/' | relative_url }}">
+  <noscript><p class="cmp-message">The Composer runs in the browser and needs JavaScript.</p></noscript>
+  <p class="cmp-message cmp-loading" role="status">Loading the block catalog</p>
+</div>
+<script type="application/json" id="cmp-projects">{{ site.data.projects | jsonify }}</script>

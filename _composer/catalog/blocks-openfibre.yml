@@ -1,0 +1,239 @@
+# OpenFibre blocks. Ports and generics come from the VHDL entity at the pinned commit (sources.yml).
+
+blocks:
+  - id: openfibre/ofb_core
+    kind: core
+    name: SpaceFibre port
+    group: openfibre
+    project: OpenFibre
+    source: openfibre
+    entity: ofb_core
+    path: hdl/ofb_core/src/ofb_core.vhd
+    idPrefix: ofb
+    doc: https://openspacehdl.org/openfibre/docs/user_guide.html
+    summary: >-
+      SpaceFibre node interface of one port according to ECSS-E-ST-50-11C: virtual channels and broadcast messages,
+      Data Link, Multi-Lane and Lane layers and the Management Information Base, for 1 to 4 lanes. The physical
+      adapter (transceivers) is a separate block.
+    clocks:
+      - { port: UserClk, primary: true, label: User, description: "Virtual channel, broadcast and time-slot ports; for full throughput not slower than LaneClk." }
+      - { port: CoreClk, label: Core, freqGeneric: CoreClkFreq_g, description: "Data Link layer; not slower than LaneClk." }
+      - port: LaneClk
+        label: Lane
+        freqGeneric: LaneClkFreq_g
+        description: Multi-Lane and Lane layers and the physical adapter ports; the word clock of the lanes (156.25 MHz at 6.25 Gbit/s).
+      - { port: MgmtClk, label: Management, description: "Registers of the MIB and interrupt (any frequency)." }
+    resets:
+      - { port: Rst, active: high, sync: async, description: "Asynchronous reset; a reset generator per clock domain releases it synchronously, so all four clocks must run for the reset to complete." }
+    generics:
+      - { name: NumVc_g, label: Virtual channels, description: "Number of virtual channels (1 to 32); the VC ports are vectors in ascending order." }
+      - { name: NumLanes_g, label: Lanes, description: "Number of lanes (1 to 4); the VC ports carry 4 x NumLanes_g bytes per beat. The physical adapter takes the same value." }
+      - { name: LaneClkFreq_g, label: Lane clock frequency, unit: Hz, fromClock: LaneClk, description: "Frequency of LaneClk (lane timers, alignment timeout)." }
+      - { name: CoreClkFreq_g, label: Core clock frequency, unit: Hz, fromClock: CoreClk, description: "Frequency of CoreClk (scrubber of the error recovery buffer)." }
+      - { name: VcOutDepth_g, label: Output VC buffer, unit: beats, description: "Output VC buffer of every VC." }
+      - { name: VcInDepth_g, label: Input VC buffer, unit: words, description: "Input VC buffer of every VC; a multiple of 64 x NumLanes_g." }
+      - { name: ErbRows_g, label: Error recovery buffer, unit: rows, advanced: true, description: "Error recovery buffer in data rows of NumLanes_g words." }
+      - { name: InitPrbsWords_g, label: PRBS words at lane start, advanced: true, description: "PRBS words sent after INIT1 and INIT2 during the lane initialisation." }
+    interfaces:
+      - name: S_Vc
+        label: Virtual channel in
+        type: pkt.link
+        role: sink
+        clock: UserClk
+        vector: NumVc_g
+        tieOff: zero
+        description: "Packets to send on the virtual channel: one SpaceFibre packet (destination address and cargo) per stream packet; user with last: '1' ends the packet with an EEP."
+        signals: { data: S_Vc_TData, keep: S_Vc_TKeep, last: S_Vc_TLast, user: S_Vc_TUser, valid: S_Vc_TValid, ready: S_Vc_TReady }
+        userFields:
+          - { name: eep, label: "Error end of packet (EEP), valid with last", lsb: 0, bits: 1 }
+      - name: M_Vc
+        label: Virtual channel out
+        type: pkt.link
+        role: source
+        clock: UserClk
+        vector: NumVc_g
+        tieOff: zero
+        description: "Received packets of the virtual channel; user with last: '1' the packet ended with an EEP. A channel that is not read stops the far end through flow control."
+        signals: { data: M_Vc_TData, keep: M_Vc_TKeep, last: M_Vc_TLast, user: M_Vc_TUser, valid: M_Vc_TValid, ready: M_Vc_TReady }
+        userFields:
+          - { name: eep, label: "Error end of packet (EEP), valid with last", lsb: 0, bits: 1 }
+      - name: S_Bc
+        label: Broadcasts to send
+        type: spfi.bc
+        role: sink
+        clock: UserClk
+        tieOff: zero
+        description: "64-bit broadcast messages; user: channel 7:0, B_TYPE 15:8, DELAYED 16."
+        signals: { data: S_Bc_TData, user: S_Bc_TUser, valid: S_Bc_TValid, ready: S_Bc_TReady }
+        userFields:
+          - { name: channel, label: Broadcast channel, lsb: 0, bits: 8 }
+          - { name: btype, label: B_TYPE, lsb: 8, bits: 8 }
+          - { name: delayed, label: DELAYED, lsb: 16, bits: 1 }
+      - name: M_Bc
+        label: Received broadcasts
+        type: spfi.bc
+        role: source
+        clock: UserClk
+        tieOff: zero
+        description: "Received broadcast messages; user: channel 7:0, B_TYPE 15:8, DELAYED 16, LATE 17. Four messages are buffered; further ones are discarded and flagged."
+        signals: { data: M_Bc_TData, user: M_Bc_TUser, valid: M_Bc_TValid, ready: M_Bc_TReady }
+        userFields:
+          - { name: channel, label: Broadcast channel, lsb: 0, bits: 8 }
+          - { name: btype, label: B_TYPE, lsb: 8, bits: 8 }
+          - { name: delayed, label: DELAYED, lsb: 16, bits: 1 }
+          - { name: late, label: LATE (not sent immediately), lsb: 17, bits: 1 }
+      - name: S_Sched
+        label: Time-slots
+        type: spfi.sched
+        role: event_in
+        clock: UserClk
+        tieOff: default
+        description: SCHEDULE.request; unconnected, the time-slot 0 stays.
+        signals: { valid: S_Sched_Valid, slot: S_Sched_Slot }
+      - name: S_AxiLite
+        label: Registers
+        type: axi4lite
+        role: slave
+        clock: MgmtClk
+        prefix: S_AxiLite_
+        params: { addrWidth: 12 }
+      - name: Irq
+        label: Interrupt
+        type: irq
+        role: event_out
+        clock: MgmtClk
+        tieOff: open
+        signals: { irq: Irq }
+      - name: Phy
+        label: Physical adapter
+        type: spfi.phy
+        role: master
+        clock: LaneClk
+        mustServe: true
+        description: Symbol streams, control and status of every lane; connect the physical adapter or make the ports external.
+        signals:
+          tx_data: { port: PhyTx_Data, dir: out }
+          tx_k: { port: PhyTx_K, dir: out }
+          rx_data: { port: PhyRx_Data, dir: in }
+          rx_k: { port: PhyRx_K, dir: in }
+          rx_code_err: { port: PhyRx_CodeErr, dir: in }
+          rx_disp_err: { port: PhyRx_DispErr, dir: in }
+          rx_valid: { port: PhyRx_Valid, dir: in }
+          tx_enable: { port: Phy_TxEnable, dir: out }
+          rx_enable: { port: Phy_RxEnable, dir: out }
+          cdr_enable: { port: Phy_CdrEnable, dir: out }
+          rx_invert: { port: Phy_RxInvert, dir: out }
+          no_signal: { port: Phy_NoSignal, dir: in }
+          bit_sync: { port: Phy_BitSync, dir: in }
+          near_loopback: { port: Phy_SerialNearLoopback, dir: out }
+          far_loopback: { port: Phy_SerialFarLoopback, dir: out }
+          prbs_tx_sel: { port: Phy_PrbsTxSel, dir: out }
+          prbs_rx_sel: { port: Phy_PrbsRxSel, dir: out }
+          prbs_force_err: { port: Phy_PrbsForceErr, dir: out }
+          prbs_cnt_reset: { port: Phy_PrbsCntReset, dir: out }
+          prbs_err: { port: Phy_PrbsErr, dir: in }
+          prbs_locked: { port: Phy_PrbsLocked, dir: in }
+    rules:
+      - { kind: clock_relation, faster: CoreClk, slower: LaneClk, message: CoreClk must run at least as fast as LaneClk; a slower CoreClk loses received rows (DL_ERRORS bit 10). }
+      - { kind: clock_relation, faster: UserClk, slower: LaneClk, severity: warning, message: "UserClk slower than LaneClk limits the throughput of the virtual channels (one beat of NumLanes_g words per cycle)." }
+      - { kind: generic_multiple, generic: VcInDepth_g, of: 64 * NumLanes_g }
+    idRegister: { address: "0x000", value: "0x0FB10007" }
+    init:
+      - { text: "Start the link at one end: write LANE_CTRL (0x100 + 0x20 i) of every lane i = 0x63 (LaneStart, AutoStart, TxEn, RxEn); the reset value 0x62 (AutoStart) starts when the far end sends." }
+      - { text: "Wait for LANE_STATUS (0x104 + 0x20 i) bits 3:0 = 7 (Active) of the lanes and DL_STATUS (0x010) bits 1:0 = 3 (link initialised); VC_HAS_CREDIT (0x030) shows the VCs that may send." }
+    endToEnd: "Connect two nodes (in a simulation without the transceiver models: two cores joined by tb/ofb_tb_pa_model.vhd of OpenFibre), start the link at one end and send a packet on a virtual channel; it arrives on the same virtual channel at the other end."
+    constraints:
+      - { kind: max_delay_pairs, clocks: [UserClk, CoreClk, LaneClk, MgmtClk], note: "Clock crossings inside the core (Open Logic): for every pair of its clocks, in both directions, the period of the faster clock." }
+    notes:
+      - "The VC ports have the link format of OpenSPP: spp_core with DataWidth_g = 32 x NumLanes_g connects to a VC port directly (M_Link_User(0) to S_Vc_TUser); the further user bits of OpenSPP (destination index) do not reach the SpaceFibre port."
+      - Every VC carries any packets; which VC carries which traffic is a convention of the system that both ends of the link follow.
+      - Enable the safe implementation of state machines in the synthesis tool (Vivado FSM_SAFE_STATE = default_state on the state registers, Synplify syn_encoding = safe).
+      - Read ID (0x0FB10007) and GENERICS after the reset; start the link with LANE_CTRL = 0x63 at one end (LaneStart, AutoStart, TxEn, RxEn) and wait for DL_STATUS bits 1:0 = 3 (programming sequence of the user guide).
+      - All four clocks must run for the reset to complete; CoreClk may be the lane clock (as in the VCK190 reference design).
+
+  - id: openfibre/ofb_pa_gty
+    kind: module
+    name: SpaceFibre GTY adapter
+    group: openfibre
+    project: OpenFibre
+    vendor: AMD Versal GTY
+    source: openfibre
+    entity: ofb_pa_gty
+    path: hdl/ofb_pa_gty/src/ofb_pa_gty.vhd
+    idPrefix: pa
+    doc: https://openspacehdl.org/openfibre/docs/user_guide.html
+    summary: >-
+      Physical adapter of OpenFibre for one AMD Versal GTY quad (vendor-specific): 8B/10B, comma alignment and receive
+      clock correction in the transceivers at 6.25 Gbit/s. Its lane clock output is the lane clock of the core.
+    clocks:
+      - { port: FreeRunClk, primary: true, label: Free-running, description: "Free-running clock of the transceiver reset controller; it runs before the transceivers, for example the management clock." }
+      - { port: LaneClk, output: true, frequency: 156.25e6, label: Lane clock, description: "Transmit user clock of the quad (6.25 Gbit/s / 40 bits); the lane clock of the core." }
+    resets:
+      - { port: Rst, active: high, sync: async, description: "Asynchronous reset of the transceivers and their reset controller." }
+    generics:
+      - { name: NumLanes_g, label: Lanes, description: "Lanes of the quad in use (1 to 4); follows the core.", follow: { interfaces: [Phy], measure: generic, generic: NumLanes_g } }
+      - { name: SimDevice_g, label: Device family, advanced: true, description: "SIM_DEVICE of the BUFG_GT (device family)." }
+    interfaces:
+      - name: Phy
+        label: Core
+        type: spfi.phy
+        role: slave
+        clock: LaneClk
+        mustServe: true
+        description: The physical adapter ports of the core, one to one.
+        signals:
+          tx_data: { port: PhyTx_Data, dir: out }
+          tx_k: { port: PhyTx_K, dir: out }
+          rx_data: { port: PhyRx_Data, dir: in }
+          rx_k: { port: PhyRx_K, dir: in }
+          rx_code_err: { port: PhyRx_CodeErr, dir: in }
+          rx_disp_err: { port: PhyRx_DispErr, dir: in }
+          rx_valid: { port: PhyRx_Valid, dir: in }
+          tx_enable: { port: Phy_TxEnable, dir: out }
+          rx_enable: { port: Phy_RxEnable, dir: out }
+          cdr_enable: { port: Phy_CdrEnable, dir: out }
+          rx_invert: { port: Phy_RxInvert, dir: out }
+          no_signal: { port: Phy_NoSignal, dir: in }
+          bit_sync: { port: Stat_Aligned, dir: in }
+          near_loopback: { port: Phy_SerialNearLoopback, dir: out }
+          far_loopback: { port: Phy_SerialFarLoopback, dir: out }
+          prbs_tx_sel: { port: Phy_PrbsTxSel, dir: out }
+          prbs_rx_sel: { port: Phy_PrbsRxSel, dir: out }
+          prbs_force_err: { port: Phy_PrbsForceErr, dir: out }
+          prbs_cnt_reset: { port: Phy_PrbsCntReset, dir: out }
+          prbs_err: { port: Phy_PrbsErr, dir: in }
+          prbs_locked: { port: Phy_PrbsLocked, dir: in }
+      - name: Gt
+        label: Serial lanes
+        type: spfi.serial
+        role: pins
+        externalOnly: true
+        description: Serial transmit and receive pairs of the quad and the reference clock from its IBUFDS_GTE5.
+        signals:
+          tx_p: { port: Gt_TxP, dir: out }
+          tx_n: { port: Gt_TxN, dir: out }
+          rx_p: { port: Gt_RxP, dir: in }
+          rx_n: { port: Gt_RxN, dir: in }
+          refclk: { port: RefClk, dir: in }
+      - name: LaneRst
+        label: Lane reset
+        type: reset
+        role: event_out
+        clock: LaneClk
+        tieOff: open
+        description: High while the transmitters are not ready; hold the reset of the core while it is high.
+        signals: { rst: LaneRst }
+      - name: Stat
+        label: Status
+        type: sig.status
+        role: event_out
+        clock: LaneClk
+        tieOff: open
+        description: Transmitters and receivers ready, receive buffer errors and clock corrections per lane.
+        signals: { tx_ready: Stat_TxReady, rx_ready: Stat_RxReady, rx_buf_err: Stat_RxBufErr, clk_cor: Stat_ClkCor }
+    notes:
+      - "Vendor-specific (AMD Versal GTY). hdl/ofb_pa_gty/src/ofb_pa_gty.vhd is not in component_list.txt: add it to the library openfibre, and create the transceiver wizard instance ofb_gtw in the Vivado project with hdl/ofb_pa_gty/tcl/ofb_gtw.tcl (source the file, then ofb_gtw_create ofb_gtw 156.25 for a 156.25 MHz reference clock)."
+      - RefClk is the output O of the IBUFDS_GTE5 of the reference clock pins of the quad; place the buffer in the chip-level top, as hdl/ofb_vck190/src/ofb_vck190_top.vhd does.
+      - Hold the reset of the core while LaneRst is high; the VCK190 reference design synchronises LaneRst to MgmtClk and ORs it with the power-on reset into Rst of the core.
+      - The line rate is 6.25 Gbit/s with a 156.25 MHz reference clock, so LaneClk runs at 156.25 MHz.
+      - Simulation needs the AMD transceiver models (unisim and the simulation files of the wizard); OpenFibre simulates the adapter with tools/run_xsim.py. Without them, the test bench model tb/ofb_tb_pa_model.vhd of OpenFibre (two adapters joined by a lane, one clock) stands in for the adapters of both ends of a link.

@@ -1,0 +1,24 @@
+# Palette of the Composer: two categories with their groups, in display order.
+
+categories:
+  - id: cores
+    name: Cores
+    description: Open Space HDL IP cores and their standalone modules.
+    groups:
+      - { id: openwire, name: OpenWire }
+      - { id: openrmap, name: OpenRMAP }
+      - { id: openspp, name: OpenSPP }
+      - { id: openfibre, name: OpenFibre }
+      - { id: opencrypto, name: OpenCrypto }
+
+  - id: olo
+    name: Open Logic
+    description: Building blocks of the fault-tolerant Open Logic library.
+    groups:
+      - { id: olo-fifo, name: FIFOs }
+      - { id: olo-width, name: Width conversion }
+      - { id: olo-cc, name: Clock crossing }
+      - { id: olo-reset, name: Reset }
+      - { id: olo-flow, name: Flow }
+      - { id: olo-edac, name: EDAC }
+      - { id: olo-axi, name: AXI }

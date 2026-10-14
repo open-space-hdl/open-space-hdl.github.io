@@ -1,0 +1,508 @@
+# Interface types of the Open Space Composer.
+#
+# The type decides whether two interfaces can be connected at all; the interface parameters (widths, keep, user,
+# clock) decide whether the resolver inserts an adapter. Every type has a colour (ports and connections) and a kind,
+# which selects the port symbol, so that the meaning never depends on colour alone:
+#
+#   stream  circle    valid/ready (or valid only) data flow from a source to a sink
+#   bus     square    request/response bus from a master to a slave
+#   pins    diamond   device pins, only as an external interface of the top level
+#   event   triangle  single signals or pulses without handshake
+#
+# signals: logical signal names with their direction seen from the source (stream), master (bus) or the driving side
+#          (event); sinks, slaves and event inputs see the flipped direction. Optional signals may be missing.
+# fields:  direction of additional, interface-specific signals (descriptor fields), or absent if none are allowed.
+# accepts: further source types a sink of this type accepts, with the condition; sideband: required gives the sink
+#          the side band constants of the connection even where the source has a signal of the same name.
+# bridges: types that can be reached through a bridge block.
+# Colours: contrast of at least 3:1 against the canvas (checked by the unit tests).
+# cdc:     how an interface of this type crosses clock domains: streams use an asynchronous FIFO when the source
+#          has ready and a simple crossing otherwise; events: level (synchronised bits), pulse (pulse crossing),
+#          valid (valid with data, simple crossing), none (not possible: both ends must be in one domain).
+
+types:
+  # SpaceWire ---------------------------------------------------------------------------------------------------------
+  - id: spw.nchar
+    name: SpaceWire packets (N-Char)
+    family: SpaceWire
+    kind: stream
+    color: "#D9480F"
+    description: >-
+      Packets as N-Char stream, one data character per beat; a beat with Last is the end of packet marker
+      (data bit 0: '0' EOP, '1' EEP).
+    signals:
+      data: { dir: out }
+      last: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in }
+    bridges:
+      - { type: pkt.link, via: openspp/spp_nchar }
+
+  - id: spw.timecode
+    name: SpaceWire time-codes
+    family: SpaceWire
+    kind: stream
+    color: "#B35C00"
+    description: Time-codes of the SpaceWire time-code service (6 bit value).
+    signals:
+      data: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in, optional: true }
+
+  - id: spw.int
+    name: SpaceWire interrupts
+    family: SpaceWire
+    kind: stream
+    color: "#9C4A1A"
+    description: Interrupt codes of the SpaceWire distributed interrupt service (5 bit interrupt identifier).
+    signals:
+      data: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in, optional: true }
+
+  - id: spw.intack
+    name: SpaceWire interrupt acknowledgements
+    family: SpaceWire
+    kind: stream
+    color: "#8C5A2B"
+    description: Interrupt acknowledgement codes of the SpaceWire distributed interrupt service (5 bit identifier).
+    signals:
+      data: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in, optional: true }
+
+  - id: spw.ds
+    name: SpaceWire line
+    family: SpaceWire
+    kind: pins
+    color: "#495057"
+    description: Data-strobe line drivers and receivers of a SpaceWire link (LVDS buffers outside the core).
+    signals:
+      d_out: { dir: out }
+      s_out: { dir: out }
+      d_in: { dir: in }
+      s_in: { dir: in }
+      tx_en: { dir: out, optional: true }
+      rx_en: { dir: out, optional: true }
+
+  # Packet links ------------------------------------------------------------------------------------------------------
+  - id: pkt.link
+    name: Packet link
+    family: Packets
+    kind: stream
+    color: "#2B8A3E"
+    description: >-
+      Network packets on a wide stream: byte 0 of a beat in data bits 7:0, keep contiguous from byte 0 and partial
+      only on the last beat, last marks the end of the packet, user bit 0 on the last beat is the error end of packet
+      (EEP). Further user bits carry a destination index where the source provides one.
+    signals:
+      data: { dir: out }
+      keep: { dir: out }
+      last: { dir: out }
+      user: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in }
+    bridges:
+      - { type: spw.nchar, via: openspp/spp_nchar }
+
+  - id: byte.stream
+    name: Byte stream
+    family: Packets
+    kind: stream
+    color: "#0C8599"
+    description: >-
+      Byte stream with keep and last and no side band: byte 0 of a beat in data bits 7:0, keep contiguous from
+      byte 0 and partial only on the last beat of a packet.
+    signals:
+      data: { dir: out }
+      keep: { dir: out, optional: true }
+      last: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in }
+    accepts:
+      - type: spp.rx
+        note: The side band of the receive port (APID, flags) is not passed on.
+      - type: gcm.msg
+        note: The messages of the AES-GCM core are a byte stream with its dense output (DenseOutput_g = true); the section and error bits are not passed on.
+
+  # Space Packet Protocol ---------------------------------------------------------------------------------------------
+  - id: spp.tx
+    name: Space Packet send port
+    family: Space Packets
+    kind: stream
+    color: "#087F5B"
+    description: >-
+      Send port of OpenSPP: one SDU (Octet String Service) or one Space Packet (Packet Service) per stream packet,
+      with the per-SDU side band (APID, packet type, secondary header flag, packet name) in user.
+    signals:
+      data: { dir: out }
+      keep: { dir: out }
+      last: { dir: out }
+      user: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in }
+    accepts:
+      - type: byte.stream
+        sideband: required
+        note: The side band of the send port is set to constants on the connection.
+      - type: gcm.msg
+        sideband: required
+        note: "One encrypted message per SDU (with the dense output of the core: IV, AAD, ciphertext, tag); the side band of the send port is set to constants on the connection."
+
+  - id: spp.rx
+    name: Space Packet receive port
+    family: Space Packets
+    kind: stream
+    color: "#5C940D"
+    description: >-
+      Receive port of OpenSPP: one SDU or Space Packet per stream packet, with APID, flags, loss indicator and the
+      user application value in user.
+    signals:
+      data: { dir: out }
+      keep: { dir: out }
+      last: { dir: out }
+      user: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in }
+
+  - id: spp.err
+    name: Space Packet errors
+    family: Space Packets
+    kind: event
+    cdc: valid
+    color: "#C92A2A"
+    description: One-cycle event for every rejected SDU and every discarded packet, with code, port and APID.
+    signals:
+      valid: { dir: out }
+    fields: out
+
+  # SpaceFibre --------------------------------------------------------------------------------------------------------
+  - id: spfi.bc
+    name: SpaceFibre broadcasts
+    family: SpaceFibre
+    kind: stream
+    color: "#1971C2"
+    description: Broadcast messages of the SpaceFibre broadcast service (64 bit message, channel and type in user).
+    signals:
+      data: { dir: out }
+      user: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in }
+
+  - id: spfi.sched
+    name: SpaceFibre time-slots
+    family: SpaceFibre
+    kind: event
+    cdc: valid
+    color: "#4263EB"
+    description: SCHEDULE.request of the SpaceFibre quality of service, a one-cycle pulse with the time-slot (0 to 63) that starts.
+    signals:
+      valid: { dir: out }
+    fields: out
+
+  - id: spfi.phy
+    name: SpaceFibre physical adapter
+    family: SpaceFibre
+    kind: bus
+    cdc: none
+    color: "#364FC7"
+    description: Symbol streams, control and status of every lane between the core and its physical adapter.
+    fields: mixed
+
+  - id: spfi.serial
+    name: SpaceFibre serial lanes
+    family: SpaceFibre
+    kind: pins
+    color: "#343A40"
+    description: Serial transceiver lanes and reference clock pins of a SpaceFibre physical adapter.
+    fields: mixed
+
+  # RMAP --------------------------------------------------------------------------------------------------------------
+  - id: rmap.req
+    name: RMAP requests
+    family: RMAP
+    kind: stream
+    color: "#7048E8"
+    description: Commands of the RMAP initiator service (one descriptor per command).
+    signals:
+      valid: { dir: out }
+      ready: { dir: in }
+    fields: out
+
+  - id: rmap.reqdata
+    name: RMAP request data
+    family: RMAP
+    kind: stream
+    color: "#9C36B5"
+    description: Data bytes of write and read-modify-write commands of the RMAP initiator service.
+    signals:
+      data: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in }
+
+  - id: rmap.conf
+    name: RMAP confirmations
+    family: RMAP
+    kind: stream
+    color: "#862E9C"
+    description: Confirmation of every command of the RMAP initiator service (status, length, error).
+    signals:
+      valid: { dir: out }
+      ready: { dir: in, optional: true }
+    fields: out
+
+  - id: rmap.repdata
+    name: RMAP reply data
+    family: RMAP
+    kind: stream
+    color: "#AE3EC9"
+    description: Data bytes of read replies of the RMAP initiator service; last on the last byte.
+    signals:
+      data: { dir: out }
+      last: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in, optional: true }
+
+  - id: rmap.auth
+    name: RMAP authorisation
+    family: RMAP
+    kind: bus
+    cdc: none
+    color: "#5F3DC4"
+    description: External authorisation of RMAP commands; the request is held until the response.
+    signals:
+      valid: { dir: out }
+      rsp_valid: { dir: in }
+      rsp_accept: { dir: in }
+    fields: out
+
+  - id: rmap.ind
+    name: RMAP indications
+    family: RMAP
+    kind: event
+    cdc: valid
+    color: "#6741D9"
+    description: One-cycle indication of every RMAP command with an intact header, with its header fields and status.
+    signals:
+      valid: { dir: out }
+    fields: out
+
+  # Encryption and compression ----------------------------------------------------------------------------------------
+  - id: gcm.ctx
+    name: AES-GCM contexts
+    family: Encryption
+    kind: stream
+    color: "#A61E4D"
+    description: One context per message of the AES-GCM core (direction, key slot, IV source, IV).
+    signals:
+      valid: { dir: out }
+      ready: { dir: in }
+    fields: out
+
+  - id: gcm.msg
+    name: AES-GCM messages
+    family: Encryption
+    kind: stream
+    color: "#D6336C"
+    description: Messages of the AES-GCM core with the section (IV, AAD, DATA, TAG) of every beat in user.
+    signals:
+      data: { dir: out }
+      keep: { dir: out }
+      last: { dir: out }
+      user: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in, optional: true }
+    accepts:
+      - type: byte.stream
+        sideband: required
+        note: Every packet is one message; the section of its beats is a constant on the connection.
+
+  - id: gcm.sts
+    name: AES-GCM status
+    family: Encryption
+    kind: stream
+    color: "#E64980"
+    description: Status of every message of the AES-GCM core (code, key slot, IV, section lengths).
+    signals:
+      valid: { dir: out }
+      ready: { dir: in, optional: true }
+    fields: out
+
+  - id: c123.samples
+    name: Image samples
+    family: Compression
+    kind: stream
+    color: "#0B7285"
+    description: Image samples in the input order of a CCSDS 123.0-B-2 compressor, one sample per beat.
+    signals:
+      data: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in }
+
+  - id: c123.limits
+    name: Error limits
+    family: Compression
+    kind: stream
+    color: "#2B6CB0"
+    description: Error limit values for the periodic error limit updating of a CCSDS 123.0-B-2 compressor.
+    signals:
+      data: { dir: out }
+      valid: { dir: out }
+      ready: { dir: in }
+
+  # Buses and events --------------------------------------------------------------------------------------------------
+  - id: axi4
+    name: AXI4 memory bus
+    family: Buses
+    kind: bus
+    cdc: none
+    color: "#0E1A2B"
+    description: AXI4 memory-mapped bus (bursts), for example the memory access of an RMAP target.
+    signals:
+      AwAddr: { dir: out }
+      AwLen: { dir: out }
+      AwSize: { dir: out }
+      AwBurst: { dir: out }
+      AwLock: { dir: out, optional: true }
+      AwCache: { dir: out, optional: true }
+      AwProt: { dir: out, optional: true }
+      AwValid: { dir: out }
+      AwReady: { dir: in }
+      WData: { dir: out }
+      WStrb: { dir: out }
+      WLast: { dir: out }
+      WValid: { dir: out }
+      WReady: { dir: in }
+      BResp: { dir: in }
+      BValid: { dir: in }
+      BReady: { dir: out }
+      ArAddr: { dir: out }
+      ArLen: { dir: out }
+      ArSize: { dir: out }
+      ArBurst: { dir: out }
+      ArLock: { dir: out, optional: true }
+      ArCache: { dir: out, optional: true }
+      ArProt: { dir: out, optional: true }
+      ArValid: { dir: out }
+      ArReady: { dir: in }
+      RData: { dir: in }
+      RResp: { dir: in }
+      RLast: { dir: in }
+      RValid: { dir: in }
+      RReady: { dir: out }
+
+  - id: axi4lite
+    name: AXI4-Lite register bus
+    family: Buses
+    kind: bus
+    cdc: none
+    color: "#5A6B80"
+    description: AXI4-Lite register access (32 bit data), for example the register file of a core.
+    accepts:
+      - type: axi4
+        condition: liteWhen
+        note: The AXI4 master issues single transfers only, so its AXI4-Lite subset drives the slave.
+    signals:
+      AwAddr: { dir: out }
+      AwValid: { dir: out }
+      AwReady: { dir: in }
+      WData: { dir: out }
+      WStrb: { dir: out }
+      WValid: { dir: out }
+      WReady: { dir: in }
+      BResp: { dir: in }
+      BValid: { dir: in }
+      BReady: { dir: out }
+      ArAddr: { dir: out }
+      ArValid: { dir: out }
+      ArReady: { dir: in }
+      RData: { dir: in }
+      RResp: { dir: in }
+      RValid: { dir: in }
+      RReady: { dir: out }
+
+  - id: irq
+    name: Interrupt
+    family: Events
+    kind: event
+    cdc: level
+    color: "#C2255C"
+    description: Level interrupt of a register file.
+    signals:
+      irq: { dir: out }
+
+  - id: ecc.event
+    name: EDAC events
+    family: Events
+    kind: event
+    cdc: pulse
+    color: "#8F6B00"
+    description: Corrected single and detected double bit errors of SECDED-protected memories (pulses or vectors).
+    signals:
+      sec: { dir: out }
+      ded: { dir: out }
+      valid: { dir: out, optional: true }
+
+  - id: ecc.inject
+    name: EDAC error injection
+    family: Events
+    kind: event
+    cdc: valid
+    color: "#7A6A00"
+    description: Error injection into SECDED-protected memories, for tests.
+    fields: out
+
+  - id: reset
+    name: Reset
+    family: Events
+    kind: event
+    cdc: none
+    color: "#343A40"
+    description: Synchronous high-active reset of a clock domain.
+    signals:
+      rst: { dir: out }
+
+  - id: sig.status
+    name: Status signals
+    family: Events
+    kind: event
+    cdc: level
+    color: "#808891"
+    description: Status outputs of a block (levels, flags), for monitoring.
+    fields: out
+
+  - id: sig.control
+    name: Control signals
+    family: Events
+    kind: event
+    cdc: level
+    color: "#808891"
+    description: Static or slow control inputs of a block.
+    fields: out
+
+  # Untyped Open Logic streams ----------------------------------------------------------------------------------------
+  - id: axis.any
+    name: Generic stream
+    family: Generic
+    kind: stream
+    color: "#6C757D"
+    description: >-
+      Untyped Open Logic stream; it takes the type of the first interface it is connected to, and the block generics
+      (widths) follow that interface.
+    signals:
+      data: { dir: out }
+      valid: { dir: out, optional: true }
+      ready: { dir: in, optional: true }
+      last: { dir: out, optional: true }
+      keep: { dir: out, optional: true }
+    fields: out
+    generic: true
+
+  - id: event.any
+    name: Generic event
+    family: Generic
+    kind: event
+    color: "#6C757D"
+    description: Untyped Open Logic signals of a clock crossing; they take the type of the first interface they are connected to.
+    fields: out
+    generic: true

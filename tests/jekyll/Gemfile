@@ -1,0 +1,14 @@
+# Jekyll with the gem set of GitHub Pages, for the browser tests of the Composer (continuous integration and local
+# preview). The site itself stays a legacy Pages build; this file is not part of it (tests/ is excluded).
+#
+#   BUNDLE_GEMFILE=tests/jekyll/Gemfile bundle install
+#   BUNDLE_GEMFILE=tests/jekyll/Gemfile bundle exec jekyll build
+source "https://rubygems.org"
+
+gem "github-pages", group: :jekyll_plugins
+# no longer default gems of Ruby 3.3 and later
+gem "webrick"
+gem "csv"
+gem "base64"
+gem "bigdecimal"
+gem "tzinfo-data", platforms: [:windows, :jruby]

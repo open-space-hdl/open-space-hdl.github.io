@@ -1,0 +1,14 @@
+
+  <header class="site-header{% if include.compact %} site-header-compact{% endif %}">
+    <div class="{% if include.compact %}header-bar header-bar-wide{% else %}wrap header-bar{% endif %}">
+      <a class="brand" href="{{ '/' | relative_url }}">
+        <img src="{{ '/assets/img/logo-horizontal-inverse.svg' | relative_url }}" alt="{{ site.title }}" width="233" height="30">
+      </a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="{{ '/#projects' | relative_url }}">Projects</a>
+        <a href="{{ '/composer/' | relative_url }}"{% if page.url contains '/composer/' %} aria-current="page"{% endif %}>Composer <span class="nav-badge">Beta</span></a>
+        <a href="{{ '/trl/' | relative_url }}"{% if page.url == '/trl/' %} aria-current="page"{% endif %}>TRL</a>
+        <a href="{{ site.github_org }}">GitHub</a>
+      </nav>
+    </div>
+  </header>

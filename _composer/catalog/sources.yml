@@ -1,0 +1,85 @@
+# Source repositories of the blocks, pinned to the commit (or tag) the catalog was checked against.
+#
+# Updating a core: set the new commit of main here, run "python tools/composer_catalog.py build" and
+# "python tools/composer_catalog.py check"; the check reads every entity at the pinned commit.
+#
+#   file_list:        file of the repository that lists the sources in compile order
+#   file_list_format: modules (one module directory per line, sources in <module>/src/*.vhd)
+#                     or files (one VHDL file per line)
+#   verified_with:    Open Logic FT tag the repository is verified with (its open-logic submodule)
+#   note:             what a build of a system needs to know about the repository (shown in the brief)
+
+sources:
+  - id: openwire
+    name: OpenWire
+    repo: openwire
+    url: https://github.com/open-space-hdl/openwire
+    doc: https://openspacehdl.org/openwire/
+    commit: b6c1a516e895f74b1b2699a41bf6ed45a11f3a84
+    library: openwire
+    file_list: component_list.txt
+    file_list_format: modules
+    verified_with: 4.7.0-ft.2
+    note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
+
+  - id: openrmap
+    name: OpenRMAP
+    repo: openrmap
+    url: https://github.com/open-space-hdl/openrmap
+    doc: https://openspacehdl.org/openrmap/
+    commit: e337a6d315519aa8cbd467a72fa62b8c0577923b
+    library: openrmap
+    file_list: component_list.txt
+    file_list_format: modules
+    verified_with: 4.7.0-ft.2
+    note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
+
+  - id: openspp
+    name: OpenSPP
+    repo: openspp
+    url: https://github.com/open-space-hdl/openspp
+    doc: https://openspacehdl.org/openspp/
+    commit: d8ba9744277f4ccd2a01f64476a5a91743246f7a
+    library: openspp
+    file_list: component_list.txt
+    file_list_format: modules
+    verified_with: 4.7.0-ft.2
+    note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
+
+  - id: openfibre
+    name: OpenFibre
+    repo: openfibre
+    url: https://github.com/open-space-hdl/openfibre
+    doc: https://openspacehdl.org/openfibre/
+    commit: 35424172bd9761cfbacc2e0449a803ab6c60fe8c
+    library: openfibre
+    file_list: component_list.txt
+    file_list_format: modules
+    verified_with: 4.7.0-ft.2
+    note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. component_list.txt lists the technology-independent modules; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).
+
+  - id: opencrypto
+    name: OpenCrypto
+    repo: opencrypto
+    url: https://github.com/open-space-hdl/opencrypto
+    doc: https://openspacehdl.org/opencrypto/
+    commit: 4e62f89dd25f55bfa3942040c7f41d9f421f4abf
+    library: opencrypto
+    file_list: component_list.txt
+    file_list_format: modules
+    verified_with: 4.7.0-ft.3
+    note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
+
+  - id: olo
+    name: Open Logic FT
+    repo: open-logic-ft
+    url: https://github.com/open-space-hdl/open-logic-ft
+    doc: https://openspacehdl.org/open-logic-ft/
+    tag: 4.7.0-ft.3
+    library: olo
+    file_list: compile_order.txt
+    file_list_format: files
+    note: >-
+      Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files.
+      4.7.0-ft.3 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 and changes no other source, so the
+      cores verified with 4.7.0-ft.2 use it unchanged.
