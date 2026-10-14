@@ -449,6 +449,22 @@ body.cmp-dragging * { cursor: grabbing !important; user-select: none; }
   font-weight: 600;
   fill: var(--orange-text);
 }
+.cmp-block-bottleneck text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--orange-text);
+}
+.cmp-block.is-bottleneck .cmp-block-body { stroke: var(--orange); stroke-width: 2; }
+.cmp-traffic-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+.cmp-traffic-row label { font-size: 0.8rem; color: var(--text-muted); }
+.cmp-traffic-paths { margin-top: 6px; }
 .cmp-subsystem-changed {
   margin: 8px 0;
   padding: 8px 10px;

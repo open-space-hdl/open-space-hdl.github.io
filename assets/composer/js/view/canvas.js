@@ -650,7 +650,7 @@ export class CanvasView {
       const extSig = sc.externals.filter((x) => x.interface.startsWith(`${blk.id}.`)).map((x) => [x.interface, x.prefix, x.ports]);
       // a subsystem: its interfaces follow its definition, and it shows whether its tab holds another version
       const subSig = b.kind === 'subsystem' ? [blk.ports.map((p) => p.ref), this.app.changedSubsystems.has(b.entity)] : null;
-      const signature = JSON.stringify([inst.id, inst.block, inst.preset, rec.generics, domainsSig, extSig, subSig]);
+      const signature = JSON.stringify([inst.id, inst.block, inst.preset, rec.generics, domainsSig, extSig, subSig, this.app.bottlenecks.get(inst.id) ?? '']);
       let entry = this.blocks.get(blk.id);
       if (!entry || entry.signature !== signature) {
         const el = entry?.el ?? /** @type {SVGGElement} */ (s('g', { class: 'cmp-block' }));
@@ -779,6 +779,14 @@ export class CanvasView {
       s('text', { class: 'cmp-block-name', x: 16, y: 44 }, sub ? `Subsystem · ${b.entity}` : `${preset?.name ?? b.name} · ${b.entity}`),
       s('rect', { class: 'cmp-block-focus', x: -5, y: -5, width: w + 10, height: hgt + 10, rx: 16 }),
     );
+    // the bottleneck of a path whose stated traffic the system does not sustain
+    const limit = this.app.bottlenecks.get(inst.id);
+    if (limit) {
+      el.classList.add('is-bottleneck');
+      inner.append(s('g', { class: 'cmp-block-bottleneck' },
+        s('text', { x: w - 16, y: sub && this.app.changedSubsystems.has(b.entity) ? 44 : 26, 'text-anchor': 'end' }, 'bottleneck'),
+        s('title', {}, limit)));
+    }
     if (sub && this.app.changedSubsystems.has(b.entity)) {
       inner.append(s('g', { class: 'cmp-block-changed' },
         s('text', { x: w - 16, y: 26, 'text-anchor': 'end' }, 'changed'),
