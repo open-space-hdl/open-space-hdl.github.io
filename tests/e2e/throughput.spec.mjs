@@ -24,12 +24,16 @@ test('stated traffic of an external interface: its paths, the warning, the bottl
   await expect(row.getByLabel('Packet length (B)')).toHaveValue('');
   // the capacity of its path at the reference length while nothing is stated
   await expect(row).toContainText('to the link of ofb0: 4.46 Gbit/s at 1024 B packets, limited by the link of ofb0');
-  // both values take effect together when the focus leaves the pair: Tab from the length goes on to the rate
+  // the values take effect together when the focus leaves the fields: Tab from the length goes on to the rate, from the
+  // rate to the largest packet
   await row.getByLabel('Packet length (B)').fill('1024');
   await row.getByLabel('Packet length (B)').press('Tab');
   await expect(row.getByLabel('Rate (Mbit/s)')).toBeFocused();
   await row.getByLabel('Rate (Mbit/s)').fill('5000');
   await row.getByLabel('Rate (Mbit/s)').press('Tab');
+  await expect(row.getByLabel('Largest packet (B)')).toBeFocused();
+  expect((await design(page)).externals.find((/** @type {any} */ e) => e.interface === 'spp0.S_Tx[0]').traffic).toBeUndefined();
+  await row.getByLabel('Largest packet (B)').press('Tab');
   await expect.poll(async () => (await design(page)).externals.find((/** @type {any} */ e) => e.interface === 'spp0.S_Tx[0]').traffic)
     .toEqual({ packetBytes: 1024, bitsPerSecond: 5e9 });
   // the throughput warning (the example has a warning of its own on the transceiver reset)
@@ -73,4 +77,37 @@ test('a rate entered in Mbit/s is stored in bit/s and shown in Mbit/s again', as
   await page.locator('[data-block="spp0"]').focus();
   await expect(row.getByLabel('Rate (Mbit/s)')).toHaveValue('1600');
   await expect(row.getByLabel('Packet length (B)')).toHaveValue('512');
+});
+
+test('the largest packet of an external interface bounds the packets along the chain', async ({ page }) => {
+  await open(page);
+  await openExample(page, 'SpaceFibre node');
+  await page.locator('[data-block="spp0"]').focus();
+  const row = page.locator('[data-itf="spp0.S_Tx[0]"]');
+  await expect(row.getByLabel('Largest packet (B)')).toHaveValue('');
+  // without a largest packet the source is not bounded: a remark at the first limit
+  const remark = page.locator('.cmp-check-item.cmp-sev-info', { hasText: 'Packets from tx0_ (spp0.S_Tx[0]) reach spp0.S_Tx[0]' });
+  await expect(remark).toHaveCount(1);
+  await row.getByLabel('Packet length (B)').fill('1024');
+  await row.getByLabel('Largest packet (B)').fill('9000');
+  await row.getByLabel('Largest packet (B)').press('Enter');
+  await expect.poll(async () => (await design(page)).externals.find((/** @type {any} */ e) => e.interface === 'spp0.S_Tx[0]').traffic)
+    .toEqual({ packetBytes: 1024, maxPacketBytes: 9000 });
+  const error = page.locator('.cmp-check-item.cmp-sev-error', { hasText: 'has up to 9000 bytes (its stated largest packet)' });
+  await expect(error).toHaveCount(1);
+  await expect(error).toContainText('set TxBufferBytes_g of spp0 to 16384, the smallest value of at least 9000 that TxBufferBytes_g allows (now 4096)');
+  await expect(remark).toHaveCount(0);
+  // a largest packet below the packet length is refused
+  await page.locator('[data-block="spp0"]').focus();
+  await row.getByLabel('Largest packet (B)').fill('100');
+  await row.getByLabel('Largest packet (B)').press('Enter');
+  await expect(row).toContainText('Give the largest packet in whole bytes, at least the packet length, or leave it empty.');
+  expect((await design(page)).externals.find((/** @type {any} */ e) => e.interface === 'spp0.S_Tx[0]').traffic.maxPacketBytes).toBe(9000);
+  // empty again: not bounded
+  await row.getByLabel('Largest packet (B)').fill('');
+  await row.getByLabel('Largest packet (B)').press('Enter');
+  await expect.poll(async () => (await design(page)).externals.find((/** @type {any} */ e) => e.interface === 'spp0.S_Tx[0]').traffic)
+    .toEqual({ packetBytes: 1024 });
+  await expect(error).toHaveCount(0);
+  await expect(remark).toHaveCount(1);
 });

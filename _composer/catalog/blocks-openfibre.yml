@@ -179,6 +179,11 @@ blocks:
             oneDirection: { 1: 0.946, 2: 0.946, 4: 0.948 }
             bothDirections: { 1: 0.905, 2: 0.909, 4: 0.908 }
           note: "measured with packets of 1 to 1024 B, conservative above"
+    sizes:
+      evidence: "no length limit by design: segments are independent of packet boundaries (ofb_dl_vc_out.vhd, DL-VO-03 and DL-VO-04), no length counter in NI, DL or MIB; tested up to 1024 B (TC-CORE-16, TC-CORE-17, TC-CORE-13)"
+      interfaces:
+        S_Vc: { noLimit: true, tested: 1024 }
+        M_Vc: { noLimit: true, tested: 1024 }
 
   - id: openfibre/ofb_pa_gty
     kind: module

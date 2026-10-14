@@ -21,6 +21,7 @@
 
 import { evaluate, ExprError } from './expr.js';
 import { formatHz } from './rules.js';
+import { analyseSizes } from './sizes.js';
 import { subsystemName } from './subsystems.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
@@ -121,11 +122,13 @@ export const REFERENCE_BYTES = [64, 1024];
  * @property {Map<string, { entity: string, labels: string[] }>} missing   blocks without rate data on a path
  * @property {number} stopped   number of paths when the limit stopped the analysis, 0 otherwise
  * @property {Check[]} checks
- * @property {Map<string, { packetBytes: number, bitsPerSecond?: number }>} traffic   stated traffic by node key
+ * @property {Map<string, { packetBytes: number, bitsPerSecond?: number, maxPacketBytes?: number }>} traffic   stated
+ *           traffic by node key
  * @property {string[]} problems   rate data that cannot be evaluated, as sentences
  * @property {Limit[]} limits      paths whose stated traffic they do not sustain
  * @property {Map<string, string>} bottlenecks   instance of the system (a subsystem for an element inside it) that
  *           limits a path below its stated traffic -> the finding
+ * @property {import('./sizes.js').Sizes} sizes   packet sizes and buffers along the chain, on the same graph
  */
 
 /**
@@ -212,7 +215,7 @@ function envOf(cat, b, rec, freqs, report) {
  * @property {Map<string, Edge[]>} edges
  * @property {Node[]} sources
  * @property {Set<string>} sinks
- * @property {Map<string, { packetBytes: number, bitsPerSecond?: number }>} traffic
+ * @property {Map<string, { packetBytes: number, bitsPerSecond?: number, maxPacketBytes?: number }>} traffic
  * @property {Map<string, string>} problems   sentences of rate data that cannot be evaluated, by sentence
  */
 
@@ -526,17 +529,21 @@ function makePath(g, keys, edges) {
     cache.set(bytes, point);
     return point;
   };
-  // reference lengths: 64 and 1024 bytes, the largest packet of the source where its rate data states one
+  // reference lengths: 64 and 1024 bytes, the largest packet the source takes where its size data states one
   const refs = new Set(REFERENCE_BYTES);
-  const max = source.entry?.maxBytes;
-  if (max !== undefined) {
+  const limits = (source.block?.sizes?.interfaces?.[source.itf ?? '']?.limits ?? []).filter((/** @type {any} */ l) => !l.soft);
+  /** @type {number | undefined} */
+  let max;
+  for (const l of limits) {
     try {
-      refs.add(value(max, /** @type {Map<string, Num>} */ (source.env)));
+      const v = value(l.maxBytes, /** @type {Map<string, Num>} */ (source.env));
+      if (max === undefined || v < max) max = v;
     } catch (e) {
       if (!rateProblem(e)) throw e;
       report(0, e, `largest packet of ${source.itf}`);
     }
   }
+  if (max !== undefined) refs.add(max);
   const stated = g.traffic.get(source.key);
   if (stated) refs.add(stated.packetBytes);
   return { source, sink, nodes: keys, edges, elements, split, chunked, at, references: [...refs].sort((a, b) => a - b) };
@@ -778,5 +785,8 @@ export function analyseThroughput(cat, d, res, opts = {}) {
   if (stopped) {
     checks.push({ severity: 'info', rule: 'throughput', message: `Throughput analysis stopped after ${stopped} paths (limit ${maxPaths} paths or ${maxMs / 1000} s); the brief lists the paths analysed.` });
   }
-  return { paths, shared, missing, stopped, checks, traffic: g.traffic, problems: [...g.problems.values()], limits, bottlenecks };
+  // packet sizes and buffers on the same graph
+  const sizes = analyseSizes(cat, g);
+  checks.push(...sizes.checks);
+  return { paths, shared, missing, stopped, checks, traffic: g.traffic, problems: [...g.problems.values()], limits, bottlenecks, sizes };
 }

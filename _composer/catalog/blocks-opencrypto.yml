@@ -139,6 +139,23 @@ blocks:
         M_Out: { cycles: "DenseOutput_g * (cdiv(n, B) + 1) + (1 - DenseOutput_g) * (cdiv(12, B) + cdiv(n - 28, B) + cdiv(16, B))" }
       routes:
         - { from: S_In, to: M_Out, addBytes: "28" }
+    sizes:
+      evidence: "user guide: generics LenBits_g and ReleaseBytes_g, integration constraints (the release buffer holds the longest message); the cycles with room for one message only: TC-CO-16"
+      interfaces:
+        S_In:
+          limits:
+            - { maxBytes: "2 ** LenBits_g - 1", over: rejected, why: "AAD and DATA have at most 2^LenBits_g - 1 bytes each (error LENGTH)" }
+      buffers:
+        # the release buffer holds a whole message in beats: IV, AAD with DATA (the core does not know their split, one
+        # beat more where the AAD does not end on a beat) and the tag each start a new beat
+        - interface: M_Out
+          holds: ReleaseBytes_g
+          enabledBy: ReleaseBuffer_g
+          beat: DataWidth_g / 8
+          sections: ["12", "n - 28", "16"]
+          spareBeats: 1
+          over: dropped with OVERFLOW
+          fullRate: { messages: 2, cycles: "3 * m - d + 4", normal: "m + 1" }
 
   - id: opencrypto/ocr_framer
     kind: module
@@ -208,16 +225,6 @@ blocks:
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, description: Tests only., signals: { sel: ErrInj_Sel, bitflip: ErrInj_BitFlip, valid: ErrInj_Valid } }
     rules:
       - { kind: same_domain, interfaces: [M_Ctx, M_Out], message: "The framer and the core share clock and reset; a reset of only one of them leaves contexts or messages without partner." }
-      - kind: chain_fits
-        interface: M_Out
-        via: { block: opencrypto/ocr_core, in: S_In, out: M_Out }
-        sink: { block: openspp/spp_core, interface: S_Tx, generic: TxBufferBytes_g }
-        bytes: ChunkBytes_g + 32
-        max: 65536
-        # a chunk in the release buffer of the core: IV (generated, 12 bytes), AAD (4), data and tag (16), every section
-        # starting with a new beat of the core (formula of OpenCrypto)
-        release: { generic: ReleaseBytes_g, enabledBy: ReleaseBuffer_g, beat: DataWidth_g / 8, sections: ["12", "4", ChunkBytes_g, "16"] }
-        packet: { bytes: ChunkBytes_g + 38, generic: RxBufferBytes_g, what: Space Packets }
     init:
       - { text: "Load the key slot Cfg_Slot of the AES-GCM core for generated IVs (KEY_LOAD with IV_GEN = '1', see the core) before the first packet; without a loaded slot every chunk fails with KEY." }
     notes:
@@ -233,3 +240,13 @@ blocks:
         M_Out: { cycles: "cdiv(4, B) + cdiv(n - 4, B)" }                    # AAD (position) and the chunk
       routes:
         - { from: S_In, to: M_Out, chunk: ChunkBytes_g, addBytes: "4" }
+    sizes:
+      evidence: "user guide section 4.6: every packet is cut into chunks of ChunkBytes_g bytes"
+      interfaces:
+        S_In: { noLimit: true }
+      chains:
+        # the release buffer of the core behind the framer: IV, AAD (the position), the chunk and the tag each start a
+        # beat (n: the message at M_Out of the framer, the chunk and its 4 bytes of AAD)
+        - from: M_Out
+          to: { block: opencrypto/ocr_core, in: S_In, out: M_Out }
+          sections: ["12", "4", "n - 4", "16"]

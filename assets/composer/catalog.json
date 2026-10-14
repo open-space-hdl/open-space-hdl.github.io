@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "ed274ee300e8",
+ "id": "f6b4837a93e7",
  "sources": [
   {
    "id": "openwire",
@@ -1646,6 +1646,17 @@
      }
     ]
    },
+   "sizes": {
+    "evidence": "Open Logic documentation of olo_ft_fifo_async: a stream of words, no packet length",
+    "interfaces": {
+     "In": {
+      "noLimit": true
+     },
+     "Out": {
+      "noLimit": true
+     }
+    }
+   },
    "generics": [
     {
      "name": "Width_g",
@@ -2483,6 +2494,17 @@
      }
     ]
    },
+   "sizes": {
+    "evidence": "Open Logic documentation of olo_base_fifo_async: a stream of words, no packet length",
+    "interfaces": {
+     "In": {
+      "noLimit": true
+     },
+     "Out": {
+      "noLimit": true
+     }
+    }
+   },
    "generics": [
     {
      "name": "Width_g",
@@ -3214,6 +3236,17 @@
      }
     ]
    },
+   "sizes": {
+    "evidence": "Open Logic documentation of olo_base_wconv_n2xn: a stream of words, no packet length",
+    "interfaces": {
+     "In": {
+      "noLimit": true
+     },
+     "Out": {
+      "noLimit": true
+     }
+    }
+   },
    "generics": [
     {
      "name": "InWidth_g",
@@ -3411,6 +3444,17 @@
       "addBytes": "0"
      }
     ]
+   },
+   "sizes": {
+    "evidence": "Open Logic documentation of olo_base_wconv_xn2n: a stream of words, no packet length",
+    "interfaces": {
+     "In": {
+      "noLimit": true
+     },
+     "Out": {
+      "noLimit": true
+     }
+    }
    },
    "generics": [
     {
@@ -3616,6 +3660,17 @@
       "addBytes": "0"
      }
     ]
+   },
+   "sizes": {
+    "evidence": "Open Logic documentation of olo_base_wconv_n2m: a stream of words, no packet length",
+    "interfaces": {
+     "In": {
+      "noLimit": true
+     },
+     "Out": {
+      "noLimit": true
+     }
+    }
    },
    "generics": [
     {
@@ -4048,6 +4103,17 @@
       "addBytes": "0"
      }
     ]
+   },
+   "sizes": {
+    "evidence": "Open Logic documentation of olo_base_cc_simple: a stream of words, no packet length",
+    "interfaces": {
+     "In": {
+      "noLimit": true
+     },
+     "Out": {
+      "noLimit": true
+     }
+    }
    },
    "generics": [
     {
@@ -6779,6 +6845,40 @@
      }
     ]
    },
+   "sizes": {
+    "evidence": "user guide: generics LenBits_g and ReleaseBytes_g, integration constraints (the release buffer holds the longest message); the cycles with room for one message only: TC-CO-16",
+    "interfaces": {
+     "S_In": {
+      "limits": [
+       {
+        "maxBytes": "2 ** LenBits_g - 1",
+        "over": "rejected",
+        "why": "AAD and DATA have at most 2^LenBits_g - 1 bytes each (error LENGTH)"
+       }
+      ]
+     }
+    },
+    "buffers": [
+     {
+      "interface": "M_Out",
+      "holds": "ReleaseBytes_g",
+      "enabledBy": "ReleaseBuffer_g",
+      "beat": "DataWidth_g / 8",
+      "sections": [
+       "12",
+       "n - 28",
+       "16"
+      ],
+      "spareBeats": 1,
+      "over": "dropped with OVERFLOW",
+      "fullRate": {
+       "messages": 2,
+       "cycles": "3 * m - d + 4",
+       "normal": "m + 1"
+      }
+     }
+    ]
+   },
    "packages": [
     "ocr_pkg"
    ],
@@ -7401,38 +7501,6 @@
       "M_Out"
      ],
      "message": "The framer and the core share clock and reset; a reset of only one of them leaves contexts or messages without partner."
-    },
-    {
-     "kind": "chain_fits",
-     "interface": "M_Out",
-     "via": {
-      "block": "opencrypto/ocr_core",
-      "in": "S_In",
-      "out": "M_Out"
-     },
-     "sink": {
-      "block": "openspp/spp_core",
-      "interface": "S_Tx",
-      "generic": "TxBufferBytes_g"
-     },
-     "bytes": "ChunkBytes_g + 32",
-     "max": 65536,
-     "release": {
-      "generic": "ReleaseBytes_g",
-      "enabledBy": "ReleaseBuffer_g",
-      "beat": "DataWidth_g / 8",
-      "sections": [
-       "12",
-       "4",
-       "ChunkBytes_g",
-       "16"
-      ]
-     },
-     "packet": {
-      "bytes": "ChunkBytes_g + 38",
-      "generic": "RxBufferBytes_g",
-      "what": "Space Packets"
-     }
     }
    ],
    "init": [
@@ -7461,6 +7529,30 @@
       "to": "M_Out",
       "chunk": "ChunkBytes_g",
       "addBytes": "4"
+     }
+    ]
+   },
+   "sizes": {
+    "evidence": "user guide section 4.6: every packet is cut into chunks of ChunkBytes_g bytes",
+    "interfaces": {
+     "S_In": {
+      "noLimit": true
+     }
+    },
+    "chains": [
+     {
+      "from": "M_Out",
+      "to": {
+       "block": "opencrypto/ocr_core",
+       "in": "S_In",
+       "out": "M_Out"
+      },
+      "sections": [
+       "12",
+       "4",
+       "n - 4",
+       "16"
+      ]
      }
     ]
    },
@@ -7976,6 +8068,19 @@
       "note": "measured with packets of 1 to 1024 B, conservative above"
      }
     ]
+   },
+   "sizes": {
+    "evidence": "no length limit by design: segments are independent of packet boundaries (ofb_dl_vc_out.vhd, DL-VO-03 and DL-VO-04), no length counter in NI, DL or MIB; tested up to 1024 B (TC-CORE-16, TC-CORE-17, TC-CORE-13)",
+    "interfaces": {
+     "S_Vc": {
+      "noLimit": true,
+      "tested": 1024
+     },
+     "M_Vc": {
+      "noLimit": true,
+      "tested": 1024
+     }
+    }
    },
    "generics": [
     {
@@ -10486,8 +10591,7 @@
     },
     "interfaces": {
      "S_Tx": {
-      "bytesPerBeat": "B",
-      "maxBytes": "TxBufferBytes_g"
+      "bytesPerBeat": "B"
      },
      "M_Link": {
       "cycles": "max(cdiv(n, B) + 1, 5)"
@@ -10510,6 +10614,58 @@
       "from": "S_Link",
       "to": "M_Rx",
       "addBytes": "-H"
+     }
+    ]
+   },
+   "sizes": {
+    "evidence": "user guide section 7.1 and the integration table (the send buffer holds the longest SDU of a port, the receive buffer the longest Space Packet), requirements SPP-6 and SPP-23",
+    "interfaces": {
+     "S_Tx": {
+      "limits": [
+       {
+        "maxBytes": "TxBufferBytes_g",
+        "over": "rejected",
+        "why": "the send buffer holds the longest SDU of the port (error code 0x01)"
+       },
+       {
+        "maxBytes": 65536,
+        "over": "rejected",
+        "why": "an Octet String has at most 65536 bytes (SPP-6)"
+       }
+      ]
+     },
+     "S_Link": {
+      "limits": [
+       {
+        "maxBytes": "RxBufferBytes_g + 4 * Encapsulation_g",
+        "set": "RxBufferBytes_g",
+        "over": "discarded",
+        "why": "the receive buffer holds the longest Space Packet (error code 0x17)"
+       },
+       {
+        "maxBytes": "65542 + 4 * Encapsulation_g",
+        "over": "discarded",
+        "why": "a Space Packet has at most 65542 bytes (SPP-23)"
+       },
+       {
+        "maxBytes": "MaxLength_g + 4 * Encapsulation_g",
+        "over": "discarded",
+        "soft": {
+         "generic": "MaxLength_g",
+         "register": "MAX_LENGTH",
+         "hard": "min(RxBufferBytes_g, 65542)"
+        },
+        "why": "the Maximum Packet Length, MaxLength_g as the reset value of MAX_LENGTH"
+       }
+      ]
+     }
+    },
+    "sends": [
+     {
+      "interface": "M_Link",
+      "what": "Space Packets",
+      "bytes": "n - Encapsulation_g * (4 + SpwAddrBytes_g)",
+      "farEnd": "RxBufferBytes_g"
      }
     ]
    },
@@ -11738,6 +11894,19 @@
       "note": "the bit rate follows RunDiv_g, the reset value of LINK_SPEED.RUN_DIV; software can change it"
      }
     ]
+   },
+   "sizes": {
+    "evidence": "no length limit by design: N-Chars stream through N-Char FIFOs without a packet concept, the only counter of the data path is the credit (owr_data_link.vhd); tested up to 1000 B (TC-CORE-11, TC-DL-40)",
+    "interfaces": {
+     "S_Pkt": {
+      "noLimit": true,
+      "tested": 1000
+     },
+     "M_Pkt": {
+      "noLimit": true,
+      "tested": 1000
+     }
+    }
    },
    "generics": [
     {

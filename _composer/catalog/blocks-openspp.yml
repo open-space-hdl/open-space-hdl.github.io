@@ -139,13 +139,28 @@ blocks:
       # port, the longer case) and the CPTP header with the longest target address
       vars: { B: DataWidth_g / 8, H: "6 + Encapsulation_g * (4 + SpwAddrBytes_g)" }
       interfaces:
-        S_Tx: { bytesPerBeat: B, maxBytes: TxBufferBytes_g }
+        S_Tx: { bytesPerBeat: B }
         M_Link: { cycles: "max(cdiv(n, B) + 1, 5)" }                         # all send ports together
         S_Link: { bytesPerBeat: B, overheadCycles: "1" }
         M_Rx: { cycles: "max(cdiv(n + 6, B) + 1, 5)" }                       # all receive ports together
       routes:
         - { from: S_Tx, to: M_Link, addBytes: H }
         - { from: S_Link, to: M_Rx, addBytes: "-H" }
+    sizes:
+      evidence: "user guide section 7.1 and the integration table (the send buffer holds the longest SDU of a port, the receive buffer the longest Space Packet), requirements SPP-6 and SPP-23"
+      interfaces:
+        S_Tx:
+          limits:
+            - { maxBytes: TxBufferBytes_g, over: rejected, why: "the send buffer holds the longest SDU of the port (error code 0x01)" }
+            - { maxBytes: 65536, over: rejected, why: "an Octet String has at most 65536 bytes (SPP-6)" }
+        # a link packet: the Space Packet behind the 4 bytes of the CPTP header (target address bytes assumed stripped)
+        S_Link:
+          limits:
+            - { maxBytes: "RxBufferBytes_g + 4 * Encapsulation_g", set: RxBufferBytes_g, over: discarded, why: "the receive buffer holds the longest Space Packet (error code 0x17)" }
+            - { maxBytes: "65542 + 4 * Encapsulation_g", over: discarded, why: "a Space Packet has at most 65542 bytes (SPP-23)" }
+            - { maxBytes: "MaxLength_g + 4 * Encapsulation_g", over: discarded, soft: { generic: MaxLength_g, register: MAX_LENGTH, hard: "min(RxBufferBytes_g, 65542)" }, why: "the Maximum Packet Length, MaxLength_g as the reset value of MAX_LENGTH" }
+      sends:
+        - { interface: M_Link, what: Space Packets, bytes: "n - Encapsulation_g * (4 + SpwAddrBytes_g)", farEnd: RxBufferBytes_g }
 
   - id: openspp/spp_nchar
     kind: module

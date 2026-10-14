@@ -65,7 +65,6 @@ RULE_KINDS = {
     "mutual_initiator": ("generic",),
     "same_domain": ("interfaces",),
     "partner_requires": ("interface", "types", "generic", "value", "message"),
-    "chain_fits": ("interface", "via", "sink", "bytes"),
     "flag_dropped": ("interface", "signal", "bit", "message"),
     "run_rate": ("clock", "divider", "sampling", "message"),
     "with_block": ("block", "message"),
@@ -161,6 +160,88 @@ def check_rates(ctx: "Context", where: str, rates: object, gen_names: set, itf_n
         if set(ch["to"]) - {"block", "in", "out", "when"} or not all(k in ch["to"] for k in ("block", "in", "out")):
             ctx.err(where, "rates: chain to needs block, in and out (when optional)")
         expr(f"chain from {ch['from']}: cycles", ch["cycles"])
+
+
+def check_sizes(ctx: "Context", where: str, sizes: object, gen_names: set, itf_names: set) -> None:
+    """The size data of a block: known keys, interfaces of the block, and expressions that name only generics and n
+    (bytes of the packet), m and d (beats of a message and of a buffer, in fullRate)."""
+    if not isinstance(sizes, dict):
+        ctx.err(where, "sizes must be a mapping")
+        return
+    unknown = set(sizes) - {"evidence", "interfaces", "buffers", "sends", "chains"}
+    if unknown:
+        ctx.err(where, f"sizes: unknown keys {', '.join(sorted(unknown))}")
+    if not isinstance(sizes.get("evidence"), str) or not sizes["evidence"].strip():
+        ctx.err(where, "sizes needs evidence (the user guide or test case behind the limits)")
+    names = {g.lower() for g in gen_names} | {"n"}
+    funcs = {f.lower() for f in FUNCTIONS} | EXPR_WORDS
+
+    def expr(what: str, value: object, extra: frozenset = frozenset()) -> None:
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return
+        if not isinstance(value, str):
+            ctx.err(where, f"sizes: {what} must be a number or an expression")
+            return
+        for name in re.findall(r"[A-Za-z]\w*", re.sub(r"\d+#[0-9a-fA-F_]+#|\d[\d_]*(\.\d[\d_]*)?([eE][+-]?\d+)?", " ", value)):
+            if name.lower() not in names | funcs | extra:
+                ctx.err(where, f"sizes: {what} names {name}, which is no generic or n")
+
+    for iname, entry in (sizes.get("interfaces") or {}).items():
+        if iname not in itf_names:
+            ctx.err(where, f"sizes: unknown interface {iname}")
+        if not isinstance(entry, dict) or ("limits" in entry) == bool(entry.get("noLimit")):
+            ctx.err(where, f"sizes: interface {iname} needs limits or noLimit: true")
+            continue
+        if set(entry) - {"limits", "noLimit", "tested"}:
+            ctx.err(where, f"sizes: interface {iname}: unknown keys {', '.join(sorted(set(entry) - {'limits', 'noLimit', 'tested'}))}")
+        for lim in entry.get("limits") or []:
+            if set(lim) - {"maxBytes", "over", "why", "soft", "set"} or not all(k in lim for k in ("maxBytes", "over", "why")):
+                ctx.err(where, f"sizes: a limit of {iname} needs maxBytes, over and why (soft and set optional)")
+                continue
+            if "set" in lim and lim["set"] not in gen_names:
+                ctx.err(where, f"sizes: limit of {iname}: set names {lim['set']}, which is no generic")
+            expr(f"{iname}.maxBytes", lim["maxBytes"])
+            soft = lim.get("soft")
+            if soft is not None:
+                if not isinstance(soft, dict) or soft.get("generic") not in gen_names or "register" not in soft or "hard" not in soft:
+                    ctx.err(where, f"sizes: soft limit of {iname} needs generic, register and hard")
+                else:
+                    expr(f"{iname}.soft.hard", soft["hard"])
+    for buf in sizes.get("buffers") or []:
+        need = ("interface", "holds", "beat", "sections", "over")
+        if not all(k in buf for k in need) or set(buf) - {*need, "enabledBy", "spareBeats", "fullRate"}:
+            ctx.err(where, "sizes: a buffer needs interface, holds, beat, sections and over (enabledBy, spareBeats, fullRate optional)")
+            continue
+        if buf["interface"] not in itf_names:
+            ctx.err(where, f"sizes: buffer: unknown interface {buf['interface']}")
+        if buf.get("enabledBy") and buf["enabledBy"] not in gen_names:
+            ctx.err(where, f"sizes: buffer: unknown generic {buf['enabledBy']}")
+        for key in ("holds", "beat"):
+            expr(f"buffer {key}", buf[key])
+        for s in buf["sections"]:
+            expr("buffer section", s)
+        fr = buf.get("fullRate")
+        if fr is not None:
+            if set(fr) != {"messages", "cycles", "normal"}:
+                ctx.err(where, "sizes: fullRate needs messages, cycles and normal")
+            else:
+                for key in ("cycles", "normal"):
+                    expr(f"fullRate {key}", fr[key], frozenset({"m", "d"}))
+    for s in sizes.get("sends") or []:
+        if set(s) != {"interface", "what", "bytes", "farEnd"}:
+            ctx.err(where, "sizes: sends needs interface, what, bytes and farEnd")
+            continue
+        if s["interface"] not in itf_names:
+            ctx.err(where, f"sizes: sends: unknown interface {s['interface']}")
+        expr("sends bytes", s["bytes"])
+    for ch in sizes.get("chains") or []:
+        if set(ch) != {"from", "to", "sections"} or not isinstance(ch.get("to"), dict) or set(ch["to"]) != {"block", "in", "out"}:
+            ctx.err(where, "sizes: a chain needs from, to (block, in, out) and sections")
+            continue
+        if ch["from"] not in itf_names:
+            ctx.err(where, f"sizes: chain from unknown interface {ch['from']}")
+        for s in ch["sections"]:
+            expr("chain section", s)
 
 
 CONSTRAINT_KINDS = {
@@ -690,7 +771,7 @@ class Context:
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     # rules that refer to other blocks, checked when all blocks are built
-    chain_rules: list[tuple[str, dict]] = field(default_factory=list)
+    size_chains: list[tuple[str, dict]] = field(default_factory=list)
     type_ids: set[str] = field(default_factory=set)
 
     def err(self, where: str, msg: str) -> None:
@@ -1271,11 +1352,6 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 ctx.err(where, f"rule {kind}: unknown interface {iname}")
         if r.get("severity", "error") not in ("error", "warning"):
             ctx.err(where, f"rule {kind}: severity must be error or warning")
-        if kind == "chain_fits":
-            ctx.chain_rules.append((where, r))
-            for opt, keys in (("release", ("generic", "enabledBy", "beat", "sections")), ("packet", ("bytes", "generic", "what"))):
-                if opt in r and any(k not in r[opt] for k in keys):
-                    ctx.err(where, f"rule chain_fits: {opt} needs {', '.join(keys)}")
         if kind == "flag_dropped":
             if r.get("unlessGeneric") and r["unlessGeneric"] not in gen_names:
                 ctx.err(where, f"rule {kind}: unknown generic {r['unlessGeneric']}")
@@ -1307,6 +1383,10 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
 
     if "rates" in b:
         check_rates(ctx, where, b["rates"], gen_names, itf_names, clock_ports)
+    if "sizes" in b:
+        check_sizes(ctx, where, b["sizes"], gen_names, itf_names)
+        for ch in (b["sizes"] or {}).get("chains") or [] if isinstance(b["sizes"], dict) else []:
+            ctx.size_chains.append((where, ch))
 
     # Presets
     presets = []
@@ -1330,7 +1410,7 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         "summary": b["summary"],
         "idPrefix": b.get("idPrefix") or re.sub(r"^(olo_(base|ft|axi)_)", "", ent.name).split("_")[0],
     }
-    for key in ("doc", "project", "vendor", "notes", "rules", "constraints", "idRegister", "init", "endToEnd", "rates"):
+    for key in ("doc", "project", "vendor", "notes", "rules", "constraints", "idRegister", "init", "endToEnd", "rates", "sizes"):
         if key in b:
             block[key] = b[key]
     # software initialisation: steps with optional conditions on boolean generics
@@ -1444,19 +1524,17 @@ def build_catalog(ctx: Context) -> dict:
         for r in blk.get("rules") or []:
             if r.get("kind") == "with_block" and r.get("block") not in by_id:
                 ctx.err(blk["id"], f"rule with_block: unknown block {r.get('block')}")
-    for where, r in ctx.chain_rules:
-        for key, need in (("via", ("in", "out")), ("sink", ("interface",))):
-            ref = r.get(key) or {}
-            other = by_id.get(ref.get("block"))
-            if other is None:
-                ctx.err(where, f"rule chain_fits: {key} names an unknown block {ref.get('block')}")
-                continue
-            names = {i["name"] for i in other["interfaces"]}
-            for k in need:
-                if ref.get(k) not in names:
-                    ctx.err(where, f"rule chain_fits: {other['id']} has no interface {ref.get(k)}")
-            if key == "sink" and ref.get("generic") not in {g["name"] for g in other["generics"]}:
-                ctx.err(where, f"rule chain_fits: {other['id']} has no generic {ref.get('generic')}")
+    # a measured message layout of a pair of blocks names the block behind and its interfaces
+    for where, ch in ctx.size_chains:
+        ref = ch.get("to") or {}
+        other = by_id.get(ref.get("block"))
+        if other is None:
+            ctx.err(where, f"sizes: chain to an unknown block {ref.get('block')}")
+            continue
+        names = {i["name"] for i in other["interfaces"]}
+        for k in ("in", "out"):
+            if ref.get(k) not in names:
+                ctx.err(where, f"sizes: chain: {other['id']} has no interface {ref.get(k)}")
     for t in types.values():
         t.pop("_", None)
     for s in sources.values():

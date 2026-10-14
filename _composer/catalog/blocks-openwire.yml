@@ -166,3 +166,8 @@ blocks:
           capacity: "n * Freq_LinkClk / RunDiv_g / (10 * n + 4)"
           capacityBoth: "n * Freq_LinkClk / RunDiv_g / (10.5 * n + 4.5)"
           note: "the bit rate follows RunDiv_g, the reset value of LINK_SPEED.RUN_DIV; software can change it"
+    sizes:
+      evidence: "no length limit by design: N-Chars stream through N-Char FIFOs without a packet concept, the only counter of the data path is the credit (owr_data_link.vhd); tested up to 1000 B (TC-CORE-11, TC-DL-40)"
+      interfaces:
+        S_Pkt: { noLimit: true, tested: 1000 }
+        M_Pkt: { noLimit: true, tested: 1000 }

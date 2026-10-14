@@ -139,9 +139,18 @@ test('an example opens in its own tab', async ({ page }) => {
   expect(d.name).toBe('spp_over_spw');
   expect(d.instances).toHaveLength(4);
   await expect(page.getByRole('tab', { name: /spp_over_spw/ })).toHaveAttribute('aria-selected', 'true');
-  // no error and no warning; the RMAP target has no rate data yet, which is a note
+  // no error and no warning; notes: the RMAP target has no rate and size data yet, the send ports state no largest
+  // packet, the packets for the far end, the N-Char adapter has no size data
   await expect(page.locator('.cmp-check-item.cmp-sev-error, .cmp-check-item.cmp-sev-warning')).toHaveCount(0);
-  await expect(page.locator('.cmp-check-item.cmp-sev-info')).toHaveText(['Note: No rate data for omap_core (rmap0): the paths through it are not checked.']);
+  await expect(page.locator('.cmp-check-item.cmp-sev-info')).toHaveText([
+    'Note: No rate data for omap_core (rmap0): the paths through it are not checked.',
+    'Note: Packets from tx0_ (spp0.S_Tx[0]) reach spp0.S_Tx[0], which takes at most 4096 bytes: the send buffer holds the longest SDU of the port (error code 0x01); longer ones are rejected.',
+    'Note: Packets from tx1_ (spp0.S_Tx[1]) reach spp0.S_Tx[1], which takes at most 4096 bytes: the send buffer holds the longest SDU of the port (error code 0x01); longer ones are rejected.',
+    'Note: spp0 sends Space Packets of up to TxBufferBytes_g + 6 = 4102 bytes: the node that receives them needs RxBufferBytes_g of at least 4102 (spp0 has 4096, too small to receive its own packets).',
+    'Note: Packets from rmap0.M_User reach spp0.S_Link, which takes at most 4100 bytes: the receive buffer holds the longest Space Packet (error code 0x17); longer ones are discarded.',
+    'Note: No length limit published for omap_core (rmap0): packets through it are checked against the other blocks only.',
+    'Note: No length limit published for spp_nchar (nchar0): packets through it are checked against the other blocks only.',
+  ]);
 });
 
 test('a broken file is rejected with its problems', async ({ page }) => {

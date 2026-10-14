@@ -78,10 +78,13 @@ permalink: /composer/format/
         example the key slot of the OpenCrypto framer.</li>
       <li><code>adapters</code>: settings of the blocks the Composer inserts on a connection, for example the depth of
         an asynchronous FIFO: <code>{ "cdc": { "Depth_g": 64 } }</code>.</li>
-      <li><code>traffic</code> of an external interface (since 0.3.0-beta): the length of its packets in bytes and,
-        optionally, the payload rate offered at an input or required at an output, for the
+      <li><code>traffic</code> of an external interface (since 0.3.0-beta): the typical length of its packets in
+        bytes and, optionally, the payload rate offered at an input or required at an output, for the
         <a href="#throughput">throughput budget</a>: <code>{ "packetBytes": 1024, "bitsPerSecond": 2.0e9 }</code>. The
-        key is written only when it is set; a Composer older than 0.3.0-beta does not read a file that has it.</li>
+        key is written only when it is set; a Composer older than 0.3.0-beta does not read a file that has it. Since
+        0.4.0-beta it may hold <code>maxPacketBytes</code>, the largest packet of the interface in bytes, at least
+        <code>packetBytes</code>, for the <a href="#sizes">packet sizes</a> along the chain; without it the source is
+        not bounded. A Composer older than 0.4.0-beta does not read a file that has it.</li>
       <li>Values of generics: booleans and numbers as JSON, <code>std_logic</code> as <code>"0"</code> or
         <code>"1"</code>, vectors as VHDL literals (<code>"x\"FE\""</code>), strings without quotes.</li>
     </ul>
@@ -183,6 +186,40 @@ permalink: /composer/format/
       SI prefixes and three significant digits; every number of a message names its packet length.
     </p>
 
+    <h2 id="sizes">Packet sizes and buffers</h2>
+    <p>
+      The Composer follows the largest packet through the system and compares it with the size limits of the catalog.
+      Every block that has size data states the limits of its interfaces (the longest packet an interface takes, as
+      a generic, an expression of generics or a fixed number, and what happens to a longer one), the buffers that
+      hold a whole message, the packets it sends over a link, and the evidence behind them. A block without a length
+      limit says so, with the longest packet its tests cover.
+    </p>
+    <ul>
+      <li>The largest packet starts at a source: <code>maxPacketBytes</code> of the stated traffic of an external
+        input. A source without it, and the inbound side of a link, is not bounded. The typical length
+        <code>packetBytes</code> never bounds a source.</li>
+      <li>It runs over the connections, the inserted adapters and the routes inside the blocks, through the whole
+        graph of the system and not only through complete paths, so that an unfinished system is checked as well. A
+        route that cuts packets into chunks bounds them by the chunk length; a route that adds headers or tags adds
+        their bytes.</li>
+      <li>A fixed limit (a buffer given by a generic, or a length the protocol cannot carry) gives an error when the
+        largest packet exceeds it. Where a generic sets the limit, the message names the smallest value of that
+        generic that holds the packet and satisfies every rule of the generic.</li>
+      <li>A limit that is only the reset value of a register gives a warning: the message says that software can
+        change the register and names the fixed limit behind it.</li>
+      <li>An unbounded source gives a remark at the first limit it reaches, with what happens to longer packets.</li>
+      <li>A buffer that holds whole messages counts in beats of its interface: every section of a message (for
+        example IV, header, data and tag of an encrypted chunk) starts with a new beat. A buffer too small for one
+        message is an error, a buffer for one but not two messages a warning with the throughput it costs.</li>
+      <li>A block that publishes no size data gives a remark: packets through it are checked against the other blocks
+        only.</li>
+    </ul>
+    <p>
+      The brief lists the largest packet at every interface with a limit, the buffers, the packets that leave over a
+      link (for the node at the far end), the blocks without a length limit with the length their tests cover, and the
+      blocks without size data. The rule of these checks is <code>sizes</code>.
+    </p>
+
     <h2 id="resolved">The resolved netlist</h2>
     <p>
       <code>resolved</code> describes the top level completely. It contains the placed blocks and the blocks the
@@ -240,8 +277,8 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
     <p>
       <code>checks</code> lists the results of the structural checks (missing connections of interfaces that must be
       served, side band constants, widths, clock crossings) and of the design rules of the catalog (clock relations,
-      generics that depend on each other, buffer sizes of a chain) and of the <a href="#throughput">throughput
-      budget</a>. Each entry has a severity (<code>error</code>,
+      generics that depend on each other), of the <a href="#throughput">throughput budget</a> and of the
+      <a href="#sizes">packet sizes and buffers</a>. Each entry has a severity (<code>error</code>,
       <code>warning</code>, <code>info</code>), the rule and a message, and names the instance, connection or clock
       domain it is about. A system with an error is not ready to build.
     </p>
@@ -251,8 +288,7 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
       <code>agent.brief</code> is a Markdown text for a person or an AI agent: the repositories and their compile
       order, the ports of the top level with their clock domains and the field maps of the external interfaces, how
       to write the architecture from <code>resolved</code>, the clock domains and resets, the constraints, the
-      throughput of every path, the notes of
-      the user guides of the blocks, the initialisation by software (identification registers and the register writes
+      throughput of every path, the packet sizes and buffers, the notes of the user guides of the blocks, the initialisation by software (identification registers and the register writes
       that start the blocks), the open checks, a smoke test bench to verify the result with GHDL and an optional
       end-to-end test.
     </p>

@@ -99,6 +99,11 @@ blocks:
         Out: { bytesPerBeat: carried }
       routes:
         - { from: In, to: Out, addBytes: "0" }
+    sizes:
+      evidence: "Open Logic documentation of olo_ft_fifo_async: a stream of words, no packet length"
+      interfaces:
+        In: { noLimit: true }
+        Out: { noLimit: true }
 
   - id: olo/olo_ft_fifo_packet
     kind: olo
@@ -205,6 +210,11 @@ blocks:
         Out: { bytesPerBeat: carried }
       routes:
         - { from: In, to: Out, addBytes: "0" }
+    sizes:
+      evidence: "Open Logic documentation of olo_base_fifo_async: a stream of words, no packet length"
+      interfaces:
+        In: { noLimit: true }
+        Out: { noLimit: true }
 
   - id: olo/olo_base_cc_bits
     kind: olo
@@ -293,6 +303,11 @@ blocks:
         Out: { bytesPerBeat: OutWidth_g / 8 }
       routes:
         - { from: In, to: Out, addBytes: "0" }
+    sizes:
+      evidence: "Open Logic documentation of olo_base_wconv_n2xn: a stream of words, no packet length"
+      interfaces:
+        In: { noLimit: true }
+        Out: { noLimit: true }
 
   - id: olo/olo_base_wconv_xn2n
     kind: olo
@@ -324,6 +339,11 @@ blocks:
         Out: { bytesPerBeat: OutWidth_g / 8 }
       routes:
         - { from: In, to: Out, addBytes: "0" }
+    sizes:
+      evidence: "Open Logic documentation of olo_base_wconv_xn2n: a stream of words, no packet length"
+      interfaces:
+        In: { noLimit: true }
+        Out: { noLimit: true }
 
   - id: olo/olo_base_wconv_n2m
     kind: olo
@@ -357,6 +377,11 @@ blocks:
         Out: { bytesPerBeat: OutWidth_g / 8 }
       routes:
         - { from: In, to: Out, addBytes: "0" }
+    sizes:
+      evidence: "Open Logic documentation of olo_base_wconv_n2m: a stream of words, no packet length"
+      interfaces:
+        In: { noLimit: true }
+        Out: { noLimit: true }
 
   # Clock crossings ---------------------------------------------------------------------------------------------------
   - id: olo/olo_base_cc_handshake
@@ -422,6 +447,11 @@ blocks:
         Out: { bytesPerBeat: carried, beatsPerCycle: "min(Freq_In_Clk, Freq_Out_Clk) / Freq_Out_Clk / (3 + SyncStages_g)" }
       routes:
         - { from: In, to: Out, addBytes: "0" }
+    sizes:
+      evidence: "Open Logic documentation of olo_base_cc_simple: a stream of words, no packet length"
+      interfaces:
+        In: { noLimit: true }
+        Out: { noLimit: true }
 
   - id: olo/olo_base_cc_n2xn
     kind: olo
