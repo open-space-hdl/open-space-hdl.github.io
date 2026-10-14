@@ -49,7 +49,7 @@
   repo: openspp
   group: interfaces-protocols
   tagline: [CCSDS 133.0-B-2, ECSS-E-ST-50-53C]
-  summary: Space Packet service with APID routing and loss detection for any number of user ports, over SpaceWire, SpaceFibre or other links.
+  summary: Space Packet service with APID routing and loss detection for up to 16 send and 16 receive ports, over SpaceWire, SpaceFibre or other links.
   public: true
   docs: true
   trl: 3
