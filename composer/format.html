@@ -107,9 +107,11 @@ permalink: /composer/format/
         interface that is external without a prefix of the user is named by its instance. Two prefixes that give the
         same name are an error.</li>
       <li>Clock inputs: one per clock domain of the definition with an external clock, named like its port,
-        <code>Clk_&lt;domain&gt;</code>. An instance binds each one to a clock domain of the system around it. A
-        subsystem has no clock outputs: an external interface in a clock domain that a block of the definition drives
-        is an error.</li>
+        <code>Clk_&lt;domain&gt;</code>. An instance binds each one to a clock domain of the system around it. The clock
+        domain an input is bound to has the frequency of the domain in the definition, because the frequency generics
+        of its blocks and its timing exceptions are fixed in the definition (rule
+        <code>subsystem_clock_frequency</code>). A subsystem has no clock outputs: an external interface in a clock
+        domain that a block of the definition drives is an error.</li>
       <li>Reset: the input <code>Rst</code> gets the unsynchronised <code>Rst</code> of the system around it. The
         subsystem synchronises its release in each of its clock domains with reset generators of its own.</li>
       <li>No generics: a subsystem is not parameterisable.</li>

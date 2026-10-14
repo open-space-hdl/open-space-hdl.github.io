@@ -18,6 +18,7 @@
  */
 
 import { identifierProblem } from './design.js';
+import { formatHz } from './rules.js';
 import { canonicalJson, sha256 } from './sha256.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
@@ -348,30 +349,52 @@ export function usedDefinitions(cat, d) {
 }
 
 /**
- * Checks of the clock binding of a subsystem instance: two clock inputs on one clock domain of the parent. Where the
- * definition crosses between them, its scoped timing exceptions (set_max_delay -datapath_only between the two clocks)
- * would apply to every path of that one clock and cut its hold checks: an error. Otherwise a remark.
+ * Checks of the clock binding of a subsystem instance.
+ *
+ * - subsystem_clock_frequency: a clock input bound to a domain of the parent with another frequency than the domain
+ *   of the definition. The definition is resolved once, with its own frequencies: the frequency generics of its blocks
+ *   (fromClock) and the maximum delays of its scoped timing exceptions follow them, and all instances share that
+ *   entity. Each level is checked against its parent only: the definitions inside are fixed by their own bindings in
+ *   the definition, which are checked when the definition is resolved.
+ * - subsystem_clocks: two clock inputs on one clock domain of the parent. Where the definition crosses between them,
+ *   its scoped timing exceptions (set_max_delay -datapath_only between the two clocks) would apply to every path of
+ *   that one clock and cut its hold checks: an error. Otherwise a remark.
  * @param {Catalog} cat   the catalog of the system (withSubsystems)
  * @param {string} id     instance id
  * @param {string} name   subsystem name
  * @param {Record<string, string>} clocks   clock input -> domain id of the parent
- * @returns {{ severity: 'error' | 'info', message: string }[]}
+ * @param {{ id: string, frequencyHz: number }[]} domains   the clock domains of the parent
+ * @returns {{ severity: 'error' | 'info', rule: string, message: string }[]}
  */
-export function bindingChecks(cat, id, name, clocks) {
+export function bindingChecks(cat, id, name, clocks, domains) {
   const info = /** @type {Map<string, SubsystemInfo> | undefined} */ (/** @type {any} */ (cat).subsystemInfo)?.get(name);
   if (!info) return [];
+  /** @type {{ severity: 'error' | 'info', rule: string, message: string }[]} */
+  const out = [];
+  for (const [port, dom] of Object.entries(clocks)) {
+    const outer = domains.find((x) => x.id === dom);
+    const inner = info.design.clockDomains.find((x) => `Clk_${x.id}` === port);
+    if (!outer || !inner || outer.frequencyHz === inner.frequencyHz) continue;
+    // the same text for two frequencies that differ only in the last digits: in Hz
+    const same = formatHz(outer.frequencyHz) === formatHz(inner.frequencyHz);
+    const fo = same ? `${outer.frequencyHz} Hz` : formatHz(outer.frequencyHz);
+    const fi = same ? `${inner.frequencyHz} Hz` : formatHz(inner.frequencyHz);
+    out.push({
+      severity: 'error',
+      rule: 'subsystem_clock_frequency',
+      message: `${id}: ${port} is bound to the clock domain ${outer.id} at ${fo}, but ${name} defines ${inner.id} at ${fi}; its frequency generics and timing exceptions follow the definition. Set the clock domain ${inner.id} of ${name} to ${fo}, or bind a domain of ${fi}.`,
+    });
+  }
   /** @type {Map<string, string[]>} */
   const byDomain = new Map();
   for (const [port, dom] of Object.entries(clocks)) byDomain.set(dom, [...(byDomain.get(dom) ?? []), port]);
-  /** @type {{ severity: 'error' | 'info', message: string }[]} */
-  const out = [];
   for (const [dom, ports] of byDomain) {
     if (ports.length < 2) continue;
     const crossed = info.crossings.some(([a, b]) => ports.includes(a) && ports.includes(b));
     const list = ports.sort().join(' and ');
     out.push(crossed
-      ? { severity: 'error', message: `${id}: ${list} run on the clock domain ${dom}, but ${name} crosses between them; its timing exceptions would cut the hold checks of every path of ${dom}. Use separate clock domains, or one clock domain inside ${name}.` }
-      : { severity: 'info', message: `${id}: ${list} run on the same clock domain ${dom}.` });
+      ? { severity: 'error', rule: 'subsystem_clocks', message: `${id}: ${list} run on the clock domain ${dom}, but ${name} crosses between them; its timing exceptions would cut the hold checks of every path of ${dom}. Use separate clock domains, or one clock domain inside ${name}.` }
+      : { severity: 'info', rule: 'subsystem_clocks', message: `${id}: ${list} run on the same clock domain ${dom}.` });
   }
   return out;
 }

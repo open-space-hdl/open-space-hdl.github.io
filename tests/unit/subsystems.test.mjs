@@ -226,6 +226,38 @@ test('an external interface of a subsystem in a clock domain that a block drives
   assert.ok(errors.some((m) => /^lane: pa0\.Stat runs in the clock domain .*, which a block of the subsystem drives/.test(m)), errors.join('\n'));
 });
 
+test('a clock input bound to a domain of another frequency than in the definition is an error', () => {
+  const doc = fixtureDoc();
+  doc.clockDomains.find((/** @type {any} */ c) => c.id === 'link').frequencyHz = 125e6;
+  const { design } = read(doc);
+  const bad = checksOf(design).filter((x) => x.rule === 'subsystem_clock_frequency');
+  assert.deepEqual(bad.map((x) => [x.severity, x.instance]), [['error', 'rmap_node0'], ['error', 'rmap_node1']]);
+  assert.equal(bad[0].message, 'rmap_node0: Clk_link is bound to the clock domain link at 125 MHz, but rmap_node defines link at 200 MHz; its frequency generics and timing exceptions follow the definition. Set the clock domain link of rmap_node to 125 MHz, or bind a domain of 200 MHz.');
+  // inside: rmap_node binds spw_port to its own domains, which have the frequencies of spw_port
+  assert.deepEqual(checksOf(fromText(text, cat).design).filter((x) => x.rule === 'subsystem_clock_frequency'), []);
+  const inner = fixtureDoc();
+  inner.subsystems[1].clockDomains.find((/** @type {any} */ c) => c.id === 'link').frequencyHz = 125e6;
+  inner.subsystems[1].hash = definitionHash(inner.subsystems[1]);
+  const nested = checksOf(read(inner).design).filter((x) => x.rule === 'subsystem_clock_frequency').map((x) => x.message);
+  assert.ok(nested.some((m) => m.startsWith('rmap_node/spw_port0: Clk_link is bound to the clock domain link at 125 MHz, but spw_port defines link at 200 MHz')), nested.join('\n'));
+  assert.ok(nested.some((m) => m.startsWith('rmap_node0: Clk_link is bound to the clock domain link at 200 MHz, but rmap_node defines link at 125 MHz')), nested.join('\n'));
+  // two frequencies with the same text in MHz are named in Hz
+  const close = fixtureDoc();
+  close.clockDomains.find((/** @type {any} */ c) => c.id === 'link').frequencyHz = 200000001;
+  assert.match(checksOf(read(close).design).find((x) => x.rule === 'subsystem_clock_frequency')?.message ?? '', /at 200000001 Hz, but rmap_node defines link at 200000000 Hz/);
+  // the command line tool refuses its export
+  const dir = mkdtempSync(join(tmpdir(), 'composer-subsystems-'));
+  try {
+    const file = join(dir, 'dual_rmap_node.composer.json');
+    writeFileSync(file, JSON.stringify(doc, null, 2));
+    const r = spawnSync(process.execPath, [`${ROOT}tools/composer_hdl.mjs`, file, join(dir, 'out'), '--resolve'], { encoding: 'utf-8' });
+    assert.equal(r.status, 2, r.stdout + r.stderr);
+    assert.match(r.stdout + r.stderr, /Clk_link is bound to the clock domain link at 125 MHz/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('two clock inputs on one domain: an error where the subsystem crosses between them, else a remark', () => {
   // rmap_node crosses between its clocks inside spw_port (the FIFOs of the SpaceWire port)
   const doc = fixtureDoc();
@@ -248,17 +280,18 @@ test('two clock inputs on one domain: an error where the subsystem crosses betwe
   // two RMAP targets in two clock domains without a crossing between them
   let pair = createDesign('pair');
   pair = addInstance(pair, cat, 'openrmap/omap_core', { x: 0, y: 0 }, 'target').design;
-  const b = addDomain(pair, { name: 'Second clock', frequencyHz: 50e6 });
+  const b = addDomain(pair, { name: 'Second clock', frequencyHz: 100e6 });
   pair = addInstance(b.design, cat, 'openrmap/omap_core', { x: 0, y: 0 }, 'target', { domain: b.id }).design;
   for (const [ref, prefix] of [['rmap0.S_Pkt', 'a_in_'], ['rmap0.M_Pkt', 'a_out_'], ['rmap0.M_Axi', 'a_mem_'], ['rmap1.S_Pkt', 'b_in_'], ['rmap1.M_Pkt', 'b_out_'], ['rmap1.M_Axi', 'b_mem_']]) {
     pair = setExternal(pair, ref, prefix);
   }
   let d = { ...createDesign('top'), subsystems: { pair } };
   d = addInstance(d, cat, 'subsystem/pair', { x: 0, y: 0 }).design;
-  const found = checksOf(d).filter((x) => x.rule === 'subsystem_clocks');
+  // only the remark of the binding: the same frequency, no crossing
+  const found = checksOf(d).filter((x) => x.rule === 'subsystem_clocks' || x.rule === 'subsystem_clock_frequency');
   assert.deepEqual(found.map((x) => [x.severity, x.message]), [['info', `pair0: Clk_${b.id} and Clk_sys run on the same clock domain sys.`]]);
   // a separate domain for the second clock: no remark
-  const e = addDomain(d, { name: 'Second clock', frequencyHz: 50e6 });
+  const e = addDomain(d, { name: 'Second clock', frequencyHz: 100e6 });
   const apart = assignClock(e.design, cat, 'pair0', `Clk_${b.id}`, e.id);
   assert.deepEqual(checksOf(apart).filter((x) => x.rule === 'subsystem_clocks'), []);
 });

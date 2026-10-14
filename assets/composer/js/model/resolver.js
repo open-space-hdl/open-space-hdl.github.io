@@ -323,7 +323,7 @@ export class Resolution {
       }
       // a subsystem: its clock inputs on one domain of this system
       const sub = subsystemName(b.id);
-      if (sub) for (const f of bindingChecks(this.cat, inst.id, sub, clocks)) this.check(f.severity, 'subsystem_clocks', f.message, { instance: inst.id });
+      if (sub) for (const f of bindingChecks(this.cat, inst.id, sub, clocks, this.d.clockDomains)) this.check(f.severity, f.rule, f.message, { instance: inst.id });
       const primary = b.clocks.find((c) => c.primary)?.port;
       this.byId.set(inst.id, {
         id: inst.id,
