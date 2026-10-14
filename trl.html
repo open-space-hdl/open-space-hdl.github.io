@@ -35,7 +35,7 @@ permalink: /trl/
               {%- else %}
               <span class="project-name">{{ p.name }}</span>
               {%- endif %}
-              <span class="project-category">{{ p.category }}</span>
+              <span class="project-tagline">{% include tagline.html items=p.tagline %}</span>
             </td>
             <td data-label="Level">
               <div class="level-cell">

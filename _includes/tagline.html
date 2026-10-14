@@ -1,0 +1,4 @@
+{%- comment -%} Tagline of a project: its items joined with " · ", a line breaks only between two items. {%- endcomment -%}
+{%- for item in include.items -%}
+<span class="nowrap">{{ item | escape }}</span>{% unless forloop.last %} · {% endunless %}
+{%- endfor -%}

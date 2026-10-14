@@ -3,7 +3,10 @@
 #
 #   repo:      repository name in github.com/open-space-hdl
 #   group:     id of the group in project_groups.yml (a project without a known group is not shown on the start page)
-#   category:  short label under the name (protocol, domain, ...)
+#   tagline:   the standards the project implements (without one: its key techniques), shown under the name and
+#              joined with ' · '; a line breaks only between two items
+#   summary:   one sentence of 100 to 140 characters: what the project is and what it does, without article, without
+#              the word 'open' and without the standard (the tagline names it)
 #   public:    true once the repository is public -> card links to the source
 #   docs:      true once the repository publishes its own GitHub Pages site (MkDocs, tools/ of the repository)
 #              -> card links to openspacehdl.org/<repo>/
@@ -15,8 +18,8 @@
 - name: OpenWire
   repo: openwire
   group: interfaces-protocols
-  category: SpaceWire
-  summary: Open SpaceWire implementation based on the Open Logic VHDL library.
+  tagline: [ECSS-E-ST-50-12C Rev.1]
+  summary: "SpaceWire port with node interface: Data-Strobe encoding, link control, packets, time-codes and distributed interrupts."
   public: true
   docs: true
   trl: 3
@@ -25,8 +28,8 @@
 - name: OpenFibre
   repo: openfibre
   group: interfaces-protocols
-  category: SpaceFibre
-  summary: Open SpaceFibre implementation based on the Open Logic VHDL library.
+  tagline: [ECSS-E-ST-50-11C]
+  summary: SpaceFibre port with 1 to 4 lanes, up to 32 virtual channels, quality of service, broadcast and error recovery.
   public: true
   docs: true
   trl: 3
@@ -35,8 +38,8 @@
 - name: OpenRMAP
   repo: openrmap
   group: interfaces-protocols
-  category: RMAP
-  summary: Open implementation of the Remote Memory Access Protocol for SpaceWire and SpaceFibre networks.
+  tagline: [ECSS-E-ST-50-52C]
+  summary: RMAP target and initiator for reading and writing remote memory over SpaceWire and SpaceFibre networks.
   public: true
   docs: true
   trl: 3
@@ -45,8 +48,8 @@
 - name: OpenSPP
   repo: openspp
   group: interfaces-protocols
-  category: Space Packet Protocol
-  summary: An open Space Packet Protocol implementation according to CCSDS 133.0-B-2.
+  tagline: [CCSDS 133.0-B-2, ECSS-E-ST-50-53C]
+  summary: Space Packet service with APID routing and loss detection for up to 16 send and 16 receive ports, over SpaceWire, SpaceFibre or other links.
   public: true
   docs: true
   trl: 3
@@ -55,8 +58,8 @@
 - name: OpenCompact
   repo: opencompact
   group: processing-modules
-  category: Image compression
-  summary: An open hyperspectral image compression core according to CCSDS 123.0-B-2.
+  tagline: [CCSDS 123.0-B-2]
+  summary: Lossless and near-lossless compressor for multispectral and hyperspectral images, with all predictors and entropy coders of the standard.
   public: true
   docs: true
   trl: 3
@@ -65,8 +68,8 @@
 - name: OpenCrypto
   repo: opencrypto
   group: processing-modules
-  category: Encryption
-  summary: An open AES-GCM implementation for encryption and decryption of real-time data streams.
+  tagline: [FIPS 197, NIST SP 800-38D]
+  summary: Authenticated encryption and decryption of real-time data streams with AES-GCM, key table and IV generation.
   public: true
   docs: true
   trl: 3
@@ -75,8 +78,8 @@
 - name: Open Logic FT
   repo: open-logic-ft
   group: building-blocks
-  category: Fault tolerance
-  summary: Fault-tolerant fork of the Open Logic FPGA Library.
+  tagline: [ECC, TMR, Safe FSMs, Scrubber]
+  summary: "Fault-tolerant fork of Open Logic: RAMs and FIFOs with SECDED ECC, clock crossings with triplicated synchronisers."
   public: true
   docs: true
   trl: 3
