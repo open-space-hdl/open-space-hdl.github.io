@@ -253,8 +253,18 @@ export function agentBrief(cat, d, res, resolved, checks) {
     const rec = res.byId.get(inst.id);
     if (!b || !rec || (!b.init && !b.idRegister)) continue;
     const regs = b.interfaces.find((x) => x.type === 'axi4lite' && x.role === 'slave');
-    const ext = regs ? d.externals.find((e) => e.interface === `${inst.id}.${regs.name}`) : undefined;
-    const via = !regs ? '' : ext ? ` through the top-level ports \`${ext.prefix}${commonPrefix(Object.values(regs.signals))}*\`` : ` (its register port \`${regs.name}\` is not connected: without it the block runs with its reset values)`;
+    const ref = regs ? `${inst.id}.${regs.name}` : '';
+    const ext = regs ? d.externals.find((e) => e.interface === ref) : undefined;
+    // the register port of a block behind a bus master of the system, for example a port of an AXI4-Lite decoder
+    const conn = regs ? d.connections.find((c) => c.to === ref || c.from === ref) : undefined;
+    const master = conn ? (conn.to === ref ? conn.from : conn.to) : '';
+    const via = !regs
+      ? ''
+      : ext
+        ? ` through the top-level ports \`${ext.prefix}${commonPrefix(Object.values(regs.signals))}*\``
+        : conn
+          ? ` through \`${master}\` (connection ${conn.id})`
+          : ` (its register port \`${regs.name}\` is not connected: without it the block runs with its reset values)`;
     L.push(`**\`${inst.id}\`** (${b.name}, \`${b.entity}\`)${via}:`, '');
     let k = 0;
     if (b.idRegister) L.push(`${(k += 1)}. Read ID (${b.idRegister.address}): it reads ${b.idRegister.value}.`);
