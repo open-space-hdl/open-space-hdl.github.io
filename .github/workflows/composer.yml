@@ -63,9 +63,9 @@ jobs:
             node site/tools/composer_hdl.mjs "$f" "export/$n"
             python site/tools/composer_hdl_check.py "export/$n" --sources sources --checkout-from .
           done
-      # The system of a user (tests/fixtures/spfi_encrypt.composer.json) hits a known defect of the pinned OpenRMAP
-      # (an RMAP target with AxiMaxBeats_g = 1): the command line tool must refuse its export. Once the fix is pinned,
-      # the fixture joins the loop above as a positive test.
+      # The system of a user (tests/fixtures/spfi_encrypt.composer.json) hits the known defect of olo_axi_master_simple
+      # up to Open Logic 4.7.0-ft.4 (an RMAP target with AxiMaxBeats_g = 1): the command line tool must refuse its
+      # export. Once OpenRMAP is pinned with 4.7.0-ft.5, the fixture joins the loop above as a positive test.
       - name: The export of a system with a known defect is refused
         run: |
           set +e
@@ -74,7 +74,7 @@ jobs:
           set -e
           cat refused.log
           test "$status" -eq 2
-          grep "Known defect: commands longer than one AXI transaction" refused.log
+          grep "Known defect of Open Logic olo_axi_master_simple" refused.log
       # Negative test: a top level whose generics violate an assertion of a core (ReleaseBytes_g = 4128, not a power of
       # two) must stop at 0 ns. The command line tool refuses this system, so a test-only script writes the export.
       - name: The GHDL check stops a top level that violates an assertion of a core
