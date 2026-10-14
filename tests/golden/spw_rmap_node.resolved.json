@@ -1,5 +1,5 @@
 {
-  "catalog": "2205b2f33a8b",
+  "catalog": "42a93b9ce784",
   "entity": "spw_rmap_node",
   "ports": [
     {
@@ -3109,9 +3109,9 @@
       "library": "openwire",
       "source": "openwire",
       "url": "https://github.com/open-space-hdl/openwire",
-      "commit": "e5142cdb40240f2cbf202529c9f2ccf112038dd6",
-      "fileList": "component_list.txt",
-      "fileListFormat": "modules",
+      "commit": "2897668e2e519e9517a5c7270f243c5ab0d7fdb0",
+      "fileList": "compile_order.txt",
+      "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.2",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
       "entities": [
