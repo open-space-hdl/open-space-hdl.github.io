@@ -15,7 +15,7 @@ sources:
     repo: openwire
     url: https://github.com/open-space-hdl/openwire
     doc: https://openspacehdl.org/openwire/
-    commit: b6c1a516e895f74b1b2699a41bf6ed45a11f3a84
+    commit: e5142cdb40240f2cbf202529c9f2ccf112038dd6
     library: openwire
     file_list: component_list.txt
     file_list_format: modules
@@ -27,7 +27,7 @@ sources:
     repo: openrmap
     url: https://github.com/open-space-hdl/openrmap
     doc: https://openspacehdl.org/openrmap/
-    commit: e337a6d315519aa8cbd467a72fa62b8c0577923b
+    commit: 4ae4bfe31395ecbc31d5076796fd94bd7cb9de0e
     library: openrmap
     file_list: component_list.txt
     file_list_format: modules
@@ -39,7 +39,7 @@ sources:
     repo: openspp
     url: https://github.com/open-space-hdl/openspp
     doc: https://openspacehdl.org/openspp/
-    commit: d8ba9744277f4ccd2a01f64476a5a91743246f7a
+    commit: da4e97b7ad9e0e8ee1af234d18210cbfdcdac492
     library: openspp
     file_list: component_list.txt
     file_list_format: modules
@@ -63,7 +63,7 @@ sources:
     repo: opencrypto
     url: https://github.com/open-space-hdl/opencrypto
     doc: https://openspacehdl.org/opencrypto/
-    commit: 4e62f89dd25f55bfa3942040c7f41d9f421f4abf
+    commit: be947c7f842751422a0257324157f4ef638d5ee0
     library: opencrypto
     file_list: component_list.txt
     file_list_format: modules

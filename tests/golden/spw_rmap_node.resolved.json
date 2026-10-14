@@ -1,5 +1,5 @@
 {
-  "catalog": "ab38ed52cf22",
+  "catalog": "7f69dfab5b09",
   "entity": "spw_rmap_node",
   "ports": [
     {
@@ -3109,7 +3109,7 @@
       "library": "openwire",
       "source": "openwire",
       "url": "https://github.com/open-space-hdl/openwire",
-      "commit": "b6c1a516e895f74b1b2699a41bf6ed45a11f3a84",
+      "commit": "e5142cdb40240f2cbf202529c9f2ccf112038dd6",
       "fileList": "component_list.txt",
       "fileListFormat": "modules",
       "verifiedWith": "4.7.0-ft.2",
@@ -3122,7 +3122,7 @@
       "library": "openrmap",
       "source": "openrmap",
       "url": "https://github.com/open-space-hdl/openrmap",
-      "commit": "e337a6d315519aa8cbd467a72fa62b8c0577923b",
+      "commit": "4ae4bfe31395ecbc31d5076796fd94bd7cb9de0e",
       "fileList": "component_list.txt",
       "fileListFormat": "modules",
       "verifiedWith": "4.7.0-ft.2",

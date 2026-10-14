@@ -1,5 +1,5 @@
 {
-  "catalog": "ab38ed52cf22",
+  "catalog": "7f69dfab5b09",
   "entity": "encrypted_spp_over_spw",
   "ports": [
     {
@@ -3892,7 +3892,7 @@
       "library": "openwire",
       "source": "openwire",
       "url": "https://github.com/open-space-hdl/openwire",
-      "commit": "b6c1a516e895f74b1b2699a41bf6ed45a11f3a84",
+      "commit": "e5142cdb40240f2cbf202529c9f2ccf112038dd6",
       "fileList": "component_list.txt",
       "fileListFormat": "modules",
       "verifiedWith": "4.7.0-ft.2",
@@ -3905,7 +3905,7 @@
       "library": "openspp",
       "source": "openspp",
       "url": "https://github.com/open-space-hdl/openspp",
-      "commit": "d8ba9744277f4ccd2a01f64476a5a91743246f7a",
+      "commit": "da4e97b7ad9e0e8ee1af234d18210cbfdcdac492",
       "fileList": "component_list.txt",
       "fileListFormat": "modules",
       "verifiedWith": "4.7.0-ft.2",
@@ -3919,7 +3919,7 @@
       "library": "opencrypto",
       "source": "opencrypto",
       "url": "https://github.com/open-space-hdl/opencrypto",
-      "commit": "4e62f89dd25f55bfa3942040c7f41d9f421f4abf",
+      "commit": "be947c7f842751422a0257324157f4ef638d5ee0",
       "fileList": "component_list.txt",
       "fileListFormat": "modules",
       "verifiedWith": "4.7.0-ft.3",
