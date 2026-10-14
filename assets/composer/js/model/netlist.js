@@ -22,6 +22,7 @@
  * Clocks and resets are port actuals, never assignments, so that no clock gets a delta delay in simulation.
  */
 
+import { absentValue } from './catalog.js';
 import { formatReal, sameValue } from './generics.js';
 import { tryEvaluate } from './expr.js';
 import { packFields, RESET_PORT, vhdlType } from './resolver.js';
@@ -250,6 +251,32 @@ class Netlist {
   }
 
   /**
+   * Interface type at an endpoint.
+   * @param {string} ref
+   */
+  typeOf(ref) {
+    const rec = this.res.byId.get(instanceOf(ref));
+    const b = rec && this.cat.blocks.get(rec.block);
+    return rec && b ? this.cat.ports(b, rec.generics).find((x) => x.ref === portOf(ref))?.type : undefined;
+  }
+
+  /**
+   * An input that the other side of a hop does not drive: the value the catalog defines for the missing signal.
+   * @param {string} connection
+   * @param {string} name   logical signal
+   * @param {Bits} bits     the input
+   * @param {string} have   endpoint with the input
+   * @param {string} lack   endpoint without the signal
+   */
+  missing(connection, name, bits, have, lack) {
+    const absent = absentValue(name, this.typeOf(have), this.typeOf(lack));
+    if (!absent) this.problems.push(`${have}: ${name} has no driver at ${lack}, and the catalog defines no value for it.`);
+    const value = absent?.value === '1' ? 'ones' : 'zero';
+    const reason = `${lack} has no ${name}${absent?.why ? `: ${absent.why}` : ''}.`;
+    this.nets.push({ to: bitsExpr(bits), from: constExpr(bits, value), kind: 'constant', connection, signal: name, reason });
+  }
+
+  /**
    * Nets of the connections: every hop of every chain, signal by signal.
    */
   connectionNets() {
@@ -272,7 +299,8 @@ class Netlist {
               const fields = sb.fields.map((fl) => ({ name: fl.name, label: fl.label, lsb: fl.lsb, bits: fl.bits, value: conn.sideband?.[fl.name] ?? fl.default ?? 0 }));
               this.nets.push({ to: bitsExpr(bb), from: constExpr(bb, v), kind: 'constant', connection: chain.connection, signal: name, reason: 'Side band constants of the connection.', fields });
             } else {
-              this.nets.push({ to: bitsExpr(bb), from: constExpr(bb, constant === 'ones' ? 'ones' : 'zero'), kind: 'constant', connection: chain.connection, signal: name, reason: `${chain.from} has no ${name}.` });
+              const why = absentValue(name, rv?.type, this.typeOf(chain.from))?.why;
+              this.nets.push({ to: bitsExpr(bb), from: constExpr(bb, constant === 'ones' ? 'ones' : 'zero'), kind: 'constant', connection: chain.connection, signal: name, reason: `${chain.from} has no ${name}${why ? `: ${why}` : ''}.` });
             }
             continue;
           }
@@ -287,13 +315,13 @@ class Netlist {
               this.problems.push(`${hop.from} and ${hop.to}: ${name} has the same direction on both sides.`);
             }
           } else if (bb.dir === 'in') {
-            this.nets.push({ to: bitsExpr(bb), from: constExpr(bb, name === 'keep' ? 'ones' : 'zero'), kind: 'constant', connection: chain.connection, signal: name, reason: `${hop.from} has no ${name}.` });
+            this.missing(chain.connection, name, bb, hop.to, hop.from);
           }
         }
         // inputs of the driving side without a partner: a sink without ready is always ready
         for (const [name, a] of [...A].sort((x, y) => x[0].localeCompare(y[0]))) {
           if (a.dir !== 'in' || B.has(name)) continue;
-          this.nets.push({ to: bitsExpr(a), from: constExpr(a, name === 'ready' ? 'ones' : 'zero'), kind: 'constant', connection: chain.connection, signal: name, reason: `${hop.to} has no ${name}.` });
+          this.missing(chain.connection, name, a, hop.from, hop.to);
         }
       }
     }

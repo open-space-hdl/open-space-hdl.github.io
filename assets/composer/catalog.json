@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "0a7e06a1638b",
+ "id": "74e2f988a2e6",
  "sources": [
   {
    "id": "openwire",
@@ -152,6 +152,7 @@
    "name": "SpaceWire packets (N-Char)",
    "family": "SpaceWire",
    "kind": "stream",
+   "needsLast": true,
    "color": "#D9480F",
    "description": "Packets as N-Char stream, one data character per beat; a beat with Last is the end of packet marker (data bit 0: '0' EOP, '1' EEP).",
    "signals": {
@@ -191,7 +192,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    }
   },
@@ -211,7 +214,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    }
   },
@@ -231,7 +236,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    }
   },
@@ -270,6 +277,7 @@
    "name": "Packet link",
    "family": "Packets",
    "kind": "stream",
+   "needsLast": true,
    "color": "#2B8A3E",
    "description": "Network packets on a wide stream: byte 0 of a beat in data bits 7:0, keep contiguous from byte 0 and partial only on the last beat, last marks the end of the packet, user bit 0 on the last beat is the error end of packet (EEP). Further user bits carry a destination index where the source provides one.",
    "signals": {
@@ -304,6 +312,7 @@
    "name": "Byte stream",
    "family": "Packets",
    "kind": "stream",
+   "needsLast": true,
    "color": "#0C8599",
    "description": "Byte stream with keep and last and no side band: byte 0 of a beat in data bits 7:0, keep contiguous from byte 0 and partial only on the last beat of a packet.",
    "signals": {
@@ -312,7 +321,9 @@
     },
     "keep": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "every byte of a beat is valid"
     },
     "last": {
      "dir": "out"
@@ -340,6 +351,7 @@
    "name": "Space Packet send port",
    "family": "Space Packets",
    "kind": "stream",
+   "needsLast": true,
    "color": "#087F5B",
    "description": "Send port of OpenSPP: one SDU (Octet String Service) or one Space Packet (Packet Service) per stream packet, with the per-SDU side band (APID, packet type, secondary header flag, packet name) in user.",
    "signals": {
@@ -380,6 +392,7 @@
    "name": "Space Packet receive port",
    "family": "Space Packets",
    "kind": "stream",
+   "needsLast": true,
    "color": "#5C940D",
    "description": "Receive port of OpenSPP: one SDU or Space Packet per stream packet, with APID, flags, loss indicator and the user application value in user.",
    "signals": {
@@ -523,7 +536,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    },
    "fields": "out"
@@ -547,7 +562,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    }
   },
@@ -609,6 +626,7 @@
    "name": "AES-GCM messages",
    "family": "Encryption",
    "kind": "stream",
+   "needsLast": true,
    "color": "#D6336C",
    "description": "Messages of the AES-GCM core with the section (IV, AAD, DATA, TAG) of every beat in user.",
    "signals": {
@@ -629,7 +647,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    },
    "accepts": [
@@ -653,7 +673,9 @@
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     }
    },
    "fields": "out"
@@ -719,15 +741,21 @@
     },
     "AwLock": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "normal access"
     },
     "AwCache": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "device access, not bufferable"
     },
     "AwProt": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "unprivileged, secure data access"
     },
     "AwValid": {
      "dir": "out"
@@ -773,15 +801,21 @@
     },
     "ArLock": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "normal access"
     },
     "ArCache": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "device access, not bufferable"
     },
     "ArProt": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "unprivileged, secure data access"
     },
     "ArValid": {
      "dir": "out"
@@ -796,7 +830,9 @@
      "dir": "in"
     },
     "RLast": {
-     "dir": "in"
+     "dir": "in",
+     "absent": "1",
+     "absentWhy": "an AXI4-Lite slave answers single transfers, so every read beat is the last; valid only with the single-transfer condition of the AXI4-Lite connection"
     },
     "RValid": {
      "dir": "in"
@@ -906,7 +942,9 @@
     },
     "valid": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "events without valid are valid in every cycle, as the default of In_Valid of olo_ft_ecc_monitor"
     }
    }
   },
@@ -967,19 +1005,27 @@
     },
     "valid": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a source without valid delivers a beat in every cycle"
     },
     "ready": {
      "dir": "in",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "a sink without ready takes every beat"
     },
     "last": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "0",
+     "absentWhy": "only for a sink without needsLast, which sees one packet without end; a sink that needs packet boundaries reports an error instead"
     },
     "keep": {
      "dir": "out",
-     "optional": true
+     "optional": true,
+     "absent": "1",
+     "absentWhy": "every byte of a beat is valid"
     }
    },
    "fields": "out",
@@ -1896,6 +1942,7 @@
      "role": "sink",
      "clock": "Clk",
      "label": "Input",
+     "needsLast": true,
      "signals": {
       "data": "In_Data",
       "valid": "In_Valid",
@@ -4767,6 +4814,7 @@
      "clock": "Clk",
      "label": "Input",
      "carry": "native",
+     "needsLast": true,
      "signals": {
       "data": "In_Data",
       "valid": "In_Valid",
@@ -5017,6 +5065,7 @@
      "clock": "Clk",
      "label": "Input",
      "carry": "native",
+     "needsLast": true,
      "signals": {
       "data": "In_Data",
       "valid": "In_Valid",
@@ -5184,6 +5233,7 @@
      "clock": "Clk",
      "label": "Input",
      "carry": "native",
+     "needsLast": true,
      "signals": {
       "data": "In_Data",
       "keep": "In_Be",
