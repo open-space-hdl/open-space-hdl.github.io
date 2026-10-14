@@ -161,3 +161,22 @@ test('every system reads the scoped constraints of the Open Logic base entities,
     assert.deepEqual(files, ['src/base/tcl/olo_base_constraints_amd.tcl'], name);
   }
 });
+
+test('a known defect of the RMAP target with short bursts is an error until OpenRMAP fixes it', () => {
+  let d = addInstance(createDesign('t'), cat, 'openrmap/omap_core', { x: 0, y: 0 }, 'target').design;
+  const defect = () => resolve(cat, d).checks.filter((c) => c.rule === 'known_defect');
+  assert.deepEqual(defect(), [], 'no defect with the default bursts');
+  for (const beats of [1, 2]) {
+    d = setGeneric(d, cat, 'rmap0', 'AxiMaxBeats_g', beats).design;
+    const e = defect();
+    assert.equal(e.length, 1, String(beats));
+    assert.equal(e[0].severity, 'error');
+    assert.equal(e[0].message, 'rmap0: Known defect: commands longer than one AXI transaction return or write wrong data with AxiMaxBeats_g < 4; fix in progress in OpenRMAP.');
+  }
+  d = setGeneric(d, cat, 'rmap0', 'AxiMaxBeats_g', 4).design;
+  assert.deepEqual(defect(), []);
+  // an initiator without target does not answer commands
+  d = setGeneric(setGeneric(d, cat, 'rmap0', 'AxiMaxBeats_g', 1).design, cat, 'rmap0', 'Initiator_g', true).design;
+  d = setGeneric(d, cat, 'rmap0', 'Target_g', false).design;
+  assert.deepEqual(defect(), []);
+});

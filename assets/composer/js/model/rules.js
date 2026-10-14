@@ -15,6 +15,8 @@
  *   flag_dropped         a flag bit of user is not passed on (unless a generic or an interface of the block catches it)
  *   run_rate             the transmit rate (clock / divider) exceeds what a receiver with the same clock samples
  *   with_block           the system also contains an instance of another block (a coupling the catalog cannot express yet)
+ *   known_defect         a known defect of the block applies (condition when, and generic below a value), until it is
+ *                        fixed and the catalog pins the fix
  */
 
 import { typedEndpoint } from './compat.js';
@@ -48,6 +50,19 @@ export function nearMultiple(f, base, tolerance) {
 /** @param {number} n */
 function isPow2(n) {
   return Number.isInteger(n) && n > 0 && (n & (n - 1)) === 0;
+}
+
+/**
+ * Whether a rule applies with the generic values of an instance: when names a boolean generic that must be true, or
+ * a generic that must (is) or must not (not) have a value.
+ * @param {string | { generic: string, is?: unknown, not?: unknown } | undefined} when
+ * @param {Record<string, unknown>} values
+ */
+export function ruleApplies(when, values) {
+  if (when === undefined) return true;
+  if (typeof when === 'string') return values[when] === true;
+  if ('is' in when) return values[when.generic] === when.is;
+  return values[when.generic] !== when.not;
 }
 
 /**
@@ -153,6 +168,14 @@ export function runRules(res) {
         case 'with_block': {
           const other = res.d.instances.filter((i) => i.block === rule.block).map((i) => i.id);
           if (other.length) res.check(rule.severity ?? 'error', rule.kind, `${inst.id} with ${other.join(', ')}: ${rule.message}`, where);
+          break;
+        }
+        case 'known_defect': {
+          // a defect of the block under a condition (when, and a generic below a value), reported until it is fixed
+          const v = rule.generic ? rec.generics[rule.generic] : undefined;
+          if (ruleApplies(rule.when, rec.generics) && (!rule.generic || (typeof v === 'number' && v < rule.below))) {
+            res.check(rule.severity ?? 'error', rule.kind, `${inst.id}: ${rule.message}`, where);
+          }
           break;
         }
         case 'same_domain':

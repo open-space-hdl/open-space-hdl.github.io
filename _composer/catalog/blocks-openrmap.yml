@@ -194,6 +194,9 @@ blocks:
       - { kind: generic_any_true, generics: [Target_g, Initiator_g], message: At least one of Target_g and Initiator_g must be true. }
       - { kind: mutual_initiator, generic: Transactions_g, message: Two nodes that are initiator and target of each other on one link need Transactions_g = 1. }
       - { kind: same_domain, interfaces: [S_Pkt, M_Pkt], message: "The RMAP node normally runs on the user clock of its SpaceWire port; an asynchronous FIFO was inserted instead." }
+      # Provisional until OpenRMAP fixes the commands that the target splits into several AXI transactions: with
+      # AxiMaxBeats_g = 1 or 2, reads from 5 or 9 bytes and writes from 10 bytes return or write wrong data with status 0.
+      - { kind: known_defect, generic: AxiMaxBeats_g, below: 4, when: Target_g, message: "Known defect: commands longer than one AXI transaction return or write wrong data with AxiMaxBeats_g < 4; fix in progress in OpenRMAP." }
     idRegister: { address: "0x000", value: "0x4F4D4101" }
     init:
       - { text: "None needed: with the default generics the target accepts every command to the logical address 0xFE with the key 0x00 on the whole address space (WinInit_g). A flight configuration narrows the logical addresses (TGT_LA 0x010), the key (TGT_KEY) and the windows (WIN_BASE, WIN_LAST, WIN_CTRL), see the register map." }
@@ -201,4 +204,4 @@ blocks:
       - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.
       - M_RepData, M_Conf and M_User must be served when connected; a stalled output stalls the received packet stream and the link.
       - RMAP address bits above AxiAddrWidth_g must be zero in the windows.
-      - With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'.
+      - "With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'. Known defect of the pinned version (fix in progress in OpenRMAP): with AxiMaxBeats_g < 4, commands longer than one AXI transaction return or write wrong data."
