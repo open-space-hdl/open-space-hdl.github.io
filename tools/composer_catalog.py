@@ -101,6 +101,12 @@ def git(repo: Path, *args: str) -> str:
     return res.stdout
 
 
+def git_ok_output(repo: Path, *args: str) -> str:
+    """Output of a git command that may find nothing (git grep exits with 1 then)."""
+    r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, encoding="utf-8")
+    return r.stdout if r.returncode in (0, 1) else ""
+
+
 def git_ok(repo: Path, *args: str) -> bool:
     res = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
     return res.returncode == 0
@@ -668,6 +674,93 @@ def package_env(ctx: Context, src: dict, packages: list[str]) -> dict[str, Num]:
     return env
 
 
+# words of a VHDL expression that are no identifiers to resolve
+VHDL_WORDS = {"others", "and", "or", "not", "xor", "nand", "nor", "xnor", "downto", "to", "true", "false", "mod", "rem",
+              "abs", "sll", "srl", "sla", "sra", "rol", "ror", "null", "open"}
+_PACKAGE_INDEX: dict[str, dict[str, str]] = {}
+_PACKAGE_NAMES: dict[tuple[str, str], set[str]] = {}
+
+
+def package_index(ctx: Context, src: dict) -> dict[str, str]:
+    """Package name (lower case) -> file of the repository at the pinned commit that declares it."""
+    if src["id"] not in _PACKAGE_INDEX:
+        out = git_ok_output(ctx.repos / src["repo"], "grep", "-i", "-E", r"^\s*package\s+[a-z0-9_]+\s+is\b", src["sha"], "--", "*.vhd")
+        index: dict[str, str] = {}
+        for line in out.splitlines():
+            # <sha>:<path>:<text>
+            _, path, text = line.split(":", 2)
+            m = re.match(r"\s*package\s+(\w+)\s+is\b", text, re.I)
+            if m and m.group(1).lower() != "body":
+                index.setdefault(m.group(1).lower(), path)
+        _PACKAGE_INDEX[src["id"]] = index
+    return _PACKAGE_INDEX[src["id"]]
+
+
+def package_names(ctx: Context, src: dict, path: str) -> set[str]:
+    """Names (lower case) that the declaration of a package makes visible: constants, functions, types, subtypes."""
+    key = (src["id"], path)
+    if key not in _PACKAGE_NAMES:
+        text = strip_comments(git(ctx.repos / src["repo"], "show", f"{src['sha']}:{path}"))
+        body = re.search(r"\bpackage\s+body\b", text, re.I)
+        decl = text[: body.start()] if body else text
+        names: set[str] = set()
+        for m in re.finditer(r"\bconstant\s+([\w\s,]+?)\s*:", decl, re.I):
+            names.update(n.strip().lower() for n in m.group(1).split(","))
+        for kw in ("function", "type", "subtype"):
+            names.update(m.group(1).lower() for m in re.finditer(rf"\b{kw}\s+(\w+)", decl, re.I))
+        _PACKAGE_NAMES[key] = names
+    return _PACKAGE_NAMES[key]
+
+
+def qualify_expression(ctx: Context, b: dict, src: dict, sources: dict, entity_text: str, expr: str,
+                       generic_names: set[str]) -> tuple[str, list[str]]:
+    """The expression with every package identifier written as <library>.<package>.<name>, found through the use
+    clauses of the entity file at the pinned commit; and the identifiers that cannot be resolved."""
+    head = re.split(rf"\bentity\s+{re.escape(b['entity'])}\s+is\b", strip_comments(entity_text), maxsplit=1, flags=re.I)[0]
+    uses = re.findall(r"^\s*use\s+(\w+)\s*\.\s*(\w+)\s*\.\s*all\s*;", head, re.M | re.I)
+    by_library = {s["library"].lower(): s for s in sources.values()}
+    out = []
+    unresolved = []
+    i = 0
+    while i < len(expr):
+        ch = expr[i]
+        if ch == '"':
+            j = expr.index('"', i + 1) + 1
+            out.append(expr[i:j])
+            i = j
+            continue
+        if ch == "'" and i + 2 < len(expr) and expr[i + 2] == "'":
+            out.append(expr[i:i + 3])
+            i += 3
+            continue
+        m = re.match(r"[A-Za-z]\w*", expr[i:])
+        if not m or (i > 0 and (expr[i - 1].isalnum() or expr[i - 1] in "_.'")):
+            out.append(ch)
+            i += 1
+            continue
+        word = m.group(0)
+        j = i + len(word)
+        # base specifier of a bit-string literal (x"FE"), or a selected name that is already qualified
+        if (j < len(expr) and expr[j] in '".') or word.lower() in VHDL_WORDS:
+            out.append(word)
+            i = j
+            continue
+        found = None
+        for lib, pkg in uses:
+            owner = src if lib.lower() == "work" else by_library.get(lib.lower())
+            if owner is None:
+                continue
+            path = package_index(ctx, owner).get(pkg.lower())
+            if path and word.lower() in package_names(ctx, owner, path):
+                found = f"{owner['library'] if lib.lower() == 'work' else lib}.{pkg}.{word}"
+                break
+        if found is None:
+            unresolved.append(word + (" (a generic of the entity)" if word in generic_names else ""))
+        out.append(found or word)
+        i = j
+    return "".join(out), unresolved
+
+
 def flip(direction: str) -> str:
     return {"in": "out", "out": "in"}.get(direction, direction)
 
@@ -767,6 +860,14 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             gen["defaultText"] = g.default
             if representable:
                 gen["default"] = default
+            else:
+                # the generic map of a top level names package constants fully qualified (no use clauses there)
+                qualified, unresolved = qualify_expression(ctx, b, src, sources, text, g.default,
+                                                           {x.name for x in ent.generics})
+                for word in unresolved:
+                    ctx.err(where, f"generic {g.name}: default {g.default} names {word}, which no package of the use clauses declares")
+                if qualified != g.default:
+                    gen["defaultVhdl"] = qualified
         for key in ("label", "description", "choices", "check", "advanced", "fromClock", "unit", "min", "max", "follow",
                     "enabledBy"):
             if key in m:
@@ -1175,6 +1276,37 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
     return block
 
 
+def source_files(ctx: Context, s: dict) -> None:
+    """The synthesis sources of a repository in compile order, read from its file list at the pinned commit (format
+    files: one path per line, relative to the repository root), as s["files"] for the VHDL export. A file inside a
+    submodule marks the source with s["submodules"]: it is cloned recursively."""
+    if s.get("file_list_format") != "files":
+        return
+    where = f"sources.yml {s['id']}"
+    repo = ctx.repos / s["repo"]
+    text = git(repo, "show", f"{s['sha']}:{s['file_list']}")
+    files = [ln.strip() for ln in text.splitlines() if ln.strip() and not ln.strip().startswith("#")]
+    tree = git(repo, "ls-tree", "-r", s["sha"])
+    blobs = set()
+    modules = []
+    for line in tree.splitlines():
+        meta, path = line.split("\t", 1)
+        mode, kind = meta.split()[:2]
+        if kind == "commit":
+            modules.append(path + "/")
+        elif kind == "blob":
+            blobs.add(path)
+    in_module = [f for f in files if any(f.startswith(m) for m in modules)]
+    for f in files:
+        if f not in blobs and f not in in_module:
+            ctx.err(where, f"{s['file_list']} names {f}, which is not in the repository at {s['sha'][:10]}")
+    if len(set(files)) != len(files):
+        ctx.err(where, f"{s['file_list']} names a file twice")
+    s["files"] = files
+    if in_module:
+        s["submodules"] = True
+
+
 def substitute_constants(text: str, env: dict[str, Num]) -> str:
     """Replace package constants by their values; generic names stay symbolic."""
 
@@ -1234,6 +1366,8 @@ def build_catalog(ctx: Context) -> dict:
                 ctx.err(where, f"rule chain_fits: {other['id']} has no generic {ref.get('generic')}")
     for t in types.values():
         t.pop("_", None)
+    for s in sources.values():
+        source_files(ctx, s)
     catalog = {
         "format": CATALOG_FORMAT,
         "formatVersion": CATALOG_VERSION,

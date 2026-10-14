@@ -17,7 +17,7 @@ import { resolve } from './resolver.js';
 export const FORMAT = 'open-space-composer-system';
 export const FORMAT_VERSION = 1;
 export const SCHEMA_URL = 'https://openspacehdl.org/composer/schema/system-1.json';
-export const GENERATOR = { name: 'Open Space Composer', version: '0.1.0-beta' };
+export const GENERATOR = { name: 'Open Space Composer', version: '0.2.0-beta' };
 
 export class FormatError extends Error {
   /** @param {string[]} problems */

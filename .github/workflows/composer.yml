@@ -46,6 +46,46 @@ jobs:
       - name: Type check
         working-directory: site/tests
         run: npm run typecheck
+      - uses: ghdl/setup-ghdl@v1
+        with:
+          version: latest
+          backend: mcode
+      # Every example is exported with the command line tool and analysed with GHDL file by file in the order of its
+      # compile order file, then its top level is elaborated and run to 0 ns. Open Logic is analysed with -frelaxed:
+      # its RAMs use a shared variable without a protected type (the RAM inference pattern of Open Logic, upstream code
+      # that stays as it is). The cores and the generated top levels are analysed strictly. Vendor-specific blocks are
+      # replaced by a stub of their entity (tools/composer_hdl_check.py).
+      - name: VHDL export of the examples, analysed, elaborated and run to 0 ns with GHDL
+        run: |
+          set -e
+          for f in site/assets/composer/examples/*.composer.json; do
+            n=$(basename "$f" .composer.json)
+            node site/tools/composer_hdl.mjs "$f" "export/$n"
+            python site/tools/composer_hdl_check.py "export/$n" --sources sources --checkout-from .
+          done
+      # The system of a user (tests/fixtures/spfi_encrypt.composer.json) hits a known defect of the pinned OpenRMAP
+      # (an RMAP target with AxiMaxBeats_g = 1): the command line tool must refuse its export. Once the fix is pinned,
+      # the fixture joins the loop above as a positive test.
+      - name: The export of a system with a known defect is refused
+        run: |
+          set +e
+          node site/tools/composer_hdl.mjs site/tests/fixtures/spfi_encrypt.composer.json export/spfi_encrypt --resolve > refused.log 2>&1
+          status=$?
+          set -e
+          cat refused.log
+          test "$status" -eq 2
+          grep "Known defect: commands longer than one AXI transaction" refused.log
+      # Negative test: a top level whose generics violate an assertion of a core (ReleaseBytes_g = 4128, not a power of
+      # two) must stop at 0 ns. The command line tool refuses this system, so a test-only script writes the export.
+      - name: The GHDL check stops a top level that violates an assertion of a core
+        run: |
+          node site/tests/export_unchecked.mjs site/tests/fixtures/invalid/spfi_encrypt_release_4128.composer.json export/invalid
+          if python site/tools/composer_hdl_check.py export/invalid --sources sources --checkout-from . > invalid.log 2>&1; then
+            cat invalid.log
+            echo "The GHDL check passed a top level that violates an assertion of a core."
+            exit 1
+          fi
+          grep "ReleaseBytes_g must be a power of two" invalid.log
 
   browser:
     name: Browser tests (${{ matrix.browser }})

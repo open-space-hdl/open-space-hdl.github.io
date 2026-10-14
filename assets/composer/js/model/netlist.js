@@ -12,7 +12,7 @@
  *                every connection signal by signal (side band packed into the data word of a FIFO bit by bit),
  *                the side band constants, the tie-offs and the top-level ports
  *   packing      the bit fields of every packed data word
- *   context      the context clause of the top level (libraries, and the packages that generic values refer to)
+ *   context      the context clause of the top level (ieee and the libraries; package constants are qualified)
  *   clocks, resets, constraints, compile (libraries in order with their pinned sources)
  *
  * Every port of the top level and of an instance names its clock domain (a port of a block with several clocks: the
@@ -96,7 +96,7 @@ function portOf(ref) {
  * @param {unknown} v
  */
 export function vhdlLiteral(g, v) {
-  if (v === undefined || v === null) return g.defaultText ?? '';
+  if (v === undefined || v === null) return g.defaultVhdl ?? g.defaultText ?? '';
   switch (g.kind) {
     case 'boolean':
       return v ? 'true' : 'false';
@@ -486,17 +486,9 @@ class Netlist {
         o.entities = [...new Set(res.instances.filter((r) => r.library === s.library).map((r) => r.entity))].sort();
         return o;
       });
-    // context clause: ieee, every library, and the packages whose constants appear in a generic map
+    // context clause: ieee and every library. A generic map names package constants fully qualified (the catalog
+    // writes them so), so the top level needs no use clause of a package, and two packages may declare the same name.
     const context = ['library ieee;', 'use ieee.std_logic_1164.all;', ...compile.map((c) => `library ${c.library};`)];
-    for (const inst of instances) {
-      const b = this.cat.blocks.get(/** @type {string} */ (inst.block));
-      const named = /** @type {Record<string, unknown>[]} */ (inst.generics).some((g) => !g.default && /\b[A-Za-z]\w*_c\b/.test(String(g.vhdl)));
-      if (!b || !named) continue;
-      for (const pkg of b.packages ?? []) {
-        const clause = `use ${b.library}.${pkg}.all;`;
-        if (!context.includes(clause)) context.push(clause);
-      }
-    }
     const top = new Set(res.topPorts.map((tp) => tp.name.toLowerCase()));
     for (const sg of signals) if (top.has(sg.name.toLowerCase())) this.problems.push(`Signal ${sg.name} has the name of a top-level port.`);
     return {

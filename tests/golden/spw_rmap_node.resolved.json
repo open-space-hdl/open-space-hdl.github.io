@@ -1,5 +1,5 @@
 {
-  "catalog": "40d6faac97bc",
+  "catalog": "653fe9bd682c",
   "entity": "spw_rmap_node",
   "ports": [
     {
@@ -1283,7 +1283,7 @@
         {
           "name": "WinInit_g",
           "value": null,
-          "vhdl": "WinInitOpen_c",
+          "vhdl": "openrmap.omap_pkg.WinInitOpen_c",
           "default": true
         }
       ],
