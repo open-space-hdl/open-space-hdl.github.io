@@ -75,11 +75,18 @@ test('the send port holds one chunk with IV, AAD and tag', () => {
   assert.deepEqual(checksOf(resolve(cat, d), 'chain_fits', 'info').map((c) => c.message), [
     'spp0 sends Space Packets of up to ChunkBytes_g + 38 = 4134 bytes: the node that receives them needs RxBufferBytes_g of at least 4134 (spp0 has 4096, too small to receive its own packets).',
   ]);
-  // the release buffer of the core holds a whole message
+  // the release buffer of the core holds a whole message in beats: IV, AAD, data and tag each start a new beat
   d = setGeneric(d, cat, 'ocr0', 'ReleaseBuffer_g', true).design;
-  assert.match(checksOf(resolve(cat, d), 'chain_fits', 'error')[0]?.message ?? '', /the release buffer of ocr0 holds 4096 bytes, so every message would be dropped with OVERFLOW: set ReleaseBytes_g to at least 4128/);
+  assert.match(checksOf(resolve(cat, d), 'chain_fits', 'error')[0]?.message ?? '',
+    /takes 12 \+ 4 \+ 4096 \+ 16 bytes in sections of whole beats .*, 1032 beats of 4 bytes in the release buffer of ocr0, which holds 4096 \/ 4 = 1024 beats: every message would be dropped with OVERFLOW\. Set ReleaseBytes_g to 8192, the smallest power of two of at least 1032 beats \(16384 for the full rate\)\./);
   d = setGeneric(d, cat, 'ocr0', 'ReleaseBytes_g', 8192).design;
   assert.deepEqual(checksOf(resolve(cat, d), 'chain_fits', 'error'), []);
+  // one message fits, two do not: half the rate
+  // with room for one message the core needs 3M - D + 4 cycles per message instead of M + 1 (OpenCrypto, measured)
+  assert.match(checksOf(resolve(cat, d), 'chain_fits', 'warning')[0]?.message ?? '',
+    /holds one message but not two, so ocr0 needs 3 x 1032 - 2048 \+ 4 = 1052 cycles per message instead of 1033 \(1\.8 % less throughput\)\. Set ReleaseBytes_g to 16384 for the full rate\./);
+  d = setGeneric(d, cat, 'ocr0', 'ReleaseBytes_g', 16384).design;
+  assert.deepEqual(checksOf(resolve(cat, d), 'chain_fits', 'warning'), []);
   // a chunk larger than a Space Packet can carry
   d = setGeneric(d, cat, 'frm0', 'ChunkBytes_g', 65520).design;
   d = setGeneric(d, cat, 'spp0', 'TxBufferBytes_g', 131072).design;
@@ -149,4 +156,21 @@ test('the error flag of the core is not dropped silently: a warning without rele
   // a receiver of the whole user signal (an external interface) gets the flag
   e = addInstance(createDesign('t'), cat, 'opencrypto/ocr_core', { x: 0, y: 0 }).design;
   assert.deepEqual(checksOf(resolve(cat, setExternal(e, 'ocr0.M_Out', 'out_')), 'flag_dropped'), []);
+});
+
+test('the release buffer is a power of two of at least 16 beats, checked only when it is used', () => {
+  let d = addInstance(createDesign('t'), cat, 'opencrypto/ocr_core', { x: 0, y: 0 }).design;
+  d = setGeneric(d, cat, 'ocr0', 'DataWidth_g', 128).design;
+  // 4128 bytes (4096 + 32): ocr_gcm stops the elaboration with "ReleaseBytes_g must be a power of two of at least 16 beats"
+  d = setGeneric(d, cat, 'ocr0', 'ReleaseBytes_g', 4128).design;
+  assert.deepEqual(checksOf(resolve(cat, d), 'generic_multiple'), [], 'no check without the release buffer');
+  d = setGeneric(d, cat, 'ocr0', 'ReleaseBuffer_g', true).design;
+  const e = checksOf(resolve(cat, d), 'generic_multiple', 'error');
+  assert.equal(e.length, 1);
+  assert.match(e[0].message, /^ocr0: ReleaseBytes_g = 4128 must be a power of two times 16 \* DataWidth_g \/ 8 = 256 .*; the next valid value is 8192\.$/);
+  // 16 beats of 16 bytes is the smallest buffer
+  for (const [bytes, ok] of /** @type {[number, boolean][]} */ ([[128, false], [256, true], [384, false], [512, true], [16384, true]])) {
+    const v = setGeneric(d, cat, 'ocr0', 'ReleaseBytes_g', bytes).design;
+    assert.equal(checksOf(resolve(cat, v), 'generic_multiple', 'error').length === 0, ok, String(bytes));
+  }
 });

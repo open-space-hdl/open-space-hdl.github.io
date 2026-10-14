@@ -6,6 +6,9 @@
  *   clock_relation       clock faster runs at least as fast as clock slower (optionally an integer multiple)
  *   generic_any_true     at least one of the boolean generics is true
  *   generic_multiple     a generic is a multiple of an expression (optionally by a power of two)
+ *   generic_range        a generic lies between expressions (min, max; length(<bit-string generic>) is its width)
+ *                        generic_multiple and generic_range apply only when their condition "when" holds (a boolean
+ *                        generic, or { generic, is | not: value }); unlessZero skips a value of 0 or less
  *   generic_requires     generic = value requires another generic = value
  *   mutual_initiator     reminder for nodes that are initiator and target of each other
  *   same_domain          the interfaces should share the clock domain of their partner (no crossing inserted)
@@ -63,6 +66,34 @@ export function ruleApplies(when, values) {
   if (typeof when === 'string') return values[when] === true;
   if ('is' in when) return values[when.generic] === when.is;
   return values[when.generic] !== when.not;
+}
+
+/**
+ * Number of bits of a VHDL bit-string literal (x"07", "0101", 12x"FF"), or undefined.
+ * @param {unknown} v
+ */
+export function literalBits(v) {
+  if (typeof v !== 'string') return undefined;
+  const m = /^\s*(\d*)([bBoOxX]?)"([0-9a-fA-F_]*)"\s*$/.exec(v);
+  if (!m) return undefined;
+  if (m[1]) return Number(m[1]);
+  const digits = m[3].replace(/_/g, '').length;
+  const per = { '': 1, b: 1, o: 3, x: 4 }[m[2].toLowerCase()] ?? 1;
+  return digits * per;
+}
+
+/**
+ * An expression with length(<generic>) of a bit-string generic replaced by its number of bits.
+ * @param {string | number} text
+ * @param {Record<string, unknown>} values
+ */
+function withLengths(text, values) {
+  if (typeof text !== 'string') return text;
+  return text.replace(/\blength\(\s*([A-Za-z]\w*)\s*\)/g, (all, name) => {
+    const bits = literalBits(values[name]);
+    if (bits === undefined) throw new ExprError(`${name} is not a bit string`);
+    return String(bits);
+  });
 }
 
 /**
@@ -133,6 +164,8 @@ export function runRules(res) {
           }
           break;
         case 'generic_multiple': {
+          // when: the generic has an effect, and the block checks it, only under this condition
+          if (!ruleApplies(rule.when, rec.generics)) break;
           const v = rec.generics[rule.generic];
           let of;
           try {
@@ -144,10 +177,40 @@ export function runRules(res) {
           if (typeof v !== 'number' || of <= 0) break;
           const ok = v % of === 0 && (!rule.pow2Ratio || isPow2(v / of));
           if (!ok) {
+            // the next valid value at or above the current one
+            const next = rule.pow2Ratio ? of * 2 ** Math.max(0, Math.ceil(Math.log2(v / of))) : Math.ceil(v / of) * of;
+            const base = typeof rule.of === 'number' || String(rule.of) === String(of) ? String(of) : `${rule.of} = ${of}`;
+            const what = rule.pow2Ratio ? (of === 1 ? 'a power of two' : `a power of two times ${base}`) : `a multiple of ${base}`;
             res.check('error', rule.kind,
-              `${inst.id}: ${rule.generic} = ${v} must be ${rule.pow2Ratio ? 'a power of two times' : 'a multiple of'} ${rule.of} = ${of}.`,
+              `${inst.id}: ${rule.generic} = ${v} must be ${what}${rule.message ? ` (${rule.message})` : ''}; the next valid value is ${next}.`,
               where);
           }
+          break;
+        }
+        case 'generic_range': {
+          if (!ruleApplies(rule.when, rec.generics)) break;
+          const v = rec.generics[rule.generic];
+          // unlessZero: 0 (or less) selects a default of the block or switches the function off
+          if (typeof v !== 'number' || (rule.unlessZero && v <= 0)) break;
+          /** @type {number | undefined} */
+          let lo;
+          /** @type {number | undefined} */
+          let hi;
+          try {
+            if (rule.min !== undefined) lo = evaluate(withLengths(rule.min, rec.generics), env());
+            if (rule.max !== undefined) hi = evaluate(withLengths(rule.max, rec.generics), env());
+          } catch (e) {
+            if (!(e instanceof ExprError)) throw e;
+            break;
+          }
+          if ((lo === undefined || v >= lo) && (hi === undefined || v <= hi)) break;
+          const show = (/** @type {string | number} */ expr, /** @type {number} */ val) => (typeof expr === 'number' || String(val) === String(expr) ? String(val) : `${expr} = ${val}`);
+          const range = lo !== undefined && hi !== undefined
+            ? `from ${show(rule.min, lo)} to ${show(rule.max, hi)}`
+            : lo !== undefined ? `at least ${show(rule.min, lo)}` : `at most ${show(rule.max, /** @type {number} */ (hi))}`;
+          res.check(rule.severity ?? 'error', rule.kind,
+            `${inst.id}: ${rule.generic} = ${v} must be ${range}${rule.unlessZero ? ', or 0' : ''}${rule.message ? ` (${rule.message})` : ''}.`,
+            where);
           break;
         }
         case 'generic_requires':
@@ -221,13 +284,39 @@ export function runRules(res) {
                   `${inst.id}: ${what}; ${b.ref} must hold one: set ${rule.sink.generic} of ${sink.id} to at least ${bytes} (now ${have}).`,
                   { instance: sink.id, connection: b.connection });
               }
-              // the release buffer of the via block holds a whole message
+              // the release buffer of the via block holds a whole message, counted in beats: every section of the
+              // message starts with a new beat (sections: bytes per section, beat: bytes per beat of the via block)
               const rel = rule.release;
               const relBytes = rel ? via.generics[rel.generic] : undefined;
-              if (rel && via.generics[rel.enabledBy] === true && typeof relBytes === 'number' && relBytes < bytes) {
-                res.check('error', rule.kind,
-                  `${inst.id}: ${what}; the release buffer of ${via.id} holds ${relBytes} bytes, so every message would be dropped with OVERFLOW: set ${rel.generic} to at least ${bytes}.`,
-                  { instance: via.id });
+              if (rel && via.generics[rel.enabledBy] === true && typeof relBytes === 'number') {
+                const viaBlock = res.cat.blocks.get(via.block);
+                let beat;
+                let sections;
+                try {
+                  beat = viaBlock ? evaluate(rel.beat, res.cat.envFor(viaBlock, via.generics)) : NaN;
+                  sections = /** @type {string[]} */ (rel.sections).map((s) => evaluate(s, env()));
+                } catch (e) {
+                  if (!(e instanceof ExprError)) throw e;
+                  continue;
+                }
+                if (!(beat > 0)) continue;
+                const m = sections.reduce((sum, s) => sum + Math.ceil(s / beat), 0);
+                const d = Math.floor(relBytes / beat);
+                // the smallest power of two of beats (at least 16) that holds n beats, in bytes
+                const fit = (/** @type {number} */ n) => beat * 2 ** Math.max(4, Math.ceil(Math.log2(n)));
+                const msg = `${inst.id}: every message of ${inst.id} takes ${sections.join(' + ')} bytes in sections of whole beats (${rel.sections.join(' + ')}), ${m} beats of ${beat} bytes in the release buffer of ${via.id}, which holds ${relBytes} / ${beat} = ${d} beats`;
+                if (m > d) {
+                  res.check('error', rule.kind,
+                    `${msg}: every message would be dropped with OVERFLOW. Set ${rel.generic} to ${fit(m)}, the smallest power of two of at least ${m} beats (${fit(2 * m)} for the full rate).`,
+                    { instance: via.id });
+                } else if (2 * m > d) {
+                  // measured by OpenCrypto: M + 1 cycles per message with room for two, 3M - D + 4 below that
+                  const slow = 3 * m - d + 4;
+                  const loss = Math.round((1 - (m + 1) / slow) * 1000) / 10;
+                  res.check('warning', rule.kind,
+                    `${msg}: it holds one message but not two, so ${via.id} needs 3 x ${m} - ${d} + 4 = ${slow} cycles per message instead of ${m + 1} (${loss} % less throughput). Set ${rel.generic} to ${fit(2 * m)} for the full rate.`,
+                    { instance: via.id });
+                }
               }
               // the packets that the sink sends: the receiving node holds them
               if (rule.packet) {

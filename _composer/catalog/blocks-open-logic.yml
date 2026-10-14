@@ -114,8 +114,11 @@ blocks:
       - { name: RamStyle_g, label: RAM style, advanced: true }
       - { name: RamBehavior_g, label: RAM behaviour, choices: [RBW, WBR], advanced: true }
       - { name: SmallRamStyle_g, label: Boundary RAM style, advanced: true, description: Keep "registers" so that the packet boundaries can be covered by vendor TMR. }
-      - { name: SmallRamBehavior_g, label: Boundary RAM behaviour, advanced: true }
+      - { name: SmallRamBehavior_g, label: Boundary RAM behaviour, choices: [same, RBW, WBR], advanced: true }
       - { name: MaxPackets_g, label: Maximum packets, description: Packets the FIFO holds at the same time. }
+    rules:
+      # olo_base_fifo_packet.vhd
+      - { kind: generic_multiple, generic: Depth_g, of: 1, pow2Ratio: true }
     interfaces:
       - name: In
         label: Input
@@ -261,6 +264,9 @@ blocks:
     generics:
       - { name: InWidth_g, label: Input width, unit: bits, example: 8, follow: { interfaces: [In], measure: data } }
       - { name: OutWidth_g, label: Output width, unit: bits, example: 32, description: An integer multiple of the input width., follow: { interfaces: [Out], measure: data } }
+    rules:
+      # olo_base_wconv_n2xn.vhd
+      - { kind: generic_multiple, generic: OutWidth_g, of: InWidth_g }
     interfaces:
       - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
       - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, wordena: Out_WordEna } }
@@ -284,6 +290,9 @@ blocks:
     generics:
       - { name: InWidth_g, label: Input width, unit: bits, example: 32, description: An integer multiple of the output width., follow: { interfaces: [In], measure: data } }
       - { name: OutWidth_g, label: Output width, unit: bits, example: 8, follow: { interfaces: [Out], measure: data } }
+    rules:
+      # olo_base_wconv_xn2n.vhd
+      - { kind: generic_multiple, generic: InWidth_g, of: OutWidth_g }
     interfaces:
       - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last, wordena: In_WordEna } }
       - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
@@ -306,6 +315,10 @@ blocks:
       - { name: InWidth_g, label: Input width, unit: bits, follow: { interfaces: [In], measure: data } }
       - { name: OutWidth_g, label: Output width, unit: bits, follow: { interfaces: [Out], measure: data } }
       - { name: UseBe_g, label: Byte enables, description: Handles byte enables (both widths a multiple of 8). }
+    rules:
+      # olo_base_wconv_n2m.vhd: byte enables need whole bytes
+      - { kind: generic_multiple, generic: InWidth_g, of: 8, when: UseBe_g }
+      - { kind: generic_multiple, generic: OutWidth_g, of: 8, when: UseBe_g }
     interfaces:
       - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, keep: In_Be, valid: In_Valid, ready: In_Ready, last: In_Last } }
       - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, keep: Out_Be, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
@@ -492,6 +505,9 @@ blocks:
       - { name: Period_g, label: Period, unit: cycles, example: 10 }
       - { name: MaxSamples_g, label: Beats per period }
       - { name: RuntimeCfg_g, label: Runtime configuration, advanced: true }
+    rules:
+      # olo_base_rate_limit.vhd
+      - { kind: generic_range, generic: MaxSamples_g, max: Period_g }
     interfaces:
       - { name: In, label: Input, type: axis.any, role: sink, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready } }
       - { name: Out, label: Output, type: axis.any, role: source, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready } }
@@ -519,6 +535,10 @@ blocks:
       - { name: CrcByteOrder_g, label: Byte order, choices: [NONE, MSB_FIRST, LSB_FIRST] }
       - { name: CrcBitflipOutput_g, label: Reflect output }
       - { name: CrcXorOutput_g, label: Output XOR }
+    rules:
+      # olo_base_crc_append.vhd / olo_base_crc_check.vhd and olo_base_crc.vhd
+      - { kind: generic_range, generic: DataWidth_g, min: length(CrcPolynomial_g), message: "the CRC is not wider than a beat" }
+      - { kind: generic_multiple, generic: DataWidth_g, of: 8, when: { generic: CrcByteOrder_g, not: NONE } }
     interfaces:
       - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, needsLast: true, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
       - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
@@ -549,6 +569,12 @@ blocks:
       - { name: CrcByteOrder_g, label: Byte order, choices: [NONE, MSB_FIRST, LSB_FIRST] }
       - { name: CrcBitflipOutput_g, label: Reflect output }
       - { name: CrcXorOutput_g, label: Output XOR }
+    rules:
+      # olo_base_fifo_packet.vhd of the DROP mode
+      - { kind: generic_multiple, generic: FifoDepth_g, of: 1, pow2Ratio: true, when: { generic: Mode_g, is: DROP } }
+      # olo_base_crc_append.vhd / olo_base_crc_check.vhd and olo_base_crc.vhd
+      - { kind: generic_range, generic: DataWidth_g, min: length(CrcPolynomial_g), message: "the CRC is not wider than a beat" }
+      - { kind: generic_multiple, generic: DataWidth_g, of: 8, when: { generic: CrcByteOrder_g, not: NONE } }
     interfaces:
       - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, needsLast: true, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
       - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, crc_err: Out_CrcErr } }
@@ -619,6 +645,9 @@ blocks:
       - { name: CounterWidth_g, label: Counter width, unit: bits }
       - { name: AxiAddrWidth_g, label: Register address width, unit: bits }
       - { name: ReadTimeoutClks_g, label: Read timeout, unit: cycles, advanced: true }
+    rules:
+      # olo_ft_ecc_monitor_axi.vhd: the register map fits into the address space
+      - { kind: generic_range, generic: AxiAddrWidth_g, min: log2ceil(16 + 4 * Channels_g) }
     interfaces:
       - { name: S_AxiLite, label: Registers, type: axi4lite, role: slave, clock: Clk, prefix: S_AxiLite_, params: { addrWidth: AxiAddrWidth_g } }
       - { name: In, label: EDAC events, type: ecc.event, role: event_in, clock: Clk, vector: Channels_g, signals: { sec: In_EccSec, ded: In_EccDed, valid: In_Valid } }
@@ -644,6 +673,10 @@ blocks:
       - { name: AxiDataWidth_g, label: Data width, unit: bits }
       - { name: Ports_g, label: Slave ports }
       - { name: PortAddrWidth_g, label: Window address width, unit: bits, description: Every port owns a window of 2**PortAddrWidth_g bytes. }
+    rules:
+      # olo_axi_lite_decoder.vhd
+      - { kind: generic_multiple, generic: AxiDataWidth_g, of: 8 }
+      - { kind: generic_range, generic: AxiAddrWidth_g, min: PortAddrWidth_g + log2ceil(Ports_g), message: "every port owns a window of 2**PortAddrWidth_g bytes" }
     interfaces:
       - { name: S_AxiLite, label: Master in, type: axi4lite, role: slave, clock: Clk, prefix: S_AxiLite_, params: { addrWidth: AxiAddrWidth_g } }
       - name: M_AxiLite

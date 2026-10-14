@@ -59,6 +59,7 @@ RULE_KINDS = {
     "clock_relation": ("faster", "slower"),
     "generic_any_true": ("generics",),
     "generic_multiple": ("generic", "of"),
+    "generic_range": ("generic",),
     "generic_requires": ("generic", "value", "requires"),
     "mutual_initiator": ("generic",),
     "same_domain": ("interfaces",),
@@ -1059,7 +1060,7 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         for c in refs:
             if c not in clock_ports:
                 ctx.err(where, f"rule {kind}: unknown clock {c}")
-        # when: a boolean generic, or {generic, is | not}
+        # when: a boolean generic, or {generic, is | not: value}
         when = r.get("when")
         if isinstance(when, str) and next((g["kind"] for g in generics if g["name"] == when), None) != "boolean":
             ctx.err(where, f"rule {kind}: when names {when}, not a boolean generic")
@@ -1067,6 +1068,8 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             ctx.err(where, f"rule {kind}: when needs a generic of the block and one of is or not")
         elif when is not None and not isinstance(when, (str, dict)):
             ctx.err(where, f"rule {kind}: when must be a boolean generic or {{generic, is | not}}")
+        if kind == "generic_range" and "min" not in r and "max" not in r:
+            ctx.err(where, "rule generic_range needs min or max")
         if kind == "known_defect" and ("generic" in r) != isinstance(r.get("below"), (int, float)):
             ctx.err(where, "rule known_defect: generic and below go together")
         for gname in [r.get("generic")] + list(r.get("generics") or []):
@@ -1079,7 +1082,7 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             ctx.err(where, f"rule {kind}: severity must be error or warning")
         if kind == "chain_fits":
             ctx.chain_rules.append((where, r))
-            for opt, keys in (("release", ("generic", "enabledBy")), ("packet", ("bytes", "generic", "what"))):
+            for opt, keys in (("release", ("generic", "enabledBy", "beat", "sections")), ("packet", ("bytes", "generic", "what"))):
                 if opt in r and any(k not in r[opt] for k in keys):
                     ctx.err(where, f"rule chain_fits: {opt} needs {', '.join(keys)}")
         if kind == "flag_dropped":

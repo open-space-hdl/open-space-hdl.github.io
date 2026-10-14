@@ -147,9 +147,10 @@ function linkDomain(d, spw, hz) {
     ],
   );
   d = setGeneric(d, cat, 'ocr0', 'DenseOutput_g', true).design;
-  // a failed message never leaves the core: the release buffer holds a whole message (chunk + IV, AAD and tag)
+  // a failed message never leaves the core: the release buffer holds two whole messages (chunk + IV, AAD and tag, each
+  // section in whole beats), so that one message enters while the other leaves and the core runs at the full rate
   d = setGeneric(d, cat, 'ocr0', 'ReleaseBuffer_g', true).design;
-  d = setGeneric(d, cat, 'ocr0', 'ReleaseBytes_g', 8192).design;
+  d = setGeneric(d, cat, 'ocr0', 'ReleaseBytes_g', 16384).design;
   // the send buffer holds one encrypted chunk, the receive buffer one Space Packet of it (the example loops back)
   d = setGeneric(d, cat, 'spp0', 'TxBufferBytes_g', 8192).design;
   d = setGeneric(d, cat, 'spp0', 'RxBufferBytes_g', 8192).design;

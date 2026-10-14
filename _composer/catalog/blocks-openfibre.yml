@@ -134,9 +134,14 @@ blocks:
           prbs_err: { port: Phy_PrbsErr, dir: in }
           prbs_locked: { port: Phy_PrbsLocked, dir: in }
     rules:
+      # ofb_dl_vc_out.vhd: olo_base_fifo_async of the output VC buffer
+      - { kind: generic_multiple, generic: VcOutDepth_g, of: 1, pow2Ratio: true }
+      # ofb_dl_erb.vhd: the rows of the error recovery buffer are a power of two, at least 2
+      - { kind: generic_multiple, generic: ErbRows_g, of: 2, pow2Ratio: true }
       - { kind: clock_relation, faster: CoreClk, slower: LaneClk, message: CoreClk must run at least as fast as LaneClk; a slower CoreClk loses received rows (DL_ERRORS bit 10). }
       - { kind: clock_relation, faster: UserClk, slower: LaneClk, severity: warning, message: "UserClk slower than LaneClk limits the throughput of the virtual channels (one beat of NumLanes_g words per cycle)." }
-      - { kind: generic_multiple, generic: VcInDepth_g, of: 64 * NumLanes_g }
+      # ofb_dl_vc_in.vhd: a multiple of 64 x NumLanes_g; olo_base_fifo_async: VcInDepth_g / NumLanes_g a power of two
+      - { kind: generic_multiple, generic: VcInDepth_g, of: 64 * NumLanes_g, pow2Ratio: true }
       # until ofb_core has an input for the TX ready of the adapter: the adapter notes require holding the core in reset
       - { kind: with_block, block: openfibre/ofb_pa_gty, severity: warning, message: "ofb_core leaves reset before the transceivers are ready: the lane initialisation can start against a transmitter that is still in reset, and the Composer cannot couple LaneRst of the adapter to the reset of the core yet." }
     idRegister: { address: "0x000", value: "0x0FB10007" }
