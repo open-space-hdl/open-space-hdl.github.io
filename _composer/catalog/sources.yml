@@ -15,10 +15,10 @@ sources:
     repo: openwire
     url: https://github.com/open-space-hdl/openwire
     doc: https://openspacehdl.org/openwire/
-    commit: e5142cdb40240f2cbf202529c9f2ccf112038dd6
+    commit: 2897668e2e519e9517a5c7270f243c5ab0d7fdb0
     library: openwire
-    file_list: component_list.txt
-    file_list_format: modules
+    file_list: compile_order.txt
+    file_list_format: files
     verified_with: 4.7.0-ft.2
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
@@ -39,10 +39,10 @@ sources:
     repo: openspp
     url: https://github.com/open-space-hdl/openspp
     doc: https://openspacehdl.org/openspp/
-    commit: da4e97b7ad9e0e8ee1af234d18210cbfdcdac492
+    commit: 2d7ee8f92175d15e41d1e069f0db663de951d0c6
     library: openspp
-    file_list: component_list.txt
-    file_list_format: modules
+    file_list: compile_order.txt
+    file_list_format: files
     verified_with: 4.7.0-ft.2
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
@@ -63,10 +63,10 @@ sources:
     repo: opencrypto
     url: https://github.com/open-space-hdl/opencrypto
     doc: https://openspacehdl.org/opencrypto/
-    commit: be947c7f842751422a0257324157f4ef638d5ee0
+    commit: e03bc8cda75a660cc3e28bdc14d7f9409ddb0497
     library: opencrypto
-    file_list: component_list.txt
-    file_list_format: modules
+    file_list: compile_order.txt
+    file_list_format: files
     verified_with: 4.7.0-ft.3
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
