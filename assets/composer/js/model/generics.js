@@ -12,6 +12,7 @@
  * @property {'boolean'|'integer'|'real'|'std_logic'|'std_logic_vector'|'string'|'integer_vector'|'opaque'} kind
  * @property {unknown} [default]
  * @property {string} [defaultText]
+ * @property {string} [defaultVhdl]   the default for a generic map: package identifiers fully qualified
  * @property {boolean} [required]
  * @property {unknown} [example]
  * @property {number} [min]

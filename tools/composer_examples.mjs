@@ -1,10 +1,12 @@
 // Writes the example systems of the Composer (assets/composer/examples/) from the design model, so that the
 // examples always follow the current catalog and file format. Their layout comes from Arrange. The resolved netlist
 // and the brief of every example are also written to tests/golden/, where the unit tests compare them: a change of
-// the resolver shows up as a reviewable difference of these files.
+// the resolver shows up as a reviewable difference of these files. So are the files of the VHDL export of every
+// example (top level, compile order, constraints), once the catalog has the file lists of all its sources.
 //
 //   node tools/composer_examples.mjs              all examples
 //   node tools/composer_examples.mjs <name> ...   only the named examples (system names = file names without extension)
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { arrange } from '../assets/composer/js/model/arrange.js';
 import { Catalog } from '../assets/composer/js/model/catalog.js';
@@ -13,7 +15,8 @@ import {
   addConnection, addDomain, addInstance, assignClock, createDesign, moveToDomain, renameDomain, setExternal, setGeneric,
   setSystem, sidebandDefaults, updateDomain,
 } from '../assets/composer/js/model/design.js';
-import { toDocument, toText } from '../assets/composer/js/model/serialize.js';
+import { exportHdl } from '../assets/composer/js/model/hdl.js';
+import { GENERATOR, toDocument, toText } from '../assets/composer/js/model/serialize.js';
 
 const cat = new Catalog(JSON.parse(readFileSync(new URL('../assets/composer/catalog.json', import.meta.url), 'utf-8')));
 
@@ -211,12 +214,22 @@ for (let k = 0; k < examples.length; k += 1) {
   examples[k] = [file, title, d];
   if (only.length > 0 && !only.includes(file)) continue;
   const path = new URL(`../assets/composer/examples/${file}.composer.json`, import.meta.url);
-  writeFileSync(path, toText(d, cat));
+  const text = toText(d, cat);
+  writeFileSync(path, text);
   const doc = /** @type {any} */ (toDocument(d, cat));
   const golden = new URL('../tests/golden/', import.meta.url);
   mkdirSync(golden, { recursive: true });
   writeFileSync(new URL(`${file}.resolved.json`, golden), `${JSON.stringify(doc.resolved, null, 2)}\n`);
   writeFileSync(new URL(`${file}.brief.md`, golden), doc.agent.brief);
+  const hdl = exportHdl(cat, doc.resolved, {
+    generator: `${GENERATOR.name} ${GENERATOR.version}`,
+    input: `${file}.composer.json`,
+    sha256: createHash('sha256').update(text).digest('hex'),
+    description: d.description,
+    connections: d.connections,
+  });
+  if (hdl.problems.length) console.log(`${file}: no golden files of the VHDL export (${hdl.problems.join(' ')})`);
+  else for (const f of hdl.files) writeFileSync(new URL(f.name, golden), f.text);
   console.log(`wrote ${file}.composer.json and its golden files`);
 }
 

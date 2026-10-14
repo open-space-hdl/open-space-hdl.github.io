@@ -151,6 +151,63 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
       end-to-end test.
     </p>
 
+    <h2 id="export">VHDL export</h2>
+    <p>
+      The export writes the files that a build of the system needs, from the resolved netlist and nothing else. The
+      same file gives the same export, byte by byte. Every file starts with a header: the generator and its version,
+      the system file and its SHA-256, the block catalog, and that the file is generated and not to be edited.
+    </p>
+    <div class="table-frame">
+      <table class="trl-table">
+        <thead><tr><th scope="col">File</th><th scope="col">Content</th></tr></thead>
+        <tbody>
+          <tr><td data-label="File"><code>&lt;system&gt;.vhd</code></td><td data-label="Content">Top level, VHDL-2008: the ports, one block of signals per instance, every instance as <code>i_&lt;id&gt;</code> with all its generics (the defaults marked, package constants fully qualified), the connections, side band constants, tie-offs and top-level ports as assignments. Clocks are port actuals only.</td></tr>
+          <tr><td data-label="File"><code>&lt;system&gt;_compile_order.txt</code></td><td data-label="Content">The source repositories at their pinned commits and every synthesis source in compile order with its library; the top level last, in a library named after the system.</td></tr>
+          <tr><td data-label="File"><code>&lt;system&gt;.xdc</code></td><td data-label="Content">Timing exceptions of the system (maximum delays between the clocks of every clock crossing, false paths), written for <code>read_xdc -ref &lt;system&gt;</code>: valid when the system is the top level and inside a larger design.</td></tr>
+          <tr><td data-label="File"><code>&lt;system&gt;_top.xdc</code></td><td data-label="Content">What applies only when the system is the top level of the FPGA, or synthesised on its own: the clocks of its clock ports and the I/O registers. A board design creates its clocks and places its I/O registers itself.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      The compile order is a line format for tools. The first line is <code>format composer-compile-order 1</code>;
+      lines starting with <code>#</code> are comments.
+    </p>
+<pre><code>source &lt;directory&gt; &lt;url&gt; &lt;commit&gt; [tag &lt;tag&gt;] [recursive]
+file &lt;library&gt; &lt;path&gt;</code></pre>
+    <p>
+      A <code>source</code> line names a repository: clone it into the directory of that name in a sources root and
+      check out the commit (<code>recursive</code>: with its submodules). A <code>file</code> line names a VHDL-2008
+      file and its library, in compile order; the sources relative to the sources root, the top level relative to the
+      compile order file. The file lists come from <code>compile_order.txt</code> of every repository at its pinned
+      commit; the notes at the end name what a build needs beyond the files, for example the transceiver wizard of a
+      vendor-specific block and the scoped constraint script of Open Logic.
+    </p>
+    <p>
+      The command line tool of the website repository writes the same files:
+    </p>
+<pre><code>node tools/composer_hdl.mjs &lt;system.composer.json&gt; &lt;out dir&gt; [--resolve] [--sources &lt;root&gt;]</code></pre>
+    <ul>
+      <li>It resolves the system again with its block catalog and compares the result with <code>resolved</code> of
+        the file. When they differ, for example after a core update, it lists the differences and exports nothing;
+        <code>--resolve</code> exports the new resolution. A system with an error is not exported.</li>
+      <li>The file lists come from the catalog, which holds them for its pinned commits. <code>--sources</code> reads
+        them from local checkouts instead, one per repository in <code>&lt;root&gt;</code>, each checked out at exactly
+        the pinned commit (for example the submodules of a repository that builds the system); a checkout at another
+        commit is an error.</li>
+      <li>A repository pinned at a commit without <code>compile_order.txt</code> cannot be exported: the export names it
+        ("no compile_order.txt at this pin"). For an older pin, save the system again with the current catalog of the
+        Composer.</li>
+      <li>Exit status: 0 exported, 1 the stored netlist differs from the new resolution, 2 the file, the system or the
+        sources have errors; nothing is written in the last two cases.</li>
+    </ul>
+    <p>
+      <code>tools/composer_hdl_check.py</code> analyses an export with GHDL file by file in the order of its compile
+      order, elaborates the top level and runs it to 0 ns, so that the assertions of the cores on their generics fire.
+      Open Logic is analysed with <code>-frelaxed</code> (the shared variable of its RAMs), the cores and the top level
+      strictly; a vendor-specific block is replaced by a stub of its entity. The continuous integration of the website
+      runs it for every example.
+    </p>
+
     <h2 id="versions">Versions and the catalog</h2>
     <p>
       The block catalog of the Composer is checked against the VHDL entities of the cores at their pinned commits.

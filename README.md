@@ -62,7 +62,9 @@ no runtime dependency) and runs entirely in the browser; the header, the footer 
 | `assets/composer/js/view/` | Editor: palette, canvas with clock domains and animations, inspector, checks, legend, tabs |
 | `assets/img/composer-teaser.png` | Picture of the editor on the start page (`node tools/composer_teaser.mjs` with the built site served) |
 | `tools/composer_catalog.py` | `build`, `check` (YAML against the VHDL entities at the pinned commits, catalog current, examples valid against the schema), `clone` (the source repositories next to this one) |
-| `tools/composer_examples.mjs` | Writes the examples and their golden netlists and build briefs in `tests/golden/` |
+| `tools/composer_examples.mjs` | Writes the examples and their golden netlists, build briefs and VHDL exports in `tests/golden/` |
+| `tools/composer_hdl.mjs` | VHDL export of a system file: top level, compile order and constraints (`/composer/format/#export`) |
+| `tools/composer_hdl_check.py` | Analyses an export with GHDL in its compile order, elaborates the top level and runs it to 0 ns |
 | `tests/` | Unit tests (`node --test`), type check (TypeScript), browser tests (Playwright), Gemfile of the Jekyll build |
 | `.github/workflows/composer.yml` | Continuous integration of all of it, see below |
 
@@ -93,7 +95,8 @@ npm run e2e        # against the built site in ../_site (COMPOSER_SITE selects a
 ```
 
 `.github/workflows/composer.yml` runs on every push and pull request: the catalog check with the source repositories
-cloned next to the site, the schema validation of the examples, the unit tests and the type check, and the browser
+cloned next to the site, the schema validation of the examples, the unit tests and the type check, the VHDL export of
+every example analysed, elaborated and run to 0 ns with GHDL (and the refusals that the tests expect), and the browser
 tests in Chromium, Firefox and WebKit against a Jekyll build with the gem set of GitHub Pages (`tests/jekyll/Gemfile`).
 The frame-time bounds of the 100-block test are checked locally only; shared runners have no GPU.
 
