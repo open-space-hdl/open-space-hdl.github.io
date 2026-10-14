@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "780580b99b1b",
+ "id": "e1ab05c0b051",
  "sources": [
   {
    "id": "openwire",
@@ -11623,6 +11623,24 @@
      "divider": "RunDiv_g",
      "sampling": 1.2,
      "message": "A receiver samples a bit period that is longer than 1.2 of its LinkClk periods (user guide, section 3)"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "RxFifoDepth_g",
+     "min": 16,
+     "message": "the port never has room for a flow control token: 8 N-Chars plus the reserved EEP place; it receives no data"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "RxFifoDepth_g",
+     "max": 32768,
+     "message": "FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "TxFifoDepth_g",
+     "max": 32768,
+     "message": "FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields"
     }
    ],
    "constraints": [
