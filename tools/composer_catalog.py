@@ -1171,8 +1171,8 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             ctx.err(where, f"rule {kind}: when must be a boolean generic or {{generic, is | not}}")
         if kind == "generic_range" and "min" not in r and "max" not in r:
             ctx.err(where, "rule generic_range needs min or max")
-        if kind == "known_defect" and ("generic" in r) != isinstance(r.get("below"), (int, float)):
-            ctx.err(where, "rule known_defect: generic and below go together")
+        if kind == "known_defect" and ("generic" in r) != isinstance(r.get("below"), (int, float, str)):
+            ctx.err(where, "rule known_defect: generic and below (a number or an expression) go together")
         for gname in [r.get("generic")] + list(r.get("generics") or []):
             if gname and gname not in gen_names:
                 ctx.err(where, f"rule {kind}: unknown generic {gname}")

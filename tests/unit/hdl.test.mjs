@@ -182,12 +182,12 @@ test('the command line tool refuses a changed netlist, exports with --resolve an
     assert.match(errors.stderr, /the system has errors; nothing exported/);
     assert.match(errors.stderr, /ocr0: ReleaseBytes_g = 4128 must be a power of two/);
     assert.throws(() => readdirSync(join(dir, 'b')), 'nothing written');
-    // the system of the user: its RMAP target on the AXI4-Lite decoder (AxiMaxBeats_g = 1) hits a known defect of the
-    // pinned OpenRMAP, so the export is refused. Once the fix is pinned, this fixture becomes a positive export test
-    // with the GHDL check and the run to 0 ns, like the examples in the continuous integration.
+    // the system of the user: its RMAP target on the AXI4-Lite decoder (AxiMaxBeats_g = 1) hits the known defect of
+    // olo_axi_master_simple up to Open Logic 4.7.0-ft.4, so the export is refused. Once OpenRMAP is pinned with
+    // 4.7.0-ft.5, this fixture becomes a positive export test with the GHDL check and the run to 0 ns, like the examples.
     const user = run([`${ROOT}tests/fixtures/spfi_encrypt.composer.json`, join(dir, 'e'), '--resolve']);
     assert.equal(user.status, 2, user.stdout);
-    assert.match(user.stderr, /rmap0: Known defect: commands longer than one AXI transaction return or write wrong data with AxiMaxBeats_g < 4; fix in progress in OpenRMAP\./);
+    assert.match(user.stderr, /rmap0: Known defect of Open Logic olo_axi_master_simple up to 4\.7\.0-ft\.4: with AxiMaxBeats_g < AxiDataWidth_g\/8, /);
     assert.throws(() => readdirSync(join(dir, 'e')), 'nothing written');
     // an example of the current catalog exports without --resolve, with the input file and its hash in the header
     const example = run([`${EXAMPLES}spw_rmap_node.composer.json`, join(dir, 'c')]);
