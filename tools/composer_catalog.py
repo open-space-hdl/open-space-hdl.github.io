@@ -67,6 +67,7 @@ RULE_KINDS = {
     "flag_dropped": ("interface", "signal", "bit", "message"),
     "run_rate": ("clock", "divider", "sampling", "message"),
     "with_block": ("block", "message"),
+    "known_defect": ("message",),
 }
 # keys of a field of a side band or of a user signal
 FIELD_KEYS = {"name", "label", "lsb", "bits", "kind", "default", "enabledBy", "below", "description"}
@@ -1058,6 +1059,16 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         for c in refs:
             if c not in clock_ports:
                 ctx.err(where, f"rule {kind}: unknown clock {c}")
+        # when: a boolean generic, or {generic, is | not}
+        when = r.get("when")
+        if isinstance(when, str) and next((g["kind"] for g in generics if g["name"] == when), None) != "boolean":
+            ctx.err(where, f"rule {kind}: when names {when}, not a boolean generic")
+        elif isinstance(when, dict) and (when.get("generic") not in {g["name"] for g in generics} or len({"is", "not"} & set(when)) != 1):
+            ctx.err(where, f"rule {kind}: when needs a generic of the block and one of is or not")
+        elif when is not None and not isinstance(when, (str, dict)):
+            ctx.err(where, f"rule {kind}: when must be a boolean generic or {{generic, is | not}}")
+        if kind == "known_defect" and ("generic" in r) != isinstance(r.get("below"), (int, float)):
+            ctx.err(where, "rule known_defect: generic and below go together")
         for gname in [r.get("generic")] + list(r.get("generics") or []):
             if gname and gname not in gen_names:
                 ctx.err(where, f"rule {kind}: unknown generic {gname}")

@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "42a93b9ce784",
+ "id": "678558c4fcc6",
  "sources": [
   {
    "id": "openwire",
@@ -8496,7 +8496,7 @@
     "Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.",
     "M_RepData, M_Conf and M_User must be served when connected; a stalled output stalls the received packet stream and the link.",
     "RMAP address bits above AxiAddrWidth_g must be zero in the windows.",
-    "With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'."
+    "With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'. Known defect of the pinned version (fix in progress in OpenRMAP): with AxiMaxBeats_g < 4, commands longer than one AXI transaction return or write wrong data."
    ],
    "rules": [
     {
@@ -8519,6 +8519,13 @@
       "M_Pkt"
      ],
      "message": "The RMAP node normally runs on the user clock of its SpaceWire port; an asynchronous FIFO was inserted instead."
+    },
+    {
+     "kind": "known_defect",
+     "generic": "AxiMaxBeats_g",
+     "below": 4,
+     "when": "Target_g",
+     "message": "Known defect: commands longer than one AXI transaction return or write wrong data with AxiMaxBeats_g < 4; fix in progress in OpenRMAP."
     }
    ],
    "idRegister": {
