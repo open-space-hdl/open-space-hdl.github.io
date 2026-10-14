@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "678558c4fcc6",
+ "id": "e00f482bafb1",
  "sources": [
   {
    "id": "openwire",
@@ -22,11 +22,11 @@
    "repo": "openrmap",
    "url": "https://github.com/open-space-hdl/openrmap",
    "doc": "https://openspacehdl.org/openrmap/",
-   "commit": "4ae4bfe31395ecbc31d5076796fd94bd7cb9de0e",
+   "commit": "afb40c72afd5a7cc64e733c9ffcdfe78630d1125",
    "library": "openrmap",
-   "fileList": "component_list.txt",
-   "fileListFormat": "modules",
-   "verifiedWith": "4.7.0-ft.2",
+   "fileList": "compile_order.txt",
+   "fileListFormat": "files",
+   "verifiedWith": "4.7.0-ft.4",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer."
   },
   {
@@ -48,12 +48,12 @@
    "repo": "openfibre",
    "url": "https://github.com/open-space-hdl/openfibre",
    "doc": "https://openspacehdl.org/openfibre/",
-   "commit": "35424172bd9761cfbacc2e0449a803ab6c60fe8c",
+   "commit": "bd4d80b1f05ee5fda67a97ff4c760952a25a79a7",
    "library": "openfibre",
-   "fileList": "component_list.txt",
-   "fileListFormat": "modules",
+   "fileList": "compile_order.txt",
+   "fileListFormat": "files",
    "verifiedWith": "4.7.0-ft.2",
-   "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. component_list.txt lists the technology-independent modules; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes)."
+   "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. compile_order.txt lists the technology-independent sources; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes)."
   },
   {
    "id": "opencrypto",
@@ -74,12 +74,12 @@
    "repo": "open-logic-ft",
    "url": "https://github.com/open-space-hdl/open-logic-ft",
    "doc": "https://openspacehdl.org/open-logic-ft/",
-   "tag": "4.7.0-ft.3",
+   "tag": "4.7.0-ft.4",
    "library": "olo",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.3 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 and changes no other source, so the cores verified with 4.7.0-ft.2 use it unchanged.",
-   "commit": "a3c86207790fa91d89e5f02a657f6345de31656e"
+   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.4 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3) and fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4); it changes no other source, so the cores verified with 4.7.0-ft.2 or 4.7.0-ft.3 use it unchanged.",
+   "commit": "441bcd5d6f881eeeff359ba8bb5f51cce1f12824"
   }
  ],
  "categories": [

@@ -1,5 +1,5 @@
 {
-  "catalog": "678558c4fcc6",
+  "catalog": "e00f482bafb1",
   "entity": "encrypted_spp_over_spw",
   "ports": [
     {
@@ -3879,11 +3879,11 @@
       "library": "olo",
       "source": "olo",
       "url": "https://github.com/open-space-hdl/open-logic-ft",
-      "tag": "4.7.0-ft.3",
-      "commit": "a3c86207790fa91d89e5f02a657f6345de31656e",
+      "tag": "4.7.0-ft.4",
+      "commit": "441bcd5d6f881eeeff359ba8bb5f51cce1f12824",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.3 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 and changes no other source, so the cores verified with 4.7.0-ft.2 use it unchanged.",
+      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.4 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3) and fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4); it changes no other source, so the cores verified with 4.7.0-ft.2 or 4.7.0-ft.3 use it unchanged.",
       "entities": [
         "olo_base_reset_gen"
       ]

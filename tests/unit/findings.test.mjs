@@ -75,8 +75,8 @@ test('field maps: the user bits of external ports and the side band constants, f
 test('context clause, verified tags and the catalog entries in the file', () => {
   const doc = example('spp_over_spw');
   assert.deepEqual(doc.resolved.context, ['library ieee;', 'use ieee.std_logic_1164.all;', 'library olo;', 'library openwire;', 'library openrmap;', 'library openspp;']);
-  assert.deepEqual(doc.sources.map((/** @type {any} */ s) => [s.id, s.verifiedWith]), [['openwire', '4.7.0-ft.2'], ['openrmap', '4.7.0-ft.2'], ['openspp', '4.7.0-ft.2'], ['olo', undefined]]);
-  assert.ok(doc.resolved.compile.every((/** @type {any} */ c) => c.library === 'olo' || c.verifiedWith === '4.7.0-ft.2'));
+  assert.deepEqual(doc.sources.map((/** @type {any} */ s) => [s.id, s.verifiedWith]), [['openwire', '4.7.0-ft.2'], ['openrmap', '4.7.0-ft.4'], ['openspp', '4.7.0-ft.2'], ['olo', undefined]]);
+  assert.ok(doc.resolved.compile.every((/** @type {any} */ c) => c.library === 'olo' || /^4\.7\.0-ft\.\d+$/.test(c.verifiedWith)));
   // the catalog entries of every block of the system, inserted ones included, and of their types
   const sub = doc.catalogSubset;
   assert.equal(sub.id, cat.id);
@@ -96,13 +96,14 @@ test('the brief names the file on disk, compiles with -frelaxed and initialises 
   assert.match(brief, /from the system file `spw_rmap_node\.composer\.json`/);
   assert.match(brief, /ghdl -a --std=08 -frelaxed --work=olo <file>/);
   assert.match(brief, /ghdl -r --std=08 -frelaxed spw_rmap_node_tb --stop-time=100us --assert-level=error --ieee-asserts=disable/);
-  assert.match(brief, /A `modules` file list names one module directory per line, relative to the repository root; blank lines and lines starting with `#` are ignored\./);
+  // every repository of the system names its synthesis sources in compile_order.txt
+  assert.match(brief, /\| `openwire` \| https:\/\/github\.com\/open-space-hdl\/openwire \| commit `[0-9a-f]{40}` \| every file listed in `compile_order\.txt`, in its order \|/);
   assert.match(brief, /## 7\. Initialisation by software/);
   assert.match(brief, /\*\*`spw0`\*\* \(SpaceWire port, `owr_core`\) through the top-level ports `spw_reg_S_AxiLite_\*`:/);
   assert.match(brief, /1\. Read ID \(0x00\): it reads 0x4F575201\./);
   assert.match(brief, /Write PORT_CTRL \(0x10\) = 0x34 \(RECEIVER_EN, DRIVER_EN, LINK_START\)/);
   assert.match(brief, /Optional end-to-end test/);
-  assert.match(brief, /4\.7\.0-ft\.3 adds olo_base_chunker and olo_axi_lite_decoder to 4\.7\.0-ft\.2/);
+  assert.match(brief, /4\.7\.0-ft\.4 adds olo_base_chunker and olo_axi_lite_decoder to 4\.7\.0-ft\.2 \(ft\.3\)/);
   // a port that starts by itself needs no PORT_CTRL write
   let d = fromText(readFileSync(`${ROOT}assets/composer/examples/spw_rmap_node.composer.json`, 'utf-8'), cat).design;
   d = setGeneric(d, cat, 'spw0', 'LinkStart_g', true).design;
