@@ -107,7 +107,9 @@ function throughputSection(t) {
     const head = ['Element', 'Clock', 'Model', ...p.references.map((b) => `${b} B`)];
     const rows = p.elements.map((el, i) => {
       const model = el.model === 'chain' ? 'chain formula' : el.model === 'link' ? (el.node.both ? 'link, both directions' : 'link, one direction') : 'per interface';
-      const clock = el.model === 'link' ? '' : `${el.node.domainName}`;
+      // the clock the capacity depends on: the domain of the interface, the clock of a link
+      const n = el.node;
+      const clock = n.freq === undefined ? '' : `${el.model === 'link' && n.clockPort ? `${n.clockPort}: ` : ''}${n.domainName}, ${formatHz(n.freq)}`;
       const cells = points.map((pt) => {
         if (!pt) return '';
         const text = formatRate((8 * pt.bytes) / pt.elements[i].seconds);
@@ -132,6 +134,11 @@ function throughputSection(t) {
   if (t.shared.length > 0) {
     L.push('Elements on the paths of more than one source share their capacity:', '');
     for (const s of t.shared) L.push(`- \`${s.label}\`: paths ${s.paths.map((k) => k + 1).join(', ')}.`);
+    L.push('');
+  }
+  if (t.problems.length > 0) {
+    L.push('Rate data that cannot be evaluated with the generics of the system:', '');
+    for (const text of t.problems) L.push(`- ${text}`);
     L.push('');
   }
   if (t.missing.size > 0) {

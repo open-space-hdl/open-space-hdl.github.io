@@ -15,10 +15,11 @@
  *
  * Only stated rates are checked (traffic of an external interface): a source that is merely faster than its path is
  * slowed by back pressure. The brief shows the capacity of every path at reference lengths. A block without rate data
- * ends a path, with a remark. The enumeration of paths stops at a limit, with a remark.
+ * ends a path, with a remark; so does rate data that cannot be evaluated with the generics of the system, with its
+ * reason. The enumeration of paths stops at a limit, with a remark.
  */
 
-import { evaluate, makeEnv } from './expr.js';
+import { evaluate, ExprError } from './expr.js';
 import { formatHz } from './rules.js';
 import { subsystemName } from './subsystems.js';
 
@@ -27,6 +28,23 @@ import { subsystemName } from './subsystems.js';
 /** @typedef {import('./resolver.js').Resolved} Resolved */
 /** @typedef {import('./resolver.js').Check} Check */
 /** @typedef {import('./expr.js').Num} Num */
+
+/** A value that the rate data of a block lacks for the generics of the system (for example a lane count without a measured efficiency). */
+export class RateError extends Error {
+  /** @param {string} message */
+  constructor(message) {
+    super(message);
+    this.name = 'RateError';
+  }
+}
+
+/**
+ * Whether an error is a problem of the rate data (shown as a finding) rather than a fault of the program (rethrown).
+ * @param {unknown} e
+ */
+function rateProblem(e) {
+  return e instanceof RateError || e instanceof ExprError;
+}
 
 /** Paths per system before the analysis stops. */
 export const PATH_LIMIT = 10000;
@@ -52,6 +70,7 @@ export const REFERENCE_BYTES = [64, 1024];
  * @property {string} [itf]    interface name
  * @property {number} [dataBytes]   bytes per beat of the stream at the port (typed interfaces)
  * @property {boolean} [noReady]    a port without ready: no back pressure
+ * @property {string} [clockPort]    a link: the clock its capacity depends on
  */
 
 /**
@@ -103,6 +122,7 @@ export const REFERENCE_BYTES = [64, 1024];
  * @property {number} stopped   number of paths when the limit stopped the analysis, 0 otherwise
  * @property {Check[]} checks
  * @property {Map<string, { packetBytes: number, bitsPerSecond?: number }>} traffic   stated traffic by node key
+ * @property {string[]} problems   rate data that cannot be evaluated, as sentences
  */
 
 /**
@@ -154,8 +174,9 @@ function value(text, env, n) {
  * @param {any} b
  * @param {any} rec
  * @param {Map<string, number>} freqs   domain id -> Hz
+ * @param {(reason: string) => void} report   a variable that cannot be evaluated
  */
-function envOf(cat, b, rec, freqs) {
+function envOf(cat, b, rec, freqs, report) {
   const env = cat.envFor(b, rec.generics);
   for (const [port, dom] of Object.entries(/** @type {Record<string, string>} */ (rec.clocks ?? {}))) {
     const f = freqs.get(dom);
@@ -165,8 +186,9 @@ function envOf(cat, b, rec, freqs) {
     try {
       const x = value(/** @type {string | number} */ (v), env);
       env.set(k.toLowerCase(), { value: x, real: !Number.isInteger(x) });
-    } catch {
-      // a variable that cannot be evaluated makes the expressions that use it fail, which ends the path
+    } catch (e) {
+      if (!rateProblem(e)) throw e;
+      report(`variable ${k}: ${/** @type {Error} */ (e).message}`);
     }
   }
   return env;
@@ -179,7 +201,30 @@ function envOf(cat, b, rec, freqs) {
  * @property {Node[]} sources
  * @property {Set<string>} sinks
  * @property {Map<string, { packetBytes: number, bitsPerSecond?: number }>} traffic
+ * @property {Map<string, string>} problems   sentences of rate data that cannot be evaluated, by sentence
  */
+
+/**
+ * Records rate data that cannot be evaluated.
+ * @param {Graph} g
+ * @param {any} rec      the instance
+ * @param {any} b        its block
+ * @param {string} prefix   path of subsystems
+ * @param {string} reason
+ * @param {boolean} [link]
+ */
+function problem(g, rec, b, prefix, reason, link = false) {
+  const text = `Rate data of ${prefix}${rec.id} (${b.entity}) cannot be evaluated: ${reason}; the paths ${link ? 'over this link' : 'through it'} are not computed.`;
+  g.problems.set(text, text);
+}
+
+/**
+ * The instance prefix of a node key (the path of subsystems).
+ * @param {string} key
+ */
+function prefixOf(key) {
+  return key.slice(0, key.lastIndexOf('/') + 1);
+}
 
 /**
  * Adds one level of the system (the system, or a subsystem inside it) to the graph.
@@ -221,7 +266,7 @@ function addLevel(g, cat, d, res, prefix, top) {
       }
       continue;
     }
-    const env = envOf(cat, b, rec, freqs);
+    const env = envOf(cat, b, rec, freqs, (reason) => problem(g, rec, b, prefix, reason));
     const rates = b.rates;
     const ports = cat.ports(b, rec.generics).filter((p) => p.type.kind === 'stream');
     const paced = new Set((rates?.routes ?? []).filter((/** @type {any} */ r) => r.paced).map((/** @type {any} */ r) => r.to));
@@ -259,13 +304,18 @@ function addLevel(g, cat, d, res, prefix, top) {
       const inbound = lk.to ? portsOf(lk.to) : [];
       const both = inbound.some((p) => connected.has(`${rec.id}.${p.ref}`) || external.has(`${rec.id}.${p.ref}`));
       const label = `the link of ${prefix}${rec.id}`;
+      // the clock the capacity depends on (Freq_<port> in its expression)
+      const clockPort = /freq_(\w+)/i.exec(String(lk.capacity))?.[1];
+      const port = clockPort ? Object.keys(rec.clocks).find((c) => c.toLowerCase() === clockPort.toLowerCase()) : undefined;
+      const ldom = port ? rec.clocks[port] : undefined;
+      const clock = { clockPort: port, domain: ldom, domainName: domName.get(ldom ?? '') ?? ldom, freq: freqs.get(ldom ?? '') };
       if (lk.from) {
-        g.nodes.set(outKey, { key: outKey, label, kind: 'link-out', rec, block: b, link: lk, both, env, itf: lk.interface });
+        g.nodes.set(outKey, { key: outKey, label, kind: 'link-out', rec, block: b, link: lk, both, env, itf: lk.interface, ...clock });
         g.sinks.add(outKey);
         for (const p of portsOf(lk.from)) edge(`${prefix}${rec.id}.${p.ref}`, { to: outKey });
       }
       if (lk.to) {
-        g.nodes.set(inKey, { key: inKey, label, kind: 'link-in', rec, block: b, link: lk, both, env, itf: lk.interface });
+        g.nodes.set(inKey, { key: inKey, label, kind: 'link-in', rec, block: b, link: lk, both, env, itf: lk.interface, ...clock });
         g.sources.push(/** @type {Node} */ (g.nodes.get(inKey)));
         for (const p of inbound) edge(inKey, { to: `${prefix}${rec.id}.${p.ref}`, split: inbound.length > 1 });
       }
@@ -328,7 +378,7 @@ function elementTime(el, frags, carried) {
     if (eff) {
       const table = node.both ? eff.bothDirections : eff.oneDirection;
       const v = table[String(value(eff.by, env))];
-      if (typeof v !== 'number') throw new Error(`no efficiency for ${eff.by} = ${value(eff.by, env)}`);
+      if (typeof v !== 'number') throw new RateError(`no measured link efficiency for ${eff.by} = ${value(eff.by, env)}`);
       e.set('eff', { value: v, real: true });
     }
     const expr = node.both && lk.capacityBoth ? lk.capacityBoth : lk.capacity;
@@ -338,7 +388,7 @@ function elementTime(el, frags, carried) {
     return { seconds, capacity: total / seconds };
   }
   const freq = node.freq;
-  if (!(typeof freq === 'number' && freq > 0)) throw new Error(`no clock frequency at ${node.label}`);
+  if (!(typeof freq === 'number' && freq > 0)) throw new RateError(`no clock frequency for ${node.itf}`);
   if (el.model === 'chain') {
     let cycles = 0;
     for (const f of frags) cycles += value(el.chain.cycles, env, f);
@@ -351,7 +401,7 @@ function elementTime(el, frags, carried) {
     for (const f of frags) cycles += value(entry.cycles, env, f);
   } else {
     bytesPerBeat = entry.bytesPerBeat === 'carried' ? carried ?? node.dataBytes : value(entry.bytesPerBeat, env);
-    if (!(typeof bytesPerBeat === 'number' && bytesPerBeat > 0)) throw new Error(`no bytes per beat at ${node.label}`);
+    if (!(typeof bytesPerBeat === 'number' && bytesPerBeat > 0)) throw new RateError(`no bytes per beat for ${node.itf}`);
     const perCycle = entry.beatsPerCycle === undefined ? 1 : value(entry.beatsPerCycle, env);
     const extra = entry.extraBeats === undefined ? 0 : value(entry.extraBeats, env);
     for (const f of frags) {
@@ -405,6 +455,17 @@ function elementsOf(g, keys, edges) {
  * @returns {Path}
  */
 function makePath(g, keys, edges) {
+  /**
+   * Records a problem of the rate data of the node at index i.
+   * @param {number} i
+   * @param {unknown} e
+   * @param {string} where
+   */
+  const report = (i, e, where) => {
+    const node = /** @type {Node} */ (g.nodes.get(keys[i]));
+    const reason = e instanceof RateError ? /** @type {Error} */ (e).message : `${where}: ${/** @type {Error} */ (e).message}`;
+    problem(g, node.rec, node.block, prefixOf(node.key), reason, node.kind === 'link-out' || node.kind === 'link-in');
+  };
   const source = /** @type {Node} */ (g.nodes.get(keys[0]));
   const sink = /** @type {Node} */ (g.nodes.get(keys[keys.length - 1]));
   const elements = elementsOf(g, keys, edges);
@@ -416,12 +477,17 @@ function makePath(g, keys, edges) {
     if (cache.has(bytes)) return /** @type {Point | null} */ (cache.get(bytes));
     /** @type {Point | null} */
     let point = null;
+    /** the node whose rate data is evaluated, for the finding of a problem */
+    let current = 0;
+    let where = '';
     try {
       // the fragments of one packet of the source at every node of the path
       /** @type {number[][]} */
       const frags = [[bytes]];
       for (let i = 0; i < edges.length; i += 1) {
         const e = edges[i];
+        current = i;
+        where = e.route ? `route ${e.route.from} to ${e.route.to}` : '';
         frags.push(e.route ? afterRoute(frags[i], e.route, /** @type {Map<string, Num>} */ (e.env)) : frags[i]);
       }
       /** @type {Point['elements']} */
@@ -429,6 +495,8 @@ function makePath(g, keys, edges) {
       /** @type {number | undefined} */
       let carried;
       for (const el of elements) {
+        current = el.first;
+        where = el.model === 'link' ? `link ${el.node.itf}` : el.model === 'chain' ? `chain from ${el.node.itf}` : `interface ${el.node.itf}`;
         const t = elementTime(el, frags[el.first], carried);
         if (t.bytesPerBeat !== undefined) carried = t.bytesPerBeat;
         else if (el.node.dataBytes !== undefined) carried = el.node.dataBytes;
@@ -438,7 +506,9 @@ function makePath(g, keys, edges) {
       for (let k = 1; k < times.length; k += 1) if (times[k].seconds > times[worst].seconds) worst = k;
       const pps = times.length ? 1 / times[worst].seconds : Infinity;
       point = { bytes, packetsPerSecond: pps, bitsPerSecond: 8 * bytes * pps, bottleneck: worst, elements: times };
-    } catch {
+    } catch (e) {
+      if (!rateProblem(e)) throw e;
+      report(current, e, where);
       point = null;
     }
     cache.set(bytes, point);
@@ -450,8 +520,9 @@ function makePath(g, keys, edges) {
   if (max !== undefined) {
     try {
       refs.add(value(max, /** @type {Map<string, Num>} */ (source.env)));
-    } catch {
-      // no largest packet
+    } catch (e) {
+      if (!rateProblem(e)) throw e;
+      report(0, e, `largest packet of ${source.itf}`);
     }
   }
   const stated = g.traffic.get(source.key);
@@ -515,7 +586,7 @@ export function analyseThroughput(cat, d, res, opts = {}) {
   const maxPaths = opts.maxPaths ?? PATH_LIMIT;
   const maxMs = opts.maxMs ?? TIME_LIMIT_MS;
   /** @type {Graph} */
-  const g = { nodes: new Map(), edges: new Map(), sources: [], sinks: new Set(), traffic: new Map() };
+  const g = { nodes: new Map(), edges: new Map(), sources: [], sinks: new Set(), traffic: new Map(), problems: new Map() };
   addLevel(g, cat, d, res, '', true);
 
   /** @type {Path[]} */
@@ -561,6 +632,8 @@ export function analyseThroughput(cat, d, res, opts = {}) {
     }
   };
   for (const s of g.sources) walk(s.key, [s.key], [], new Set([s.key]));
+  // every path at its reference lengths, so that rate data that cannot be evaluated is reported before the checks
+  for (const p of paths) for (const b of p.references) p.at(b);
 
   // elements on paths of more than one source
   /** @type {Map<string, { label: string, paths: number[], sources: Set<string> }>} */
@@ -661,8 +734,9 @@ export function analyseThroughput(cat, d, res, opts = {}) {
     if (m.labels.length === 1 && !m.labels[0].includes('/')) c.instance = m.labels[0];
     checks.push(c);
   }
+  for (const text of g.problems.values()) checks.push({ severity: 'info', rule: 'throughput', message: text });
   if (stopped) {
     checks.push({ severity: 'info', rule: 'throughput', message: `Throughput analysis stopped after ${stopped} paths (limit ${maxPaths} paths or ${maxMs / 1000} s); the brief lists the paths analysed.` });
   }
-  return { paths, shared, missing, stopped, checks, traffic: g.traffic };
+  return { paths, shared, missing, stopped, checks, traffic: g.traffic, problems: [...g.problems.values()] };
 }

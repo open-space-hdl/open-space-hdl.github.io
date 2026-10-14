@@ -252,3 +252,27 @@ test('a path runs through the inside of a subsystem', () => {
   // a check about an element inside a subsystem names no instance of the system
   assert.equal(w[0].instance, undefined);
 });
+
+test('rate data that cannot be evaluated is a finding with its reason, in the checks and in the brief', () => {
+  // three lanes are legal, but OpenFibre measured the link efficiency with 1, 2 and 4 lanes only
+  let f = addInstance(createDesign('lanes3'), cat, 'openfibre/ofb_core', { x: 0, y: 0 }).design;
+  f = setGeneric(f, cat, 'ofb0', 'NumLanes_g', 3).design;
+  f = setExternal(f, 'ofb0.S_Vc[0]', 'vc0_');
+  const res = resolve(cat, f);
+  const t = /** @type {import('../../assets/composer/js/model/throughput.js').Throughput} */ (res.throughput);
+  const text = 'Rate data of ofb0 (ofb_core) cannot be evaluated: no measured link efficiency for NumLanes_g = 3; the paths over this link are not computed.';
+  assert.deepEqual(t.problems, [text]);
+  assert.ok(res.checks.some((c) => c.severity === 'info' && c.rule === 'throughput' && c.message === text));
+  const p = t.paths.find((x) => x.sink.kind === 'link-out');
+  assert.equal(p?.at(1024), null);
+  const brief = /** @type {any} */ (toDocument(f, cat)).agent.brief;
+  assert.ok(brief.includes(`- ${text}`));
+  // a variable of the rate data that cannot be evaluated
+  const json = loadCatalogJson();
+  json.blocks.find((/** @type {any} */ b) => b.id === 'openfibre/ofb_core').rates.vars.B = '4 * NoSuchGeneric_g';
+  const broken = new Catalog(json);
+  let g = addInstance(createDesign('broken'), broken, 'openfibre/ofb_core', { x: 0, y: 0 }).design;
+  g = setExternal(g, 'ofb0.S_Vc[0]', 'vc0_');
+  const problems = /** @type {any} */ (resolve(broken, g).throughput).problems;
+  assert.ok(problems.some((/** @type {string} */ x) => /^Rate data of ofb0 \(ofb_core\) cannot be evaluated: variable B: .*NoSuchGeneric_g.*; the paths through it are not computed\.$/.test(x)), problems.join('\n'));
+});

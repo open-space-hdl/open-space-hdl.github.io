@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "120c5835d4ed",
+ "id": "780580b99b1b",
  "sources": [
   {
    "id": "openwire",
@@ -7929,7 +7929,7 @@
    ],
    "endToEnd": "Connect two nodes (in a simulation without the transceiver models: two cores joined by tb/ofb_tb_pa_model.vhd of OpenFibre), start the link at one end and send a packet on a virtual channel; it arrives on the same virtual channel at the other end.",
    "rates": {
-    "evidence": "user guide section 7; TC-NI-07 (virtual channel ports), TC-CORE-16 (link efficiency), TC-CORE-15 (CoreClk)",
+    "evidence": "user guide section 7; TC-NI-07 (virtual channel ports), TC-CORE-16 (link efficiency), TC-CORE-15 (CoreClk); rowEff derived from the link efficiency of TC-CORE-16 (words of 4 bytes, packets of 1 to 1024 B) and the row model of TC-NI-07",
     "packet": "packet",
     "vars": {
      "B": "4 * NumLanes_g"

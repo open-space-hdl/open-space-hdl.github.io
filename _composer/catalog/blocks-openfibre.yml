@@ -158,7 +158,7 @@ blocks:
       - Read ID (0x0FB10007) and GENERICS after the reset; start the link with LANE_CTRL = 0x63 at one end (LaneStart, AutoStart, TxEn, RxEn) and wait for DL_STATUS bits 1:0 = 3 (programming sequence of the user guide).
       - All four clocks must run for the reset to complete; CoreClk may be the lane clock (as in the VCK190 reference design).
     rates:
-      evidence: "user guide section 7; TC-NI-07 (virtual channel ports), TC-CORE-16 (link efficiency), TC-CORE-15 (CoreClk)"
+      evidence: "user guide section 7; TC-NI-07 (virtual channel ports), TC-CORE-16 (link efficiency), TC-CORE-15 (CoreClk); rowEff derived from the link efficiency of TC-CORE-16 (words of 4 bytes, packets of 1 to 1024 B) and the row model of TC-NI-07"
       packet: packet
       vars: { B: 4 * NumLanes_g }
       interfaces:
