@@ -234,9 +234,17 @@ export function runRules(res) {
           break;
         }
         case 'known_defect': {
-          // a defect of the block under a condition (when, and a generic below a value), reported until it is fixed
+          // a defect of the block under a condition (when, and a generic below a value or an expression of the
+          // generics), reported until the catalog pins the fix
           const v = rule.generic ? rec.generics[rule.generic] : undefined;
-          if (ruleApplies(rule.when, rec.generics) && (!rule.generic || (typeof v === 'number' && v < rule.below))) {
+          let below;
+          try {
+            below = rule.generic ? evaluate(rule.below, env()) : undefined;
+          } catch (e) {
+            if (!(e instanceof ExprError)) throw e;
+            break;
+          }
+          if (ruleApplies(rule.when, rec.generics) && (!rule.generic || (typeof v === 'number' && v < /** @type {number} */ (below)))) {
             res.check(rule.severity ?? 'error', rule.kind, `${inst.id}: ${rule.message}`, where);
           }
           break;

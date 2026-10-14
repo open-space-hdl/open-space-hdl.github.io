@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "653fe9bd682c",
+ "id": "fe9ca9f239a2",
  "sources": [
   {
    "id": "openwire",
@@ -8921,7 +8921,7 @@
     "Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.",
     "M_RepData, M_Conf and M_User must be served when connected; a stalled output stalls the received packet stream and the link.",
     "RMAP address bits above AxiAddrWidth_g must be zero in the windows.",
-    "With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'. Known defect of the pinned version (fix in progress in OpenRMAP): with AxiMaxBeats_g < 4, commands longer than one AXI transaction return or write wrong data."
+    "With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'. Known defect of Open Logic olo_axi_master_simple up to 4.7.0-ft.4 (fix pending in open-logic-ft): with AxiMaxBeats_g < AxiDataWidth_g/8, commands that the memory master splits into several AXI transactions read or write the first word repeatedly, with status 0."
    ],
    "rules": [
     {
@@ -8955,9 +8955,9 @@
     {
      "kind": "known_defect",
      "generic": "AxiMaxBeats_g",
-     "below": 4,
+     "below": "AxiDataWidth_g / 8",
      "when": "Target_g",
-     "message": "Known defect: commands longer than one AXI transaction return or write wrong data with AxiMaxBeats_g < 4; fix in progress in OpenRMAP."
+     "message": "Known defect of Open Logic olo_axi_master_simple up to 4.7.0-ft.4: with AxiMaxBeats_g < AxiDataWidth_g/8, commands that the memory master splits into several AXI transactions read or write the first word repeatedly, with status 0. Fix pending in open-logic-ft."
     }
    ],
    "idRegister": {

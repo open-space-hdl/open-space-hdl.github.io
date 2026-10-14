@@ -157,6 +157,11 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
       same file gives the same export, byte by byte. Every file starts with a header: the generator and its version,
       the system file and its SHA-256, the block catalog, and that the file is generated and not to be edited.
     </p>
+    <p>
+      The button <strong>Export HDL</strong> of the editor downloads them as one ZIP archive,
+      <code>&lt;system&gt;_hdl.zip</code>, together with the system file whose hash the headers name. A system with an
+      error is not exported: the button says how many errors are open, and using it lists them.
+    </p>
     <div class="table-frame">
       <table class="trl-table">
         <thead><tr><th scope="col">File</th><th scope="col">Content</th></tr></thead>
