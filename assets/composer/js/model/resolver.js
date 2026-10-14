@@ -539,6 +539,15 @@ export class Resolution {
       const fr = this.sideFormat(c.to, c.id);
       if (!fd || !fr) continue;
       const typeId = !fd.type.generic ? fd.type.id : fr.type.id;
+      // a sink that needs packet boundaries or applies back-pressure cannot work with a source that has no last or no
+      // valid: an error, not a constant (a packet would never end, data would be lost)
+      const needsLast = Boolean(rcv.port.itf.needsLast || (!rcv.port.type.generic && rcv.port.type.needsLast));
+      if (needsLast && !fd.sigs.some((s) => s.name === 'last')) {
+        this.check('error', 'packets', `${c.to} needs packet boundaries; ${c.from} has no last.`, { connection: c.id });
+      }
+      if (rcv.port.type.kind === 'stream' && fr.hasReady && !fd.hasValid) {
+        this.check('error', 'packets', `${c.to} applies back-pressure; ${c.from} has no valid and does not wait.`, { connection: c.id });
+      }
       // a receiver that accepts the type of the driver under a condition on the generics of the driver: checked on
       // every resolution, because the generics can change after the connection was made
       if (!fd.type.generic && !fr.type.generic && fd.type.id !== fr.type.id) {
@@ -757,6 +766,11 @@ export class Resolution {
       if (sb && sb.signal === s.name) {
         if (!c.sideband) this.check('error', 'sideband', `${c.to} needs the side band constants (${sb.fields.map((x) => x.label).join(', ')}) on ${c.id}.`, { connection: c.id });
         constants[s.name] = 'sideband';
+        continue;
+      }
+      // reported as an error of the connection (connectionsPass); the netlist still gets a complete constant
+      if (s.name === 'last' && (rcv.port.itf.needsLast || rcv.port.type.needsLast)) {
+        constants.last = 'zero';
         continue;
       }
       const absent = absentValue(s.name, fr.type, fd.type);

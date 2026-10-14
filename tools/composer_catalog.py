@@ -693,6 +693,8 @@ def load_types() -> dict[str, dict]:
             # pins are external only: no connection between two blocks can lack them
             if sdef.get("optional") and kind != "pins" and "absent" not in sdef:
                 raise CatalogError(f"{where}: optional signal {sname} needs an absent value")
+        if t.get("needsLast") and (sigs.get("last") is None or sigs["last"].get("optional")):
+            raise CatalogError(f"{where}: needsLast needs a last signal that is not optional")
         if t.get("fields") not in (None, "in", "out", "mixed"):
             raise CatalogError(f"{where}: fields must be in, out or mixed")
         if "cdc" in t and t["cdc"] not in CDC_MODES:
@@ -934,9 +936,11 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 ctx.err(iwhere, f"required signal '{sname}' of type {tid} not mapped")
         out = {"name": iname, "type": tid, "role": role}
         for key in ("clock", "label", "description", "mustServe", "externalOnly", "enabledBy", "sideband",
-                    "params", "vector", "tieOff", "carry", "userFields"):
+                    "params", "vector", "tieOff", "carry", "userFields", "needsLast"):
             if key in itf:
                 out[key] = itf[key]
+        if itf.get("needsLast") and (role != "sink" or "last" not in signals):
+            ctx.err(iwhere, "needsLast is for a sink with a last signal")
         for uf in itf.get("userFields") or []:
             if "user" not in signals:
                 ctx.err(iwhere, "userFields need a user signal")

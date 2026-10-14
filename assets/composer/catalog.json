@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "70e68b0fa582",
+ "id": "bed008532c79",
  "sources": [
   {
    "id": "openwire",
@@ -152,6 +152,7 @@
    "name": "SpaceWire packets (N-Char)",
    "family": "SpaceWire",
    "kind": "stream",
+   "needsLast": true,
    "color": "#D9480F",
    "description": "Packets as N-Char stream, one data character per beat; a beat with Last is the end of packet marker (data bit 0: '0' EOP, '1' EEP).",
    "signals": {
@@ -276,6 +277,7 @@
    "name": "Packet link",
    "family": "Packets",
    "kind": "stream",
+   "needsLast": true,
    "color": "#2B8A3E",
    "description": "Network packets on a wide stream: byte 0 of a beat in data bits 7:0, keep contiguous from byte 0 and partial only on the last beat, last marks the end of the packet, user bit 0 on the last beat is the error end of packet (EEP). Further user bits carry a destination index where the source provides one.",
    "signals": {
@@ -310,6 +312,7 @@
    "name": "Byte stream",
    "family": "Packets",
    "kind": "stream",
+   "needsLast": true,
    "color": "#0C8599",
    "description": "Byte stream with keep and last and no side band: byte 0 of a beat in data bits 7:0, keep contiguous from byte 0 and partial only on the last beat of a packet.",
    "signals": {
@@ -348,6 +351,7 @@
    "name": "Space Packet send port",
    "family": "Space Packets",
    "kind": "stream",
+   "needsLast": true,
    "color": "#087F5B",
    "description": "Send port of OpenSPP: one SDU (Octet String Service) or one Space Packet (Packet Service) per stream packet, with the per-SDU side band (APID, packet type, secondary header flag, packet name) in user.",
    "signals": {
@@ -388,6 +392,7 @@
    "name": "Space Packet receive port",
    "family": "Space Packets",
    "kind": "stream",
+   "needsLast": true,
    "color": "#5C940D",
    "description": "Receive port of OpenSPP: one SDU or Space Packet per stream packet, with APID, flags, loss indicator and the user application value in user.",
    "signals": {
@@ -621,6 +626,7 @@
    "name": "AES-GCM messages",
    "family": "Encryption",
    "kind": "stream",
+   "needsLast": true,
    "color": "#D6336C",
    "description": "Messages of the AES-GCM core with the section (IV, AAD, DATA, TAG) of every beat in user.",
    "signals": {
@@ -1013,7 +1019,7 @@
      "dir": "out",
      "optional": true,
      "absent": "0",
-     "absentWhy": "a stream without last has no packet boundaries"
+     "absentWhy": "only for a sink without needsLast, which sees one packet without end; a sink that needs packet boundaries reports an error instead"
     },
     "keep": {
      "dir": "out",
@@ -1936,6 +1942,7 @@
      "role": "sink",
      "clock": "Clk",
      "label": "Input",
+     "needsLast": true,
      "signals": {
       "data": "In_Data",
       "valid": "In_Valid",
@@ -4807,6 +4814,7 @@
      "clock": "Clk",
      "label": "Input",
      "carry": "native",
+     "needsLast": true,
      "signals": {
       "data": "In_Data",
       "valid": "In_Valid",
@@ -5057,6 +5065,7 @@
      "clock": "Clk",
      "label": "Input",
      "carry": "native",
+     "needsLast": true,
      "signals": {
       "data": "In_Data",
       "valid": "In_Valid",
@@ -5224,6 +5233,7 @@
      "clock": "Clk",
      "label": "Input",
      "carry": "native",
+     "needsLast": true,
      "signals": {
       "data": "In_Data",
       "keep": "In_Be",

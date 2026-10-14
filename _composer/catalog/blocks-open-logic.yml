@@ -122,6 +122,7 @@ blocks:
         type: axis.any
         role: sink
         clock: Clk
+        needsLast: true
         signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last, drop: In_Drop }
       - { name: InDropped, label: Drop status, type: sig.status, role: event_out, clock: Clk, tieOff: open, signals: { is_dropped: In_IsDropped } }
       - name: Out
@@ -519,7 +520,7 @@ blocks:
       - { name: CrcBitflipOutput_g, label: Reflect output }
       - { name: CrcXorOutput_g, label: Output XOR }
     interfaces:
-      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, needsLast: true, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
       - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last } }
 
   - id: olo/olo_base_crc_check
@@ -549,7 +550,7 @@ blocks:
       - { name: CrcBitflipOutput_g, label: Reflect output }
       - { name: CrcXorOutput_g, label: Output XOR }
     interfaces:
-      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, needsLast: true, signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last } }
       - { name: Out, label: Output, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, crc_err: Out_CrcErr } }
 
   - id: olo/olo_base_chunker
@@ -570,7 +571,7 @@ blocks:
       - { name: Width_g, label: Width, unit: bits, example: 32, follow: { interfaces: [In, Out], measure: data } }
       - { name: ChunkBeats_g, label: Chunk size, unit: beats, example: 128, description: Beats of a chunk; the last chunk of a packet may be shorter. }
     interfaces:
-      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, signals: { data: In_Data, keep: In_Be, valid: In_Valid, ready: In_Ready, last: In_Last } }
+      - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, needsLast: true, signals: { data: In_Data, keep: In_Be, valid: In_Valid, ready: In_Ready, last: In_Last } }
       - { name: Out, label: Chunks, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, keep: Out_Be, valid: Out_Valid, ready: Out_Ready, last: Out_Last, in_last: Out_InLast } }
 
   # EDAC --------------------------------------------------------------------------------------------------------------

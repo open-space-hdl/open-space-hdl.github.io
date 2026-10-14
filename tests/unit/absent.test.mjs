@@ -4,10 +4,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
-import { addInstance, createDesign, setGeneric } from '../../assets/composer/js/model/design.js';
+import { addInstance, createDesign, setExternal, setGeneric } from '../../assets/composer/js/model/design.js';
 import { netlist } from '../../assets/composer/js/model/netlist.js';
 import { resolve } from '../../assets/composer/js/model/resolver.js';
-import { connect, loadCatalog, loadCatalogJson } from './helpers.mjs';
+import { catalogWith, connect, loadCatalog, loadCatalogJson, streamBlock } from './helpers.mjs';
 
 const cat = loadCatalog();
 
@@ -102,4 +102,63 @@ test('the catalog gives a value to every signal that one side of a connection ca
       }
     }
   }
+});
+
+/**
+ * A design whose first block takes its input from the top level, then the connections.
+ * @param {import('../../assets/composer/js/model/catalog.js').Catalog} c
+ * @param {string[]} blocks
+ * @param {[string, string][]} links
+ * @param {string} external
+ */
+function chain(c, blocks, links, external) {
+  let d = createDesign('packets_test');
+  blocks.forEach((b, k) => {
+    d = addInstance(d, c, b, { x: 100 + 300 * k, y: 100 }).design;
+  });
+  for (const [a, b] of links) {
+    const chk = checkConnection(c, d, a, b);
+    assert.ok(chk.ok, `${a} - ${b}: ${chk.reason}`);
+    d = connect(d, chk);
+  }
+  return setExternal(d, external, 'x_');
+}
+
+/**
+ * @param {import('../../assets/composer/js/model/catalog.js').Catalog} c
+ * @param {ReturnType<typeof chain>} d
+ */
+function packetErrors(c, d) {
+  return resolve(c, d).checks.filter((x) => x.rule === 'packets').map((x) => `${x.severity}: ${x.message}`);
+}
+
+test('a sink that needs packet boundaries behind a source without last is an error, not a constant', () => {
+  // the input of the FIFO comes from the top level: no typed source behind it carries last
+  const typed = chain(cat, ['olo/olo_ft_fifo_sync', 'openspp/spp_core'], [['fifo0.Out', 'spp0.S_Tx[0]']], 'fifo0.In');
+  assert.deepEqual(packetErrors(cat, typed), ['error: spp0.S_Tx[0] needs packet boundaries; fifo0.Out has no last.']);
+  assert.ok(!resolve(cat, typed).checks.some((x) => /S_Tx\[0\] has last.*tied to/.test(x.message)), 'no tie-off warning besides the error');
+  for (const [block, sink] of [['opencrypto/ocr_core', 'ocr0.S_In'], ['opencrypto/ocr_framer', 'frm0.S_In'], ['olo/olo_ft_fifo_packet', 'pfifo0.In']]) {
+    const d = chain(cat, ['olo/olo_ft_fifo_sync', block], [['fifo0.Out', sink]], 'fifo0.In');
+    assert.deepEqual(packetErrors(cat, d), [`error: ${sink} needs packet boundaries; fifo0.Out has no last.`], block);
+  }
+  // a FIFO between a packet source and the sink carries last in its data word
+  const carried = chain(cat, ['opencrypto/ocr_core', 'olo/olo_ft_fifo_sync', 'openspp/spp_core'], [['ocr0.M_Out', 'fifo0.In'], ['fifo0.Out', 'spp0.S_Tx[0]']], 'ocr0.S_In');
+  assert.deepEqual(packetErrors(cat, carried), []);
+});
+
+test('a sink without packet boundaries gets last 0 from a source without last', () => {
+  const d = chain(cat, ['olo/olo_ft_fifo_sync', 'olo/olo_base_wconv_n2xn'], [['fifo0.Out', 'wconv0.In']], 'fifo0.In');
+  assert.deepEqual(packetErrors(cat, d), []);
+  const n = netlist(cat, d, resolve(cat, d)).nets.find((x) => x.to === 'wconv0_In_Last_s');
+  assert.equal(n?.from, "'0'");
+});
+
+test('a sink with back-pressure behind a source without valid is an error', () => {
+  const c = catalogWith([streamBlock('test/novalid', { name: 'Out', type: 'axis.any', role: 'source', widths: { data: 8 }, valid: false })]);
+  let d = addInstance(createDesign('t'), c, 'test/novalid', { x: 0, y: 0 }).design;
+  d = addInstance(d, c, 'olo/olo_ft_fifo_sync', { x: 300, y: 0 }).design;
+  const chk = checkConnection(c, d, 'novalid0.Out', 'fifo0.In');
+  assert.ok(chk.ok, chk.reason);
+  d = connect(d, chk);
+  assert.deepEqual(packetErrors(c, d), ['error: fifo0.In applies back-pressure; novalid0.Out has no valid and does not wait.']);
 });

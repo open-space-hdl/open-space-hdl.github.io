@@ -28,6 +28,7 @@ export const CATALOG_VERSION = 1;
  * @property {{type: string, via: string}[]} [bridges]
  * @property {boolean} [generic]
  * @property {'level' | 'pulse' | 'valid' | 'none'} [cdc]
+ * @property {boolean} [needsLast]   a sink of this type needs packet boundaries
  */
 
 /**
@@ -61,6 +62,7 @@ export const CATALOG_VERSION = 1;
  * @property {{signal: string, description?: string, fields: SidebandField[]}} [sideband]
  * @property {'native' | 'packed'} [carry]
  * @property {{name: string, label: string, lsb: number, bits: number}[]} [userFields]   meaning of the bits of user
+ * @property {boolean} [needsLast]   a generic sink that needs packet boundaries
  */
 
 /**
