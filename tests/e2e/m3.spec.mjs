@@ -8,8 +8,8 @@ import { checkConnection } from '../../assets/composer/js/model/compat.js';
 import { addConnection, addInstance, createDesign } from '../../assets/composer/js/model/design.js';
 import { toDocument } from '../../assets/composer/js/model/serialize.js';
 import {
-  addBlock, canvasPoint, design, dragTo, dragWire, expect, open, openExample, overlap, portCenter, rects,
-  settled, shot, watch,
+  addBlock, canvasPoint, design, dragTo, dragWire, expect, open, openExample, overlap, portCenter, settled, shot,
+  stableRects, watch,
 } from './helpers.mjs';
 
 const SCREENS = process.env.COMPOSER_SCREENS;
@@ -46,12 +46,12 @@ test('a clock crossing sits on the border between the two domain boxes; boxes st
   await open(page);
   await rmapInOwnDomain(page);
   await expect(page.locator('.cmp-auto:not(.cmp-auto-reset)')).toHaveCount(2);
-  const [sys, fast] = await rects(page, '.cmp-domain-box');
+  const [[sys, fast], fifos] = await stableRects(page, '.cmp-domain-box', '.cmp-auto:not(.cmp-auto-reset) .cmp-auto-body');
   expect(overlap(sys, fast)).toBe(false);
   const left = sys.x < fast.x ? sys : fast;
   const right = sys.x < fast.x ? fast : sys;
   const border = (left.x + left.w + right.x) / 2;
-  for (const f of await rects(page, '.cmp-auto:not(.cmp-auto-reset) .cmp-auto-body')) {
+  for (const f of fifos) {
     expect(Math.abs(f.x + f.w / 2 - border)).toBeLessThan(2);
   }
   // the FIFO halves carry the colours of the two domains
@@ -66,7 +66,7 @@ test('a clock crossing sits on the border between the two domain boxes; boxes st
   if (!hb) throw new Error('no block');
   const canvas = await canvasPoint(page, 0.97, 0.5);
   await dragTo(page, head, { x: Math.min(hb.x + 12 + (right.x - left.x) * 0.5, canvas.x), y: hb.y + 12 });
-  const boxes = await rects(page, '.cmp-domain-box');
+  const [boxes] = await stableRects(page, '.cmp-domain-box');
   expect(boxes).toHaveLength(2);
   expect(overlap(boxes[0], boxes[1])).toBe(false);
   const d = await design(page);
@@ -83,7 +83,7 @@ test('Arrange lays out the system from left to right and is undone in one step',
   await page.getByRole('button', { name: 'Arrange' }).click();
   await settled(page);
   expect((await design(page)).layout.instances).toEqual(arranged);
-  const blocks = await rects(page, '.cmp-block-body');
+  const [blocks] = await stableRects(page, '.cmp-block-body');
   for (let i = 0; i < blocks.length; i += 1) for (let j = i + 1; j < blocks.length; j += 1) expect(overlap(blocks[i], blocks[j])).toBe(false);
   // four stages stay one row (the view pans), the data flow from left to right
   const x = (/** @type {string} */ id) => arranged[id].x;

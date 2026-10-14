@@ -1,7 +1,7 @@
 // Browser tests of the inserted reset generators: on the canvas like the other inserted blocks, on the top border of
 // their clock domain, with the reason, the blocks they reset and their generics in the inspector.
 import { test } from '@playwright/test';
-import { expect, open, openExample, rects, watch } from './helpers.mjs';
+import { expect, open, openExample, stableRects, watch } from './helpers.mjs';
 
 /** @type {string[]} */
 let problems = [];
@@ -23,9 +23,8 @@ test('the reset generator of a clock domain is shown on its border and explains 
   await expect(gen).toHaveAttribute('aria-label', 'Reset generator inserted automatically: Synchronous reset of System clock.');
   await expect(gen).toContainText('Reset generator');
   await expect(gen).toContainText('System clock');
-  // on the top border of the domain box, clear of its header tab
-  const [box] = await rects(page, '[data-domain="sys"] .cmp-domain-box');
-  const [chip] = await rects(page, '[data-auto="auto_rst_sys"] .cmp-auto-body');
+  // on the top border of the domain box, clear of its header tab (measured together, at rest)
+  const [[box], [chip]] = await stableRects(page, '[data-domain="sys"] .cmp-domain-box', '[data-auto="auto_rst_sys"] .cmp-auto-body');
   expect(Math.abs(chip.y + chip.h / 2 - box.y)).toBeLessThanOrEqual(2);
   // selected, the inspector shows what it is for
   await gen.click();
