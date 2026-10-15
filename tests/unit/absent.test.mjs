@@ -51,9 +51,8 @@ test('an AXI4 master on an AXI4-Lite slave reads RLast as 1: every read of the R
   assert.match(n.reason ?? '', /single transfers/);
   const res = resolve(cat, d);
   assert.ok(res.checks.some((c) => c.severity === 'info' && /RLast.*tied to '1'/.test(c.message)), 'the check names the value');
-  // the unserved packet ports of the target are not part of this test; single transfers hit a known defect of the
-  // pinned OpenRMAP (commands longer than one transaction), which is reported until the fix is pinned
-  assert.deepEqual(res.checks.filter((c) => c.severity === 'error' && c.rule !== 'must_serve').map((c) => c.rule), ['known_defect']);
+  // the unserved packet ports of the target are not part of this test
+  assert.deepEqual(res.checks.filter((c) => c.severity === 'error' && c.rule !== 'must_serve').map((c) => c.rule), []);
 });
 
 test('an AXI4 master with bursts on an AXI4-Lite slave is an error also after the connection was made', () => {

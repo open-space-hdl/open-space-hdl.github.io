@@ -75,7 +75,7 @@ test('field maps: the user bits of external ports and the side band constants, f
 test('context clause, verified tags and the catalog entries in the file', () => {
   const doc = example('spp_over_spw');
   assert.deepEqual(doc.resolved.context, ['library ieee;', 'use ieee.std_logic_1164.all;', 'library olo;', 'library openwire;', 'library openrmap;', 'library openspp;']);
-  assert.deepEqual(doc.sources.map((/** @type {any} */ s) => [s.id, s.verifiedWith]), [['openwire', '4.7.0-ft.2'], ['openrmap', '4.7.0-ft.4'], ['openspp', '4.7.0-ft.2'], ['olo', undefined]]);
+  assert.deepEqual(doc.sources.map((/** @type {any} */ s) => [s.id, s.verifiedWith]), [['openwire', '4.7.0-ft.2'], ['openrmap', '4.7.0-ft.5'], ['openspp', '4.7.0-ft.2'], ['olo', undefined]]);
   assert.ok(doc.resolved.compile.every((/** @type {any} */ c) => c.library === 'olo' || /^4\.7\.0-ft\.\d+$/.test(c.verifiedWith)));
   // the catalog entries of every block of the system, inserted ones included, and of their types
   const sub = doc.catalogSubset;
@@ -103,7 +103,8 @@ test('the brief names the file on disk, compiles with -frelaxed and initialises 
   assert.match(brief, /1\. Read ID \(0x00\): it reads 0x4F575201\./);
   assert.match(brief, /Write PORT_CTRL \(0x10\) = 0x34 \(RECEIVER_EN, DRIVER_EN, LINK_START\)/);
   assert.match(brief, /Optional end-to-end test/);
-  assert.match(brief, /4\.7\.0-ft\.4 adds olo_base_chunker and olo_axi_lite_decoder to 4\.7\.0-ft\.2 \(ft\.3\)/);
+  assert.match(brief, /4\.7\.0-ft\.5 adds olo_base_chunker and olo_axi_lite_decoder to 4\.7\.0-ft\.2 \(ft\.3\)/);
+  assert.match(brief, /fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g \(ft\.5\)/);
   // a port that starts by itself needs no PORT_CTRL write
   let d = fromText(readFileSync(`${ROOT}assets/composer/examples/spw_rmap_node.composer.json`, 'utf-8'), cat).design;
   d = setGeneric(d, cat, 'spw0', 'LinkStart_g', true).design;
@@ -162,24 +163,14 @@ test('every system reads the scoped constraints of the Open Logic base entities,
   }
 });
 
-test('the known defect of olo_axi_master_simple is an error of an RMAP target with fewer beats than bytes per word', () => {
+test('an RMAP target with fewer beats than bytes per word has no known defect at the pin of OpenRMAP', () => {
+  // OpenRMAP is pinned with Open Logic 4.7.0-ft.5, which fixes the address of the transfers that olo_axi_master_simple
+  // splits at AxiMaxBeats_g
   let d = addInstance(createDesign('t'), cat, 'openrmap/omap_core', { x: 0, y: 0 }, 'target').design;
-  const defect = () => resolve(cat, d).checks.filter((c) => c.rule === 'known_defect');
-  assert.deepEqual(defect(), [], 'no defect with the default bursts');
-  // AxiMaxBeats_g < AxiDataWidth_g / 8: 1 to 3 beats at 32 bit, 1 to 7 at 64 bit
-  for (const [width, beats, hit] of /** @type {[number, number, boolean][]} */ ([[32, 1, true], [32, 3, true], [32, 4, false], [64, 7, true], [64, 8, false]])) {
+  for (const [width, beats] of [[32, 1], [32, 3], [64, 7]]) {
     d = setGeneric(setGeneric(d, cat, 'rmap0', 'AxiDataWidth_g', width).design, cat, 'rmap0', 'AxiMaxBeats_g', beats).design;
-    const e = defect();
-    assert.equal(e.length, hit ? 1 : 0, `${width} bit, ${beats} beats`);
-    if (hit) {
-      assert.equal(e[0].severity, 'error');
-      assert.equal(e[0].message, 'rmap0: Known defect of Open Logic olo_axi_master_simple up to 4.7.0-ft.4: with AxiMaxBeats_g < AxiDataWidth_g/8, commands that the memory master splits into several AXI transactions read or write the first word repeatedly, with status 0. Fix pending in open-logic-ft.');
-    }
+    assert.deepEqual(resolve(cat, d).checks.filter((c) => c.severity === 'error' && c.rule !== 'must_serve'), [], `${width} bit, ${beats} beats`);
   }
-  // an initiator without target does not use the memory master
-  d = setGeneric(setGeneric(d, cat, 'rmap0', 'AxiMaxBeats_g', 1).design, cat, 'rmap0', 'Initiator_g', true).design;
-  d = setGeneric(d, cat, 'rmap0', 'Target_g', false).design;
-  assert.deepEqual(defect(), []);
 });
 
 test('the known defect of ofb_core is an error with more than one lane and an input VC buffer of one flow control unit', () => {

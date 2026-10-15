@@ -182,15 +182,13 @@ test('the command line tool refuses a changed netlist, exports with --resolve an
     assert.match(errors.stderr, /the system has errors; nothing exported/);
     assert.match(errors.stderr, /ocr0: ReleaseBytes_g = 4128 must be a power of two/);
     assert.throws(() => readdirSync(join(dir, 'b')), 'nothing written');
-    // the system of the user: its RMAP target on the AXI4-Lite decoder (AxiMaxBeats_g = 1) hits the known defect of
-    // olo_axi_master_simple up to Open Logic 4.7.0-ft.4, so the export is refused. Its SpaceFibre port has 4 lanes with an
-    // input VC buffer of 1024 words, clear of the known defect of ofb_core. Once OpenRMAP is pinned with 4.7.0-ft.5, this
-    // fixture becomes a positive export test with the GHDL check and the run to 0 ns, like the examples.
-    const user = run([`${ROOT}tests/fixtures/spfi_encrypt.composer.json`, join(dir, 'e'), '--resolve']);
-    assert.equal(user.status, 2, user.stdout);
-    assert.match(user.stderr, /rmap0: Known defect of Open Logic olo_axi_master_simple up to 4\.7\.0-ft\.4: with AxiMaxBeats_g < AxiDataWidth_g\/8, /);
-    assert.doesNotMatch(user.stderr, /Known defect of ofb_core/);
-    assert.throws(() => readdirSync(join(dir, 'e')), 'nothing written');
+    // the system of the user, saved with the current catalog, exports without --resolve: its RMAP target on the
+    // AXI4-Lite decoder (AxiMaxBeats_g = 1) is clear of the known defect of olo_axi_master_simple at the pin of OpenRMAP
+    // (Open Logic 4.7.0-ft.5), its SpaceFibre port (4 lanes, VcInDepth_g = 1024) of the one of ofb_core
+    const user = run([`${ROOT}tests/fixtures/spfi_encrypt.composer.json`, join(dir, 'e')]);
+    assert.equal(user.status, 0, user.stderr);
+    assert.doesNotMatch(user.stderr, /Known defect/);
+    assert.deepEqual(readdirSync(join(dir, 'e')).sort(), ['spfi_encrypt.vhd', 'spfi_encrypt.xdc', 'spfi_encrypt_compile_order.txt', 'spfi_encrypt_top.xdc']);
     // an example of the current catalog exports without --resolve, with the input file and its hash in the header
     const example = run([`${EXAMPLES}spw_rmap_node.composer.json`, join(dir, 'c')]);
     assert.equal(example.status, 0, example.stderr);

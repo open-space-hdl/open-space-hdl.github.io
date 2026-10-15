@@ -1,5 +1,5 @@
 {
-  "catalog": "a044cb5d9675",
+  "catalog": "dbee0d786ebd",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -5283,11 +5283,11 @@
       "library": "olo",
       "source": "olo",
       "url": "https://github.com/open-space-hdl/open-logic-ft",
-      "tag": "4.7.0-ft.4",
-      "commit": "441bcd5d6f881eeeff359ba8bb5f51cce1f12824",
+      "tag": "4.7.0-ft.5",
+      "commit": "1bc4fb90888cf24ac29bc54527c2982d2dec307c",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.4 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3) and fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4); it changes no other source, so the cores verified with 4.7.0-ft.2 or 4.7.0-ft.3 use it unchanged.",
+      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.5 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), and fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5); it changes no other source, so the cores verified with 4.7.0-ft.2, 4.7.0-ft.3 or 4.7.0-ft.4 use it unchanged. Of the cores only OpenRMAP uses olo_axi_master_simple.",
       "entities": [
         "olo_base_reset_gen"
       ]
@@ -5296,10 +5296,10 @@
       "library": "openrmap",
       "source": "openrmap",
       "url": "https://github.com/open-space-hdl/openrmap",
-      "commit": "afb40c72afd5a7cc64e733c9ffcdfe78630d1125",
+      "commit": "55033637795a009132286f60da90a6a876a9c087",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "verifiedWith": "4.7.0-ft.4",
+      "verifiedWith": "4.7.0-ft.5",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
       "entities": [
         "omap_core"
