@@ -5910,13 +5910,15 @@
         "instance": "auto_cdc_c5",
         "entity": "olo_ft_fifo_async",
         "connection": "c5",
-        "ecc": true
+        "ecc": true,
+        "syncTmr": true
       },
       {
         "instance": "auto_cdc_c6",
         "entity": "olo_ft_fifo_async",
         "connection": "c6",
-        "ecc": true
+        "ecc": true,
+        "syncTmr": true
       }
     ]
   },

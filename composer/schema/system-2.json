@@ -1093,7 +1093,7 @@
         },
         "protection": {
           "type": "object",
-          "description": "Protection scope of the system (since 0.6.0-beta), written when there is something to report. blocks: the blocks that protect their memories with SECDED ECC and report it in their registers (channels, status, select, count and injection registers, evidence). events: every ECC event output of a memory and where it is reported (to; open means not reported); inserted marks the crossings the Composer inserts. crossings: the inserted clock domain crossings. faultTolerance: whether they are fault-tolerant.",
+          "description": "Protection scope of the system (since 0.6.0-beta), written when there is something to report. blocks: the blocks that protect their memories with SECDED ECC and report it in their registers (channels, status, select, count and injection registers, evidence). events: every ECC event output of a memory and where it is reported (to; open means not reported); inserted marks the crossings the Composer inserts. crossings: the inserted clock domain crossings (FIFOs for streams, pulse or bit crossings for events and levels), with their ECC and whether their synchronisers are triplicated. faultTolerance: whether they are fault-tolerant.",
           "required": [
             "faultTolerance",
             "blocks",
@@ -1272,7 +1272,8 @@
                   "instance",
                   "entity",
                   "connection",
-                  "ecc"
+                  "ecc",
+                  "syncTmr"
                 ],
                 "properties": {
                   "instance": {
@@ -1285,6 +1286,9 @@
                     "type": "string"
                   },
                   "ecc": {
+                    "type": "boolean"
+                  },
+                  "syncTmr": {
                     "type": "boolean"
                   }
                 }
@@ -2545,7 +2549,7 @@
         },
         "protection": {
           "type": "object",
-          "description": "Protection scope of the system (since 0.6.0-beta), written when there is something to report. blocks: the blocks that protect their memories with SECDED ECC and report it in their registers (channels, status, select, count and injection registers, evidence). events: every ECC event output of a memory and where it is reported (to; open means not reported); inserted marks the crossings the Composer inserts. crossings: the inserted clock domain crossings. faultTolerance: whether they are fault-tolerant.",
+          "description": "Protection scope of the system (since 0.6.0-beta), written when there is something to report. blocks: the blocks that protect their memories with SECDED ECC and report it in their registers (channels, status, select, count and injection registers, evidence). events: every ECC event output of a memory and where it is reported (to; open means not reported); inserted marks the crossings the Composer inserts. crossings: the inserted clock domain crossings (FIFOs for streams, pulse or bit crossings for events and levels), with their ECC and whether their synchronisers are triplicated. faultTolerance: whether they are fault-tolerant.",
           "required": [
             "faultTolerance",
             "blocks",
@@ -2724,7 +2728,8 @@
                   "instance",
                   "entity",
                   "connection",
-                  "ecc"
+                  "ecc",
+                  "syncTmr"
                 ],
                 "properties": {
                   "instance": {
@@ -2737,6 +2742,9 @@
                     "type": "string"
                   },
                   "ecc": {
+                    "type": "boolean"
+                  },
+                  "syncTmr": {
                     "type": "boolean"
                   }
                 }

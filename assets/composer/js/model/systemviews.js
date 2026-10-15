@@ -93,14 +93,13 @@ export function eventSources(cat, d, res, types) {
         nodes.set(`${prefix}${rec.id}.${p.ref}`, { kind: 'block', rec, block: b, port: p, instance: `${prefix}${rec.id}`, dir: p.itf.role === 'event_out' ? 'out' : 'in' });
       }
     }
+    // the ends of every connection: a crossing the Composer inserts on it passes the events on
     for (const c of rr.chains) {
-      for (const h of c.hops) {
-        const a = nodes.get(`${prefix}${h.from}`);
-        const z = nodes.get(`${prefix}${h.to}`);
-        if (!a || !z) continue;
-        if (a.dir === 'out' || z.dir === 'in') next.set(`${prefix}${h.from}`, `${prefix}${h.to}`);
-        else next.set(`${prefix}${h.to}`, `${prefix}${h.from}`);
-      }
+      const a = nodes.get(`${prefix}${c.from}`);
+      const z = nodes.get(`${prefix}${c.to}`);
+      if (!a || !z) continue;
+      if (a.dir === 'out' || z.dir === 'in') next.set(`${prefix}${c.from}`, `${prefix}${c.to}`);
+      else next.set(`${prefix}${c.to}`, `${prefix}${c.from}`);
     }
     /** @type {Map<string, string>} */
     const exts = new Map();
@@ -201,11 +200,49 @@ export function analyseInterrupts(cat, d, res) {
  */
 
 /**
+ * @typedef {object} Crossing   a clock domain crossing the Composer inserts
+ * @property {string} instance
+ * @property {string} entity      a FIFO for streams, a pulse or bit crossing for events and levels
+ * @property {string} connection
+ * @property {boolean} ecc        its memory has SECDED ECC (a fault-tolerant FIFO)
+ * @property {boolean} syncTmr    its synchronisers are triplicated
+ */
+
+/**
+ * Describes inserted crossings of one kind: the memory (a FIFO with or without ECC; a pulse or bit crossing has none)
+ * and the synchronisers.
+ * @param {Crossing} c
+ */
+export function crossingText(c) {
+  const sync = `${c.syncTmr ? 'triplicated' : 'single'} synchronisers`;
+  if (!/fifo/.test(c.entity)) return `with ${sync} (no memory)`;
+  return c.ecc ? `with SECDED ECC and ${sync}` : `without ECC, with ${sync}`;
+}
+
+/**
+ * The inserted crossings by kind: entity, ECC and synchronisers.
+ * @param {Crossing[]} crossings
+ * @returns {{ entity: string, text: string, instances: string[] }[]}
+ */
+export function crossingGroups(crossings) {
+  /** @type {Map<string, { entity: string, text: string, instances: string[] }>} */
+  const groups = new Map();
+  for (const c of crossings) {
+    const text = crossingText(c);
+    const key = `${c.entity}|${text}`;
+    const g = groups.get(key) ?? { entity: c.entity, text, instances: [] };
+    g.instances.push(c.instance);
+    groups.set(key, g);
+  }
+  return [...groups.values()];
+}
+
+/**
  * @typedef {object} Protection
  * @property {boolean} faultTolerance   the crossings the Composer inserts are fault-tolerant
  * @property {ProtectedBlock[]} blocks
  * @property {EccEvent[]} events
- * @property {{ instance: string, entity: string, connection: string, ecc: boolean }[]} crossings   inserted crossings
+ * @property {Crossing[]} crossings   the clock domain crossings the Composer inserts
  * @property {Check[]} checks
  */
 
@@ -268,6 +305,7 @@ export function analyseProtection(cat, d, res) {
         entity: r.entity,
         connection: String(/** @type {any} */ (r).connection ?? ''),
         ecc: Boolean(b?.interfaces.some((/** @type {any} */ i) => i.type === 'ecc.event')),
+        syncTmr: r.generics.SyncTmr_g === true,
       };
     });
 

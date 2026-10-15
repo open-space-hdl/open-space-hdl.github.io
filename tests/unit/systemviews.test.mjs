@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { Catalog } from '../../assets/composer/js/model/catalog.js';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
-import { addConnection, addInstance, createDesign, setExternal, setGeneric, setSystem, sidebandDefaults } from '../../assets/composer/js/model/design.js';
+import { addConnection, addDomain, addInstance, createDesign, moveToDomain, setExternal, setGeneric, setSystem, sidebandDefaults } from '../../assets/composer/js/model/design.js';
 import { netlist } from '../../assets/composer/js/model/netlist.js';
 import { resolve } from '../../assets/composer/js/model/resolver.js';
 import { readinessStatement } from '../../assets/composer/js/model/systemviews.js';
@@ -116,7 +116,7 @@ test('the inserted crossings: an info for their open ECC events, listed as not r
   ]);
   let brief = /** @type {any} */ (toDocument(d, cat)).agent.brief;
   let section = brief.slice(brief.indexOf('## 11. Protection scope'), brief.indexOf('## 12.'));
-  assert.match(section, /Clock domain crossings inserted by the Composer \(`auto_cdc_c5`, `auto_cdc_c6`\): `olo_ft_fifo_async` with SECDED ECC and triplicated synchronisers/);
+  assert.match(section, /Clock domain crossings inserted by the Composer:\n\n- `auto_cdc_c5`, `auto_cdc_c6`: `olo_ft_fifo_async` with SECDED ECC and triplicated synchronisers\.\n\nThe reset generators of the clock domains synchronise with triplicated chains as well\./);
   assert.match(section, /Not reported: [^\n]*\n\n- `auto_cdc_c5\.Ecc`: FIFO memory of `auto_cdc_c5`, an inserted crossing \(the Composer leaves its ECC events open\)\.\n- `auto_cdc_c6\.Ecc`: /);
   // without fault tolerance the crossings have no ECC: nothing to report, and the brief says so
   d = setSystem(d, { faultTolerance: false });
@@ -125,7 +125,7 @@ test('the inserted crossings: an info for their open ECC events, listed as not r
   assert.deepEqual(findings(cat, d), []);
   brief = /** @type {any} */ (toDocument(d, cat)).agent.brief;
   section = brief.slice(brief.indexOf('## 11. Protection scope'), brief.indexOf('## 12.'));
-  assert.match(section, /`olo_base_fifo_async` without ECC and with single synchronisers, because fault tolerance is off for this system/);
+  assert.match(section, /- `auto_cdc_c5`, `auto_cdc_c6`: `olo_base_fifo_async` without ECC, with single synchronisers\.\n\nFault tolerance is off for this system: the crossings have no ECC and single synchronisers, and so have the reset generators of the clock domains\./);
 });
 
 test('the readiness of the user\'s system: the TRL of every part, and no TRL of the composed system', () => {
@@ -155,4 +155,22 @@ test('a system without blocks has no readiness in its netlist', () => {
   const r = /** @type {any} */ (netlist(cat, d, resolve(cat, d)));
   assert.equal(r.readiness, undefined);
   assert.match(/** @type {any} */ (toDocument(d, cat)).agent.brief, /## 15\. Readiness of the parts\n\nThe system has no blocks yet\./);
+});
+
+test('a pulse crossing for ECC events between two clock domains is no FIFO: it has no memory and is not called one', () => {
+  let d = addInstance(createDesign('cross'), cat, 'opencrypto/ocr_framer', { x: 0, y: 0 }).design;
+  const dom = addDomain(d, { name: 'Monitor clock', frequencyHz: 50e6 });
+  d = addInstance(dom.design, cat, 'olo/olo_ft_ecc_monitor_axi', { x: 400, y: 0 }).design;
+  d = moveToDomain(d, cat, 'edac0', dom.id);
+  d = setGeneric(d, cat, 'edac0', 'Channels_g', 2).design;
+  d = link(cat, d, 'frm0.Ecc[0]', 'edac0.In[0]');
+  d = link(cat, d, 'frm0.Ecc[1]', 'edac0.In[1]');
+  const p = /** @type {import('../../assets/composer/js/model/systemviews.js').Protection} */ (resolve(cat, d).protection);
+  assert.deepEqual(p.crossings.map((c) => [c.entity, c.ecc, c.syncTmr]), [['olo_base_cc_pulse', false, true], ['olo_base_cc_pulse', false, true]]);
+  const brief = /** @type {any} */ (toDocument(d, cat)).agent.brief;
+  const section = brief.slice(brief.indexOf('## 11. Protection scope'), brief.indexOf('## 12.'));
+  assert.match(section, /- `auto_cdc_c\d+`, `auto_cdc_c\d+`: `olo_base_cc_pulse` with triplicated synchronisers \(no memory\)\./);
+  assert.doesNotMatch(section, /olo_ft_fifo_async|SECDED ECC and triplicated/);
+  // the events of the framer reach the monitor through the pulse crossings
+  assert.deepEqual(p.events.map((e) => e.to.kind === 'block' ? e.to.channel : e.to.kind), [0, 1]);
 });
