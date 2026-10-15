@@ -200,6 +200,11 @@ function sizesSection(s) {
     for (const [, u] of s.unpublished) L.push(`- \`${u.entity}\` (${u.labels.map((x) => `\`${x}\``).join(', ')}).`);
     L.push('');
   }
+  if (s.evidence.size > 0) {
+    L.push('Evidence of the size data:', '');
+    for (const [k, v] of [...s.evidence].sort((a, b) => a[0].localeCompare(b[0]))) L.push(`- \`${k}\`: ${v}.`);
+    L.push('');
+  }
   return L;
 }
 

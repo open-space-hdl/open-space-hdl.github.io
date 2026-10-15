@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "f6b4837a93e7",
+ "id": "13a89acc1302",
  "sources": [
   {
    "id": "openwire",
@@ -6846,7 +6846,7 @@
     ]
    },
    "sizes": {
-    "evidence": "user guide: generics LenBits_g and ReleaseBytes_g, integration constraints (the release buffer holds the longest message); the cycles with room for one message only: TC-CO-16",
+    "evidence": "user guide section 2 (generics LenBits_g and ReleaseBytes_g) and section 8 (the release buffer holds the longest message); the cycles of a release buffer that holds one message but not two: user guide section 7.1 and TC-CO-16 (hdl/ocr_core/docs/verification_report.md)",
     "interfaces": {
      "S_In": {
       "limits": [

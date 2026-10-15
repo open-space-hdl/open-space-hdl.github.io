@@ -54,6 +54,7 @@ import { smallestValid } from './suggest.js';
  * @property {{ ref: string, what: string, bytes: number, text: string }[]} sends
  * @property {Map<string, { entity: string, labels: string[], tested?: number }>} noLimit   blocks without a limit
  * @property {Map<string, { entity: string, labels: string[] }>} unpublished   blocks that publish no limit
+ * @property {Map<string, string>} evidence    by entity: the evidence of the size data of the blocks in the system
  * @property {Check[]} checks
  */
 
@@ -229,6 +230,8 @@ export function analyseSizes(cat, g) {
   const noLimit = new Map();
   /** @type {Sizes['unpublished']} */
   const unpublished = new Map();
+  /** @type {Sizes['evidence']} */
+  const evidence = new Map();
 
   for (const [key, node] of g.nodes) {
     if ((node.kind !== 'interface' && node.kind !== 'missing') || !node.block) continue;
@@ -240,6 +243,7 @@ export function analyseSizes(cat, g) {
       unpublished.set(node.block.id, u);
       continue;
     }
+    evidence.set(node.block.entity, sizes.evidence);
     const entry = sizes.interfaces?.[node.itf];
     if (entry?.noLimit) {
       const nl = noLimit.get(node.block.id) ?? { entity: node.block.entity, labels: /** @type {string[]} */ ([]), tested: entry.tested };
@@ -383,5 +387,5 @@ export function analyseSizes(cat, g) {
   /** @type {Map<string, Largest>} */
   const largest = new Map();
   for (const key of g.nodes.keys()) largest.set(key, arriving(key));
-  return { largest, limits, buffers, sends, noLimit, unpublished, checks };
+  return { largest, limits, buffers, sends, noLimit, unpublished, evidence, checks };
 }

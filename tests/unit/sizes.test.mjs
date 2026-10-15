@@ -130,6 +130,9 @@ test('the brief lists the largest packets, the buffers, what leaves over a link 
   assert.match(section, /- spp0 sends Space Packets of up to ChunkBytes_g \+ 38 = 4134 bytes\./);
   assert.match(section, /- `owr_core` \(`spw0`\): no length limit, tested up to 1000 B\./);
   assert.match(section, /- `spp_nchar` \(`nchar0`\)\./);
+  // the evidence of the size data of every block in the system that has them
+  assert.match(section, /Evidence of the size data:\n\n- `ocr_core`: [^\n]*TC-CO-16 \(hdl\/ocr_core\/docs\/verification_report\.md\)\.\n- `ocr_framer`: /);
+  assert.ok(!/Evidence of the size data:[^#]*spp_nchar/.test(section), 'a block without size data has no evidence line');
 });
 
 test('behind a block without rate data the packets are not bounded, named by its output, and the block is listed', () => {
