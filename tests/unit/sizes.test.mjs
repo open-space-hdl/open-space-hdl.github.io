@@ -131,7 +131,7 @@ test('the brief lists the largest packets, the buffers, what leaves over a link 
   assert.match(section, /- `owr_core` \(`spw0`\): no length limit, tested up to 1000 B\./);
   assert.match(section, /- `spp_nchar` \(`nchar0`\)\./);
   // the evidence of the size data of every block in the system that has them
-  assert.match(section, /Evidence of the size data:\n\n- `ocr_core`: [^\n]*TC-CO-16 \(hdl\/ocr_core\/docs\/verification_report\.md\)\.\n- `ocr_framer`: /);
+  assert.match(section, /Evidence of the size data:\n\n- `ocr_core`: [^\n]*TC-CO-15 [^\n]*TC-CO-16 \(framer chunks of 4096 bytes at 128 bit, hdl\/ocr_core\/docs\/verification_report\.md\)\.\n- `ocr_framer`: /);
   assert.ok(!/Evidence of the size data:[^#]*spp_nchar/.test(section), 'a block without size data has no evidence line');
 });
 

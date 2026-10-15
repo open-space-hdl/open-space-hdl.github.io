@@ -140,7 +140,7 @@ blocks:
       routes:
         - { from: S_In, to: M_Out, addBytes: "28" }
     sizes:
-      evidence: "user guide section 2 (generics LenBits_g and ReleaseBytes_g) and section 8 (the release buffer holds the longest message); the cycles of a release buffer that holds one message but not two: user guide section 7.1 and TC-CO-16 (hdl/ocr_core/docs/verification_report.md)"
+      evidence: "user guide section 2 (generics LenBits_g and ReleaseBytes_g) and section 8 (the release buffer holds the longest message); the cycles of a release buffer that holds one message but not two: user guide section 7.1, TC-CO-15 (the bound max(B + 2, 3 M - D + 4) for M sectioned beats in a buffer of D beats) and TC-CO-16 (framer chunks of 4096 bytes at 128 bit, hdl/ocr_core/docs/verification_report.md)"
       interfaces:
         S_In:
           limits:
