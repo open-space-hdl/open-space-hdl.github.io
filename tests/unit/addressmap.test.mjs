@@ -1,0 +1,172 @@
+// The address map of a system (model/addressmap.js): the spaces from a top-level slave and from the AXI master of a
+// block, the windows of AXI4-Lite decoders (also nested), unused windows, the windows of an RMAP target, the checks of
+// rule address_map with suggestions that pass all rules, the export files and the brief.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { checkConnection } from '../../assets/composer/js/model/compat.js';
+import { addConnection, addInstance, createDesign, setExternal, setGeneric, sidebandDefaults } from '../../assets/composer/js/model/design.js';
+import { exportHdl } from '../../assets/composer/js/model/hdl.js';
+import { netlist } from '../../assets/composer/js/model/netlist.js';
+import { resolve } from '../../assets/composer/js/model/resolver.js';
+import { fromText, toDocument } from '../../assets/composer/js/model/serialize.js';
+import { loadCatalog, ROOT } from './helpers.mjs';
+
+const cat = loadCatalog();
+const USER = `${ROOT}tests/fixtures/spfi_encrypt.composer.json`;
+
+/**
+ * @param {import('../../assets/composer/js/model/design.js').Design} d
+ * @param {string} a
+ * @param {string} b
+ */
+function link(d, a, b) {
+  const c = checkConnection(cat, d, a, b);
+  assert.ok(c.ok && c.from && c.to, c.reason);
+  return addConnection(d, /** @type {string} */ (c.from), /** @type {string} */ (c.to), c.sideband ? sidebandDefaults(c.sideband) : undefined).design;
+}
+
+/**
+ * Places blocks (block id, instance id, generics).
+ * @param {[string, string, Record<string, unknown>?][]} blocks
+ */
+function place(blocks) {
+  let d = createDesign('regs');
+  for (const [block, id, generics] of blocks) {
+    const r = addInstance(d, cat, block, { x: 0, y: 0 });
+    d = r.design;
+    const placed = d.instances[d.instances.length - 1].id;
+    assert.equal(placed, id);
+    for (const [g, v] of Object.entries(generics ?? {})) d = setGeneric(d, cat, id, g, v).design;
+  }
+  return d;
+}
+
+/** @param {import('../../assets/composer/js/model/design.js').Design} d */
+const mapOf = (d) => /** @type {import('../../assets/composer/js/model/addressmap.js').AddressMap} */ (resolve(cat, d).addressMap);
+/** @param {import('../../assets/composer/js/model/design.js').Design} d */
+const findings = (d) => resolve(cat, d).checks.filter((c) => c.rule === 'address_map').map((c) => `${c.severity} [${c.instance ?? ''}] ${c.message}`);
+
+/** The text of a generated file without the lines that change with every save of the input. */
+const stable = (/** @type {string} */ t) => t.replace(/(SHA-256 of \S+: )[0-9a-f]{64}/, '$1*').replace(/(Block catalog: )[0-9a-f]+/, '$1*');
+
+test('the user\'s system: eight register banks behind the decoder, in the space of the RMAP target', () => {
+  const d = fromText(readFileSync(USER, 'utf-8'), cat).design;
+  const m = mapOf(d);
+  assert.equal(m.spaces.length, 1);
+  const s = m.spaces[0];
+  assert.deepEqual([s.space, s.kind, s.addrWidth, s.what], ['rmap0.M_Axi', 'master', 32, 'RMAP memory addresses as seen by an initiator']);
+  assert.deepEqual(s.banks.map((b) => [b.instance, b.base, b.size, b.window, b.id]), [
+    ['spp0', 0x00000, 2048, 65536, '0x53505001'],
+    ['ocr0', 0x10000, 256, 65536, '0x4F435201'],
+    ['edac0', 0x20000, 4096, 65536, undefined],
+    ['ocr1', 0x30000, 256, 65536, '0x4F435201'],
+    ['ocr2', 0x40000, 256, 65536, '0x4F435201'],
+    ['ocr3', 0x50000, 256, 65536, '0x4F435201'],
+    ['rmap0', 0x60000, 1024, 65536, '0x4F4D4101'],
+    ['ofb0', 0x70000, 4096, 65536, '0x0FB10007'],
+  ]);
+  assert.deepEqual(s.unused, []);
+  // the windows of the target and their state after the reset (WinInit_g = WinInitOpen_c, the default)
+  assert.deepEqual(s.windows, {
+    instance: 'rmap0', registers: ['WIN_CTRL', 'WIN_BASE', 'WIN_LAST'], base: 0x100, stride: 0x10, count: 4, countGeneric: 'Windows_g',
+    reset: 'WinInit_g', value: 'WinInitOpen_c',
+    state: 'window 0 is open over the whole address space with all permissions and the other windows are disabled, so the whole map is reachable after the reset',
+  });
+  assert.deepEqual(findings(d), [
+    'info [dec0] dec0: spp0 (2 KiB), ocr0 (256 B), edac0 (4 KiB), ocr1 (256 B), ocr2 (256 B), ocr3 (256 B), rmap0 (1 KiB), ofb0 (4 KiB) are smaller than their windows of 64 KiB; the registers repeat inside the window.',
+    'info [dec0] dec0 decodes 19 address bits: in the 32-bit space of rmap0.M_Axi its map repeats every 0x00080000 bytes.',
+  ]);
+  // the export files, as the golden files of the user's system
+  const doc = /** @type {any} */ (toDocument(d, cat));
+  const { files } = exportHdl(cat, doc.resolved, { generator: 'x', input: 'spfi_encrypt.composer.json', sha256: '0'.repeat(64) });
+  for (const name of ['spfi_encrypt_address_map.md', 'spfi_encrypt_regs.h']) {
+    const f = files.find((x) => x.name === name);
+    assert.ok(f, name);
+    assert.equal(stable(f.text).replace(/Generated by .* from/, 'Generated from'), stable(readFileSync(`${ROOT}tests/golden/${name}`, 'utf-8')).replace(/Generated by .* from/, 'Generated from'), `${name} differs from its golden file (run node tools/composer_examples.mjs)`);
+  }
+  const header = /** @type {{ text: string }} */ (files.find((x) => x.name === 'spfi_encrypt_regs.h')).text;
+  assert.match(header, /^#define SPFI_ENCRYPT_OFB0_BASE  0x00070000u$/m);
+  assert.match(header, /^#include "omap_regs\.h"$/m);
+  assert.match(header, / \* {3}omap_regs\.h {2}sw\/omap_regs\.h of https:\/\/github\.com\/open-space-hdl\/openrmap\n \* {16}at commit [0-9a-f]{40}\n/);
+  // no register offsets of its own: the guard and base, size and ID register value of the banks only
+  for (const [, name] of header.matchAll(/^#define (\w+)/gm)) assert.match(name, /^SPFI_ENCRYPT_(REGS_H|\w+_(BASE|SIZE|ID))$/);
+  // the brief: the section and the base of every bank behind the decoder in the initialisation
+  const brief = doc.agent.brief;
+  assert.match(brief, /## 9\. Address map\n/);
+  assert.match(brief, /### rmap0\.M_Axi\n\nRMAP memory addresses as seen by an initiator, 32 address bits\. rmap0 accepts an access only inside its windows: WIN_CTRL, WIN_BASE and WIN_LAST of window n at 0x100 \+ 0x10 n of rmap0 \(4 windows, Windows_g\)\. After the reset \(WinInit_g = WinInitOpen_c\) window 0 is open/);
+  assert.match(brief, /\*\*`ocr0`\*\* \([^)]*`ocr_core`\) through `dec0\.M_AxiLite\[1\]` \(connection c10\), at 0x00010000 in the address space of rmap0\.M_Axi:/);
+});
+
+test('nested decoders: windows add up, unused windows answer DECERR, a top-level slave starts a space', () => {
+  let d = place([
+    ['olo/olo_axi_lite_decoder', 'dec0', { Ports_g: 2 }],
+    ['olo/olo_axi_lite_decoder', 'dec1', { Ports_g: 4, PortAddrWidth_g: 12 }],
+    ['opencrypto/ocr_core', 'ocr0'],
+    ['openspp/spp_core', 'spp0'],
+    ['openfibre/ofb_core', 'ofb0'],
+  ]);
+  d = setExternal(d, 'dec0.S_AxiLite', 'cpu_');
+  d = link(d, 'dec0.M_AxiLite[0]', 'ocr0.S_AxiLite');
+  d = link(d, 'dec0.M_AxiLite[1]', 'dec1.S_AxiLite');
+  d = link(d, 'dec1.M_AxiLite[0]', 'spp0.S_AxiLite');
+  d = link(d, 'dec1.M_AxiLite[2]', 'ofb0.S_AxiLite');
+  const [s] = mapOf(d).spaces;
+  assert.deepEqual([s.label, s.kind, s.addrWidth], ['cpu_ (dec0.S_AxiLite)', 'port', 32]);
+  assert.deepEqual(s.banks.map((b) => [b.instance, b.base, b.window, b.via]), [
+    ['ocr0', 0x00000, 0x10000, ['dec0.M_AxiLite[0]']],
+    ['spp0', 0x10000, 0x1000, ['dec0.M_AxiLite[1]', 'dec1.M_AxiLite[0]']],
+    ['ofb0', 0x12000, 0x1000, ['dec0.M_AxiLite[1]', 'dec1.M_AxiLite[2]']],
+  ]);
+  assert.deepEqual(s.unused, [{ via: 'dec1.M_AxiLite[1]', base: 0x11000, size: 0x1000 }, { via: 'dec1.M_AxiLite[3]', base: 0x13000, size: 0x1000 }]);
+  assert.deepEqual(findings(d), [
+    'info [dec0] dec0: ocr0 (256 B) is smaller than its window of 64 KiB; the registers repeat inside the window.',
+    'info [dec1] dec1: spp0 (2 KiB) is smaller than its window of 4 KiB; the registers repeat inside the window.',
+    'info [dec0] dec0 decodes 17 address bits: in the 32-bit space of cpu_ (dec0.S_AxiLite) its map repeats every 0x00020000 bytes.',
+  ]);
+  const md = exportHdl(cat, /** @type {any} */ (netlist(cat, d, resolve(cat, d))), { generator: 'x', input: 'regs.composer.json', sha256: '0'.repeat(64) })
+    .files.find((f) => f.name === 'regs_address_map.md')?.text ?? '';
+  assert.match(md, /\| 0x00011000 \| 0x00011FFF \| 4 KiB \| none: DECERR \| {2}\| {2}\| `dec1\.M_AxiLite\[1\]` \| {2}\|/);
+  assert.match(md, /\| 0x00012000 \| 0x00012FFF \| 4 KiB \| `ofb0` \| `ofb_core` \| 0x0FB10007 \| `dec1\.M_AxiLite\[2\]`, 4 KiB \|/);
+});
+
+test('a register bank larger than its window is an error; the suggested widths pass every rule of the decoder', () => {
+  let d = place([
+    ['olo/olo_axi_lite_decoder', 'dec0', { Ports_g: 2, PortAddrWidth_g: 10 }],
+    ['opencrypto/ocr_core', 'ocr0'],
+    ['openfibre/ofb_core', 'ofb0'],
+  ]);
+  d = setExternal(d, 'dec0.S_AxiLite', 'cpu_');
+  d = link(d, 'dec0.M_AxiLite[0]', 'ocr0.S_AxiLite');
+  d = link(d, 'dec0.M_AxiLite[1]', 'ofb0.S_AxiLite');
+  const errors = (/** @type {typeof d} */ x) => resolve(cat, x).checks.filter((c) => c.severity === 'error' && c.instance === 'dec0').map((c) => c.message);
+  assert.deepEqual(errors(d), ['ofb0.S_AxiLite decodes 12 address bits (4 KiB), more than the window of 1 KiB that dec0.M_AxiLite[1] gives it: its registers from offset 0x0400 on are not reachable. Set PortAddrWidth_g of dec0 to at least 12.']);
+  assert.deepEqual(errors(setGeneric(d, cat, 'dec0', 'PortAddrWidth_g', 12).design), []);
+  // a narrow decoder: the window and its own address width
+  d = setGeneric(d, cat, 'dec0', 'AxiAddrWidth_g', 11).design;
+  assert.deepEqual(errors(d), ['ofb0.S_AxiLite decodes 12 address bits (4 KiB), more than the window of 1 KiB that dec0.M_AxiLite[1] gives it: its registers from offset 0x0400 on are not reachable. Set PortAddrWidth_g of dec0 to at least 12 and AxiAddrWidth_g to at least 13.']);
+  d = setGeneric(setGeneric(d, cat, 'dec0', 'PortAddrWidth_g', 12).design, cat, 'dec0', 'AxiAddrWidth_g', 13).design;
+  assert.deepEqual(errors(d), []);
+});
+
+test('a bank beyond the address bits of the master that starts the space is not reachable', () => {
+  let d = place([
+    ['openrmap/omap_core', 'rmap0', { AxiAddrWidth_g: 27, AxiMaxBeats_g: 1 }],
+    ['olo/olo_axi_lite_decoder', 'dec0', { Ports_g: 16, PortAddrWidth_g: 24 }],
+    ['openspp/spp_core', 'spp0'],
+    ['opencrypto/ocr_core', 'ocr0'],
+  ]);
+  d = link(d, 'rmap0.M_Axi', 'dec0.S_AxiLite');
+  d = link(d, 'dec0.M_AxiLite[7]', 'ocr0.S_AxiLite');
+  d = link(d, 'dec0.M_AxiLite[8]', 'spp0.S_AxiLite');
+  assert.deepEqual(findings(d).filter((x) => x.startsWith('error')), ['error [spp0] spp0.S_AxiLite lies at 0x8000000, beyond the 27 address bits of rmap0.M_Axi: it is not reachable from there.']);
+});
+
+test('a system without a register bank has no address map and no files of it', () => {
+  const d = place([['openwire/owr_core', 'spw0']]);
+  const r = /** @type {any} */ (netlist(cat, d, resolve(cat, d)));
+  assert.equal(r.addressMap, undefined);
+  const { files } = exportHdl(cat, r, { generator: 'x', input: 'regs.composer.json', sha256: '0'.repeat(64) });
+  assert.deepEqual(files.map((f) => f.name), ['regs.vhd', 'regs_compile_order.txt', 'regs.xdc', 'regs_top.xdc']);
+  assert.match(/** @type {any} */ (toDocument(d, cat)).agent.brief, /## 9\. Address map\n\nThe system has no register bank on an AXI interface\./);
+});

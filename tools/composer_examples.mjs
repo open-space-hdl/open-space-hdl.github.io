@@ -17,7 +17,7 @@ import {
   setSystem, sidebandDefaults, updateDomain,
 } from '../assets/composer/js/model/design.js';
 import { designComments, exportHdl } from '../assets/composer/js/model/hdl.js';
-import { GENERATOR, toDocument, toText } from '../assets/composer/js/model/serialize.js';
+import { fromText, GENERATOR, toDocument, toText } from '../assets/composer/js/model/serialize.js';
 import { sha256 } from '../assets/composer/js/model/sha256.js';
 
 const cat = new Catalog(JSON.parse(readFileSync(new URL('../assets/composer/catalog.json', import.meta.url), 'utf-8')));
@@ -285,6 +285,19 @@ for (const [file, d0] of fixtures) {
   mkdirSync(new URL('../tests/fixtures/subsystems/', import.meta.url), { recursive: true });
   writeFileSync(new URL(`../tests/fixtures/subsystems/${file}.composer.json`, import.meta.url), text);
   writeGolden(file, d, text, new URL('../tests/golden/subsystems/', import.meta.url));
+}
+
+// The address map of the system of a user (tests/fixtures/spfi_encrypt.composer.json, read and not written): its
+// export files of the address map in tests/golden/
+if (only.length === 0) {
+  const text = readFileSync(new URL('../tests/fixtures/spfi_encrypt.composer.json', import.meta.url), 'utf-8');
+  const d = fromText(text, cat).design;
+  const doc = /** @type {any} */ (toDocument(d, cat));
+  const hdl = exportHdl(cat, doc.resolved, { generator: `${GENERATOR.name} ${GENERATOR.version}`, input: 'spfi_encrypt.composer.json', sha256: sha256(text), ...designComments(d) });
+  for (const f of hdl.files.filter((x) => /_(address_map\.md|regs\.h)$/.test(x.name))) {
+    writeFileSync(new URL(`../tests/golden/${f.name}`, import.meta.url), f.text);
+  }
+  console.log('wrote the address map of tests/fixtures/spfi_encrypt.composer.json');
 }
 
 // Index for the Examples menu of the page

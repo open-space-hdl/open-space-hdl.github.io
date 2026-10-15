@@ -40,6 +40,7 @@ test('a system with subsystems opens, saves unchanged and exports every subsyste
   const files = unzipStore(new Uint8Array(readFileSync(await download.path())));
   expect(files.map((f) => f.name)).toEqual([
     'dual_rmap_node.vhd', 'dual_rmap_node_compile_order.txt', 'dual_rmap_node.xdc', 'dual_rmap_node_top.xdc',
+    'dual_rmap_node_address_map.md', 'dual_rmap_node_regs.h',
     'spw_port.vhd', 'spw_port.xdc', 'rmap_node.vhd', 'rmap_node.xdc', 'dual_rmap_node.composer.json',
   ]);
   for (const f of files.slice(0, -1)) expect(stable(new TextDecoder().decode(f.data)), f.name).toBe(stable(golden(f.name)));

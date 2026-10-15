@@ -98,7 +98,7 @@ test('the brief names the file on disk, compiles with -frelaxed and initialises 
   assert.match(brief, /ghdl -r --std=08 -frelaxed spw_rmap_node_tb --stop-time=100us --assert-level=error --ieee-asserts=disable/);
   // every repository of the system names its synthesis sources in compile_order.txt
   assert.match(brief, /\| `openwire` \| https:\/\/github\.com\/open-space-hdl\/openwire \| commit `[0-9a-f]{40}` \| every file listed in `compile_order\.txt`, in its order \|/);
-  assert.match(brief, /## 9\. Initialisation by software/);
+  assert.match(brief, /## 10\. Initialisation by software/);
   assert.match(brief, /\*\*`spw0`\*\* \(SpaceWire port, `owr_core`\) through the top-level ports `spw_reg_S_AxiLite_\*`:/);
   assert.match(brief, /1\. Read ID \(0x00\): it reads 0x4F575201\./);
   assert.match(brief, /Write PORT_CTRL \(0x10\) = 0x34 \(RECEIVER_EN, DRIVER_EN, LINK_START\)/);
@@ -141,7 +141,7 @@ test('the brief initialises a block whose register port hangs on a decoder port,
     d = connect(d, c);
   }
   const brief = /** @type {any} */ (toDocument(d, cat)).agent.brief;
-  const init = brief.slice(brief.indexOf('## 9.'), brief.indexOf('## 10.'));
+  const init = brief.slice(brief.indexOf('## 10.'), brief.indexOf('## 11.'));
   assert.match(init, /\*\*`spp0`\*\* \(Space Packet node, `spp_core`\) through `dec0\.M_AxiLite\[0\]` \(connection c1\):/);
   assert.match(init, /\*\*`ocr0`\*\* \([^)]*`ocr_core`\) through `dec0\.M_AxiLite\[1\]` \(connection c2\):/);
   // a register port without connection and not external is still reported

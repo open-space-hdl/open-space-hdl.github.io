@@ -1,5 +1,5 @@
 {
-  "catalog": "dbee0d786ebd",
+  "catalog": "c0f984e5216d",
   "entity": "spp_over_spw_two_clocks",
   "ports": [
     {
@@ -5617,5 +5617,123 @@
     "library openrmap;",
     "library openspp;"
   ],
-  "problems": []
+  "problems": [],
+  "addressMap": [
+    {
+      "space": "rmap0.S_AxiLite",
+      "label": "rmap_reg_ (rmap0.S_AxiLite)",
+      "kind": "port",
+      "addrWidth": 10,
+      "banks": [
+        {
+          "instance": "rmap0",
+          "interface": "S_AxiLite",
+          "block": "openrmap/omap_core",
+          "entity": "omap_core",
+          "base": 0,
+          "size": 1024,
+          "addrWidth": 10,
+          "window": 1024,
+          "via": [],
+          "id": "0x4F4D4101",
+          "registers": {
+            "source": "openrmap",
+            "url": "https://github.com/open-space-hdl/openrmap",
+            "commit": "55033637795a009132286f60da90a6a876a9c087",
+            "header": "sw/omap_regs.h",
+            "doc": "hdl/omap_mib/docs/register_map.md",
+            "prefix": "OMAP"
+          }
+        }
+      ],
+      "unused": [],
+      "decoders": []
+    },
+    {
+      "space": "rmap0.M_Axi",
+      "label": "rmap0.M_Axi",
+      "kind": "master",
+      "addrWidth": 32,
+      "banks": [],
+      "unused": [],
+      "decoders": [],
+      "what": "RMAP memory addresses as seen by an initiator",
+      "windows": {
+        "instance": "rmap0",
+        "registers": [
+          "WIN_CTRL",
+          "WIN_BASE",
+          "WIN_LAST"
+        ],
+        "base": 256,
+        "stride": 16,
+        "count": 4,
+        "countGeneric": "Windows_g",
+        "reset": "WinInit_g",
+        "value": "WinInitOpen_c",
+        "state": "window 0 is open over the whole address space with all permissions and the other windows are disabled, so the whole map is reachable after the reset"
+      },
+      "external": "mem_"
+    },
+    {
+      "space": "spp0.S_AxiLite",
+      "label": "spp_reg_ (spp0.S_AxiLite)",
+      "kind": "port",
+      "addrWidth": 11,
+      "banks": [
+        {
+          "instance": "spp0",
+          "interface": "S_AxiLite",
+          "block": "openspp/spp_core",
+          "entity": "spp_core",
+          "base": 0,
+          "size": 2048,
+          "addrWidth": 11,
+          "window": 2048,
+          "via": [],
+          "id": "0x53505001",
+          "registers": {
+            "source": "openspp",
+            "url": "https://github.com/open-space-hdl/openspp",
+            "commit": "2d7ee8f92175d15e41d1e069f0db663de951d0c6",
+            "header": "sw/spp_regs.h",
+            "doc": "hdl/spp_mib/docs/register_map.md",
+            "prefix": "SPP"
+          }
+        }
+      ],
+      "unused": [],
+      "decoders": []
+    },
+    {
+      "space": "spw0.S_AxiLite",
+      "label": "spw_reg_ (spw0.S_AxiLite)",
+      "kind": "port",
+      "addrWidth": 8,
+      "banks": [
+        {
+          "instance": "spw0",
+          "interface": "S_AxiLite",
+          "block": "openwire/owr_core",
+          "entity": "owr_core",
+          "base": 0,
+          "size": 256,
+          "addrWidth": 8,
+          "window": 256,
+          "via": [],
+          "id": "0x4F575201",
+          "registers": {
+            "source": "openwire",
+            "url": "https://github.com/open-space-hdl/openwire",
+            "commit": "2897668e2e519e9517a5c7270f243c5ab0d7fdb0",
+            "header": "sw/owr_regs.h",
+            "doc": "hdl/owr_mib/docs/register_map.md",
+            "prefix": "OWR"
+          }
+        }
+      ],
+      "unused": [],
+      "decoders": []
+    }
+  ]
 }

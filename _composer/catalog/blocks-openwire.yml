@@ -134,6 +134,7 @@ blocks:
       - { kind: generic_range, generic: RxFifoDepth_g, max: 32768, message: "FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields" }
       - { kind: generic_range, generic: TxFifoDepth_g, max: 32768, message: "FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields" }
     idRegister: { address: "0x00", value: "0x4F575201" }
+    registers: { map: hdl/owr_mib/regs/owr_regs.yml, header: sw/owr_regs.h, doc: hdl/owr_mib/docs/register_map.md, prefix: OWR }
     init:
       - { text: "Optionally write LINK_SPEED (0x14) bits 7:0 RUN_DIV: the bit period in the Run state in LinkClk cycles (reset value RunDiv_g); choose it for the far end, which samples at most about LinkClk / 1.2." }
       - { text: "Write PORT_CTRL (0x10) = 0x34 (RECEIVER_EN, DRIVER_EN, LINK_START) to start the link, or 0x38 (AUTO_START) to wait for the far end.", unless: [LinkStart_g, AutoStart_g] }

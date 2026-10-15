@@ -116,6 +116,7 @@ test('the VHDL export of the fixture matches its golden files: one entity and sc
   assert.deepEqual(problems, []);
   assert.deepEqual(files.map((f) => f.name), [
     'dual_rmap_node.vhd', 'dual_rmap_node_compile_order.txt', 'dual_rmap_node.xdc', 'dual_rmap_node_top.xdc',
+    'dual_rmap_node_address_map.md', 'dual_rmap_node_regs.h',
     'spw_port.vhd', 'spw_port.xdc', 'rmap_node.vhd', 'rmap_node.xdc',
   ]);
   for (const f of files) {
@@ -124,7 +125,7 @@ test('the VHDL export of the fixture matches its golden files: one entity and sc
   const order = files[1].text.split('\n').filter((l) => l.startsWith('file dual_rmap_node '));
   assert.deepEqual(order, ['file dual_rmap_node spw_port.vhd', 'file dual_rmap_node rmap_node.vhd', 'file dual_rmap_node dual_rmap_node.vhd']);
   assert.match(files[0].text, /i_rmap_node1 : entity work\.rmap_node/);
-  assert.match(files[6].text, /i_spw_port0 : entity work\.spw_port/);
+  assert.match(files.find((f) => f.name === 'rmap_node.vhd')?.text ?? '', /i_spw_port0 : entity work\.spw_port/);
   const doc = /** @type {any} */ (toDocument(design, cat));
   const noCatalog = (/** @type {string} */ t) => t.replace(/"catalog": "[0-9a-f]+"/g, '"catalog": "*"').replace(/catalog `[0-9a-f]+`/g, 'catalog `*`');
   assert.equal(noCatalog(`${JSON.stringify(doc.resolved, null, 2)}\n`), noCatalog(readFileSync(`${GOLDEN}dual_rmap_node.resolved.json`, 'utf-8')));

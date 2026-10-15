@@ -17,6 +17,7 @@ import { absentValue, isDriver } from './catalog.js';
 import { typedEndpoint } from './compat.js';
 import { tryEvaluate } from './expr.js';
 import { runRules } from './rules.js';
+import { analyseAddressMap } from './addressmap.js';
 import { analyseThroughput } from './throughput.js';
 import { netlist } from './netlist.js';
 import {
@@ -89,6 +90,7 @@ import {
  * @property {Record<string, unknown>[]} constraints
  * @property {Check[]} checks
  * @property {import('./throughput.js').Throughput} [throughput]   throughput budget of the system (not of a definition)
+ * @property {import('./addressmap.js').AddressMap} [addressMap]   address map of the system (not of a definition)
  */
 
 const HANDSHAKE = new Set(['valid', 'ready', 'rsp_valid', 'rsp_accept']);
@@ -217,6 +219,9 @@ export function resolve(cat, d) {
   // the throughput budget: its findings are checks, its tables are in the brief; the netlist stays as it is
   res.throughput = analyseThroughput(cat, d, res);
   res.checks.push(...res.throughput.checks);
+  // the address map: its findings are checks, its spaces go into the netlist (export and brief)
+  res.addressMap = analyseAddressMap(cat, d, res);
+  res.checks.push(...res.addressMap.checks);
   return res;
 }
 

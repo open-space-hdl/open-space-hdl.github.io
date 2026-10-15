@@ -820,6 +820,167 @@
               }
             }
           }
+        },
+        "addressMap": {
+          "type": "array",
+          "description": "Address spaces of the system (since 0.5.0-beta), written when the system has one. A space starts at an AXI slave of the top level (kind port) or at the AXI master of a block (kind master). banks are the register files in it: base, size (2^addrWidth bytes), the window they sit in and the decoder ports on the way (via), the value of their ID register, and where the C header and register map of their core are (registers). unused are decoder ports without a slave: they answer DECERR. what says what the addresses are, windows the windows of a block that accepts only addresses inside them (an RMAP target) and their state after the reset; external the top-level port where the space leaves the system.",
+          "items": {
+            "type": "object",
+            "required": [
+              "space",
+              "label",
+              "kind",
+              "addrWidth",
+              "banks",
+              "unused",
+              "decoders"
+            ],
+            "properties": {
+              "space": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "port",
+                  "master"
+                ]
+              },
+              "addrWidth": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "banks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "instance",
+                    "interface",
+                    "block",
+                    "entity",
+                    "base",
+                    "size",
+                    "addrWidth",
+                    "window",
+                    "via"
+                  ],
+                  "properties": {
+                    "instance": {
+                      "type": "string"
+                    },
+                    "interface": {
+                      "type": "string"
+                    },
+                    "block": {
+                      "type": "string"
+                    },
+                    "entity": {
+                      "type": "string"
+                    },
+                    "base": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "size": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "addrWidth": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "window": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "via": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "registers": {
+                      "type": "object",
+                      "required": [
+                        "source",
+                        "url",
+                        "commit",
+                        "header",
+                        "doc",
+                        "prefix"
+                      ],
+                      "properties": {
+                        "source": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "commit": {
+                          "type": "string"
+                        },
+                        "header": {
+                          "type": "string"
+                        },
+                        "doc": {
+                          "type": "string"
+                        },
+                        "prefix": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "doc": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "unused": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "via",
+                    "base",
+                    "size"
+                  ],
+                  "properties": {
+                    "via": {
+                      "type": "string"
+                    },
+                    "base": {
+                      "type": "integer"
+                    },
+                    "size": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "decoders": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "external": {
+                "type": "string"
+              },
+              "what": {
+                "type": "string"
+              },
+              "windows": {
+                "type": "object"
+              }
+            }
+          }
         }
       }
     },
@@ -1750,6 +1911,167 @@
             "type": "string"
           },
           "description": "Context clause of the top level: library ieee with std_logic_1164, every library of compile, and a use clause for every package whose constants a generic map names."
+        },
+        "addressMap": {
+          "type": "array",
+          "description": "Address spaces of the system (since 0.5.0-beta), written when the system has one. A space starts at an AXI slave of the top level (kind port) or at the AXI master of a block (kind master). banks are the register files in it: base, size (2^addrWidth bytes), the window they sit in and the decoder ports on the way (via), the value of their ID register, and where the C header and register map of their core are (registers). unused are decoder ports without a slave: they answer DECERR. what says what the addresses are, windows the windows of a block that accepts only addresses inside them (an RMAP target) and their state after the reset; external the top-level port where the space leaves the system.",
+          "items": {
+            "type": "object",
+            "required": [
+              "space",
+              "label",
+              "kind",
+              "addrWidth",
+              "banks",
+              "unused",
+              "decoders"
+            ],
+            "properties": {
+              "space": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "port",
+                  "master"
+                ]
+              },
+              "addrWidth": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "banks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "instance",
+                    "interface",
+                    "block",
+                    "entity",
+                    "base",
+                    "size",
+                    "addrWidth",
+                    "window",
+                    "via"
+                  ],
+                  "properties": {
+                    "instance": {
+                      "type": "string"
+                    },
+                    "interface": {
+                      "type": "string"
+                    },
+                    "block": {
+                      "type": "string"
+                    },
+                    "entity": {
+                      "type": "string"
+                    },
+                    "base": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "size": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "addrWidth": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "window": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "via": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "registers": {
+                      "type": "object",
+                      "required": [
+                        "source",
+                        "url",
+                        "commit",
+                        "header",
+                        "doc",
+                        "prefix"
+                      ],
+                      "properties": {
+                        "source": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "commit": {
+                          "type": "string"
+                        },
+                        "header": {
+                          "type": "string"
+                        },
+                        "doc": {
+                          "type": "string"
+                        },
+                        "prefix": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "doc": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "unused": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "via",
+                    "base",
+                    "size"
+                  ],
+                  "properties": {
+                    "via": {
+                      "type": "string"
+                    },
+                    "base": {
+                      "type": "integer"
+                    },
+                    "size": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "decoders": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "external": {
+                "type": "string"
+              },
+              "what": {
+                "type": "string"
+              },
+              "windows": {
+                "type": "object"
+              }
+            }
+          }
         }
       }
     }

@@ -10,6 +10,13 @@
  *   <system>_top.xdc             what applies only when the system is the top level of the FPGA: the clocks of its
  *                                clock ports and the I/O registers
  *
+ * A system with register banks also gets its address map (resolved.addressMap, model/addressmap.js):
+ *
+ *   <system>_address_map.md      every address space with the base, size and window of its banks, and where the
+ *                                register maps of the cores are
+ *   <system>_regs.h              C macros of the base, size and ID register value of every bank, and the includes of
+ *                                the headers of the cores (no register offsets of its own)
+ *
  * A system with subsystems also gets, for every definition it uses (resolved.subsystems):
  *
  *   <subsystem>.vhd              its entity, in the library of the top level, written as a top level is
@@ -17,6 +24,8 @@
  *
  * The same netlist and the same input give the same text, byte by byte.
  */
+
+import { addressMapHeader, addressMapSections } from './addressmap.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./netlist.js').ResolvedNetlist} ResolvedNetlist */
@@ -32,7 +41,7 @@ const INNER_RULE = `    ${'-'.repeat(95)}`;
 
 /**
  * @typedef {object} ExportInfo
- * @property {string} generator    name and version of the generator, for example "Open Space Composer 0.4.0-beta"
+ * @property {string} generator    name and version of the generator, for example "Open Space Composer 0.5.0-beta"
  * @property {string} input        file name of the system file the export is made from
  * @property {string} sha256       SHA-256 of that file, hexadecimal
  * @property {string} [description]   description of the system
@@ -537,6 +546,23 @@ export function designComments(d) {
 }
 
 /**
+ * The address map as a Markdown file.
+ * @param {ResolvedNetlist} resolved
+ * @param {ExportInfo} info
+ */
+function addressMapMarkdown(resolved, info) {
+  const lines = [
+    `# Address map of ${resolved.entity}`,
+    '',
+    ...headerLines(resolved, info).map((l) => `- ${l}`),
+    '',
+    ...addressMapSections(resolved.addressMap ?? [], '##', resolved.entity),
+  ];
+  while (lines.length && lines[lines.length - 1] === '') lines.pop();
+  return `${lines.join('\n')}\n`;
+}
+
+/**
  * The files of the export of a system.
  * @param {Catalog} cat
  * @param {ResolvedNetlist} resolved
@@ -553,6 +579,11 @@ export function exportHdl(cat, resolved, info) {
     { name: `${entity}.xdc`, text: exceptions(resolved, info) },
     { name: `${entity}_top.xdc`, text: topConstraints(resolved, info) },
   ];
+  const spaces = resolved.addressMap ?? [];
+  if (spaces.some((s) => s.banks.length > 0)) {
+    files.push({ name: `${entity}_address_map.md`, text: addressMapMarkdown(resolved, info) });
+    files.push({ name: `${entity}_regs.h`, text: addressMapHeader(spaces, entity, headerLines(resolved, info)) });
+  }
   for (const s of resolved.subsystems ?? []) {
     problems.push(...s.netlist.problems.map((x) => `${s.name}/${x}`));
     const own = { ...info, description: info.subsystems?.[s.name]?.description, connections: info.subsystems?.[s.name]?.connections };

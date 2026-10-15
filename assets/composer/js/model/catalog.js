@@ -65,6 +65,8 @@ export const CATALOG_VERSION = 1;
  * @property {boolean} [needsLast]   a generic sink that needs packet boundaries
  * @property {string[]} [clockSignals]   signals of pins that are clocks: the block port takes the top-level port as its
  *           actual, without a signal and an assignment between them
+ * @property {any} [addressSpace]   the address space an AXI master starts: what its addresses are, and the windows of
+ *           the block that accept them (model/addressmap.js)
  */
 
 /**
@@ -86,6 +88,8 @@ export const CATALOG_VERSION = 1;
  * @property {Record<string, unknown>[]} [rules]
  * @property {Record<string, unknown>[]} [constraints]
  * @property {{address: string, value: string}} [idRegister]   identification register
+ * @property {{map: string, header: string, doc: string, prefix: string}} [registers]   register map of the block in its
+ *           repository at the pin: the YAML source, the C header (macros <prefix>_<register>) and the Markdown
  * @property {{text: string, when?: string[], unless?: string[], unlessAll?: string[]}[]} [init]   initialisation by
  *           software; a step applies when all generics of when are true, none of unless and not all of unlessAll
  * @property {string} [endToEnd]   what an end-to-end test of the block checks

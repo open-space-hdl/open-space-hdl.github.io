@@ -220,6 +220,34 @@ permalink: /composer/format/
       blocks without size data. The rule of these checks is <code>sizes</code>.
     </p>
 
+    <h2 id="address-map">Address map</h2>
+    <p>
+      The Composer computes the address map of a system from the netlist and the register data of the catalog, and
+      writes it into <code>resolved.addressMap</code>.
+    </p>
+    <ul>
+      <li>An address space starts at an AXI slave of the top level (a processor or a test bench drives it) and at the
+        AXI master of a block that drives addresses of its own, for example the memory master of an RMAP target. The
+        space follows the connections, through the interfaces of subsystems.</li>
+      <li>An AXI4-Lite decoder (<code>olo_axi_lite_decoder</code>) gives each of its ports a window of
+        <code>2^PortAddrWidth_g</code> bytes: port p starts at p times the window above the base of the decoder.
+        Decoders nest. A port without a slave answers DECERR and appears as unused. The decoder repeats its map in a
+        wider space.</li>
+      <li>Any other AXI slave is a register bank of <code>2^addrWidth</code> bytes. A bank carries the value of its ID
+        register and the C header and register map of its core, in the repository at the commit the system is built
+        with.</li>
+      <li>Where the catalog knows what the addresses of a space are, the map says so. The space of an RMAP target holds
+        RMAP memory addresses as seen by an initiator; the target accepts an access only inside its windows. The map
+        names the window registers and their state after the reset, from <code>WinInit_g</code>. Software can narrow
+        the windows.</li>
+    </ul>
+    <p>
+      The rule <code>address_map</code> reports a bank larger than its window as an error: its upper registers are not
+      reachable. The message names the smallest window that holds the bank, and the address width of the decoder
+      where that window needs more. A bank beyond the address bits of the master that starts its space is an error as
+      well. Banks smaller than their windows, and a decoder whose map repeats in a wider space, are remarks.
+    </p>
+
     <h2 id="resolved">The resolved netlist</h2>
     <p>
       <code>resolved</code> describes the top level completely. It contains the placed blocks and the blocks the
@@ -262,6 +290,7 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
           <tr><td data-label="Entry"><code>constraints</code></td><td data-label="Meaning">In terms of the top level: a maximum delay for every pair of clock domains with a clock crossing, in both directions, the period of the faster clock, data path only (<code>max_delay</code>, the Open Logic clock crossing principles); false paths, I/O registers and the scoped constraint script of Open Logic. There are no asynchronous clock groups: in Vivado they would override the delay limits.</td></tr>
           <tr><td data-label="Entry"><code>compile</code></td><td data-label="Meaning">VHDL libraries in compile order with repository, commit or tag, file list and its format, and the entities used. <code>files</code>: one VHDL file per line in compile order. <code>modules</code>: one module directory per line, relative to the repository root; blank lines and lines starting with <code>#</code> are ignored; the sources of a module are its <code>src/*.vhd</code> files, which have no given order inside the module (packages first, then in dependency order, or let the tool order them). <code>verifiedWith</code> is the Open Logic FT tag the repository was verified with.</td></tr>
           <tr><td data-label="Entry"><code>problems</code></td><td data-label="Meaning">Inconsistencies found while building the netlist; empty for a correct catalog.</td></tr>
+          <tr><td data-label="Entry"><code>addressMap</code></td><td data-label="Meaning">Since 0.5.0-beta: the <a href="#address-map">address spaces</a> of the system with their register banks, written when the system has one.</td></tr>
           <tr><td data-label="Entry"><code>subsystems</code></td><td data-label="Meaning">Version 2: the netlist of every subsystem definition, leaves first, flat, each in the form described here. An instance of a subsystem has the library <code>work</code> and the entity named after it. <code>compile</code> also lists the libraries used inside the subsystems; <code>context</code> holds the libraries of the instances of the top level only.</td></tr>
         </tbody>
       </table>
@@ -277,8 +306,8 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
     <p>
       <code>checks</code> lists the results of the structural checks (missing connections of interfaces that must be
       served, side band constants, widths, clock crossings) and of the design rules of the catalog (clock relations,
-      generics that depend on each other), of the <a href="#throughput">throughput budget</a> and of the
-      <a href="#sizes">packet sizes and buffers</a>. Each entry has a severity (<code>error</code>,
+      generics that depend on each other), of the <a href="#throughput">throughput budget</a>, of the
+      <a href="#sizes">packet sizes and buffers</a> and of the <a href="#address-map">address map</a>. Each entry has a severity (<code>error</code>,
       <code>warning</code>, <code>info</code>), the rule and a message, and names the instance, connection or clock
       domain it is about. A system with an error is not ready to build.
     </p>
@@ -288,7 +317,8 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
       <code>agent.brief</code> is a Markdown text for a person or an AI agent: the repositories and their compile
       order, the ports of the top level with their clock domains and the field maps of the external interfaces, how
       to write the architecture from <code>resolved</code>, the clock domains and resets, the constraints, the
-      throughput of every path, the packet sizes and buffers, the notes of the user guides of the blocks, the initialisation by software (identification registers and the register writes
+      throughput of every path, the packet sizes and buffers, the address map, the notes of the user guides of the
+      blocks, the initialisation by software (identification registers and the register writes
       that start the blocks), the open checks, a smoke test bench to verify the result with GHDL and an optional
       end-to-end test.
     </p>
@@ -312,6 +342,8 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
           <tr><td data-label="File"><code>&lt;system&gt;_compile_order.txt</code></td><td data-label="Content">The source repositories at their pinned commits and every synthesis source in compile order with its library; the top level last, in a library named after the system.</td></tr>
           <tr><td data-label="File"><code>&lt;system&gt;.xdc</code></td><td data-label="Content">Timing exceptions of the system (maximum delays between the clocks of every clock crossing, false paths), written for <code>read_xdc -ref &lt;system&gt;</code>: valid when the system is the top level and inside a larger design.</td></tr>
           <tr><td data-label="File"><code>&lt;system&gt;_top.xdc</code></td><td data-label="Content">What applies only when the system is the top level of the FPGA, or synthesised on its own: the clocks of its clock ports and the I/O registers. A board design creates its clocks and places its I/O registers itself.</td></tr>
+          <tr><td data-label="File"><code>&lt;system&gt;_address_map.md</code></td><td data-label="Content">For a system with register banks: every address space with the base, end, size, ID register value and window of its banks, the unused windows, what the addresses are, and where the C header and register map of every core are (repository, commit, path).</td></tr>
+          <tr><td data-label="File"><code>&lt;system&gt;_regs.h</code></td><td data-label="Content">For a system with register banks: C macros of the base, size and ID register value of every bank (<code>&lt;SYSTEM&gt;_&lt;INSTANCE&gt;_BASE</code>, <code>_SIZE</code>, <code>_ID</code>), per address space, and an <code>#include</code> of the header of every core. The register offsets come from those headers; the include path of the compiler must point to their directories at the commits the comment of the file names.</td></tr>
           <tr><td data-label="File"><code>&lt;subsystem&gt;.vhd</code></td><td data-label="Content">For every subsystem the system uses: its entity, written like the top level, in the library of the top level. An instance of it reads <code>entity work.&lt;subsystem&gt;</code>. Instances of one subsystem share the entity.</td></tr>
           <tr><td data-label="File"><code>&lt;subsystem&gt;.xdc</code></td><td data-label="Content">The timing exceptions of the subsystem, in terms of its ports, for <code>read_xdc -ref &lt;subsystem&gt;</code>. The false paths and I/O registers of the blocks inside also appear in the files of the system, for its own ports.</td></tr>
         </tbody>

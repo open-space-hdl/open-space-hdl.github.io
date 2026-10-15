@@ -119,6 +119,7 @@ blocks:
       - { kind: generic_multiple, generic: TxBufferBytes_g, of: DataWidth_g / 8, pow2Ratio: true }
       - { kind: generic_multiple, generic: RxBufferBytes_g, of: DataWidth_g / 8, pow2Ratio: true }
     idRegister: { address: "0x000", value: "0x53505001" }
+    registers: { map: hdl/spp_mib/regs/spp_regs.yml, header: sw/spp_regs.h, doc: hdl/spp_mib/docs/register_map.md, prefix: SPP }
     init:
       - { text: "After the reset wait until TABLE_STATUS (0x040) bits 1:0 (TX_BUSY, RX_BUSY) are 0: the core initialises both APID tables (2048 clock cycles)." }
       - { text: "Nothing else is needed: with TxPathDefault_g and RxPathDefault_g every APID has an enabled path to destination 0 and to receive port 0, destination 0 has the Target Logical Address 0xFE (DEST_CTRL 0x400) and the own address is Tla_g. A flight configuration writes the APID tables (TX_TABLE_APID 0x030 and TX_TABLE_ENTRY 0x034, RX_TABLE_APID 0x038 and RX_TABLE_ENTRY 0x03C) and the destinations (DEST_CTRL 0x400 + 0x20 n).", when: [TxPathDefault_g, RxPathDefault_g] }

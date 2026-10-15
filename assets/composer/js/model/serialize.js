@@ -24,7 +24,7 @@ export const FORMAT = 'open-space-composer-system';
 export const FORMAT_VERSION = 2;
 export const SCHEMA_URL = 'https://openspacehdl.org/composer/schema/system-1.json';
 export const SCHEMA_URL_2 = 'https://openspacehdl.org/composer/schema/system-2.json';
-export const GENERATOR = { name: 'Open Space Composer', version: '0.4.0-beta' };
+export const GENERATOR = { name: 'Open Space Composer', version: '0.5.0-beta' };
 
 export class FormatError extends Error {
   /** @param {string[]} problems */
