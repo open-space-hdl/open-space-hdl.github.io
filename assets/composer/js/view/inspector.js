@@ -10,6 +10,7 @@
  *   a domain       name, identifier, frequency, source, blocks, merge
  */
 
+import { hex, sizeText } from '../model/addressmap.js';
 import { candidates, checkConnection, effectiveType, resolveEndpoint } from '../model/compat.js';
 import { connectionsAt, getInstance, PREFIX_RE, trafficFields, trafficFromFields } from '../model/design.js';
 import { formatReal, formatValue, isEditable, isEnabled, parseInput } from '../model/generics.js';
@@ -136,8 +137,58 @@ export class InspectorView {
           return h('li', {}, h('button', { type: 'button', class: 'cmp-link-btn', onclick: () => this.app.selectInstances([i.id], undefined, { focusCanvas: true }) },
             h('span', { class: 'cmp-mono' }, i.id), ` ${preset?.name ?? b?.name ?? i.block}`));
         })),
+      this.addressMapSection(),
       h('p', { class: 'cmp-help cmp-autosave-note' }, 'The open systems are kept in this browser. Save a system to keep it as a file.'),
     ];
+  }
+
+  /**
+   * The address spaces of the system with their register banks and unused windows, by base; a click on a bank
+   * selects its block (the subsystem for a block inside one).
+   */
+  addressMapSection() {
+    const spaces = this.app.resolved.addressMap?.spaces ?? [];
+    return h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-amap' },
+      h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-amap' }, `Address map (${spaces.length})`),
+      spaces.length === 0
+        ? h('p', { class: 'cmp-help' }, 'No register banks on AXI interfaces.')
+        : spaces.map((sp) => {
+          const rows = [
+            ...sp.banks.map((b) => ({ base: b.base, row: h('li', {},
+              h('span', { class: 'cmp-mono' }, hex(b.base, sp.addrWidth)), ' ',
+              h('button', { type: 'button', class: 'cmp-link-btn cmp-mono', onclick: () => this.app.selectInstances([b.instance.split('/')[0]], undefined, { focusCanvas: true }) }, b.instance),
+              h('span', { class: 'cmp-facts' }, ` ${b.entity}, ${sizeText(b.size)}`)) })),
+            ...sp.unused.map((u) => ({ base: u.base, row: h('li', {},
+              h('span', { class: 'cmp-mono' }, hex(u.base, sp.addrWidth)), ' ',
+              h('span', { class: 'cmp-facts' }, `unused (${u.via}, DECERR), ${sizeText(u.size)}`)) })),
+          ].sort((a, b) => a.base - b.base);
+          return h('div', { class: 'cmp-amap', 'data-space': sp.space },
+            h('p', { class: 'cmp-amap-space' }, h('span', { class: 'cmp-mono' }, sp.label),
+              ` ${sp.addrWidth} address bits${sp.external ? `, its slave is outside (${sp.external})` : ''}`),
+            rows.length ? h('ul', { class: 'cmp-list', role: 'list' }, rows.map((r) => r.row)) : null);
+        }));
+  }
+
+  /**
+   * The place of an interface in the address map: the window of a decoder port, the registers of a bank.
+   * @param {string} instId
+   * @param {import('../model/catalog.js').PortView} p
+   * @returns {string | null}
+   */
+  addressOf(instId, p) {
+    for (const sp of this.app.resolved.addressMap?.spaces ?? []) {
+      if (p.itf.params?.window !== undefined && p.index !== null) {
+        const dec = sp.decoders.find((x) => x.instance === instId);
+        if (dec) {
+          const base = dec.base + p.index * dec.window;
+          const unused = sp.unused.some((u) => u.via === `${instId}.${p.ref}`);
+          return `Window ${hex(base, sp.addrWidth)} to ${hex(base + dec.window - 1, sp.addrWidth)} in ${sp.label}${unused ? ': unused, answers DECERR' : ''}.`;
+        }
+      }
+      const bank = sp.banks.find((b) => b.instance === instId && b.interface === p.ref);
+      if (bank) return `Registers at ${hex(bank.base, sp.addrWidth)} to ${hex(bank.base + bank.size - 1, sp.addrWidth)} in ${sp.label}.`;
+    }
+    return null;
   }
 
   multiPanel() {
@@ -447,6 +498,8 @@ export class InspectorView {
           h('button', { type: 'button', class: 'cmp-link-btn', onclick: () => { this.prefixOpen.add(ref); this.render(); } }, 'Make external')));
       }
     }
+    const address = this.addressOf(instId, p);
+    if (address) body.push(h('p', { class: 'cmp-itf-addr' }, address));
     return h('li', { class: 'cmp-itf', 'data-itf': ref, title: p.itf.description ?? p.label }, head,
       label ? h('p', { class: 'cmp-itf-label' }, label) : null, body);
   }
