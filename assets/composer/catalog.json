@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "bebf58067f6a",
+ "id": "ee0ae20f8d6e",
  "sources": [
   {
    "id": "openwire",
@@ -9,11 +9,11 @@
    "repo": "openwire",
    "url": "https://github.com/open-space-hdl/openwire",
    "doc": "https://openspacehdl.org/openwire/",
-   "commit": "2897668e2e519e9517a5c7270f243c5ab0d7fdb0",
+   "commit": "4e3a2593bb7486e4c79b67c245dd8e54675409c8",
    "library": "openwire",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.2",
+   "verifiedWith": "4.7.0-ft.6",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
    "files": [
     "hdl/owr_pkg/src/owr_regs_pkg.vhd",
@@ -38,7 +38,33 @@
     "hdl/owr_core/src/owr_core.vhd"
    ],
    "trl": 3,
-   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage."
+   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+   "changes": [
+    {
+     "previous": "2897668e2e519e9517a5c7270f243c5ab0d7fdb0",
+     "pin": "67aba73a18ce78a111f77ac2aa162d60101e263e",
+     "evidence": "PR #5 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "67aba73a18ce78a111f77ac2aa162d60101e263e",
+     "pin": "6d293aa5e7d25419fcf435974ad82f2550983434",
+     "evidence": "PR #6 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "6d293aa5e7d25419fcf435974ad82f2550983434",
+     "pin": "5817eec4487b5c0c629baf35ac27104fad51aeb5",
+     "evidence": "PR #7 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "5817eec4487b5c0c629baf35ac27104fad51aeb5",
+     "pin": "4e3a2593bb7486e4c79b67c245dd8e54675409c8",
+     "evidence": "PR #8 of the core: Open Logic pin 4.7.0-ft.2 -> 4.7.0-ft.6; no change of ports, generics, streams or registers.",
+     "changes": []
+    }
+   ]
   },
   {
    "id": "openrmap",
@@ -46,18 +72,18 @@
    "repo": "openrmap",
    "url": "https://github.com/open-space-hdl/openrmap",
    "doc": "https://openspacehdl.org/openrmap/",
-   "commit": "55033637795a009132286f60da90a6a876a9c087",
+   "commit": "e1e13d3ed369c06f3093c745d6b2f8da38d0eba0",
    "library": "openrmap",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.5",
+   "verifiedWith": "4.7.0-ft.6",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
    "files": [
     "hdl/omap_pkg/src/omap_regs_pkg.vhd",
     "hdl/omap_pkg/src/omap_pkg.vhd",
-    "hdl/omap_target/src/omap_target_mem.vhd",
     "hdl/omap_target/src/omap_target_tx.vhd",
     "hdl/omap_target/src/omap_target_rx.vhd",
+    "hdl/omap_target/src/omap_target_mem.vhd",
     "hdl/omap_target/src/omap_target_ctrl.vhd",
     "hdl/omap_target/src/omap_target_auth.vhd",
     "hdl/omap_target/src/omap_target.vhd",
@@ -71,7 +97,33 @@
     "hdl/omap_core/src/omap_core.vhd"
    ],
    "trl": 3,
-   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage."
+   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+   "changes": [
+    {
+     "previous": "55033637795a009132286f60da90a6a876a9c087",
+     "pin": "d6819254e32435b77d0977b1dff1b188f34e4ae5",
+     "evidence": "PR #9 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "d6819254e32435b77d0977b1dff1b188f34e4ae5",
+     "pin": "e1e13d3ed369c06f3093c745d6b2f8da38d0eba0",
+     "evidence": "PR #10 of the core: Open Logic pin 4.7.0-ft.5 -> 4.7.0-ft.6; new elaboration checks of omap_core (AxiDataWidth_g a power of 2 from 8 to 1024, ChunkBytes_g not larger than BufferBytes_g and a multiple of AxiDataWidth_g/8); corrected: AxiAddrWidth_g 12 to 26 at 32-bit data and AxiDataWidth_g 8 build, accesses longer than one command of the memory master are split, single-address writes no longer hang at wide data widths; no change of ports, register map or streams.",
+     "changes": [
+      {
+       "block": "openrmap/omap_core",
+       "kind": "generic_range",
+       "generic": "ChunkBytes_g",
+       "text": "ChunkBytes_g must not be larger than BufferBytes_g and must be a multiple of AxiDataWidth_g/8 (checked at elaboration)."
+      },
+      {
+       "block": "openrmap/omap_core",
+       "kind": "behaviour",
+       "text": "Accesses longer than one command of the memory master are split, so AxiAddrWidth_g no longer needs 25 + log2(AxiDataWidth_g/8) bits; AxiAddrWidth_g 12 to 26 at 32-bit data and AxiDataWidth_g 8 build; single-address writes no longer hang at wide data widths."
+      }
+     ]
+    }
+   ]
   },
   {
    "id": "openspp",
@@ -79,11 +131,11 @@
    "repo": "openspp",
    "url": "https://github.com/open-space-hdl/openspp",
    "doc": "https://openspacehdl.org/openspp/",
-   "commit": "2d7ee8f92175d15e41d1e069f0db663de951d0c6",
+   "commit": "018ebe17992d578dea037fa47251b3309a863bb8",
    "library": "openspp",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.2",
+   "verifiedWith": "4.7.0-ft.6",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
    "files": [
     "hdl/spp_pkg/src/spp_regs_pkg.vhd",
@@ -106,7 +158,70 @@
     "hdl/spp_nchar/src/spp_nchar.vhd"
    ],
    "trl": 3,
-   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage."
+   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+   "changes": [
+    {
+     "previous": "2d7ee8f92175d15e41d1e069f0db663de951d0c6",
+     "pin": "14bf8984560771f9868e5a33a4f3218f60a85ba8",
+     "evidence": "PR #5 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "14bf8984560771f9868e5a33a4f3218f60a85ba8",
+     "pin": "95f2032aaacec24d417bad946a230c08aba2d6b6",
+     "evidence": "PR #6 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "95f2032aaacec24d417bad946a230c08aba2d6b6",
+     "pin": "67cad632e6d6aaf1c920cb51480a15bbef953b62",
+     "evidence": "PR #8 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "67cad632e6d6aaf1c920cb51480a15bbef953b62",
+     "pin": "1eae3183ae75cc734988a09610208f8af97e1a12",
+     "evidence": "PR #7 of the core: Open Logic pin 4.7.0-ft.2 -> 4.7.0-ft.6; no change of ports, generics, streams or registers.",
+     "changes": []
+    },
+    {
+     "previous": "1eae3183ae75cc734988a09610208f8af97e1a12",
+     "pin": "018ebe17992d578dea037fa47251b3309a863bb8",
+     "evidence": "PR #9 of the core: new assertions on generics of spp_core (TxBufferBytes_g and RxBufferBytes_g at least max(2, nextpow2(ceil(7 / B))) beats, at most nextpow2(TxMaxPackets_g / RxMaxPackets_g x ceil(65542 / B)) beats and at most 2^29 beats; TxMaxPackets_g 2 to max(2, TxBufferBytes_g / B); RxMaxPackets_g 2 to max(2, floor(RxBufferBytes_g / B / ceil(7 / B)))); new assertion on spp_nchar: DataWidth_g a multiple of 8; every value that was valid and used before stays valid.",
+     "changes": [
+      {
+       "block": "openspp/spp_core",
+       "kind": "generic_range",
+       "generic": "TxBufferBytes_g",
+       "text": "TxBufferBytes_g holds at least the shortest Space Packet and at most what TxMaxPackets_g packets of 65542 bytes fill (checked at elaboration, CO-GN-02, CO-GN-03)."
+      },
+      {
+       "block": "openspp/spp_core",
+       "kind": "generic_range",
+       "generic": "RxBufferBytes_g",
+       "text": "RxBufferBytes_g holds at least the shortest Space Packet and at most what RxMaxPackets_g packets of 65542 bytes fill (checked at elaboration, CO-GN-02, CO-GN-03)."
+      },
+      {
+       "block": "openspp/spp_core",
+       "kind": "generic_range",
+       "generic": "TxMaxPackets_g",
+       "text": "TxMaxPackets_g is 2 to max(2, TxBufferBytes_g / B) (checked at elaboration, CO-GN-04)."
+      },
+      {
+       "block": "openspp/spp_core",
+       "kind": "generic_range",
+       "generic": "RxMaxPackets_g",
+       "text": "RxMaxPackets_g is 2 to the number of shortest Space Packets the receive buffer holds (checked at elaboration, CO-GN-04)."
+      },
+      {
+       "block": "openspp/spp_nchar",
+       "kind": "generic_range",
+       "generic": "DataWidth_g",
+       "text": "DataWidth_g must be a multiple of 8 (checked at elaboration)."
+      }
+     ]
+    }
+   ]
   },
   {
    "id": "openfibre",
@@ -114,11 +229,11 @@
    "repo": "openfibre",
    "url": "https://github.com/open-space-hdl/openfibre",
    "doc": "https://openspacehdl.org/openfibre/",
-   "commit": "bd4d80b1f05ee5fda67a97ff4c760952a25a79a7",
+   "commit": "0c0a647c25d559b4ace1c2bf461d25832c71cae5",
    "library": "openfibre",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.2",
+   "verifiedWith": "4.7.0-ft.6",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. compile_order.txt lists the technology-independent sources; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).",
    "files": [
     "hdl/ofb_pkg/src/ofb_regs_pkg.vhd",
@@ -161,7 +276,64 @@
     "hdl/ofb_core/src/ofb_core.vhd"
    ],
    "trl": 3,
-   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage."
+   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+   "changes": [
+    {
+     "previous": "bd4d80b1f05ee5fda67a97ff4c760952a25a79a7",
+     "pin": "2edb44905ef8a9f50a1981af8aa949dac195cabc",
+     "evidence": "PR #5 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "2edb44905ef8a9f50a1981af8aa949dac195cabc",
+     "pin": "7066e4dd8631c56835db57a28d965572643acc99",
+     "evidence": "PR #7 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "7066e4dd8631c56835db57a28d965572643acc99",
+     "pin": "8498989b9e262fe5a8becd3de2ada0dfa0cbb85f",
+     "evidence": "PR #6 of the core: None. No change of ports, generics, streams or registers.",
+     "changes": [
+      {
+       "block": "openfibre/ofb_core",
+       "kind": "behaviour",
+       "text": "Multi-Lane: the far-end reset is detected when a lane enters Active with its capability (ML-LM-14)."
+      }
+     ]
+    },
+    {
+     "previous": "8498989b9e262fe5a8becd3de2ada0dfa0cbb85f",
+     "pin": "93749f734475f31bcdd65641d2642ce222e01180",
+     "evidence": "PR #8 of the core: Open Logic pin 4.7.0-ft.2 -> 4.7.0-ft.6; no change of ports, generics, streams or registers.",
+     "changes": []
+    },
+    {
+     "previous": "93749f734475f31bcdd65641d2642ce222e01180",
+     "pin": "0c0a647c25d559b4ace1c2bf461d25832c71cae5",
+     "evidence": "PR #9 of the core: narrowed ranges: VcInDepth_g >= 128 x NumLanes_g with several lanes (DL-VI-05), VcOutDepth_g x NumLanes_g >= 64 (DL-VO-05), ErbRows_g >= 64 (DL-ER-08), LaneClkFreq_g and CoreClkFreq_g positive (CORE-CK-02); made explicit: VcOutDepth_g a power of two, VcInDepth_g NumLanes_g times a power of two.",
+     "changes": [
+      {
+       "block": "openfibre/ofb_core",
+       "kind": "generic_range",
+       "generic": "VcInDepth_g",
+       "text": "VcInDepth_g must be at least 128 x NumLanes_g with several lanes (DL-VI-05); this replaces the known defect of a buffer of one flow control unit. The default 256 is too small for three or four lanes; reference value 256 x NumLanes_g."
+      },
+      {
+       "block": "openfibre/ofb_core",
+       "kind": "generic_range",
+       "generic": "VcOutDepth_g",
+       "text": "VcOutDepth_g x NumLanes_g must be at least 64 (DL-VO-05)."
+      },
+      {
+       "block": "openfibre/ofb_core",
+       "kind": "generic_range",
+       "generic": "ErbRows_g",
+       "text": "ErbRows_g must be at least 64 (DL-ER-08)."
+      }
+     ]
+    }
+   ]
   },
   {
    "id": "opencrypto",
@@ -169,11 +341,11 @@
    "repo": "opencrypto",
    "url": "https://github.com/open-space-hdl/opencrypto",
    "doc": "https://openspacehdl.org/opencrypto/",
-   "commit": "e03bc8cda75a660cc3e28bdc14d7f9409ddb0497",
+   "commit": "16167541808130231fa2a955bfb17bec88044813",
    "library": "opencrypto",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.3",
+   "verifiedWith": "4.7.0-ft.6",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
    "files": [
     "hdl/ocr_pkg/src/ocr_regs_pkg.vhd",
@@ -195,7 +367,46 @@
     "hdl/ocr_core/src/ocr_core.vhd"
    ],
    "trl": 3,
-   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage."
+   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+   "changes": [
+    {
+     "previous": "e03bc8cda75a660cc3e28bdc14d7f9409ddb0497",
+     "pin": "c846418b7bde8e800d02f075e3772ed6b68ac958",
+     "evidence": "PR #5 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "c846418b7bde8e800d02f075e3772ed6b68ac958",
+     "pin": "1775983474f8bab52c0bff26999ceadd06323dd7",
+     "evidence": "PR #4 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "1775983474f8bab52c0bff26999ceadd06323dd7",
+     "pin": "0f5bf02886979c8e6d5c8c8609df1ce5284e0b9d",
+     "evidence": "PR #6 of the core: Open Logic pin 4.7.0-ft.3 -> 4.7.0-ft.6; no change of ports, generics, streams or registers.",
+     "changes": []
+    },
+    {
+     "previous": "0f5bf02886979c8e6d5c8c8609df1ce5284e0b9d",
+     "pin": "16167541808130231fa2a955bfb17bec88044813",
+     "evidence": "PR #7 of the core: ReleaseBytes_g (ocr_core, with ReleaseBuffer_g) and ChunkBytes_g (ocr_framer): new upper bound of 65536 bytes; DataWidth_g of ocr_packer and KeyBits_g of ocr_key_table checked (ocr_core already rejected other values); ScrubPeriod_g, ClkFreqHz_g: no change of behaviour, the documentation states the limits that Open Logic already enforced; no change of ports, streams or registers.",
+     "changes": [
+      {
+       "block": "opencrypto/ocr_core",
+       "kind": "generic_range",
+       "generic": "ReleaseBytes_g",
+       "text": "ReleaseBytes_g is at most 65536 bytes with ReleaseBuffer_g (checked at elaboration)."
+      },
+      {
+       "block": "opencrypto/ocr_framer",
+       "kind": "generic_range",
+       "generic": "ChunkBytes_g",
+       "text": "ChunkBytes_g is at most 65536 (checked at elaboration)."
+      }
+     ]
+    }
+   ]
   },
   {
    "id": "olo",
@@ -203,11 +414,11 @@
    "repo": "open-logic-ft",
    "url": "https://github.com/open-space-hdl/open-logic-ft",
    "doc": "https://openspacehdl.org/open-logic-ft/",
-   "tag": "4.7.0-ft.5",
+   "tag": "4.7.0-ft.6",
    "library": "olo",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.5 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), and fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5); it changes no other source, so the cores verified with 4.7.0-ft.2, 4.7.0-ft.3 or 4.7.0-ft.4 use it unchanged. Of the cores only OpenRMAP uses olo_axi_master_simple.",
+   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). Every core of the catalog is verified with 4.7.0-ft.6.",
    "files": [
     "src/base/vhdl/olo_base_pkg_crc.vhd",
     "src/base/vhdl/olo_base_pkg_attribute.vhd",
@@ -338,7 +549,15 @@
    "submodules": true,
    "trl": 3,
    "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
-   "commit": "1bc4fb90888cf24ac29bc54527c2982d2dec307c"
+   "changes": [
+    {
+     "previous": "1bc4fb90888cf24ac29bc54527c2982d2dec307c",
+     "pin": "5d8ae56dcd6362f77e5cffc1cf718e605323c1e7",
+     "evidence": "Tag 4.7.0-ft.6 of Open Logic FT: olo_axi_master_full with 8-bit data and narrow addresses (used inside OpenRMAP); no change of the blocks of the catalog.",
+     "changes": []
+    }
+   ],
+   "commit": "5d8ae56dcd6362f77e5cffc1cf718e605323c1e7"
   }
  ],
  "categories": [
@@ -6797,6 +7016,22 @@
      "unlessZero": true
     },
     {
+     "kind": "generic_range",
+     "generic": "ClkFreqHz_g",
+     "min": 1000,
+     "when": {
+      "generic": "ScrubPeriod_g",
+      "not": 0
+     },
+     "message": "the pacer of the key table scrubbers counts milliseconds"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "ReleaseBytes_g",
+     "max": 65536,
+     "when": "ReleaseBuffer_g"
+    },
+    {
      "kind": "generic_multiple",
      "generic": "ReleaseBytes_g",
      "of": "16 * DataWidth_g / 8",
@@ -7560,6 +7795,11 @@
       "M_Out"
      ],
      "message": "The framer and the core share clock and reset; a reset of only one of them leaves contexts or messages without partner."
+    },
+    {
+     "kind": "generic_range",
+     "generic": "ChunkBytes_g",
+     "max": 65536
     }
    ],
    "init": [
@@ -8040,10 +8280,22 @@
      "pow2Ratio": true
     },
     {
+     "kind": "generic_range",
+     "generic": "VcOutDepth_g",
+     "min": "cdiv(64, NumLanes_g)",
+     "message": "the output VC buffer holds a data frame of 64 words (VcOutDepth_g x NumLanes_g, DL-VO-05)"
+    },
+    {
      "kind": "generic_multiple",
      "generic": "ErbRows_g",
      "of": 2,
      "pow2Ratio": true
+    },
+    {
+     "kind": "generic_range",
+     "generic": "ErbRows_g",
+     "min": 64,
+     "message": "the error recovery buffer holds a data frame of 64 rows (DL-ER-08)"
     },
     {
      "kind": "clock_relation",
@@ -8065,14 +8317,14 @@
      "pow2Ratio": true
     },
     {
-     "kind": "known_defect",
+     "kind": "generic_range",
      "generic": "VcInDepth_g",
-     "below": "128 * NumLanes_g",
+     "min": "128 * NumLanes_g",
      "when": {
       "generic": "NumLanes_g",
       "not": 1
      },
-     "message": "Known defect of ofb_core: with more than one lane and an input VC buffer of one flow control unit (VcInDepth_g = 64 x NumLanes_g) the traffic can stop permanently. Set VcInDepth_g to at least 128 x NumLanes_g; the reference design uses 256 x NumLanes_g. The cause is under analysis in OpenFibre."
+     "message": "with several lanes the input VC buffer holds two flow control units (DL-VI-05); reference value 256 x NumLanes_g"
     },
     {
      "kind": "with_block",
@@ -8133,11 +8385,13 @@
        "oneDirection": {
         "1": 0.946,
         "2": 0.946,
+        "3": 0.948,
         "4": 0.948
        },
        "bothDirections": {
         "1": 0.905,
         "2": 0.909,
+        "3": 0.912,
         "4": 0.908
        }
       },
@@ -8146,15 +8400,15 @@
     ]
    },
    "sizes": {
-    "evidence": "no length limit by design: segments are independent of packet boundaries (ofb_dl_vc_out.vhd, DL-VO-03 and DL-VO-04), no length counter in NI, DL or MIB; tested up to 1024 B (TC-CORE-16, TC-CORE-17, TC-CORE-13)",
+    "evidence": "no length limit by design: segments are independent of packet boundaries (ofb_dl_vc_out.vhd, DL-VO-03 and DL-VO-04), no length counter in NI, DL or MIB; packets of 65542 bytes (the largest Space Packet) with 1 to 4 lanes (TC-CORE-20, user guide section 7)",
     "interfaces": {
      "S_Vc": {
       "noLimit": true,
-      "tested": 1024
+      "tested": 65542
      },
      "M_Vc": {
       "noLimit": true,
-      "tested": 1024
+      "tested": 65542
      }
     }
    },
@@ -8240,7 +8494,7 @@
      "defaultText": "128",
      "default": 128,
      "label": "Output VC buffer",
-     "description": "Output VC buffer of every VC.",
+     "description": "Output VC buffer of every VC; a power of two, at least 64 words (VcOutDepth_g x NumLanes_g).",
      "unit": "beats"
     },
     {
@@ -8252,7 +8506,7 @@
      "defaultText": "256",
      "default": 256,
      "label": "Input VC buffer",
-     "description": "Input VC buffer of every VC; a multiple of 64 x NumLanes_g.",
+     "description": "Input VC buffer of every VC; NumLanes_g times a power of two, at least 64 with one lane and 128 x NumLanes_g with several lanes (reference value 256 x NumLanes_g).",
      "unit": "words"
     },
     {
@@ -8264,7 +8518,7 @@
      "defaultText": "512",
      "default": 512,
      "label": "Error recovery buffer",
-     "description": "Error recovery buffer in data rows of NumLanes_g words.",
+     "description": "Error recovery buffer in data rows of NumLanes_g words; a power of two, at least 64.",
      "advanced": true,
      "unit": "rows"
     },
@@ -9344,15 +9598,21 @@
     "Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.",
     "M_RepData, M_Conf and M_User must be served when connected; a stalled output stalls the received packet stream and the link.",
     "RMAP address bits above AxiAddrWidth_g must be zero in the windows.",
-    "With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'. Known defect of Open Logic olo_axi_master_simple up to 4.7.0-ft.4 (fix pending in open-logic-ft): with AxiMaxBeats_g < AxiDataWidth_g/8, commands that the memory master splits into several AXI transactions read or write the first word repeatedly, with status 0."
+    "With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'.",
+    "An access longer than one command of the memory master (2^(AxiAddrWidth_g - 2) - AxiDataWidth_g/8 bytes, at most 2^24 - AxiDataWidth_g/8) is split into several commands."
    ],
    "rules": [
     {
      "kind": "generic_range",
-     "generic": "AxiAddrWidth_g",
-     "min": "25 + log2(AxiDataWidth_g / 8)",
-     "when": "Target_g",
-     "message": "the memory master of the target takes transfers of up to 24 address bits"
+     "generic": "ChunkBytes_g",
+     "max": "BufferBytes_g",
+     "message": "a chunk of a non-verified write fits the write buffer"
+    },
+    {
+     "kind": "generic_multiple",
+     "generic": "ChunkBytes_g",
+     "of": "AxiDataWidth_g / 8",
+     "message": "a single-address write moves whole memory words"
     },
     {
      "kind": "generic_any_true",
@@ -10724,6 +10984,34 @@
      "generic": "RxBufferBytes_g",
      "of": "DataWidth_g / 8",
      "pow2Ratio": true
+    },
+    {
+     "kind": "generic_range",
+     "generic": "TxBufferBytes_g",
+     "min": "DataWidth_g / 8 * max(2, 2 ** log2ceil(cdiv(7, DataWidth_g / 8)))",
+     "max": "DataWidth_g / 8 * min(2 ** log2ceil(TxMaxPackets_g * cdiv(65542, DataWidth_g / 8)), 2 ** 29)",
+     "message": "CO-GN-02, CO-GN-03"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "RxBufferBytes_g",
+     "min": "DataWidth_g / 8 * max(2, 2 ** log2ceil(cdiv(7, DataWidth_g / 8)))",
+     "max": "DataWidth_g / 8 * min(2 ** log2ceil(RxMaxPackets_g * cdiv(65542, DataWidth_g / 8)), 2 ** 29)",
+     "message": "CO-GN-02, CO-GN-03"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "TxMaxPackets_g",
+     "min": 2,
+     "max": "max(2, TxBufferBytes_g / (DataWidth_g / 8))",
+     "message": "an SDU of one byte takes a beat of the send buffer (CO-GN-04)"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "RxMaxPackets_g",
+     "min": 2,
+     "max": "max(2, RxBufferBytes_g / (DataWidth_g / 8) / cdiv(7, DataWidth_g / 8))",
+     "message": "the shortest Space Packets that fit into the receive buffer (CO-GN-04)"
     }
    ],
    "idRegister": {

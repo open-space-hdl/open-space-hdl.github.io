@@ -105,8 +105,11 @@ blocks:
       - { kind: generic_range, generic: GhashDigit_g, min: DataWidth_g, unlessZero: true }
       # ocr_gcm.vhd: the depth of the release buffer is a positive number of beats also when the buffer is not used
       - { kind: generic_range, generic: ReleaseBytes_g, min: DataWidth_g / 8 }
-      # olo_ft_private_scrubber.vhd (key table): a scrub period of at least 1 ms, or 0
+      # olo_ft_private_scrubber.vhd (key table): a scrub period of at least 1 ms, or 0; the pacer needs at least 1 kHz
       - { kind: generic_range, generic: ScrubPeriod_g, min: 0.001, unlessZero: true }
+      - { kind: generic_range, generic: ClkFreqHz_g, min: 1000, when: { generic: ScrubPeriod_g, not: 0 }, message: "the pacer of the key table scrubbers counts milliseconds" }
+      # hdl/ocr_gcm/src/ocr_gcm.vhd: the release buffer is at most 65536 bytes
+      - { kind: generic_range, generic: ReleaseBytes_g, max: 65536, when: ReleaseBuffer_g }
       # hdl/ocr_gcm/src/ocr_gcm.vhd: the release buffer is a power of two of at least 16 beats
       - { kind: generic_multiple, generic: ReleaseBytes_g, of: 16 * DataWidth_g / 8, pow2Ratio: true, when: ReleaseBuffer_g, message: "the release buffer holds a power of two of at least 16 beats" }
       - kind: partner_requires
@@ -232,6 +235,8 @@ blocks:
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, description: Tests only., signals: { sel: ErrInj_Sel, bitflip: ErrInj_BitFlip, valid: ErrInj_Valid } }
     rules:
       - { kind: same_domain, interfaces: [M_Ctx, M_Out], message: "The framer and the core share clock and reset; a reset of only one of them leaves contexts or messages without partner." }
+      # hdl/ocr_framer/src/ocr_framer.vhd: a chunk of at most 65536 bytes
+      - { kind: generic_range, generic: ChunkBytes_g, max: 65536 }
     init:
       - { text: "Load the key slot Cfg_Slot of the AES-GCM core for generated IVs (KEY_LOAD with IV_GEN = '1', see the core) before the first packet; without a loaded slot every chunk fails with KEY." }
     notes:

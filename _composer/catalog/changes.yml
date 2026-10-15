@@ -16,4 +16,111 @@
 # The catalog check verifies every step at the pins: both commits exist, previous is an ancestor of pin, the steps
 # follow each other and end at the current pin, and the names exist as the current catalog has them.
 
-{}
+openwire:
+  - previous: 2897668e2e519e9517a5c7270f243c5ab0d7fdb0
+    pin: 67aba73a18ce78a111f77ac2aa162d60101e263e
+    evidence: "PR #5 of the core: None."
+    changes: []
+  - previous: 67aba73a18ce78a111f77ac2aa162d60101e263e
+    pin: 6d293aa5e7d25419fcf435974ad82f2550983434
+    evidence: "PR #6 of the core: None."
+    changes: []
+  - previous: 6d293aa5e7d25419fcf435974ad82f2550983434
+    pin: 5817eec4487b5c0c629baf35ac27104fad51aeb5
+    evidence: "PR #7 of the core: None."
+    changes: []
+  - previous: 5817eec4487b5c0c629baf35ac27104fad51aeb5
+    pin: 4e3a2593bb7486e4c79b67c245dd8e54675409c8
+    evidence: "PR #8 of the core: Open Logic pin 4.7.0-ft.2 -> 4.7.0-ft.6; no change of ports, generics, streams or registers."
+    changes: []
+
+openrmap:
+  - previous: 55033637795a009132286f60da90a6a876a9c087
+    pin: d6819254e32435b77d0977b1dff1b188f34e4ae5
+    evidence: "PR #9 of the core: None."
+    changes: []
+  - previous: d6819254e32435b77d0977b1dff1b188f34e4ae5
+    pin: e1e13d3ed369c06f3093c745d6b2f8da38d0eba0
+    evidence: "PR #10 of the core: Open Logic pin 4.7.0-ft.5 -> 4.7.0-ft.6; new elaboration checks of omap_core (AxiDataWidth_g a power of 2 from 8 to 1024, ChunkBytes_g not larger than BufferBytes_g and a multiple of AxiDataWidth_g/8); corrected: AxiAddrWidth_g 12 to 26 at 32-bit data and AxiDataWidth_g 8 build, accesses longer than one command of the memory master are split, single-address writes no longer hang at wide data widths; no change of ports, register map or streams."
+    changes:
+      - { block: openrmap/omap_core, kind: generic_range, generic: ChunkBytes_g, text: "ChunkBytes_g must not be larger than BufferBytes_g and must be a multiple of AxiDataWidth_g/8 (checked at elaboration)." }
+      - { block: openrmap/omap_core, kind: behaviour, text: "Accesses longer than one command of the memory master are split, so AxiAddrWidth_g no longer needs 25 + log2(AxiDataWidth_g/8) bits; AxiAddrWidth_g 12 to 26 at 32-bit data and AxiDataWidth_g 8 build; single-address writes no longer hang at wide data widths." }
+
+openspp:
+  - previous: 2d7ee8f92175d15e41d1e069f0db663de951d0c6
+    pin: 14bf8984560771f9868e5a33a4f3218f60a85ba8
+    evidence: "PR #5 of the core: None."
+    changes: []
+  - previous: 14bf8984560771f9868e5a33a4f3218f60a85ba8
+    pin: 95f2032aaacec24d417bad946a230c08aba2d6b6
+    evidence: "PR #6 of the core: None."
+    changes: []
+  - previous: 95f2032aaacec24d417bad946a230c08aba2d6b6
+    pin: 67cad632e6d6aaf1c920cb51480a15bbef953b62
+    evidence: "PR #8 of the core: None."
+    changes: []
+  - previous: 67cad632e6d6aaf1c920cb51480a15bbef953b62
+    pin: 1eae3183ae75cc734988a09610208f8af97e1a12
+    evidence: "PR #7 of the core: Open Logic pin 4.7.0-ft.2 -> 4.7.0-ft.6; no change of ports, generics, streams or registers."
+    changes: []
+  - previous: 1eae3183ae75cc734988a09610208f8af97e1a12
+    pin: 018ebe17992d578dea037fa47251b3309a863bb8
+    evidence: "PR #9 of the core: new assertions on generics of spp_core (TxBufferBytes_g and RxBufferBytes_g at least max(2, nextpow2(ceil(7 / B))) beats, at most nextpow2(TxMaxPackets_g / RxMaxPackets_g x ceil(65542 / B)) beats and at most 2^29 beats; TxMaxPackets_g 2 to max(2, TxBufferBytes_g / B); RxMaxPackets_g 2 to max(2, floor(RxBufferBytes_g / B / ceil(7 / B)))); new assertion on spp_nchar: DataWidth_g a multiple of 8; every value that was valid and used before stays valid."
+    changes:
+      - { block: openspp/spp_core, kind: generic_range, generic: TxBufferBytes_g, text: "TxBufferBytes_g holds at least the shortest Space Packet and at most what TxMaxPackets_g packets of 65542 bytes fill (checked at elaboration, CO-GN-02, CO-GN-03)." }
+      - { block: openspp/spp_core, kind: generic_range, generic: RxBufferBytes_g, text: "RxBufferBytes_g holds at least the shortest Space Packet and at most what RxMaxPackets_g packets of 65542 bytes fill (checked at elaboration, CO-GN-02, CO-GN-03)." }
+      - { block: openspp/spp_core, kind: generic_range, generic: TxMaxPackets_g, text: "TxMaxPackets_g is 2 to max(2, TxBufferBytes_g / B) (checked at elaboration, CO-GN-04)." }
+      - { block: openspp/spp_core, kind: generic_range, generic: RxMaxPackets_g, text: "RxMaxPackets_g is 2 to the number of shortest Space Packets the receive buffer holds (checked at elaboration, CO-GN-04)." }
+      - { block: openspp/spp_nchar, kind: generic_range, generic: DataWidth_g, text: "DataWidth_g must be a multiple of 8 (checked at elaboration)." }
+
+openfibre:
+  - previous: bd4d80b1f05ee5fda67a97ff4c760952a25a79a7
+    pin: 2edb44905ef8a9f50a1981af8aa949dac195cabc
+    evidence: "PR #5 of the core: None."
+    changes: []
+  - previous: 2edb44905ef8a9f50a1981af8aa949dac195cabc
+    pin: 7066e4dd8631c56835db57a28d965572643acc99
+    evidence: "PR #7 of the core: None."
+    changes: []
+  - previous: 7066e4dd8631c56835db57a28d965572643acc99
+    pin: 8498989b9e262fe5a8becd3de2ada0dfa0cbb85f
+    evidence: "PR #6 of the core: None. No change of ports, generics, streams or registers."
+    changes:
+      - { block: openfibre/ofb_core, kind: behaviour, text: "Multi-Lane: the far-end reset is detected when a lane enters Active with its capability (ML-LM-14)." }
+  - previous: 8498989b9e262fe5a8becd3de2ada0dfa0cbb85f
+    pin: 93749f734475f31bcdd65641d2642ce222e01180
+    evidence: "PR #8 of the core: Open Logic pin 4.7.0-ft.2 -> 4.7.0-ft.6; no change of ports, generics, streams or registers."
+    changes: []
+  - previous: 93749f734475f31bcdd65641d2642ce222e01180
+    pin: 0c0a647c25d559b4ace1c2bf461d25832c71cae5
+    evidence: "PR #9 of the core: narrowed ranges: VcInDepth_g >= 128 x NumLanes_g with several lanes (DL-VI-05), VcOutDepth_g x NumLanes_g >= 64 (DL-VO-05), ErbRows_g >= 64 (DL-ER-08), LaneClkFreq_g and CoreClkFreq_g positive (CORE-CK-02); made explicit: VcOutDepth_g a power of two, VcInDepth_g NumLanes_g times a power of two."
+    changes:
+      - { block: openfibre/ofb_core, kind: generic_range, generic: VcInDepth_g, text: "VcInDepth_g must be at least 128 x NumLanes_g with several lanes (DL-VI-05); this replaces the known defect of a buffer of one flow control unit. The default 256 is too small for three or four lanes; reference value 256 x NumLanes_g." }
+      - { block: openfibre/ofb_core, kind: generic_range, generic: VcOutDepth_g, text: "VcOutDepth_g x NumLanes_g must be at least 64 (DL-VO-05)." }
+      - { block: openfibre/ofb_core, kind: generic_range, generic: ErbRows_g, text: "ErbRows_g must be at least 64 (DL-ER-08)." }
+
+opencrypto:
+  - previous: e03bc8cda75a660cc3e28bdc14d7f9409ddb0497
+    pin: c846418b7bde8e800d02f075e3772ed6b68ac958
+    evidence: "PR #5 of the core: None."
+    changes: []
+  - previous: c846418b7bde8e800d02f075e3772ed6b68ac958
+    pin: 1775983474f8bab52c0bff26999ceadd06323dd7
+    evidence: "PR #4 of the core: None."
+    changes: []
+  - previous: 1775983474f8bab52c0bff26999ceadd06323dd7
+    pin: 0f5bf02886979c8e6d5c8c8609df1ce5284e0b9d
+    evidence: "PR #6 of the core: Open Logic pin 4.7.0-ft.3 -> 4.7.0-ft.6; no change of ports, generics, streams or registers."
+    changes: []
+  - previous: 0f5bf02886979c8e6d5c8c8609df1ce5284e0b9d
+    pin: 16167541808130231fa2a955bfb17bec88044813
+    evidence: "PR #7 of the core: ReleaseBytes_g (ocr_core, with ReleaseBuffer_g) and ChunkBytes_g (ocr_framer): new upper bound of 65536 bytes; DataWidth_g of ocr_packer and KeyBits_g of ocr_key_table checked (ocr_core already rejected other values); ScrubPeriod_g, ClkFreqHz_g: no change of behaviour, the documentation states the limits that Open Logic already enforced; no change of ports, streams or registers."
+    changes:
+      - { block: opencrypto/ocr_core, kind: generic_range, generic: ReleaseBytes_g, text: "ReleaseBytes_g is at most 65536 bytes with ReleaseBuffer_g (checked at elaboration)." }
+      - { block: opencrypto/ocr_framer, kind: generic_range, generic: ChunkBytes_g, text: "ChunkBytes_g is at most 65536 (checked at elaboration)." }
+
+olo:
+  - previous: 1bc4fb90888cf24ac29bc54527c2982d2dec307c
+    pin: 5d8ae56dcd6362f77e5cffc1cf718e605323c1e7
+    evidence: "Tag 4.7.0-ft.6 of Open Logic FT: olo_axi_master_full with 8-bit data and narrow addresses (used inside OpenRMAP); no change of the blocks of the catalog."
+    changes: []

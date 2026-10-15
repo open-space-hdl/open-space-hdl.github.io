@@ -203,10 +203,10 @@ blocks:
         summary: Issues RMAP commands and receives the replies; no target.
         generics: { Target_g: false }
     rules:
-      # Provisional until OpenRMAP sizes the transfers of its memory master by the address width: omap_target_mem passes
-      # min(24, AxiAddrWidth_g) transfer size bits to olo_axi_master_simple, which needs fewer than
-      # AxiAddrWidth_g - log2(AxiDataWidth_g / 8) (olo_axi_master_simple.vhd, assertion at elaboration).
-      - { kind: generic_range, generic: AxiAddrWidth_g, min: 25 + log2(AxiDataWidth_g / 8), when: Target_g, message: "the memory master of the target takes transfers of up to 24 address bits" }
+      # hdl/omap_pkg/src/omap_pkg.vhd coreConfigError (CO-NO-03); AxiDataWidth_g a power of 2 from 8 to 1024 is its
+      # check, min and max
+      - { kind: generic_range, generic: ChunkBytes_g, max: BufferBytes_g, message: "a chunk of a non-verified write fits the write buffer" }
+      - { kind: generic_multiple, generic: ChunkBytes_g, of: AxiDataWidth_g / 8, message: "a single-address write moves whole memory words" }
       - { kind: generic_any_true, generics: [Target_g, Initiator_g], message: At least one of Target_g and Initiator_g must be true. }
       - { kind: mutual_initiator, generic: Transactions_g, message: Two nodes that are initiator and target of each other on one link need Transactions_g = 1. }
       - { kind: same_domain, interfaces: [S_Pkt, M_Pkt], message: "The RMAP node normally runs on the user clock of its SpaceWire port; an asynchronous FIFO was inserted instead." }
@@ -222,4 +222,5 @@ blocks:
       - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.
       - M_RepData, M_Conf and M_User must be served when connected; a stalled output stalls the received packet stream and the link.
       - RMAP address bits above AxiAddrWidth_g must be zero in the windows.
-      - "With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'. Known defect of Open Logic olo_axi_master_simple up to 4.7.0-ft.4 (fix pending in open-logic-ft): with AxiMaxBeats_g < AxiDataWidth_g/8, commands that the memory master splits into several AXI transactions read or write the first word repeatedly, with status 0."
+      - "With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'."
+      - "An access longer than one command of the memory master (2^(AxiAddrWidth_g - 2) - AxiDataWidth_g/8 bytes, at most 2^24 - AxiDataWidth_g/8) is split into several commands."

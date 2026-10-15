@@ -364,7 +364,7 @@ export function analyseSizes(cat, g) {
         checks.push({
           severity: 'error',
           rule: 'sizes',
-          message: `${msg}: every message would be ${buf.over}.${gen && one !== null ? ` Set ${gen} to ${one}, the smallest power of two of at least ${m} beats${full !== null && count > 1 ? ` (${full} for the full rate)` : ''}.` : ''}`,
+          message: `${msg}: every message would be ${buf.over}.${gen && one !== null ? ` Set ${gen} to ${one}, the smallest power of two of at least ${m} beats${full !== null && count > 1 ? ` (${full} for the full rate)` : ''}.` : gen ? ` No value of ${gen} allows it: shorten the messages.` : ''}`,
           ...where,
         });
       } else if (buf.fullRate && count * m > d) {

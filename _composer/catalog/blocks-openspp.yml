@@ -120,6 +120,12 @@ blocks:
       - { kind: generic_multiple, generic: DataWidth_g, of: 8 }
       - { kind: generic_multiple, generic: TxBufferBytes_g, of: DataWidth_g / 8, pow2Ratio: true }
       - { kind: generic_multiple, generic: RxBufferBytes_g, of: DataWidth_g / 8, pow2Ratio: true }
+      # hdl/spp_core/src/spp_core.vhd: the buffers hold the shortest Space Packet (7 bytes, at least the two entries of
+      # the packet FIFO) and at most what their packets of 65542 bytes ever write, within the 2^29 beats of Open Logic
+      - { kind: generic_range, generic: TxBufferBytes_g, min: "DataWidth_g / 8 * max(2, 2 ** log2ceil(cdiv(7, DataWidth_g / 8)))", max: "DataWidth_g / 8 * min(2 ** log2ceil(TxMaxPackets_g * cdiv(65542, DataWidth_g / 8)), 2 ** 29)", message: "CO-GN-02, CO-GN-03" }
+      - { kind: generic_range, generic: RxBufferBytes_g, min: "DataWidth_g / 8 * max(2, 2 ** log2ceil(cdiv(7, DataWidth_g / 8)))", max: "DataWidth_g / 8 * min(2 ** log2ceil(RxMaxPackets_g * cdiv(65542, DataWidth_g / 8)), 2 ** 29)", message: "CO-GN-02, CO-GN-03" }
+      - { kind: generic_range, generic: TxMaxPackets_g, min: 2, max: "max(2, TxBufferBytes_g / (DataWidth_g / 8))", message: "an SDU of one byte takes a beat of the send buffer (CO-GN-04)" }
+      - { kind: generic_range, generic: RxMaxPackets_g, min: 2, max: "max(2, RxBufferBytes_g / (DataWidth_g / 8) / cdiv(7, DataWidth_g / 8))", message: "the shortest Space Packets that fit into the receive buffer (CO-GN-04)" }
     idRegister: { address: "0x000", value: "0x53505001" }
     registers: { map: hdl/spp_mib/regs/spp_regs.yml, header: sw/spp_regs.h, doc: hdl/spp_mib/docs/register_map.md, prefix: SPP }
     # the ECC of the memories inside the core: double-error flags per channel, counters, error injection

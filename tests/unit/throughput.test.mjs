@@ -215,7 +215,7 @@ test('stated traffic is an optional key of an external interface, kept when the 
   assert.throws(() => setTraffic(base, 'spw0.S_Pkt', { packetBytes: 64 }), /is not external/);
   doc.externals[0].traffic = { packetBytes: 64, bitsPerSecond: -1 };
   assert.throws(() => fromText(JSON.stringify(doc), cat), (e) => e instanceof FormatError && /externals\[0\]\.traffic: bitsPerSecond must be a positive number/.test(e.message));
-  assert.equal(/** @type {any} */ (toDocument(d, cat)).generator.version, '0.8.1-beta');
+  assert.equal(/** @type {any} */ (toDocument(d, cat)).generator.version, '0.8.2-beta');
 });
 
 test('a path runs through the inside of a subsystem', () => {
@@ -242,19 +242,25 @@ test('a path runs through the inside of a subsystem', () => {
 });
 
 test('rate data that cannot be evaluated is a finding with its reason, in the checks and in the brief', () => {
-  // three lanes are legal, but OpenFibre measured the link efficiency with 1, 2 and 4 lanes only
-  let f = addInstance(createDesign('lanes3'), cat, 'openfibre/ofb_core', { x: 0, y: 0 }).design;
-  f = setGeneric(f, cat, 'ofb0', 'NumLanes_g', 3).design;
+  // a lane count without a measured link efficiency (OpenFibre measured 1 to 4 lanes: here the one of 3 is removed)
+  const measured = loadCatalogJson();
+  for (const table of ['oneDirection', 'bothDirections']) delete measured.blocks.find((/** @type {any} */ b) => b.id === 'openfibre/ofb_core').rates.links[0].efficiency[table]['3'];
+  const three = new Catalog(measured);
+  let f = addInstance(createDesign('lanes3'), three, 'openfibre/ofb_core', { x: 0, y: 0 }).design;
+  f = setGeneric(f, three, 'ofb0', 'NumLanes_g', 3).design;
+  f = setGeneric(f, three, 'ofb0', 'VcInDepth_g', 384).design;
   f = setExternal(f, 'ofb0.S_Vc[0]', 'vc0_');
-  const res = resolve(cat, f);
+  const res = resolve(three, f);
   const t = /** @type {import('../../assets/composer/js/model/throughput.js').Throughput} */ (res.throughput);
   const text = 'Rate data of ofb0 (ofb_core) cannot be evaluated: no measured link efficiency for NumLanes_g = 3; the paths over this link are not computed.';
   assert.deepEqual(t.problems, [text]);
   assert.ok(res.checks.some((c) => c.severity === 'info' && c.rule === 'throughput' && c.message === text));
   const p = t.paths.find((x) => x.sink.kind === 'link-out');
   assert.equal(p?.at(1024), null);
-  const brief = /** @type {any} */ (toDocument(f, cat)).agent.brief;
+  const brief = /** @type {any} */ (toDocument(f, three)).agent.brief;
   assert.ok(brief.includes(`- ${text}`));
+  // with the efficiency of three lanes that OpenFibre measured, the path is computed
+  assert.deepEqual(/** @type {any} */ (resolve(cat, setGeneric(f, cat, 'ofb0', 'NumLanes_g', 3).design).throughput).problems, []);
   // a variable of the rate data that cannot be evaluated
   const json = loadCatalogJson();
   json.blocks.find((/** @type {any} */ b) => b.id === 'openfibre/ofb_core').rates.vars.B = '4 * NoSuchGeneric_g';

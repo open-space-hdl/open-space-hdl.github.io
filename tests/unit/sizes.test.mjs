@@ -68,7 +68,7 @@ test('every finding of the former rule chain_fits comes from the size data, with
   d = setGeneric(setGeneric(d, cat, 'frm0', 'ChunkBytes_g', 65520).design, cat, 'spp0', 'TxBufferBytes_g', 131072).design;
   assert.deepEqual(sizes(d), [
     'error [frm0] frm0: every message of frm0 leaves ocr0 with ChunkBytes_g + 32 = 65552 bytes, more than the 65536 bytes spp0.S_Tx[0] can carry in one packet.',
-    'error [ocr0] frm0: every message of frm0 takes 12 + 4 + 65520 + 16 bytes in sections of whole beats (12 + 4 + ChunkBytes_g + 16), 16388 beats of 4 bytes in the release buffer of ocr0, which holds 16384 / 4 = 4096 beats: every message would be dropped with OVERFLOW. Set ReleaseBytes_g to 131072, the smallest power of two of at least 16388 beats (262144 for the full rate).',
+    'error [ocr0] frm0: every message of frm0 takes 12 + 4 + 65520 + 16 bytes in sections of whole beats (12 + 4 + ChunkBytes_g + 16), 16388 beats of 4 bytes in the release buffer of ocr0, which holds 16384 / 4 = 4096 beats: every message would be dropped with OVERFLOW. No value of ReleaseBytes_g allows it: shorten the messages.',
     'info [spp0] spp0 sends Space Packets of up to ChunkBytes_g + 38 = 65558 bytes: the node that receives them needs RxBufferBytes_g of at least 65558 (spp0 has 4096, too small to receive its own packets).',
   ]);
 });
