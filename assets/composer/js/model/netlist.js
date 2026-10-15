@@ -253,7 +253,9 @@ class Netlist {
       const vector = !/^std_u?logic$/i.test(port.vhdlType.trim());
       const sig = signalName(rec.id, pname);
       const dir = /** @type {'in' | 'out'} */ (port.dir === 'out' ? 'out' : 'in');
-      if (lname === 'data' && pack && pack.fields.length > 0) {
+      // the carrier of a packed interface: its data signal, or its only signal (the pulses of olo_base_cc_pulse)
+      const carrier = lname === 'data' || Object.keys(pv.itf.signals).length === 1;
+      if (carrier && pack && pack.fields.length > 0) {
         for (const f of pack.fields) out.set(f.signal, { sig, lo: lo + f.lsb, width: f.width, total, vector, dir });
         continue;
       }
