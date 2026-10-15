@@ -833,7 +833,10 @@ textarea.cmp-input { resize: vertical; }
 .cmp-itf-type { width: 100%; font-size: 0.76rem; color: var(--text-muted); }
 .cmp-itf-label { margin: 2px 0 6px; font-size: 0.8rem; }
 .cmp-itf-conn { margin: 0 0 4px; font-size: 0.8rem; }
+.cmp-itf-addr { margin: 0 0 4px; font-size: 0.8rem; color: var(--text-muted); overflow-wrap: anywhere; }
 .cmp-itf select { margin-top: 2px; }
+.cmp-amap { margin: 0 0 10px; }
+.cmp-amap-space { margin: 0 0 4px; font-size: 0.8rem; overflow-wrap: anywhere; }
 .cmp-facts-list {
   display: grid;
   grid-template-columns: auto 1fr;
