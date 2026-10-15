@@ -837,6 +837,7 @@ textarea.cmp-input { resize: vertical; }
 .cmp-itf select { margin-top: 2px; }
 .cmp-amap { margin: 0 0 10px; }
 .cmp-amap-space { margin: 0 0 4px; font-size: 0.8rem; overflow-wrap: anywhere; }
+.cmp-view-sub { margin-top: 10px; }
 .cmp-facts-list {
   display: grid;
   grid-template-columns: auto 1fr;
