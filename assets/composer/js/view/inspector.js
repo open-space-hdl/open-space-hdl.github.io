@@ -18,6 +18,31 @@ import { formatHz } from '../model/rules.js';
 import { formatRate, pathAt } from '../model/throughput.js';
 import { glyphPath, h, replace, s } from './dom.js';
 
+/** @param {number} n */
+const regOffset = (n) => `0x${n.toString(16).toUpperCase().padStart(3, '0')}`;
+
+/**
+ * Where an interrupt goes, as text.
+ * @param {import('../model/systemviews.js').Interrupt} i
+ */
+function irqTarget(i) {
+  if (i.to.kind === 'port') return `to the top-level port ${i.to.port}`;
+  if (i.to.kind === 'block') return `to ${i.to.to}`;
+  return i.status ? `open: poll ${i.status.name} ${regOffset(i.status.offset)}` : 'open';
+}
+
+/**
+ * Where an ECC event is reported, as text.
+ * @param {import('../model/systemviews.js').EventTarget} to
+ */
+function eccTarget(to) {
+  if (to.kind === 'block') {
+    return to.channel !== null && to.channel !== undefined ? `channel ${to.channel} of ${to.to?.slice(0, to.to.lastIndexOf('.'))}` : `to ${to.to}`;
+  }
+  if (to.kind === 'port') return `to the top-level port ${to.port}`;
+  return 'not reported';
+}
+
 /** @typedef {import('./app.js').App} App */
 /** @typedef {import('../model/catalog.js').GenericDef} GenericDef */
 
@@ -138,6 +163,8 @@ export class InspectorView {
             h('span', { class: 'cmp-mono' }, i.id), ` ${preset?.name ?? b?.name ?? i.block}`));
         })),
       this.addressMapSection(),
+      this.interruptsSection(),
+      this.protectionSection(),
       h('p', { class: 'cmp-help cmp-autosave-note' }, 'The open systems are kept in this browser. Save a system to keep it as a file.'),
     ];
   }
@@ -167,6 +194,76 @@ export class InspectorView {
               ` ${sp.addrWidth} address bits${sp.external ? `, its slave is outside (${sp.external})` : ''}`),
             rows.length ? h('ul', { class: 'cmp-list', role: 'list' }, rows.map((r) => r.row)) : null);
         }));
+  }
+
+  /**
+   * The interrupts of the system: where each goes and the status register to poll; a click selects its block.
+   */
+  interruptsSection() {
+    const irqs = this.app.resolved.interrupts ?? [];
+    const select = (/** @type {string} */ instance) => this.app.selectInstances([instance.split('/')[0]], undefined, { focusCanvas: true });
+    return h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-irq' },
+      h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-irq' }, `Interrupts (${irqs.length})`),
+      irqs.length === 0
+        ? h('p', { class: 'cmp-help' }, 'No interrupt outputs.')
+        : h('ul', { class: 'cmp-list', role: 'list', 'data-view': 'interrupts' }, irqs.map((i) => h('li', {},
+          h('button', { type: 'button', class: 'cmp-link-btn cmp-mono', onclick: () => select(i.instance) }, i.source),
+          h('span', { class: 'cmp-facts' }, ` ${irqTarget(i)}`)))));
+  }
+
+  /**
+   * The protection scope of the system: the blocks with their own ECC, where the ECC events of the memories are
+   * reported, the inserted crossings, and what is not reported.
+   */
+  protectionSection() {
+    const p = this.app.resolved.protection;
+    const select = (/** @type {string} */ instance) => this.app.selectInstances([instance.split('/')[0]], undefined, { focusCanvas: true });
+    const gaps = (p?.events ?? []).filter((e) => e.to.kind === 'open');
+    return h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-prot' },
+      h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-prot' }, 'Protection'),
+      !p || (!p.blocks.length && !p.events.length && !p.crossings.length)
+        ? h('p', { class: 'cmp-help' }, 'No block with ECC of its own, no ECC events, no inserted crossings.')
+        : [
+          p.blocks.length
+            ? [h('p', { class: 'cmp-amap-space cmp-view-sub' }, `Blocks with ECC of their own (${p.blocks.length})`),
+              h('ul', { class: 'cmp-list', role: 'list', 'data-view': 'ecc-blocks' }, p.blocks.map((b) => h('li', {},
+                h('button', { type: 'button', class: 'cmp-link-btn cmp-mono', onclick: () => select(b.instance) }, b.instance),
+                h('span', { class: 'cmp-facts' }, ` ${b.entity}, ${b.channels} channels, ${b.status.name} ${regOffset(b.status.offset)}`))))]
+            : null,
+          p.events.length
+            ? [h('p', { class: 'cmp-amap-space cmp-view-sub' }, `ECC events of memories (${p.events.length})`),
+              h('ul', { class: 'cmp-list', role: 'list', 'data-view': 'ecc-events' }, p.events.map((e) => h('li', {},
+                h('button', { type: 'button', class: 'cmp-link-btn cmp-mono', onclick: () => select(e.instance) }, e.source),
+                h('span', { class: `cmp-facts${e.to.kind === 'open' ? ' cmp-warn' : ''}` }, ` ${e.memory}: ${eccTarget(e.to)}`))))]
+            : null,
+          p.crossings.length
+            ? h('p', { class: 'cmp-help' }, p.faultTolerance
+              ? `Inserted crossings (${p.crossings.length}): olo_ft_fifo_async with SECDED ECC and triplicated synchronisers.`
+              : `Inserted crossings (${p.crossings.length}): olo_base_fifo_async without ECC, because fault tolerance is off.`)
+            : null,
+          gaps.length ? h('p', { class: 'cmp-help cmp-warn' }, `Not reported: the ECC events of ${gaps.length} ${gaps.length === 1 ? 'memory are' : 'memories are'} open.`) : null,
+        ]);
+  }
+
+  /**
+   * The place of an interface in the system views: the registers of an interrupt, where an ECC event is reported.
+   * @param {string} instId
+   * @param {import('../model/catalog.js').PortView} p
+   * @returns {string | null}
+   */
+  eventOf(instId, p) {
+    const ref = `${instId}.${p.ref}`;
+    if (p.itf.type === 'irq') {
+      const i = (this.app.resolved.interrupts ?? []).find((x) => x.source === ref);
+      if (!i) return null;
+      const regs = [...i.enable.map((r) => `${r.name} ${regOffset(r.offset)}`), i.status ? `status ${i.status.name} ${regOffset(i.status.offset)}` : '', i.events ? `events ${i.events.name} ${regOffset(i.events.offset)}` : ''].filter(Boolean);
+      return regs.length ? `Enable ${regs.join(', ')}.` : null;
+    }
+    if (p.itf.type === 'ecc.event' && p.itf.role === 'event_out') {
+      const e = (this.app.resolved.protection?.events ?? []).find((x) => x.source === ref);
+      return e ? `ECC events of the ${e.memory}: ${eccTarget(e.to)}.` : null;
+    }
+    return null;
   }
 
   /**
@@ -498,7 +595,7 @@ export class InspectorView {
           h('button', { type: 'button', class: 'cmp-link-btn', onclick: () => { this.prefixOpen.add(ref); this.render(); } }, 'Make external')));
       }
     }
-    const address = this.addressOf(instId, p);
+    const address = this.addressOf(instId, p) ?? this.eventOf(instId, p);
     if (address) body.push(h('p', { class: 'cmp-itf-addr' }, address));
     return h('li', { class: 'cmp-itf', 'data-itf': ref, title: p.itf.description ?? p.label }, head,
       label ? h('p', { class: 'cmp-itf-label' }, label) : null, body);
