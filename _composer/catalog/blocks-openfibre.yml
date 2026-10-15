@@ -148,6 +148,7 @@ blocks:
       # until ofb_core has an input for the TX ready of the adapter: the adapter notes require holding the core in reset
       - { kind: with_block, block: openfibre/ofb_pa_gty, severity: warning, message: "ofb_core leaves reset before the transceivers are ready: the lane initialisation can start against a transmitter that is still in reset, and the Composer cannot couple LaneRst of the adapter to the reset of the core yet." }
     idRegister: { address: "0x000", value: "0x0FB10007" }
+    registers: { map: hdl/ofb_mib/regs/ofb_regs.yml, header: sw/ofb_regs.h, doc: hdl/ofb_mib/docs/register_map.md, prefix: OFB }
     init:
       - { text: "Start the link at one end: write LANE_CTRL (0x100 + 0x20 i) of every lane i = 0x63 (LaneStart, AutoStart, TxEn, RxEn); the reset value 0x62 (AutoStart) starts when the far end sends." }
       - { text: "Wait for LANE_STATUS (0x104 + 0x20 i) bits 3:0 = 7 (Active) of the lanes and DL_STATUS (0x010) bits 1:0 = 3 (link initialised); VC_HAS_CREDIT (0x030) shows the VCs that may send." }

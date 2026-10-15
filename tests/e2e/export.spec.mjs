@@ -25,7 +25,7 @@ test.afterEach(() => {
   expect(problems, problems.join('\n')).toEqual([]);
 });
 
-test('Export HDL downloads the top level, compile order and constraints with the system file', async ({ page }) => {
+test('Export HDL downloads the top level, compile order, constraints and address map with the system file', async ({ page }) => {
   await open(page);
   await openExample(page, 'SpaceWire RMAP target');
   const button = page.getByRole('button', { name: 'Export HDL', exact: true });
@@ -34,11 +34,12 @@ test('Export HDL downloads the top level, compile order and constraints with the
   expect(download.suggestedFilename()).toBe('spw_rmap_node_hdl.zip');
   const files = unzipStore(new Uint8Array(readFileSync(await download.path())));
   expect(files.map((f) => f.name)).toEqual([
-    'spw_rmap_node.vhd', 'spw_rmap_node_compile_order.txt', 'spw_rmap_node.xdc', 'spw_rmap_node_top.xdc', 'spw_rmap_node.composer.json',
+    'spw_rmap_node.vhd', 'spw_rmap_node_compile_order.txt', 'spw_rmap_node.xdc', 'spw_rmap_node_top.xdc',
+    'spw_rmap_node_address_map.md', 'spw_rmap_node_regs.h', 'spw_rmap_node.composer.json',
   ]);
   const text = (/** @type {string} */ name) => new TextDecoder().decode(files.find((f) => f.name === name)?.data);
   // the same files as the command line tool writes (golden files), apart from the header
-  for (const name of ['spw_rmap_node.vhd', 'spw_rmap_node_compile_order.txt', 'spw_rmap_node.xdc', 'spw_rmap_node_top.xdc']) {
+  for (const name of ['spw_rmap_node.vhd', 'spw_rmap_node_compile_order.txt', 'spw_rmap_node.xdc', 'spw_rmap_node_top.xdc', 'spw_rmap_node_address_map.md', 'spw_rmap_node_regs.h']) {
     expect(stable(text(name)), name).toBe(stable(golden(name)));
   }
   // the hash in the header is the hash of the system file in the archive

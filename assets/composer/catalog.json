@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "dbee0d786ebd",
+ "id": "c0f984e5216d",
  "sources": [
   {
    "id": "openwire",
@@ -6882,6 +6882,12 @@
    "packages": [
     "ocr_pkg"
    ],
+   "registers": {
+    "map": "hdl/ocr_mib/regs/ocr_regs.yml",
+    "header": "sw/ocr_regs.h",
+    "doc": "hdl/ocr_mib/docs/register_map.md",
+    "prefix": "OCR"
+   },
    "generics": [
     {
      "name": "DataWidth_g",
@@ -8095,6 +8101,12 @@
      }
     }
    },
+   "registers": {
+    "map": "hdl/ofb_mib/regs/ofb_regs.yml",
+    "header": "sw/ofb_regs.h",
+    "doc": "hdl/ofb_mib/docs/register_map.md",
+    "prefix": "OFB"
+   },
    "generics": [
     {
      "name": "NumVc_g",
@@ -9288,6 +9300,12 @@
    "packages": [
     "omap_pkg"
    ],
+   "registers": {
+    "map": "hdl/omap_mib/regs/omap_regs.yml",
+    "header": "sw/omap_regs.h",
+    "doc": "hdl/omap_mib/docs/register_map.md",
+    "prefix": "OMAP"
+   },
    "generics": [
     {
      "name": "Target_g",
@@ -9641,6 +9659,24 @@
         "value": 32
        }
       ]
+     },
+     "addressSpace": {
+      "what": "RMAP memory addresses as seen by an initiator",
+      "windows": {
+       "array": "WINDOW",
+       "registers": [
+        "WIN_CTRL",
+        "WIN_BASE",
+        "WIN_LAST"
+       ],
+       "count": "Windows_g",
+       "reset": "WinInit_g",
+       "states": {
+        "WinInitOpen_c": "window 0 is open over the whole address space with all permissions and the other windows are disabled, so the whole map is reachable after the reset"
+       },
+       "base": 256,
+       "stride": 16
+      }
      },
      "signals": {
       "AwAddr": "M_Axi_AwAddr",
@@ -10678,6 +10714,12 @@
    "packages": [
     "spp_pkg"
    ],
+   "registers": {
+    "map": "hdl/spp_mib/regs/spp_regs.yml",
+    "header": "sw/spp_regs.h",
+    "doc": "hdl/spp_mib/docs/register_map.md",
+    "prefix": "SPP"
+   },
    "generics": [
     {
      "name": "DataWidth_g",
@@ -11913,6 +11955,12 @@
       "tested": 1000
      }
     }
+   },
+   "registers": {
+    "map": "hdl/owr_mib/regs/owr_regs.yml",
+    "header": "sw/owr_regs.h",
+    "doc": "hdl/owr_mib/docs/register_map.md",
+    "prefix": "OWR"
    },
    "generics": [
     {

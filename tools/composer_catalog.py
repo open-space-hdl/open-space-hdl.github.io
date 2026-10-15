@@ -162,6 +162,82 @@ def check_rates(ctx: "Context", where: str, rates: object, gen_names: set, itf_n
         expr(f"chain from {ch['from']}: cycles", ch["cycles"])
 
 
+REGISTER_KEYS = {"map", "header", "doc", "prefix"}
+WINDOW_KEYS = {"array", "registers", "count", "reset", "states"}
+
+
+def register_extent(regmap: dict, maxima: dict[str, int]) -> int:
+    """Bytes a register map occupies: up to the end of its highest register (32-bit registers). An array whose count is
+    a generic counts with the largest value of the generic."""
+    ends = [int(r["offset"]) + 4 for r in regmap.get("registers") or []]
+    for a in regmap.get("arrays") or []:
+        count = a["count"] if isinstance(a["count"], int) else maxima.get(str(a["count"]), 1)
+        last = int(a["base"]) + int(a["stride"]) * (int(count) - 1)
+        ends += [last + int(r["offset"]) + 4 for r in a.get("registers") or []]
+    return max(ends, default=0)
+
+
+def check_registers(ctx: "Context", where: str, b: dict, src: dict, interfaces: list, generics: list) -> dict | None:
+    """The register map of a block in its repository at the pin (the YAML source of the core, its C header and its
+    Markdown): it exists, its ID is the ID register of the catalog, it fits the address width of the AXI4-Lite slave,
+    and the header defines <prefix>_REGMAP_ID. An address space that a master of the block starts names the windows of
+    the block (an array of the map), which get their base and stride from it."""
+    regs = b["registers"]
+    gen_names = {g["name"] for g in generics}
+    maxima = {g["name"]: g["max"] for g in generics if isinstance(g.get("max"), int)}
+    if not isinstance(regs, dict) or set(regs) != REGISTER_KEYS:
+        ctx.err(where, "registers needs map, header, doc and prefix")
+        return None
+    repo = ctx.repos / src["repo"]
+    for key in ("map", "header", "doc"):
+        if not git_ok(repo, "cat-file", "-e", f"{src['sha']}:{regs[key]}"):
+            ctx.err(where, f"registers: {key} {regs[key]} does not exist at the pin")
+            return None
+    regmap = yaml.safe_load(git(repo, "show", f"{src['sha']}:{regs['map']}"))
+    ident = (b.get("idRegister") or {}).get("value")
+    if ident is None or int(str(ident), 0) != int(regmap.get("id", -1)):
+        ctx.err(where, f"registers: the ID {regmap.get('id')} of {regs['map']} is not the ID register {ident}")
+    if f"#define {regs['prefix']}_REGMAP_ID " not in git(repo, "show", f"{src['sha']}:{regs['header']}"):
+        ctx.err(where, f"registers: {regs['header']} does not define {regs['prefix']}_REGMAP_ID")
+    slave = next((i for i in interfaces if i["role"] == "slave" and i["type"] in ("axi4lite", "axi4")), None)
+    width = ((slave or {}).get("params") or {}).get("addrWidth")
+    if not isinstance(width, int):
+        ctx.err(where, "registers: the block needs an AXI4-Lite slave with a numeric addrWidth")
+    else:
+        if "addr_bits" in regmap and regmap["addr_bits"] != width:
+            ctx.err(where, f"registers: {regs['map']} has addr_bits {regmap['addr_bits']}, the slave {width}")
+        extent = register_extent(regmap, maxima)
+        if extent > 2 ** width:
+            ctx.err(where, f"registers: {regs['map']} reaches byte {extent - 1}, beyond the {width} address bits of the slave")
+    for itf in interfaces:
+        space = itf.get("addressSpace")
+        if space is None:
+            continue
+        iwhere = f"{where}: interface {itf['name']}: addressSpace"
+        win = space.get("windows") if isinstance(space, dict) else None
+        if itf["role"] != "master" or set(space) - {"what", "windows"} or not isinstance(space.get("what"), str):
+            ctx.err(iwhere, "needs what (and windows), on a master")
+            continue
+        if win is None:
+            continue
+        if set(win) != WINDOW_KEYS:
+            ctx.err(iwhere, f"windows needs {', '.join(sorted(WINDOW_KEYS))}")
+            continue
+        arr = next((a for a in regmap.get("arrays") or [] if a.get("name") == win["array"]), None)
+        if arr is None:
+            ctx.err(iwhere, f"{regs['map']} has no array {win['array']}")
+            continue
+        names = {r["name"] for r in arr.get("registers") or []}
+        for name in win["registers"]:
+            if name not in names:
+                ctx.err(iwhere, f"the array {win['array']} has no register {name}")
+        for key in ("count", "reset"):
+            if win[key] not in gen_names:
+                ctx.err(iwhere, f"windows: {key} names {win[key]}, which is no generic")
+        itf["addressSpace"] = {**space, "windows": {**win, "base": int(arr["base"]), "stride": int(arr["stride"])}}
+    return dict(regs)
+
+
 def check_sizes(ctx: "Context", where: str, sizes: object, gen_names: set, itf_names: set) -> None:
     """The size data of a block: known keys, interfaces of the block, and expressions that name only generics and n
     (bytes of the packet), m and d (beats of a message and of a buffer, in fullRate)."""
@@ -1211,7 +1287,7 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 ctx.err(iwhere, f"required signal '{sname}' of type {tid} not mapped")
         out = {"name": iname, "type": tid, "role": role}
         for key in ("clock", "label", "description", "mustServe", "externalOnly", "enabledBy", "sideband",
-                    "params", "vector", "tieOff", "carry", "userFields", "needsLast", "clockSignals"):
+                    "params", "vector", "tieOff", "carry", "userFields", "needsLast", "clockSignals", "addressSpace"):
             if key in itf:
                 out[key] = itf[key]
         for cs in itf.get("clockSignals") or []:
@@ -1437,6 +1513,13 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             else:
                 ctx.err(where, f"no package in {path}")
         block["packages"] = names
+    # the register map of the block at the pin (address map of a system); an address space needs it for its windows
+    if "registers" in b:
+        checked = check_registers(ctx, where, b, src, interfaces, generics)
+        if checked:
+            block["registers"] = checked
+    elif any("addressSpace" in i for i in interfaces):
+        ctx.err(where, "an addressSpace with windows needs the registers of the block")
     block["generics"] = generics
     block["clocks"] = clocks
     block["resets"] = resets

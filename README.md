@@ -88,6 +88,13 @@ stream interface, the length changes of its routes, the payload capacity of its 
 (test cases or measurements of the core) behind the numbers. The Composer computes the throughput budget of a system
 from them (`/composer/format/#throughput`); a block without `rates` ends the paths through it with a remark.
 
+In `registers` a block with a register file names its register map in its repository: the YAML source, the C
+header and the Markdown, and the prefix of the macros of the header. The catalog check reads the YAML at the pin and
+compares its ID and size with the catalog. An AXI master that starts an address space (the memory master of an RMAP
+target) says in `addressSpace` what its addresses are and which windows accept them. The Composer builds the address
+map of a system from them (`/composer/format/#address-map`, rule `address_map`), and the export writes it with a C
+header.
+
 In `sizes` the block description states the size limits of its interfaces (the longest packet, as a generic, an
 expression or a number, whether a generic or only the reset value of a register sets it, and what happens to a longer
 packet), the buffers that hold a whole message, the packets it sends over a link, the measured layout of a message

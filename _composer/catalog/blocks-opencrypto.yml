@@ -87,6 +87,7 @@ blocks:
         tieOff: open
         signals: { irq: Irq }
     idRegister: { address: "0x000", value: "0x4F435201" }
+    registers: { map: hdl/ocr_mib/regs/ocr_regs.yml, header: sw/ocr_regs.h, doc: hdl/ocr_mib/docs/register_map.md, prefix: OCR }
     init:
       - { text: "After the reset wait until STATUS (0x014) bit 0 BUSY is 0: the key table erases every slot." }
       - { text: "Load every key slot in use: write the key to KEY0 to KEY7 (0x040 + 4 n; key byte 4 n in bits 31:24; 4, 6 or 8 words), for generated IVs the fixed field to IV_FIXED (0x060) and the first invocation counter to IV_COUNT_LO (0x064) and IV_COUNT_HI (0x068), then write KEY_LOAD (0x06C) with START (bit 31), IV_GEN (bit 8) and the slot (bits 7:0), for example 0x80000100 for slot 0 with generated IVs; wait until STATUS.BUSY is 0." }

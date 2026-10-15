@@ -1,5 +1,5 @@
 {
-  "catalog": "dbee0d786ebd",
+  "catalog": "c0f984e5216d",
   "entity": "encrypted_spp_over_spw",
   "ports": [
     {
@@ -3938,5 +3938,97 @@
     "library openspp;",
     "library opencrypto;"
   ],
-  "problems": []
+  "problems": [],
+  "addressMap": [
+    {
+      "space": "ocr0.S_AxiLite",
+      "label": "ocr_reg_ (ocr0.S_AxiLite)",
+      "kind": "port",
+      "addrWidth": 8,
+      "banks": [
+        {
+          "instance": "ocr0",
+          "interface": "S_AxiLite",
+          "block": "opencrypto/ocr_core",
+          "entity": "ocr_core",
+          "base": 0,
+          "size": 256,
+          "addrWidth": 8,
+          "window": 256,
+          "via": [],
+          "id": "0x4F435201",
+          "registers": {
+            "source": "opencrypto",
+            "url": "https://github.com/open-space-hdl/opencrypto",
+            "commit": "e03bc8cda75a660cc3e28bdc14d7f9409ddb0497",
+            "header": "sw/ocr_regs.h",
+            "doc": "hdl/ocr_mib/docs/register_map.md",
+            "prefix": "OCR"
+          }
+        }
+      ],
+      "unused": [],
+      "decoders": []
+    },
+    {
+      "space": "spp0.S_AxiLite",
+      "label": "spp_reg_ (spp0.S_AxiLite)",
+      "kind": "port",
+      "addrWidth": 11,
+      "banks": [
+        {
+          "instance": "spp0",
+          "interface": "S_AxiLite",
+          "block": "openspp/spp_core",
+          "entity": "spp_core",
+          "base": 0,
+          "size": 2048,
+          "addrWidth": 11,
+          "window": 2048,
+          "via": [],
+          "id": "0x53505001",
+          "registers": {
+            "source": "openspp",
+            "url": "https://github.com/open-space-hdl/openspp",
+            "commit": "2d7ee8f92175d15e41d1e069f0db663de951d0c6",
+            "header": "sw/spp_regs.h",
+            "doc": "hdl/spp_mib/docs/register_map.md",
+            "prefix": "SPP"
+          }
+        }
+      ],
+      "unused": [],
+      "decoders": []
+    },
+    {
+      "space": "spw0.S_AxiLite",
+      "label": "spw_reg_ (spw0.S_AxiLite)",
+      "kind": "port",
+      "addrWidth": 8,
+      "banks": [
+        {
+          "instance": "spw0",
+          "interface": "S_AxiLite",
+          "block": "openwire/owr_core",
+          "entity": "owr_core",
+          "base": 0,
+          "size": 256,
+          "addrWidth": 8,
+          "window": 256,
+          "via": [],
+          "id": "0x4F575201",
+          "registers": {
+            "source": "openwire",
+            "url": "https://github.com/open-space-hdl/openwire",
+            "commit": "2897668e2e519e9517a5c7270f243c5ab0d7fdb0",
+            "header": "sw/owr_regs.h",
+            "doc": "hdl/owr_mib/docs/register_map.md",
+            "prefix": "OWR"
+          }
+        }
+      ],
+      "unused": [],
+      "decoders": []
+    }
+  ]
 }

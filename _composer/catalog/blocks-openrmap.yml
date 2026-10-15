@@ -96,6 +96,16 @@ blocks:
           addrWidth: AxiAddrWidth_g
           dataWidth: AxiDataWidth_g
           liteWhen: [{ generic: AxiMaxBeats_g, value: 1 }, { generic: AxiDataWidth_g, value: 32 }]
+        # the address space this master starts (the address map of the system)
+        addressSpace:
+          what: RMAP memory addresses as seen by an initiator
+          windows:
+            array: WINDOW
+            registers: [WIN_CTRL, WIN_BASE, WIN_LAST]
+            count: Windows_g
+            reset: WinInit_g
+            states:
+              WinInitOpen_c: window 0 is open over the whole address space with all permissions and the other windows are disabled, so the whole map is reachable after the reset
       - name: Auth
         label: Authorisation
         type: rmap.auth
@@ -199,6 +209,7 @@ blocks:
       - { kind: mutual_initiator, generic: Transactions_g, message: Two nodes that are initiator and target of each other on one link need Transactions_g = 1. }
       - { kind: same_domain, interfaces: [S_Pkt, M_Pkt], message: "The RMAP node normally runs on the user clock of its SpaceWire port; an asynchronous FIFO was inserted instead." }
     idRegister: { address: "0x000", value: "0x4F4D4101" }
+    registers: { map: hdl/omap_mib/regs/omap_regs.yml, header: sw/omap_regs.h, doc: hdl/omap_mib/docs/register_map.md, prefix: OMAP }
     init:
       - { text: "None needed: with the default generics the target accepts every command to the logical address 0xFE with the key 0x00 on the whole address space (WinInit_g). A flight configuration narrows the logical addresses (TGT_LA 0x010), the key (TGT_KEY) and the windows (WIN_BASE, WIN_LAST, WIN_CTRL), see the register map." }
     notes:
