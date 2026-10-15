@@ -1361,6 +1361,13 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             ctx.err(where, f"reset {r['port']}: direction differs from the VHDL")
         if r.get("clock") and r["clock"] not in clock_ports:
             ctx.err(where, f"reset {r['port']}: unknown clock {r['clock']}")
+        # a reset input that gets the unsynchronised system reset (asynchronous, or without a clock): the system has no
+        # timing exception on Rst, so the block must release it through olo_base_reset_gen, whose scoped constraints
+        # cut the paths into its synchronisers
+        if r.get("dir", "in") == "in" and (r.get("sync") == "async" or not r.get("clock")) and b["entity"] != "olo_base_reset_gen":
+            for line, how in raw_reset_uses(text, r["port"]):
+                ctx.err(where, f"reset {r['port']} gets the unsynchronised system reset, but {b['path']} line {line} uses it {how}; "
+                               "it may only feed RstIn of olo_base_reset_gen (or declare the reset synchronous to a clock)")
         resets.append(dict(r))
 
     # Interfaces
@@ -1718,6 +1725,32 @@ def source_files(ctx: Context, s: dict) -> None:
     s["files"] = files
     if in_module:
         s["submodules"] = True
+
+
+def raw_reset_uses(text: str, port: str) -> list[tuple[int, str]]:
+    """The uses of a reset input in the architecture of a block other than as RstIn of olo_base_reset_gen: (line, how).
+    Allowed are the port declaration, the port as the formal of an instance (Rst => LinkRst) and RstIn => <port> in an
+    instance of olo_base_reset_gen."""
+    lines = [re.sub(r"--.*", "", ln) for ln in text.splitlines()]
+    found = []
+    entity = None
+    for k, ln in enumerate(lines, 1):
+        m = re.search(r"\bentity\s+(\w+)\.(\w+)", ln, re.I)
+        if m:
+            entity = m.group(2).lower()
+        for occ in re.finditer(rf"(?<![\w.]){re.escape(port)}(?!\w)", ln, re.I):
+            before, after = ln[:occ.start()], ln[occ.end():]
+            if re.match(r"\s*:\s*(in|out|inout)\b", after, re.I):
+                continue  # the port declaration
+            if re.match(r"\s*=>", after):
+                continue  # the formal of an instance
+            if re.search(r"\bRstIn\s*=>\s*$", before, re.I):
+                if entity == "olo_base_reset_gen":
+                    continue
+                found.append((k, f"as RstIn of {entity or 'an instance'}"))
+                continue
+            found.append((k, f"in '{ln.strip()}'"))
+    return found
 
 
 def substitute_constants(text: str, env: dict[str, Num]) -> str:

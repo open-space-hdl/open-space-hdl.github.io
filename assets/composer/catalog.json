@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "2f7536b0b190",
+ "id": "bebf58067f6a",
  "sources": [
   {
    "id": "openwire",
@@ -9030,8 +9030,9 @@
     {
      "port": "Rst",
      "active": "high",
-     "sync": "async",
-     "description": "Asynchronous reset of the transceivers and their reset controller."
+     "sync": "sync",
+     "clock": "FreeRunClk",
+     "description": "Reset of the transceivers, their reset controller and the logic of FreeRunClk, which uses it synchronously: the Composer connects the reset generator of the clock domain of FreeRunClk."
     }
    ],
    "interfaces": [

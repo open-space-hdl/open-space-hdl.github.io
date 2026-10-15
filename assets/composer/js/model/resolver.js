@@ -1125,7 +1125,11 @@ export class Resolution {
       const dom = this.domainMap.get(id);
       return dom?.source.kind === 'block' ? `${dom.source.instance}.${dom.source.port}` : `Clk_${id}`;
     });
-    if (d.instances.length > 0) this.constraints.push({ kind: 'false_path', from: [RESET_PORT], note: 'Asynchronous reset input; the reset generators synchronise its release.' });
+    // The system reset Rst needs no exception of its own: every block that takes it unsynchronised (the reset
+    // generators the Composer inserts, the blocks whose reset is asynchronous, the subsystems) releases it through
+    // olo_base_reset_gen, whose scoped constraints cut the paths into its synchronisers. A rule on Rst would be invalid
+    // where the system is not the top level (Rst a hierarchical pin with a driver) and would hide a block that used it
+    // synchronously.
     // the constraints of the blocks in terms of the top level: ports of external interfaces by their top-level name,
     // clocks by their clock domain
     const topOf = (/** @type {string} */ inst, /** @type {string} */ port) => this.topPorts.find((tp) => tp.port === `${inst}.${port}`)?.name ?? `${inst}.${port}`;

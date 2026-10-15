@@ -58,7 +58,8 @@ test('no reset generator without a synchronous reset; a maximum delay for every 
   ]);
   assert.ok(!two.constraints.some((/** @type {any} */ c) => c.kind === 'async_clock_groups'));
   assert.ok(two.constraints.some((/** @type {any} */ c) => c.kind === 'vendor_scoped'));
-  assert.ok(two.constraints.some((/** @type {any} */ c) => c.kind === 'false_path' && c.from.includes('Rst')));
+  // no rule on the system reset: the reset generators that take it have their own scoped constraints
+  assert.ok(!two.constraints.some((/** @type {any} */ c) => c.kind === 'false_path' && c.from.includes('Rst')));
 });
 
 test('field maps: the user bits of external ports and the side band constants, field by field', () => {

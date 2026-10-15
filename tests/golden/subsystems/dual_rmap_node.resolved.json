@@ -1,5 +1,5 @@
 {
-  "catalog": "2f7536b0b190",
+  "catalog": "bebf58067f6a",
   "entity": "dual_rmap_node",
   "ports": [
     {
@@ -3813,13 +3813,6 @@
     {
       "kind": "false_path",
       "from": [
-        "Rst"
-      ],
-      "note": "Asynchronous reset input; the reset generators synchronise its release."
-    },
-    {
-      "kind": "false_path",
-      "from": [
         "rmap_node0_spw_port0_spw0_Spw_DIn",
         "rmap_node0_spw_port0_spw0_Spw_SIn"
       ],
@@ -4315,7 +4308,7 @@
     {
       "name": "spw_port",
       "netlist": {
-        "catalog": "2f7536b0b190",
+        "catalog": "bebf58067f6a",
         "entity": "spw_port",
         "ports": [
           {
@@ -5433,13 +5426,6 @@
           {
             "kind": "false_path",
             "from": [
-              "Rst"
-            ],
-            "note": "Asynchronous reset input; the reset generators synchronise its release."
-          },
-          {
-            "kind": "false_path",
-            "from": [
               "spw0_Spw_DIn",
               "spw0_Spw_SIn"
             ],
@@ -5509,7 +5495,7 @@
     {
       "name": "rmap_node",
       "netlist": {
-        "catalog": "2f7536b0b190",
+        "catalog": "bebf58067f6a",
         "entity": "rmap_node",
         "ports": [
           {
@@ -8323,13 +8309,6 @@
         ],
         "packing": [],
         "constraints": [
-          {
-            "kind": "false_path",
-            "from": [
-              "Rst"
-            ],
-            "note": "Asynchronous reset input; the reset generators synchronise its release."
-          },
           {
             "kind": "false_path",
             "from": [
