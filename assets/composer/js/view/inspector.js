@@ -11,6 +11,7 @@
  */
 
 import { hex, sizeText } from '../model/addressmap.js';
+import { readinessStatement } from '../model/systemviews.js';
 import { candidates, checkConnection, effectiveType, resolveEndpoint } from '../model/compat.js';
 import { connectionsAt, getInstance, PREFIX_RE, trafficFields, trafficFromFields } from '../model/design.js';
 import { formatReal, formatValue, isEditable, isEnabled, parseInput } from '../model/generics.js';
@@ -146,6 +147,7 @@ export class InspectorView {
       h('div', { class: 'cmp-field cmp-check' },
         ft, h('label', { for: 'cmp-sys-ft' }, 'Fault tolerance'),
         h('p', { class: 'cmp-help', id: 'cmp-sys-ft-help' }, 'Adapters added by the Composer use SECDED memories and triplicated synchronisers.')),
+      this.changesSection(),
       h('h3', { class: 'cmp-insp-sub' }, `Clock domains (${d.clockDomains.length})`),
       d.clockDomains.length === 0
         ? h('p', { class: 'cmp-help' }, 'The first block creates the system clock domain.')
@@ -165,6 +167,7 @@ export class InspectorView {
       this.addressMapSection(),
       this.interruptsSection(),
       this.protectionSection(),
+      this.readinessSection(),
       h('p', { class: 'cmp-help cmp-autosave-note' }, 'The open systems are kept in this browser. Save a system to keep it as a file.'),
     ];
   }
@@ -194,6 +197,24 @@ export class InspectorView {
               ` ${sp.addrWidth} address bits${sp.external ? `, its slave is outside (${sp.external})` : ''}`),
             rows.length ? h('ul', { class: 'cmp-list', role: 'list' }, rows.map((r) => r.row)) : null);
         }));
+  }
+
+  /**
+   * The changes of the catalog since the pins of the opened file, by instance, until the system is saved; a click
+   * selects the instance (the subsystem for an instance inside a definition).
+   */
+  changesSection() {
+    const notes = this.app.design.migrations ?? [];
+    if (notes.length === 0) return null;
+    return h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-changes' },
+      h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-changes' }, `Changes since this file was saved (${notes.length})`),
+      h('p', { class: 'cmp-help' }, 'The blocks changed since the file was saved. The list ends when you save the system.'),
+      h('ul', { class: 'cmp-list', role: 'list', 'data-view': 'changes' }, notes.map((n) => h('li', {},
+        h('button', { type: 'button', class: 'cmp-link-btn cmp-mono', onclick: () => {
+          const id = n.instance.includes('/') ? undefined : n.instance;
+          if (id && this.app.design.instances.some((i) => i.id === id)) this.app.selectInstances([id], undefined, { focusCanvas: true });
+        } }, n.instance),
+        h('span', { class: 'cmp-itf-addr' }, ` ${n.text} ${n.action}`)))));
   }
 
   /**
@@ -243,6 +264,20 @@ export class InspectorView {
             : null,
           gaps.length ? h('p', { class: 'cmp-help cmp-warn' }, `Not reported: the ECC events of ${gaps.length} ${gaps.length === 1 ? 'memory are' : 'memories are'} open.`) : null,
         ]);
+  }
+
+  /**
+   * The readiness of the parts of the system: the TRL of every source of its blocks; the system has none of its own.
+   */
+  readinessSection() {
+    const r = this.app.resolved.readiness;
+    if (!r?.parts.length) return null;
+    return h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-ready' },
+      h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-ready' }, 'Readiness'),
+      h('p', { class: 'cmp-help', 'data-view': 'readiness' }, readinessStatement(r)),
+      h('ul', { class: 'cmp-list', role: 'list', 'data-view': 'parts' }, r.parts.map((x) => h('li', {},
+        h('span', {}, x.name),
+        h('span', { class: 'cmp-facts' }, ` TRL ${x.trl}, ${x.instances.length} block${x.instances.length === 1 ? '' : 's'}`)))));
   }
 
   /**

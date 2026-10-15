@@ -10,6 +10,7 @@ import { agentBrief } from './brief.js';
 import { checkConnection } from './compat.js';
 import { createDesign, DEFAULT_DOMAIN, identifierProblem, trafficProblem } from './design.js';
 import { validateValue } from './generics.js';
+import { migrate } from './migration.js';
 import { netlist } from './netlist.js';
 import { resolve } from './resolver.js';
 import {
@@ -175,7 +176,8 @@ function isFiniteNumber(v) {
  * Reads a design from the text of a file.
  * @param {string} text
  * @param {Catalog} cat
- * @returns {{ design: Design, warnings: string[], unplaced: string[] }}   unplaced: blocks without a position
+ * @returns {{ design: Design, warnings: string[], unplaced: string[], migrations: import('./migration.js').MigrationNote[] }}
+ *          unplaced: blocks without a position; migrations: the changes of the catalog since the pins of the file
  */
 export function fromText(text, cat) {
   /** @type {unknown} */
@@ -490,10 +492,13 @@ function readSubsystems(o, cat, warnings) {
 }
 
 /**
- * Reads a design from a document object, checking structure, identifiers, generics and connections.
+ * Reads a design from a document object, checking structure, identifiers, generics and connections. A file saved with
+ * older pins of the sources is migrated first (model/migration.js): the changes of the catalog since then are applied
+ * and listed in migrations, which the design also carries until it is saved again.
  * @param {unknown} doc
  * @param {Catalog} cat
- * @returns {{ design: Design, warnings: string[], unplaced: string[] }}   unplaced: blocks without a position
+ * @returns {{ design: Design, warnings: string[], unplaced: string[], migrations: import('./migration.js').MigrationNote[] }}
+ *          unplaced: blocks without a position
  */
 export function fromDocument(doc, cat) {
   /** @type {string[]} */
@@ -501,14 +506,20 @@ export function fromDocument(doc, cat) {
   /** @type {string[]} */
   const warnings = [];
   if (!isObject(doc)) throw new FormatError(['The file does not contain a JSON object.']);
-  const o = /** @type {Record<string, any>} */ (doc);
-  if (o.format !== FORMAT) throw new FormatError(['This is not an Open Space Composer system file (format field missing).']);
-  if (o.formatVersion !== 1 && o.formatVersion !== 2) {
+  const raw = /** @type {Record<string, any>} */ (doc);
+  if (raw.format !== FORMAT) throw new FormatError(['This is not an Open Space Composer system file (format field missing).']);
+  if (raw.formatVersion !== 1 && raw.formatVersion !== 2) {
     throw new FormatError([
-      typeof o.formatVersion === 'number' && o.formatVersion > FORMAT_VERSION
-        ? `The file has format version ${o.formatVersion}; this Composer reads versions 1 and 2.`
-        : `Unsupported format version ${String(o.formatVersion)}.`,
+      typeof raw.formatVersion === 'number' && raw.formatVersion > FORMAT_VERSION
+        ? `The file has format version ${raw.formatVersion}; this Composer reads versions 1 and 2.`
+        : `Unsupported format version ${String(raw.formatVersion)}.`,
     ]);
+  }
+  // the changes of the catalog since the pins the file was saved with, applied before the file is read
+  const mig = migrate(raw, cat);
+  const o = mig.doc;
+  for (const name of mig.unknown) {
+    warnings.push(`The file was saved with a version of ${name} older than the changes the catalog records: the changes of its blocks cannot be listed; compare the netlist differences.`);
   }
   if (o.formatVersion === 1 && o.subsystems !== undefined) throw new FormatError(['subsystems: only a file of format version 2 has subsystems.']);
   const otherCatalog = Boolean(isObject(o.generator) && o.generator.catalog && o.generator.catalog !== cat.id);
@@ -551,6 +562,7 @@ export function fromDocument(doc, cat) {
   if (errors.length > 0) throw new FormatError(errors);
   // the same object as the catalog above, so that the definitions are resolved once
   if (Object.keys(defs).length) d.subsystems = defs;
+  if (mig.notes.length) d.migrations = mig.notes;
 
   // "resolved" is derived: the Composer resolves the system again. A file of another catalog version gets a remark
   // only when the system resolves differently now (a catalog that only gained other blocks changes nothing).
@@ -565,5 +577,5 @@ export function fromDocument(doc, cat) {
   } else if (isObject(o.resolved) && !same()) {
     warnings.push('The resolved netlist in the file differs from the system it describes (it was edited outside the Composer); the Composer resolves the system again and saves the new netlist.');
   }
-  return { design: d, warnings, unplaced };
+  return { design: d, warnings, unplaced, migrations: mig.notes };
 }

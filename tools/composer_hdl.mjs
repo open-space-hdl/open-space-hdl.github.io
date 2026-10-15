@@ -129,7 +129,12 @@ function main() {
     console.error(`${args.input}: ${e instanceof Error ? e.message : String(e)}`);
     return 2;
   }
-  const { design, warnings } = loaded;
+  const { design, warnings, migrations } = loaded;
+  // the changes of the catalog since the pins of the file: what changed, what the tool did, what the user does
+  if (migrations.length) {
+    console.log(`${args.input}: changes of the blocks since the file was saved`);
+    print(migrations.map((n) => `${n.instance}: ${n.text} ${n.action} (${n.evidence})`));
+  }
   // the remark of the loader about another catalog or a changed netlist is replaced by the comparison below
   const notes = warnings.filter((w) => !/resolved netlist|another version of the block catalog/.test(w));
   if (notes.length) {

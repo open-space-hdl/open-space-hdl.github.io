@@ -57,3 +57,12 @@ test('the inserted crossings of a system with two clocks and their ECC events th
   ]);
   await expect(section).toContainText('Not reported: the ECC events of 2 memories are open.');
 });
+
+test('the readiness of the parts of the user\'s system, without a TRL of the system', async ({ page }) => {
+  await open(page);
+  await page.locator('input[type="file"]').setInputFiles({ name: 'spfi_encrypt.composer.json', mimeType: 'application/json', buffer: fixture });
+  await expect(page.locator('[data-view="readiness"]')).toHaveText('Parts at TRL 3 or higher (lowest: 3). The composed system has no TRL of its own: it is checked by elaboration and a run to 0 ns.');
+  await expect(page.locator('[data-view="parts"] li')).toHaveText([
+    'OpenRMAP TRL 3, 1 block', 'OpenSPP TRL 3, 2 blocks', 'OpenFibre TRL 3, 2 blocks', 'OpenCrypto TRL 3, 8 blocks', /^Open Logic FT TRL 3, \d+ blocks$/,
+  ]);
+});
