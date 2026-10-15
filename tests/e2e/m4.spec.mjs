@@ -69,7 +69,7 @@ test('chain rules: the send buffer holds one encrypted chunk, the core feeds a s
   await buf.press('Enter');
   const errors = page.locator('.cmp-check-item.cmp-sev-error');
   await expect(errors).toHaveCount(1);
-  await expect(errors).toContainText('must hold one: set TxBufferBytes_g of spp0 to at least 4128 (now 4096)');
+  await expect(errors).toContainText('must hold one: set TxBufferBytes_g of spp0 to 8192, the smallest value of at least 4128 that TxBufferBytes_g allows (now 4096)');
   await shot(page, info, '03-chain-rule');
   await buf.fill('8192');
   await buf.press('Enter');

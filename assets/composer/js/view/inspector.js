@@ -502,14 +502,15 @@ export class InspectorView {
     const fid = `cmp-tr-${ref.replace(/[.[\]]/g, '-')}`;
     const len = h('input', { id: `${fid}-len`, class: 'cmp-input', type: 'number', min: '1', step: '1', value: fields.bytes, placeholder: 'bytes', 'aria-describedby': `${fid}-err` });
     const rate = h('input', { id: `${fid}-rate`, class: 'cmp-input', type: 'number', min: '0', step: 'any', value: fields.mbit, placeholder: 'Mbit/s', 'aria-describedby': `${fid}-err` });
+    const max = h('input', { id: `${fid}-max`, class: 'cmp-input', type: 'number', min: '1', step: '1', value: fields.max, placeholder: 'bytes', 'aria-describedby': `${fid}-err` });
     const err = this.errorLine(`${fid}-err`, len);
     const apply = () => {
-      const r = trafficFromFields(len.value, rate.value);
+      const r = trafficFromFields(len.value, rate.value, max.value);
       err.show('error' in r ? r.error : this.app.setTraffic(ref, r.traffic));
     };
-    // the two values take effect together: with Enter, or when the focus leaves the pair (Tab from the length to the
-    // rate does not draw the inspector again)
-    for (const inp of [len, rate]) {
+    // the values take effect together: with Enter, or when the focus leaves the fields (Tab from one field to the next
+    // does not draw the inspector again)
+    for (const inp of [len, rate, max]) {
       inp.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -528,7 +529,8 @@ export class InspectorView {
     }
     const pair = h('div', { class: 'cmp-traffic-row' },
       h('label', { for: `${fid}-len` }, 'Packet length (B)'), len,
-      h('label', { for: `${fid}-rate` }, 'Rate (Mbit/s)'), rate);
+      h('label', { for: `${fid}-rate` }, 'Rate (Mbit/s)'), rate,
+      h('label', { for: `${fid}-max` }, 'Largest packet (B)'), max);
     pair.addEventListener('focusout', (/** @type {FocusEvent} */ e) => {
       if (!pair.contains(/** @type {Node | null} */ (e.relatedTarget))) apply();
     });

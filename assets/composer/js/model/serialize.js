@@ -24,7 +24,7 @@ export const FORMAT = 'open-space-composer-system';
 export const FORMAT_VERSION = 2;
 export const SCHEMA_URL = 'https://openspacehdl.org/composer/schema/system-1.json';
 export const SCHEMA_URL_2 = 'https://openspacehdl.org/composer/schema/system-2.json';
-export const GENERATOR = { name: 'Open Space Composer', version: '0.3.0-beta' };
+export const GENERATOR = { name: 'Open Space Composer', version: '0.4.0-beta' };
 
 export class FormatError extends Error {
   /** @param {string[]} problems */
@@ -409,7 +409,13 @@ function readWiring(d, o, cat, errors, warnings) {
     if (e.traffic !== undefined) {
       const problem = trafficProblem(e.traffic);
       if (problem) errors.push(`externals[${k}].traffic: ${problem}`);
-      else ext.traffic = { packetBytes: e.traffic.packetBytes, ...(e.traffic.bitsPerSecond !== undefined ? { bitsPerSecond: e.traffic.bitsPerSecond } : {}) };
+      else {
+        ext.traffic = {
+          packetBytes: e.traffic.packetBytes,
+          ...(e.traffic.bitsPerSecond !== undefined ? { bitsPerSecond: e.traffic.bitsPerSecond } : {}),
+          ...(e.traffic.maxPacketBytes !== undefined ? { maxPacketBytes: e.traffic.maxPacketBytes } : {}),
+        };
+      }
     }
     d.externals.push(ext);
   }

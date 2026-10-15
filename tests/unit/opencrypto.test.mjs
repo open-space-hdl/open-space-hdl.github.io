@@ -65,33 +65,34 @@ test('the send port holds one chunk with IV, AAD and tag', () => {
   let d = setGeneric(chain(), cat, 'ocr0', 'DenseOutput_g', true).design;
   // 4096 + 32 bytes do not fit into the default send buffer of 4096 bytes
   let r = resolve(cat, d);
-  let fits = checksOf(r, 'chain_fits', 'error');
+  let fits = checksOf(r, 'sizes', 'error');
   assert.equal(fits.length, 1);
-  assert.match(fits[0].message, /ChunkBytes_g \+ 32 = 4128 bytes; spp0\.S_Tx\[0\] must hold one: set TxBufferBytes_g of spp0 to at least 4128 \(now 4096\)/);
+  // the suggestion passes the rules of the generic: DataWidth_g / 8 times a power of two
+  assert.match(fits[0].message, /ChunkBytes_g \+ 32 = 4128 bytes; spp0\.S_Tx\[0\] must hold one: set TxBufferBytes_g of spp0 to 8192, the smallest value of at least 4128 that TxBufferBytes_g allows \(now 4096\)/);
   assert.equal(fits[0].instance, 'spp0');
   d = setGeneric(d, cat, 'spp0', 'TxBufferBytes_g', 8192).design;
-  assert.deepEqual(checksOf(resolve(cat, d), 'chain_fits', 'error'), []);
+  assert.deepEqual(checksOf(resolve(cat, d), 'sizes', 'error'), []);
   // the Space Packets of the chunks: a note on the receive buffer of the node that receives them
-  assert.deepEqual(checksOf(resolve(cat, d), 'chain_fits', 'info').map((c) => c.message), [
+  assert.deepEqual(checksOf(resolve(cat, d), 'sizes', 'info').map((c) => c.message), [
     'spp0 sends Space Packets of up to ChunkBytes_g + 38 = 4134 bytes: the node that receives them needs RxBufferBytes_g of at least 4134 (spp0 has 4096, too small to receive its own packets).',
   ]);
   // the release buffer of the core holds a whole message in beats: IV, AAD, data and tag each start a new beat
   d = setGeneric(d, cat, 'ocr0', 'ReleaseBuffer_g', true).design;
-  assert.match(checksOf(resolve(cat, d), 'chain_fits', 'error')[0]?.message ?? '',
+  assert.match(checksOf(resolve(cat, d), 'sizes', 'error')[0]?.message ?? '',
     /takes 12 \+ 4 \+ 4096 \+ 16 bytes in sections of whole beats .*, 1032 beats of 4 bytes in the release buffer of ocr0, which holds 4096 \/ 4 = 1024 beats: every message would be dropped with OVERFLOW\. Set ReleaseBytes_g to 8192, the smallest power of two of at least 1032 beats \(16384 for the full rate\)\./);
   d = setGeneric(d, cat, 'ocr0', 'ReleaseBytes_g', 8192).design;
-  assert.deepEqual(checksOf(resolve(cat, d), 'chain_fits', 'error'), []);
+  assert.deepEqual(checksOf(resolve(cat, d), 'sizes', 'error'), []);
   // one message fits, two do not: half the rate
   // with room for one message the core needs 3M - D + 4 cycles per message instead of M + 1 (OpenCrypto, measured)
-  assert.match(checksOf(resolve(cat, d), 'chain_fits', 'warning')[0]?.message ?? '',
+  assert.match(checksOf(resolve(cat, d), 'sizes', 'warning')[0]?.message ?? '',
     /holds one message but not two, so ocr0 needs 3 x 1032 - 2048 \+ 4 = 1052 cycles per message instead of 1033 \(1\.8 % less throughput\)\. Set ReleaseBytes_g to 16384 for the full rate\./);
   d = setGeneric(d, cat, 'ocr0', 'ReleaseBytes_g', 16384).design;
-  assert.deepEqual(checksOf(resolve(cat, d), 'chain_fits', 'warning'), []);
+  assert.deepEqual(checksOf(resolve(cat, d), 'sizes', 'warning'), []);
   // a chunk larger than a Space Packet can carry
   d = setGeneric(d, cat, 'frm0', 'ChunkBytes_g', 65520).design;
   d = setGeneric(d, cat, 'spp0', 'TxBufferBytes_g', 131072).design;
   r = resolve(cat, d);
-  fits = checksOf(r, 'chain_fits', 'error').filter((c) => !/release buffer/.test(c.message));
+  fits = checksOf(r, 'sizes', 'error').filter((c) => !/release buffer/.test(c.message));
   assert.equal(fits.length, 1);
   assert.match(fits[0].message, /65552 bytes, more than the 65536 bytes/);
   assert.throws(() => setGeneric(d, cat, 'frm0', 'ChunkBytes_g', 1000), /multiple of 16/);

@@ -88,6 +88,13 @@ stream interface, the length changes of its routes, the payload capacity of its 
 (test cases or measurements of the core) behind the numbers. The Composer computes the throughput budget of a system
 from them (`/composer/format/#throughput`); a block without `rates` ends the paths through it with a remark.
 
+In `sizes` the block description states the size limits of its interfaces (the longest packet, as a generic, an
+expression or a number, whether a generic or only the reset value of a register sets it, and what happens to a longer
+packet), the buffers that hold a whole message, the packets it sends over a link, the measured layout of a message
+through a pair of blocks, or `noLimit` with the longest packet its tests cover. Like `rates`, every entry names the
+published evidence. The Composer follows the largest packet through the system and checks it against these limits
+(`/composer/format/#sizes`, rule `sizes`).
+
 ### Tests
 
 From `tests/`, after `npm ci` and `npx playwright install chromium firefox webkit`:

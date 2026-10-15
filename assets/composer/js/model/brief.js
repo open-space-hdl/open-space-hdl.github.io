@@ -8,6 +8,7 @@
 
 import { formatHz } from './rules.js';
 import { subsystemsOf, withSubsystems } from './subsystems.js';
+import { bytesText } from './sizes.js';
 import { analyseThroughput, elementText, formatRate } from './throughput.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
@@ -157,6 +158,57 @@ function throughputSection(t) {
 }
 
 /**
+ * The section on packet sizes and buffers: the largest packet at every interface with a limit, the buffers that hold
+ * a whole message, what leaves over a link, and the blocks without a limit.
+ * @param {import('./sizes.js').Sizes} s
+ * @returns {string[]}
+ */
+function sizesSection(s) {
+  /** @type {string[]} */
+  const L = [];
+  L.push(
+    'The largest packet at every interface with a size limit, from the size data of the catalog: the largest packet a source states, the chunks of a route, the bytes the routes add. A source that states no largest packet, or a link, is not bounded: it meets the limit of the first interface that has one. A limit that is only the reset value of a register is marked: software can change it.',
+    '',
+  );
+  if (s.limits.length === 0 && s.buffers.length === 0) L.push('No interface with a size limit receives packets.', '');
+  if (s.limits.length > 0) {
+    L.push(table(['Interface', 'Largest packet', 'Limit', 'Kind', 'Reason'], s.limits.map((l) => {
+      const largest = Number.isFinite(l.largest.bytes) ? `${bytesText(l.largest)} B` : `not bounded${l.largest.source ? ` (${l.largest.source})` : ''}`;
+      const over = Number.isFinite(l.largest.bytes) && l.largest.bytes > l.bytes;
+      return [`\`${l.ref}\``, over ? `**${largest}**` : largest, `${l.bytes} B`, l.soft ? 'reset value' : 'fixed', l.why];
+    })), '');
+  }
+  if (s.buffers.length > 0) {
+    L.push('Buffers that hold a whole message (counted in beats):', '');
+    for (const b of s.buffers) {
+      L.push(`- \`${b.ref}\`: the longest message (${bytesText(b.largest)} B) takes ${b.beats} beats of ${b.beat} B; the buffer holds ${b.holds} B = ${b.capacity} beats${b.beats > b.capacity ? ' (too small, see the checks)' : ''}.`);
+    }
+    L.push('');
+  }
+  if (s.sends.length > 0) {
+    L.push('What leaves over a link (for the node at the far end):', '');
+    for (const x of s.sends) L.push(`- ${x.text}.`);
+    L.push('');
+  }
+  if (s.noLimit.size > 0) {
+    L.push('Blocks without a length limit:', '');
+    for (const [, n] of s.noLimit) L.push(`- \`${n.entity}\` (${n.labels.map((x) => `\`${x}\``).join(', ')}): no length limit${n.tested ? `, tested up to ${n.tested} B` : ''}.`);
+    L.push('');
+  }
+  if (s.unpublished.size > 0) {
+    L.push('Blocks that publish no length limit (packets through them are checked against the other blocks only):', '');
+    for (const [, u] of s.unpublished) L.push(`- \`${u.entity}\` (${u.labels.map((x) => `\`${x}\``).join(', ')}).`);
+    L.push('');
+  }
+  if (s.evidence.size > 0) {
+    L.push('Evidence of the size data:', '');
+    for (const [k, v] of [...s.evidence].sort((a, b) => a[0].localeCompare(b[0]))) L.push(`- \`${k}\`: ${v}.`);
+    L.push('');
+  }
+  return L;
+}
+
+/**
  * Generates the brief.
  * @param {Catalog} cat
  * @param {Design} d
@@ -184,7 +236,7 @@ export function agentBrief(cat, d, res, resolved, checks) {
     '',
   );
   if (errors.length > 0) {
-    L.push(`**The system has ${errors.length} open error${errors.length > 1 ? 's' : ''} (section 9). Fix ${errors.length > 1 ? 'them' : 'it'} in the Composer before building.**`, '');
+    L.push(`**The system has ${errors.length} open error${errors.length > 1 ? 's' : ''} (section 10). Fix ${errors.length > 1 ? 'them' : 'it'} in the Composer before building.**`, '');
   }
 
   // 1. sources
@@ -332,8 +384,12 @@ export function agentBrief(cat, d, res, resolved, checks) {
   L.push('## 6. Throughput', '');
   L.push(...throughputSection(res.throughput ?? analyseThroughput(cat, d, res)), '');
 
-  // 7. notes of the user guides
-  L.push('## 7. Notes from the user guides', '');
+  // 7. packet sizes and buffers
+  L.push('## 7. Packet sizes and buffers', '');
+  L.push(...sizesSection((res.throughput ?? analyseThroughput(cat, d, res)).sizes), '');
+
+  // 8. notes of the user guides
+  L.push('## 8. Notes from the user guides', '');
   // the blocks of the system and those inside its subsystems (named <subsystem>/<instance>)
   const placed = [
     ...d.instances.map((i) => ({ block: i.block, name: i.id })),
@@ -350,8 +406,8 @@ export function agentBrief(cat, d, res, resolved, checks) {
     L.push('');
   }
 
-  // 8. initialisation by software
-  L.push('## 8. Initialisation by software', '');
+  // 9. initialisation by software
+  L.push('## 9. Initialisation by software', '');
   L.push('Register addresses are byte addresses of the AXI4-Lite port of the block; write registers as 32-bit words and wait for the write response before a read that depends on it.', '');
   // the blocks of the system, then those inside every subsystem (in each of its instances)
   for (const [dd, rr, sub] of /** @type {[Design, Resolved, string][]} */ ([[d, res, ''], ...subs.map((s) => [s.design, s.res, s.name])])) {
@@ -380,8 +436,8 @@ export function agentBrief(cat, d, res, resolved, checks) {
     }
   }
 
-  // 9. checks
-  L.push('## 9. Checks', '');
+  // 10. checks
+  L.push('## 10. Checks', '');
   if (checks.length === 0) L.push('No problems found.', '');
   else {
     for (const c of [...errors, ...warnings, ...checks.filter((x) => x.severity === 'info')]) {
@@ -390,8 +446,8 @@ export function agentBrief(cat, d, res, resolved, checks) {
     L.push('');
   }
 
-  // 10. verification
-  L.push('## 10. Verification', '');
+  // 11. verification
+  L.push('## 11. Verification', '');
   const clocks = resolved.clocks.filter((/** @type {any} */ c) => c.source === 'top');
   const slow = clocks.length ? Math.min(...clocks.map((/** @type {any} */ c) => c.frequencyHz)) : 100e6;
   L.push(
@@ -401,7 +457,7 @@ export function agentBrief(cat, d, res, resolved, checks) {
     `2. Hold \`Rst\` at '1' for 16 cycles of the slowest clock (${formatHz(slow)}), then '0'.`,
     '3. Keep every external input idle: stream inputs with valid at \'0\', ready inputs of external outputs at \'1\', bus requests idle, pins at \'0\'.',
     '4. Run for at least 100 us (the blocks initialise their tables after the reset) and stop the simulation: it must end without failed assertions, and the handshake outputs of the top level (valid, ready) and the line outputs must not be \'U\' or \'X\' after the reset. Data outputs may stay undefined while their valid is \'0\'.',
-    '5. Where an AXI4-Lite port is external, read the ID register of the block (section 8) and compare it with the documented value.',
+    '5. Where an AXI4-Lite port is external, read the ID register of the block (section 9) and compare it with the documented value.',
     '',
     `With GHDL: analyse the libraries of section 1, then \`ghdl -i --std=08 -frelaxed ${d.name}.vhd ${d.name}_tb.vhd\`, \`ghdl -m --std=08 -frelaxed ${d.name}_tb\` and \`ghdl -r --std=08 -frelaxed ${d.name}_tb --stop-time=100us --assert-level=error --ieee-asserts=disable\` (\`--ieee-asserts=disable\` silences the warnings of the numeric package about metavalues before the reset).`,
     '',
@@ -409,14 +465,14 @@ export function agentBrief(cat, d, res, resolved, checks) {
   // the optional end-to-end test: what every block contributes
   const e2e = blocks.map((id) => cat.blocks.get(id)).filter((b) => b?.endToEnd);
   if (e2e.length > 0) {
-    L.push('Optional end-to-end test, after the initialisation of section 8:', '');
+    L.push('Optional end-to-end test, after the initialisation of section 9:', '');
     for (const b of e2e) L.push(`- ${b?.name} (\`${b?.entity}\`): ${b?.endToEnd}`);
     L.push('');
   }
   // vendor-specific blocks need the simulation libraries of the vendor
   const vendor = d.instances.map((i) => ({ id: i.id, b: cat.blocks.get(i.block) })).filter((x) => x.b?.vendor);
   if (vendor.length > 0) {
-    L.push(`Vendor-specific blocks need the simulation libraries of their vendor: ${vendor.map((x) => `\`${x.id}\` (${x.b?.entity}, ${x.b?.vendor})`).join(', ')}; see their notes in section 7.`, '');
+    L.push(`Vendor-specific blocks need the simulation libraries of their vendor: ${vendor.map((x) => `\`${x.id}\` (${x.b?.entity}, ${x.b?.vendor})`).join(', ')}; see their notes in section 8.`, '');
   }
   return `${L.join('\n').replace(/\n{3,}/g, '\n\n').trim()}\n`;
 }

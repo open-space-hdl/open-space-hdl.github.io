@@ -166,7 +166,7 @@ test('the paths of an example, their bottleneck and the blocks without rate data
   assert.deepEqual(tx.references, [64, 1024, 4096]);
   assert.equal(tx.elements[/** @type {any} */ (tx.at(1024)).bottleneck].label, 'the link of ofb0');
   assert.deepEqual([...t.missing.values()], [{ entity: 'omap_core', labels: ['rmap0'] }]);
-  assert.deepEqual(t.checks.map((c) => c.message), ['No rate data for omap_core (rmap0): the paths through it are not checked.']);
+  assert.deepEqual(t.checks.filter((c) => c.rule === 'throughput').map((c) => c.message), ['No rate data for omap_core (rmap0): the paths through it are not checked.']);
   // without stated traffic no warning
   assert.ok(!t.checks.some((c) => c.severity === 'warning'));
 });
@@ -228,7 +228,7 @@ test('stated traffic is an optional key of an external interface, kept when the 
   assert.throws(() => setTraffic(base, 'spw0.S_Pkt', { packetBytes: 64 }), /is not external/);
   doc.externals[0].traffic = { packetBytes: 64, bitsPerSecond: -1 };
   assert.throws(() => fromText(JSON.stringify(doc), cat), (e) => e instanceof FormatError && /externals\[0\]\.traffic: bitsPerSecond must be a positive number/.test(e.message));
-  assert.equal(/** @type {any} */ (toDocument(d, cat)).generator.version, '0.3.0-beta');
+  assert.equal(/** @type {any} */ (toDocument(d, cat)).generator.version, '0.4.0-beta');
 });
 
 test('a path runs through the inside of a subsystem', () => {
@@ -283,7 +283,7 @@ test('the fields of the editor convert Mbit/s to the bit/s of the file and back,
     const r = trafficFromFields('1024', mbit);
     assert.ok('traffic' in r && r.traffic, mbit);
     assert.deepEqual(r.traffic, { packetBytes: 1024, bitsPerSecond: bps }, mbit);
-    assert.deepEqual(trafficFields(r.traffic), { bytes: '1024', mbit }, mbit);
+    assert.deepEqual(trafficFields(r.traffic), { bytes: '1024', mbit, max: '' }, mbit);
   }
   // through the file: the value written is bit/s, read back it shows the same Mbit/s
   const r = /** @type {{ traffic: import('../../assets/composer/js/model/design.js').Traffic }} */ (trafficFromFields(' 512 ', '1600'));
@@ -291,12 +291,12 @@ test('the fields of the editor convert Mbit/s to the bit/s of the file and back,
   const doc = JSON.parse(toText(d, cat));
   assert.deepEqual(doc.externals.find((/** @type {any} */ e) => e.interface === 'spp0.S_Tx[0]').traffic, { packetBytes: 512, bitsPerSecond: 1600000000 });
   const back = fromText(JSON.stringify(doc), cat).design.externals.find((e) => e.interface === 'spp0.S_Tx[0]')?.traffic;
-  assert.deepEqual(trafficFields(back), { bytes: '512', mbit: '1600' });
+  assert.deepEqual(trafficFields(back), { bytes: '512', mbit: '1600', max: '' });
   // a length without a rate, nothing, and wrong input
   assert.deepEqual(trafficFromFields('64', ''), { traffic: { packetBytes: 64 } });
-  assert.deepEqual(trafficFields({ packetBytes: 64 }), { bytes: '64', mbit: '' });
+  assert.deepEqual(trafficFields({ packetBytes: 64 }), { bytes: '64', mbit: '', max: '' });
   assert.deepEqual(trafficFromFields('', ''), { traffic: null });
-  assert.deepEqual(trafficFields(undefined), { bytes: '', mbit: '' });
+  assert.deepEqual(trafficFields(undefined), { bytes: '', mbit: '', max: '' });
   assert.deepEqual(trafficFromFields('', '100'), { error: 'Give the packet length in whole bytes.' });
   assert.deepEqual(trafficFromFields('10.5', ''), { error: 'Give the packet length in whole bytes.' });
   assert.deepEqual(trafficFromFields('64', '-1'), { error: 'Give the rate in Mbit/s, above zero, or leave it empty.' });

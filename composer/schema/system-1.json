@@ -324,7 +324,7 @@
           },
           "traffic": {
             "type": "object",
-            "description": "Stated traffic of the interface for the throughput budget (since 0.3.0-beta): the length of its packets and, optionally, the payload rate offered at an input or required at an output.",
+            "description": "Stated traffic of the interface (since 0.3.0-beta): the typical length of its packets, optionally the payload rate offered at an input or required at an output (throughput budget), and, since 0.4.0-beta, the largest packet (packet sizes along the chain).",
             "required": [
               "packetBytes"
             ],
@@ -337,6 +337,10 @@
               "bitsPerSecond": {
                 "type": "number",
                 "exclusiveMinimum": 0
+              },
+              "maxPacketBytes": {
+                "type": "integer",
+                "minimum": 1
               }
             }
           }

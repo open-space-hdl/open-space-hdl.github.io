@@ -48,8 +48,10 @@ import { withSubsystems } from './subsystems.js';
 
 /**
  * @typedef {object} Traffic
- * @property {number} packetBytes         length of the packets at the interface
+ * @property {number} packetBytes         typical length of the packets at the interface
  * @property {number} [bitsPerSecond]     payload rate: offered at an input, required at an output
+ * @property {number} [maxPacketBytes]    the largest packet at the interface (packet sizes along the chain); without it
+ *                                        the source is not bounded
  */
 
 /**
@@ -466,44 +468,61 @@ export function setExternal(d, ref, prefix) {
 export function trafficProblem(t) {
   if (typeof t !== 'object' || t === null || Array.isArray(t)) return 'must be an object with packetBytes and optionally bitsPerSecond.';
   const o = /** @type {Record<string, unknown>} */ (t);
-  const extra = Object.keys(o).filter((k) => k !== 'packetBytes' && k !== 'bitsPerSecond');
+  const extra = Object.keys(o).filter((k) => k !== 'packetBytes' && k !== 'bitsPerSecond' && k !== 'maxPacketBytes');
   if (extra.length) return `unknown keys ${extra.join(', ')}.`;
   if (!Number.isInteger(o.packetBytes) || /** @type {number} */ (o.packetBytes) < 1) return 'packetBytes must be a whole number of bytes, at least 1.';
   if (o.bitsPerSecond !== undefined && !(typeof o.bitsPerSecond === 'number' && Number.isFinite(o.bitsPerSecond) && o.bitsPerSecond > 0)) {
     return 'bitsPerSecond must be a positive number.';
   }
+  if (o.maxPacketBytes !== undefined && (!Number.isInteger(o.maxPacketBytes) || /** @type {number} */ (o.maxPacketBytes) < /** @type {number} */ (o.packetBytes))) {
+    return 'maxPacketBytes must be a whole number of bytes, at least packetBytes.';
+  }
   return '';
 }
 
 /**
- * Stated traffic from the two fields of the editor: the packet length in bytes and the rate in Mbit/s. The file
- * stores the rate in bit/s; this and trafficFields are the one place that converts. Both fields empty: no traffic.
+ * Stated traffic from the fields of the editor: the packet length in bytes, the rate in Mbit/s and the largest packet
+ * in bytes. The file stores the rate in bit/s; this and trafficFields are the one place that converts. All fields
+ * empty: no traffic.
  * @param {string} bytesText
  * @param {string} mbitText
+ * @param {string} [maxText]
  * @returns {{ traffic: Traffic | null } | { error: string }}
  */
-export function trafficFromFields(bytesText, mbitText) {
+export function trafficFromFields(bytesText, mbitText, maxText = '') {
   const b = bytesText.trim();
   const r = mbitText.trim();
-  if (!b && !r) return { traffic: null };
+  const x = maxText.trim();
+  if (!b && !r && !x) return { traffic: null };
   const packetBytes = Number(b);
   if (!b || !Number.isInteger(packetBytes) || packetBytes < 1) return { error: 'Give the packet length in whole bytes.' };
-  if (!r) return { traffic: { packetBytes } };
-  const mbit = Number(r);
-  if (!(Number.isFinite(mbit) && mbit > 0)) return { error: 'Give the rate in Mbit/s, above zero, or leave it empty.' };
-  // whole bit/s: 1600 Mbit/s are 1600000000 bit/s exactly
-  return { traffic: { packetBytes, bitsPerSecond: Math.round(mbit * 1e6) } };
+  /** @type {Traffic} */
+  const traffic = { packetBytes };
+  if (r) {
+    const mbit = Number(r);
+    if (!(Number.isFinite(mbit) && mbit > 0)) return { error: 'Give the rate in Mbit/s, above zero, or leave it empty.' };
+    // whole bit/s: 1600 Mbit/s are 1600000000 bit/s exactly
+    traffic.bitsPerSecond = Math.round(mbit * 1e6);
+  }
+  if (x) {
+    const max = Number(x);
+    if (!Number.isInteger(max) || max < packetBytes) return { error: 'Give the largest packet in whole bytes, at least the packet length, or leave it empty.' };
+    traffic.maxPacketBytes = max;
+  }
+  return { traffic };
 }
 
 /**
- * The fields of the editor for stated traffic: the packet length in bytes and the rate in Mbit/s.
+ * The fields of the editor for stated traffic: the packet length in bytes, the rate in Mbit/s, the largest packet in
+ * bytes.
  * @param {Traffic | undefined} traffic
- * @returns {{ bytes: string, mbit: string }}
+ * @returns {{ bytes: string, mbit: string, max: string }}
  */
 export function trafficFields(traffic) {
   return {
     bytes: traffic ? String(traffic.packetBytes) : '',
     mbit: traffic?.bitsPerSecond ? String(Number((traffic.bitsPerSecond / 1e6).toPrecision(15))) : '',
+    max: traffic?.maxPacketBytes ? String(traffic.maxPacketBytes) : '',
   };
 }
 
