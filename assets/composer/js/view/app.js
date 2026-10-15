@@ -13,7 +13,7 @@ import {
   setAdapterGeneric, setConstant, setDomainBox, setExternal, setGeneric, setSideband, setSystem, setTraffic,
   setViewport, sidebandDefaults, updateDomain,
 } from '../model/design.js';
-import { designComments, exportHdl } from '../model/hdl.js';
+import { designComments, exportHdl, netlistDiff } from '../model/hdl.js';
 import { ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, freeSpot, freeSpotIn, snap } from '../model/layout.js';
 import { netlist } from '../model/netlist.js';
 import { sha256 } from '../model/sha256.js';
@@ -47,6 +47,23 @@ import { TabsView } from './tabs.js';
 
 const EXPORT_TITLE = 'Export the VHDL top level, its compile order and constraints, with the system file, as a ZIP archive';
 const AUTOSAVE_DELAY = 400;
+
+/**
+ * The differences between the netlist a file holds and the netlist the current catalog resolves its system to.
+ * @param {string} text   the file
+ * @param {Catalog} cat
+ * @param {Design} design   the system read from it
+ * @returns {string[]}
+ */
+function changesDiff(text, cat, design) {
+  try {
+    const stored = JSON.parse(text).resolved;
+    if (!stored || typeof stored !== 'object') return [];
+    return netlistDiff(stored, /** @type {any} */ (netlist(cat, design, resolve(cat, design))));
+  } catch {
+    return [];
+  }
+}
 
 export class App {
   /**
@@ -1113,6 +1130,12 @@ export class App {
     a.click();
     a.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    if (tab.design.migrations) {
+      // the file is now at the current pins: the changes since the opened file are done
+      const { migrations, ...rest } = tab.design;
+      tab.design = rest;
+      this.ws.emit('design');
+    }
     tab.dirty = false;
     this.tabs.render();
     this.scheduleAutosave();
@@ -1197,7 +1220,8 @@ export class App {
         this.fit();
       });
       this.notify(`Opened ${design.name} from ${source}.`);
-      if (warnings.length > 0) {
+      if (read.migrations.length > 0) await this.showChanges(design, read.migrations, warnings, changesDiff(text, this.catalog, design));
+      else if (warnings.length > 0) {
         await this.ask(`Opened ${design.name} with remarks`, warnings, [{ label: 'Close', value: 'ok', primary: true }]);
       }
     } catch (e) {
@@ -1288,6 +1312,38 @@ export class App {
    * @param {{ label: string, value: string, primary?: boolean }[]} actions
    * @returns {Promise<string>}
    */
+  /**
+   * The changes of the catalog since the pins of an opened file, by instance, with what the Composer did or what the
+   * user does, the remarks of the reading and the differences of the netlist.
+   * @param {import('../model/design.js').Design} design
+   * @param {import('../model/migration.js').MigrationNote[]} notes
+   * @param {string[]} remarks
+   * @param {string[]} diff
+   */
+  showChanges(design, notes, remarks, diff) {
+    const dlg = this.dialog;
+    return new Promise((resolve) => {
+      const titleId = 'cmp-dialog-title';
+      /** @type {Map<string, import('../model/migration.js').MigrationNote[]>} */
+      const byInstance = new Map();
+      for (const n of notes) byInstance.set(n.instance, [...(byInstance.get(n.instance) ?? []), n]);
+      replace(dlg,
+        h('h2', { id: titleId, class: 'cmp-dialog-title' }, `Changes since ${design.name} was saved`),
+        h('p', {}, 'The blocks of the catalog changed since the file was saved. The Composer applied what it can; the list stays in the inspector of the system until you save the system again.'),
+        h('div', { class: 'cmp-changes' }, [...byInstance].map(([inst, list]) => h('section', { 'data-instance': inst },
+          h('h3', { class: 'cmp-insp-sub' }, `${inst} (${list[0].block.split('/').pop()})`),
+          h('ul', { class: 'cmp-dialog-list' }, list.map((n) => h('li', {}, `${n.text} ${n.action}`, h('span', { class: 'cmp-facts' }, ` (${n.evidence})`))))))),
+        remarks.length ? h('div', {}, h('h3', { class: 'cmp-insp-sub' }, 'Remarks'), h('ul', { class: 'cmp-dialog-list' }, remarks.map((r) => h('li', {}, r)))) : null,
+        diff.length ? h('details', { class: 'cmp-changes-diff' }, h('summary', {}, `Differences of the netlist (${diff.length})`), h('ul', { class: 'cmp-dialog-list' }, diff.map((x) => h('li', { class: 'cmp-mono' }, x)))) : null,
+        h('div', { class: 'cmp-dialog-actions' }, h('button', { type: 'button', class: 'cmp-btn cmp-btn-primary', onclick: () => dlg.close('ok') }, 'Close')));
+      dlg.setAttribute('aria-labelledby', titleId);
+      dlg.addEventListener('close', () => resolve(dlg.returnValue || 'cancel'), { once: true });
+      dlg.returnValue = '';
+      dlg.showModal();
+      /** @type {HTMLElement | null} */ (dlg.querySelector('.cmp-btn-primary'))?.focus();
+    });
+  }
+
   ask(title, lines, actions) {
     const dlg = this.dialog;
     return new Promise((resolve) => {

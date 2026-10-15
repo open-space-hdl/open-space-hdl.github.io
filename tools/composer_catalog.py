@@ -168,6 +168,89 @@ IRQ_REGISTER_KEYS = {"events", "enable", "status"}
 ECC_REGISTER_KEYS = {"status", "select", "count", "inject"}
 
 
+# the kinds of a change of a block in the chain of pin steps (changes.yml), with the keys each needs
+CHANGE_KINDS = {
+    "generic_renamed": ("from", "to"),
+    "generic_removed": ("generic",),
+    "generic_default": ("generic", "old"),
+    "generic_added": ("generic",),
+    "generic_range": ("generic",),
+    "interface_renamed": ("from", "to"),
+    "interface_removed": ("interface",),
+    "interface_added": ("interface",),
+    "registers": (),
+    "behaviour": (),
+}
+
+
+def check_changes(ctx: "Context", changes: object, sources: dict, blocks: list) -> None:
+    """The chain of pin steps of every source (changes.yml): each step moves from the pin before (previous, an ancestor)
+    to its pin, the steps follow each other and end at the current pin, and every change names a block of the source and
+    generics and interfaces as the current catalog has them (new names present, removed names gone). The steps are
+    attached to the source (sources[].changes)."""
+    if changes is None:
+        return
+    if not isinstance(changes, dict):
+        ctx.err("changes.yml", "must map source ids to their steps")
+        return
+    by_id = {b["id"]: b for b in blocks}
+    for sid, steps in changes.items():
+        where = f"changes.yml: {sid}"
+        src = sources.get(sid)
+        if src is None:
+            ctx.err(where, "unknown source")
+            continue
+        if not isinstance(steps, list) or not steps:
+            ctx.err(where, "needs a list of steps")
+            continue
+        repo = ctx.repos / src["repo"]
+        for k, step in enumerate(steps):
+            swhere = f"{where}: step {k + 1}"
+            if not isinstance(step, dict) or set(step) != {"previous", "pin", "evidence", "changes"} or not isinstance(step.get("evidence"), str):
+                ctx.err(swhere, "needs previous, pin, evidence and changes")
+                continue
+            for key in ("previous", "pin"):
+                if not git_ok(repo, "cat-file", "-e", f"{step[key]}^{{commit}}"):
+                    ctx.err(swhere, f"{key} {step[key]} is no commit of {src['repo']}")
+            if not git_ok(repo, "merge-base", "--is-ancestor", str(step["previous"]), str(step["pin"])):
+                ctx.err(swhere, f"previous {step['previous']} is not an ancestor of pin {step['pin']}")
+            if k > 0 and isinstance(steps[k - 1], dict) and steps[k - 1].get("pin") != step["previous"]:
+                ctx.err(swhere, "previous is not the pin of the step before")
+            for ch in step["changes"] if isinstance(step["changes"], list) else []:
+                kind = ch.get("kind") if isinstance(ch, dict) else None
+                if kind not in CHANGE_KINDS or not isinstance(ch.get("text"), str) or not isinstance(ch.get("block"), str):
+                    ctx.err(swhere, f"a change needs block, a kind of {', '.join(CHANGE_KINDS)} and text")
+                    continue
+                need = CHANGE_KINDS[kind]
+                extra = set(ch) - {"block", "kind", "text", *need} - ({"adopt"} if kind == "generic_default" else set())
+                if any(key not in ch for key in need) or extra:
+                    ctx.err(swhere, f"{kind} needs {', '.join(need) or 'no further key'}")
+                    continue
+                b = by_id.get(ch["block"])
+                if b is None or b["source"] != sid:
+                    ctx.err(swhere, f"{ch['block']} is no block of {sid}")
+                    continue
+                gens = {g["name"] for g in b["generics"]}
+                itfs = {i["name"] for i in b["interfaces"]}
+                present = {
+                    "generic_renamed": [(ch.get("to"), gens, True), (ch.get("from"), gens, False)],
+                    "generic_removed": [(ch.get("generic"), gens, False)],
+                    "generic_default": [(ch.get("generic"), gens, True)],
+                    "generic_added": [(ch.get("generic"), gens, True)],
+                    "generic_range": [(ch.get("generic"), gens, True)],
+                    "interface_renamed": [(ch.get("to"), itfs, True), (ch.get("from"), itfs, False)],
+                    "interface_removed": [(ch.get("interface"), itfs, False)],
+                    "interface_added": [(ch.get("interface"), itfs, True)],
+                }.get(kind, [])
+                for name, names, must in present:
+                    if (name in names) != must:
+                        ctx.err(swhere, f"{kind}: {ch['block']} {'has no' if must else 'still has'} {name}")
+        last = steps[-1]
+        if isinstance(last, dict) and last.get("pin") != src["sha"]:
+            ctx.err(where, f"the last step ends at {last.get('pin')}, not at the pin {src['sha']}")
+        src["changes"] = steps
+
+
 def field_width(bits: str) -> int:
     """Width of a field of a register map ("17:0", "5")."""
     hi, _, lo = str(bits).partition(":")
@@ -1705,6 +1788,8 @@ def build_catalog(ctx: Context) -> dict:
             continue
         s["trl"] = pr["trl"]
         s["trl_status"] = pr["trl_status"]
+    # the changes of the blocks per source, as a chain of pin steps (the migration of files of older pins)
+    check_changes(ctx, load_yaml(CATALOG_DIR / "changes.yml"), sources, blocks)
     catalog = {
         "format": CATALOG_FORMAT,
         "formatVersion": CATALOG_VERSION,

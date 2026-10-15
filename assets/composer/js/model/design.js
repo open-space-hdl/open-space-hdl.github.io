@@ -65,6 +65,8 @@ import { withSubsystems } from './subsystems.js';
  * @property {External[]} externals
  * @property {{ instances: Record<string, {x: number, y: number}>, domains: Record<string, {x: number, y: number, w: number, h: number}>, viewport: {x: number, y: number, zoom: number} }} layout
  * @property {Record<string, Design>} [subsystems]   definitions of the subsystems used, also inside them, by name
+ * @property {import('./migration.js').MigrationNote[]} [migrations]   the changes of the catalog since the pins of the
+ *           file the design was opened from, until it is saved (not part of the file)
  */
 
 export class DesignError extends Error {

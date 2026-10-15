@@ -1,0 +1,19 @@
+# The changes of the blocks per source, as a chain of pin steps. When the catalog moves a source to a new pin, the
+# step lists what changed for its blocks; a system file saved with an older pin gets these changes applied and listed
+# when it is opened (assets/composer/js/model/migration.js, /composer/format/#changes).
+#
+#   <source id>:
+#     - previous: <the pin before, a full commit>
+#       pin: <the new pin; the last step of a source ends at its pin in sources.yml>
+#       evidence: "PR #<n> of the core: <the line of its Interfaces section>"
+#       changes:
+#         - { block: <block id>, kind: <kind>, text: <what changed, for the reader>, <keys of the kind> }
+#
+# Kinds and their keys: generic_renamed (from, to), generic_removed (generic), generic_default (generic, old; adopt:
+# <reason> takes the new default instead of keeping the old one), generic_added (generic), generic_range (generic),
+# interface_renamed (from, to), interface_removed (interface), interface_added (interface), registers, behaviour.
+#
+# The catalog check verifies every step at the pins: both commits exist, previous is an ancestor of pin, the steps
+# follow each other and end at the current pin, and the names exist as the current catalog has them.
+
+{}

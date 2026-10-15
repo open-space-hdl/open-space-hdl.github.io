@@ -146,7 +146,12 @@ export class Workspace {
       format: SNAPSHOT_FORMAT,
       formatVersion: 1,
       active: Math.max(0, this.tabs.findIndex((t) => t.id === this.activeId)),
-      tabs: this.tabs.map((t) => ({ document: toDocument(t.design, this.cat, { full: false }), dirty: t.dirty })),
+      tabs: this.tabs.map((t) => ({
+        document: toDocument(t.design, this.cat, { full: false }),
+        dirty: t.dirty,
+        // the changes since the pins of the opened file, until it is saved (the document is at the current pins)
+        ...(t.design.migrations?.length ? { migrations: t.design.migrations } : {}),
+      })),
     };
   }
 
@@ -164,6 +169,7 @@ export class Workspace {
     for (const t of s.tabs) {
       try {
         const { design } = fromDocument(t?.document, this.cat);
+        if (Array.isArray(t?.migrations) && t.migrations.length) design.migrations = t.migrations;
         tabs.push({ design, dirty: Boolean(t?.dirty) });
       } catch (e) {
         skipped.push(e instanceof Error ? e.message : String(e));

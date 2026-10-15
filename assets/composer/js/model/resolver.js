@@ -231,6 +231,10 @@ export function resolve(cat, d) {
   res.protection = analyseProtection(cat, d, res);
   res.checks.push(...res.protection.checks);
   res.readiness = analyseReadiness(cat, d, res);
+  // the changes of the catalog since the file was saved (model/migration.js), until it is saved again
+  for (const n of d.migrations ?? []) {
+    res.checks.push({ severity: 'info', rule: 'migration', message: `${n.instance}: ${n.text} ${n.action}`, ...(n.instance.includes('/') ? {} : { instance: n.instance }) });
+  }
   return res;
 }
 

@@ -447,5 +447,30 @@ file &lt;library&gt; &lt;path&gt;</code></pre>
       when it opens the file. <code>catalogSubset</code> holds the catalog entries the system was resolved with, so
       that a file explains itself without the catalog.
     </p>
+
+    <h2 id="changes">Changes of the blocks since a file was saved</h2>
+    <p>
+      A file records the commit of every source it was saved with (<code>sources[].commit</code>). The catalog records,
+      for every source, the chain of its pin steps: each step names the pin before it, the new pin, the evidence (the
+      pull request of the core and the line of its interface changes), and the changes of its blocks. When a file of an
+      older pin is opened, the steps since that pin apply, and the Composer lists every change that affects an
+      instance, with what it did:
+    </p>
+    <ul>
+      <li>a renamed generic or interface: the value, the connections and the external ports move to the new name;</li>
+      <li>a removed generic: its value is dropped; a removed interface: the connections and external ports at it are
+        dropped (a connection that is invalid without a recorded change still makes the file unreadable);</li>
+      <li>a changed default of a generic the instance does not set: the old default is written into the instance, so
+        the behaviour stays, unless the change takes the new default for a stated reason;</li>
+      <li>a new generic or interface, new bounds of a generic, changed registers or a changed behaviour: listed, with
+        what to check.</li>
+    </ul>
+    <p>
+      The editor shows the list when the file opens and keeps it in the inspector of the system until the system is
+      saved. The checks carry it as remarks of rule <code>migration</code>. A saved file is at the current pins, and
+      the list ends. The command line tool prints the list before the differences of the netlist. A commit the chain
+      does not know (older than its first step) is named: the changes of that source cannot be listed, and the
+      differences of the netlist remain the reference.
+    </p>
   </div>
 </section>

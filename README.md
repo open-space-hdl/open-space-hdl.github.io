@@ -106,6 +106,13 @@ takes the number of ECC channels from the double-error flags of the status regis
 memory whose errors it reports (`memory`). The Composer shows the interrupts and the protection scope of a system from
 them (`/composer/format/#interrupts`, `#protection`, rule `protection`).
 
+`_composer/catalog/changes.yml` records, per source, the chain of its pin steps and the changes of its blocks in
+each step (renamed, removed or added generics and interfaces, changed defaults and bounds, registers, behaviour), each
+step with its evidence: the pull request of the core and the line of its interface changes. The catalog check
+verifies the chain at the pins (both commits exist, one step follows the other, the last ends at the current pin, the
+names exist as the catalog has them). A file of an older pin is migrated when it is opened, and the changes that
+affect its instances are listed (`/composer/format/#changes`, rule `migration`). A pin bump adds its step here.
+
 In `sizes` the block description states the size limits of its interfaces (the longest packet, as a generic, an
 expression or a number, whether a generic or only the reset value of a register sets it, and what happens to a longer
 packet), the buffers that hold a whole message, the packets it sends over a link, the measured layout of a message
