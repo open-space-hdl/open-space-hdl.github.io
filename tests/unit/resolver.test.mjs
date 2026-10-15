@@ -6,6 +6,7 @@ import {
   setAdapterGeneric, setExternal, setGeneric, setSideband, setSystem,
 } from '../../assets/composer/js/model/design.js';
 import { isEnabled } from '../../assets/composer/js/model/generics.js';
+import { netlist } from '../../assets/composer/js/model/netlist.js';
 import { packAll, packing, resolve } from '../../assets/composer/js/model/resolver.js';
 import { catalogWith, connect, designWith, loadCatalog, streamBlock } from './helpers.mjs';
 
@@ -198,6 +199,24 @@ test('levels cross with olo_base_cc_bits, pulses with olo_base_cc_pulse, valid-o
   assert.equal(ad('c2')?.generics.NumPulses_g, 2);
   assert.equal(ad('c3')?.entity, 'olo_base_cc_bits');
   assert.equal(ad('c3')?.generics.Width_g, 1);
+});
+
+test('a pulse crossing carries every packed signal: the ECC events of a framer at a monitor in another clock domain', () => {
+  let d = addInstance(createDesign('t'), cat, 'opencrypto/ocr_framer', { x: 0, y: 0 }).design;
+  const dom = addDomain(d, { name: 'Monitor clock', frequencyHz: 50e6 });
+  d = addInstance(dom.design, cat, 'olo/olo_ft_ecc_monitor_axi', { x: 0, y: 0 }).design;
+  d = moveToDomain(d, cat, 'edac0', dom.id);
+  d = setGeneric(d, cat, 'edac0', 'Channels_g', 2).design;
+  d = link(cat, d, 'frm0.Ecc[1]', 'edac0.In[1]');
+  const r = resolve(cat, d);
+  const n = netlist(cat, d, r);
+  assert.deepEqual(n.problems, []);
+  // the single signal of olo_base_cc_pulse carries the packed sec (bit 0) and ded (bit 1) at both of its sides
+  const net = (/** @type {string} */ to) => n.nets.find((x) => x.to === to)?.from;
+  assert.equal(net('auto_cdc_c1_In_Pulse_s(0)'), 'frm0_Ecc_Sec_s(1)');
+  assert.equal(net('auto_cdc_c1_In_Pulse_s(1)'), 'frm0_Ecc_Ded_s(1)');
+  assert.equal(net('edac0_In_EccSec_s(1)'), 'auto_cdc_c1_Out_Pulse_s(0)');
+  assert.equal(net('edac0_In_EccDed_s(1)'), 'auto_cdc_c1_Out_Pulse_s(1)');
 });
 
 test('buses and resets cannot cross clock domains', () => {
