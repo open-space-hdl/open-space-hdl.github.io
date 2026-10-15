@@ -15,7 +15,7 @@ sources:
     repo: openwire
     url: https://github.com/open-space-hdl/openwire
     doc: https://openspacehdl.org/openwire/
-    commit: 4e3a2593bb7486e4c79b67c245dd8e54675409c8
+    commit: 09e4b1f67be8ba0808a267ffdebd1c22c513e861
     library: openwire
     file_list: compile_order.txt
     file_list_format: files

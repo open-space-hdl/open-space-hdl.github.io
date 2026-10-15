@@ -33,6 +33,13 @@ openwire:
     pin: 4e3a2593bb7486e4c79b67c245dd8e54675409c8
     evidence: "PR #8 of the core: Open Logic pin 4.7.0-ft.2 -> 4.7.0-ft.6; no change of ports, generics, streams or registers."
     changes: []
+  - previous: 4e3a2593bb7486e4c79b67c245dd8e54675409c8
+    pin: 09e4b1f67be8ba0808a267ffdebd1c22c513e861
+    evidence: "PR #9 of the core: the accepted generics are narrowed; ports, streams and registers are unchanged. RxFifoDepth_g: powers of 2 from 16 to 32768, before any power of 2 (CORE-CF-01). TxFifoDepth_g: powers of 2 from 2 to 32768, before any power of 2 from 2 (CORE-CF-01; the lower bound comes from Open Logic). LinkClkFreq_g: 18 to 22 MHz, 27 to 33 MHz, 36 to 44 MHz and 45 to 2554 MHz, before also 9 to 11 MHz and 2555 MHz or more (CORE-CF-02)."
+    changes:
+      - { block: openwire/owr_core, kind: generic_range, generic: RxFifoDepth_g, text: "RxFifoDepth_g: powers of 2 from 16 to 32768 (CORE-CF-01); the receive FIFO holds the eight N-Chars of an FCT and the reserved place of an EEP, FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields." }
+      - { block: openwire/owr_core, kind: generic_range, generic: TxFifoDepth_g, text: "TxFifoDepth_g: powers of 2 from 2 to 32768 (CORE-CF-01)." }
+      - { block: openwire/owr_core, kind: generic_range, generic: LinkClkFreq_g, text: "LinkClkFreq_g: 18 to 22 MHz, 27 to 33 MHz, 36 to 44 MHz and 45 to 2554 MHz; 9 to 11 MHz and 2555 MHz or more stop the elaboration now (CORE-CF-02)." }
 
 openrmap:
   - previous: 55033637795a009132286f60da90a6a876a9c087

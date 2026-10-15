@@ -1,5 +1,5 @@
 {
-  "catalog": "ee0ae20f8d6e",
+  "catalog": "e167ae45d430",
   "entity": "encrypted_spp_over_spw",
   "ports": [
     {
@@ -4474,7 +4474,7 @@
       "library": "openwire",
       "source": "openwire",
       "url": "https://github.com/open-space-hdl/openwire",
-      "commit": "4e3a2593bb7486e4c79b67c245dd8e54675409c8",
+      "commit": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.6",
@@ -4624,7 +4624,7 @@
           "registers": {
             "source": "openwire",
             "url": "https://github.com/open-space-hdl/openwire",
-            "commit": "4e3a2593bb7486e4c79b67c245dd8e54675409c8",
+            "commit": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
             "header": "sw/owr_regs.h",
             "doc": "hdl/owr_mib/docs/register_map.md",
             "prefix": "OWR"

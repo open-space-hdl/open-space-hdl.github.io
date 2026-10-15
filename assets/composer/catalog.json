@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "ee0ae20f8d6e",
+ "id": "e167ae45d430",
  "sources": [
   {
    "id": "openwire",
@@ -9,7 +9,7 @@
    "repo": "openwire",
    "url": "https://github.com/open-space-hdl/openwire",
    "doc": "https://openspacehdl.org/openwire/",
-   "commit": "4e3a2593bb7486e4c79b67c245dd8e54675409c8",
+   "commit": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
    "library": "openwire",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
@@ -63,6 +63,31 @@
      "pin": "4e3a2593bb7486e4c79b67c245dd8e54675409c8",
      "evidence": "PR #8 of the core: Open Logic pin 4.7.0-ft.2 -> 4.7.0-ft.6; no change of ports, generics, streams or registers.",
      "changes": []
+    },
+    {
+     "previous": "4e3a2593bb7486e4c79b67c245dd8e54675409c8",
+     "pin": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
+     "evidence": "PR #9 of the core: the accepted generics are narrowed; ports, streams and registers are unchanged. RxFifoDepth_g: powers of 2 from 16 to 32768, before any power of 2 (CORE-CF-01). TxFifoDepth_g: powers of 2 from 2 to 32768, before any power of 2 from 2 (CORE-CF-01; the lower bound comes from Open Logic). LinkClkFreq_g: 18 to 22 MHz, 27 to 33 MHz, 36 to 44 MHz and 45 to 2554 MHz, before also 9 to 11 MHz and 2555 MHz or more (CORE-CF-02).",
+     "changes": [
+      {
+       "block": "openwire/owr_core",
+       "kind": "generic_range",
+       "generic": "RxFifoDepth_g",
+       "text": "RxFifoDepth_g: powers of 2 from 16 to 32768 (CORE-CF-01); the receive FIFO holds the eight N-Chars of an FCT and the reserved place of an EEP, FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields."
+      },
+      {
+       "block": "openwire/owr_core",
+       "kind": "generic_range",
+       "generic": "TxFifoDepth_g",
+       "text": "TxFifoDepth_g: powers of 2 from 2 to 32768 (CORE-CF-01)."
+      },
+      {
+       "block": "openwire/owr_core",
+       "kind": "generic_range",
+       "generic": "LinkClkFreq_g",
+       "text": "LinkClkFreq_g: 18 to 22 MHz, 27 to 33 MHz, 36 to 44 MHz and 45 to 2554 MHz; 9 to 11 MHz and 2555 MHz or more stop the elaboration now (CORE-CF-02)."
+      }
+     ]
     }
    ]
   },
@@ -12284,6 +12309,18 @@
      "tolerance": 0.1
     },
     {
+     "kind": "generic_range",
+     "generic": "LinkClkFreq_g",
+     "min": 13200000,
+     "message": "the receiver samples the initial rate of the far end, at most 11 Mb/s, with 1.2 LinkClk periods per bit (CORE-CF-02)"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "LinkClkFreq_g",
+     "max": 2554999999,
+     "message": "LINK_SPEED.INIT_DIV, round(LinkClkFreq_g / 10 MHz), is an 8-bit field: below 2555 MHz (CORE-CF-02)"
+    },
+    {
      "kind": "run_rate",
      "clock": "LinkClk",
      "divider": "RunDiv_g",
@@ -12307,6 +12344,12 @@
      "generic": "TxFifoDepth_g",
      "max": 32768,
      "message": "FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "TxFifoDepth_g",
+     "min": 2,
+     "message": "the Open Logic FIFO holds at least 2 entries (CORE-CF-01)"
     }
    ],
    "constraints": [
@@ -12396,15 +12439,15 @@
     ]
    },
    "sizes": {
-    "evidence": "no length limit by design: N-Chars stream through N-Char FIFOs without a packet concept, the only counter of the data path is the credit (owr_data_link.vhd); tested up to 1000 B (TC-CORE-11, TC-DL-40)",
+    "evidence": "no length limit by design: N-Chars stream through N-Char FIFOs without a packet concept, the only counter of the data path is the credit (owr_data_link.vhd); packets of up to 65542 bytes simulated, also with a link error in the middle (TC-CORE-17, TC-CORE-18, user guide section 7)",
     "interfaces": {
      "S_Pkt": {
       "noLimit": true,
-      "tested": 1000
+      "tested": 65542
      },
      "M_Pkt": {
       "noLimit": true,
-      "tested": 1000
+      "tested": 65542
      }
     }
    },

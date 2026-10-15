@@ -128,7 +128,7 @@ test('the brief lists the largest packets, the buffers, what leaves over a link 
   assert.match(section, /\| `spp0\.S_Link` \| not bounded \(the link of spw0\) \| 65546 B \| reset value \|/);
   assert.match(section, /- `ocr0\.M_Out`: the longest message \(ChunkBytes_g \+ 32 = 4128 B\) takes 1032 beats of 4 B; the buffer holds 16384 B = 4096 beats\./);
   assert.match(section, /- spp0 sends Space Packets of up to ChunkBytes_g \+ 38 = 4134 bytes\./);
-  assert.match(section, /- `owr_core` \(`spw0`\): no length limit, tested up to 1000 B\./);
+  assert.match(section, /- `owr_core` \(`spw0`\): no length limit, tested up to 65542 B\./);
   assert.match(section, /- `spp_nchar` \(`nchar0`\)\./);
   // the evidence of the size data of every block in the system that has them
   assert.match(section, /Evidence of the size data:\n\n- `ocr_core`: [^\n]*TC-CO-15 [^\n]*TC-CO-16 \(framer chunks of 4096 bytes at 128 bit, hdl\/ocr_core\/docs\/verification_report\.md\)\.\n- `ocr_framer`: /);

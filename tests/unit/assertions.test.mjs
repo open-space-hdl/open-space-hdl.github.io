@@ -3,7 +3,7 @@
 // where there is one, the next valid value. Each case names the assertion it mirrors.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addInstance, createDesign, setGeneric } from '../../assets/composer/js/model/design.js';
+import { addDomain, addInstance, assignClock, createDesign, setGeneric } from '../../assets/composer/js/model/design.js';
 import { resolve } from '../../assets/composer/js/model/resolver.js';
 import { literalBits, ruleApplies } from '../../assets/composer/js/model/rules.js';
 import { loadCatalog } from './helpers.mjs';
@@ -108,4 +108,21 @@ test('conditions and widths of bit strings', () => {
   assert.equal(literalBits('12x"FFF"'), 12);
   assert.equal(literalBits('o"17"'), 6);
   assert.equal(literalBits("(others => '0')"), undefined);
+});
+
+test('openwire/owr_core: the link clock lies in 18 to 22, 27 to 33, 36 to 44 or 45 to 2554 MHz (CORE-CF-02)', () => {
+  /** @param {number} hz */
+  const findings = (hz) => {
+    let d = addInstance(createDesign('t'), cat, 'openwire/owr_core', { x: 0, y: 0 }).design;
+    const r = addDomain(d, { name: 'Link clock', frequencyHz: hz });
+    d = assignClock(r.design, cat, 'spw0', 'LinkClk', r.id);
+    return resolve(cat, d).checks.filter((c) => c.severity === 'error' && (c.rule === 'generic_range' || c.rule === 'clock_freq_multiple')).map((c) => c.message);
+  };
+  for (const hz of [20e6, 30e6, 44e6, 45e6, 200e6, 2554e6]) assert.deepEqual(findings(hz), [], `${hz / 1e6} MHz`);
+  // 10 MHz is a multiple of 10 MHz, but the receiver cannot sample the initial rate of the far end
+  assert.deepEqual(findings(10e6), ['spw0: LinkClkFreq_g = 10000000 must be at least 13200000 (the receiver samples the initial rate of the far end, at most 11 Mb/s, with 1.2 LinkClk periods per bit (CORE-CF-02)).']);
+  // 2555 MHz needs an initial divider of 256
+  assert.deepEqual(findings(2555e6), ['spw0: LinkClkFreq_g = 2555000000 must be at most 2554999999 (LINK_SPEED.INIT_DIV, round(LinkClkFreq_g / 10 MHz), is an 8-bit field: below 2555 MHz (CORE-CF-02)).']);
+  // between the ranges the multiple of 10 MHz rule applies
+  assert.equal(findings(25e6).length, 1);
 });
