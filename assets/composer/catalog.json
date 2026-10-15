@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "c0f984e5216d",
+ "id": "ed8d65f4c507",
  "sources": [
   {
    "id": "openwire",
@@ -1476,6 +1476,7 @@
      "clock": "Clk",
      "label": "EDAC events",
      "tieOff": "open",
+     "memory": "FIFO memory",
      "signals": {
       "sec": "Out_EccSec",
       "ded": "Out_EccDed"
@@ -1902,6 +1903,7 @@
      "clock": "Out_Clk",
      "label": "EDAC events",
      "tieOff": "open",
+     "memory": "FIFO memory",
      "signals": {
       "sec": "Out_EccSec",
       "ded": "Out_EccDed"
@@ -2302,6 +2304,7 @@
      "clock": "Clk",
      "label": "EDAC events",
      "tieOff": "open",
+     "memory": "FIFO memory",
      "signals": {
       "sec": "Out_EccSec",
       "ded": "Out_EccDed"
@@ -6882,6 +6885,28 @@
    "packages": [
     "ocr_pkg"
    ],
+   "protection": {
+    "evidence": "user guide section 6 (protection scope) and the register map",
+    "ecc": {
+     "count": {
+      "name": "ECC_COUNT",
+      "offset": 200
+     },
+     "inject": {
+      "name": "ECC_INJECT",
+      "offset": 204
+     },
+     "select": {
+      "name": "ECC_SELECT",
+      "offset": 196
+     },
+     "status": {
+      "name": "ECC_STATUS",
+      "offset": 192
+     },
+     "channels": 18
+    }
+   },
    "registers": {
     "map": "hdl/ocr_mib/regs/ocr_regs.yml",
     "header": "sw/ocr_regs.h",
@@ -7195,6 +7220,22 @@
      "clock": "Clk",
      "label": "Interrupt",
      "tieOff": "open",
+     "irqRegisters": {
+      "enable": [
+       {
+        "name": "IRQ_EN",
+        "offset": 28
+       }
+      ],
+      "events": {
+       "name": "EVENTS",
+       "offset": 24
+      },
+      "status": {
+       "name": "IRQ_STATUS",
+       "offset": 32
+      }
+     },
      "signals": {
       "irq": "Irq"
      }
@@ -7778,6 +7819,10 @@
      "description": "Element 0 the chunk buffer, element 1 the position FIFO.",
      "vector": "2",
      "tieOff": "open",
+     "memory": [
+      "chunk buffer",
+      "position FIFO"
+     ],
      "signals": {
       "sec": "Ecc_Sec",
       "ded": "Ecc_Ded"
@@ -8099,6 +8144,28 @@
       "noLimit": true,
       "tested": 1024
      }
+    }
+   },
+   "protection": {
+    "evidence": "user guide section 8 (protection scope) and the register map",
+    "ecc": {
+     "count": {
+      "name": "ECC_COUNT",
+      "offset": 104
+     },
+     "inject": {
+      "name": "ECC_INJECT",
+      "offset": 108
+     },
+     "select": {
+      "name": "ECC_SELECT",
+      "offset": 100
+     },
+     "status": {
+      "name": "ECC_STATUS",
+      "offset": 96
+     },
+     "channels": 9
     }
    },
    "registers": {
@@ -8431,6 +8498,14 @@
      "clock": "MgmtClk",
      "label": "Interrupt",
      "tieOff": "open",
+     "irqRegisters": {
+      "enable": [
+       {
+        "name": "IRQ_MASK",
+        "offset": 68
+       }
+      ]
+     },
      "signals": {
       "irq": "Irq"
      }
@@ -9300,6 +9375,28 @@
    "packages": [
     "omap_pkg"
    ],
+   "protection": {
+    "evidence": "user guide section 6 (protection scope) and the register map",
+    "ecc": {
+     "count": {
+      "name": "ECC_COUNT",
+      "offset": 168
+     },
+     "inject": {
+      "name": "ECC_INJECT",
+      "offset": 172
+     },
+     "select": {
+      "name": "ECC_SELECT",
+      "offset": 164
+     },
+     "status": {
+      "name": "ECC_STATUS",
+      "offset": 160
+     },
+     "channels": 3
+    }
+   },
    "registers": {
     "map": "hdl/omap_mib/regs/omap_regs.yml",
     "header": "sw/omap_regs.h",
@@ -9635,6 +9732,22 @@
      "clock": "Clk",
      "label": "Interrupt",
      "tieOff": "open",
+     "irqRegisters": {
+      "enable": [
+       {
+        "name": "IRQ_EN",
+        "offset": 148
+       }
+      ],
+      "events": {
+       "name": "EVENTS",
+       "offset": 144
+      },
+      "status": {
+       "name": "IRQ_STATUS",
+       "offset": 152
+      }
+     },
      "signals": {
       "irq": "Irq"
      }
@@ -10714,6 +10827,28 @@
    "packages": [
     "spp_pkg"
    ],
+   "protection": {
+    "evidence": "user guide section 6 (protection scope) and the register map",
+    "ecc": {
+     "count": {
+      "name": "ECC_COUNT",
+      "offset": 104
+     },
+     "inject": {
+      "name": "ECC_INJECT",
+      "offset": 108
+     },
+     "select": {
+      "name": "ECC_SELECT",
+      "offset": 100
+     },
+     "status": {
+      "name": "ECC_STATUS",
+      "offset": 96
+     },
+     "channels": 8
+    }
+   },
    "registers": {
     "map": "hdl/spp_mib/regs/spp_regs.yml",
     "header": "sw/spp_regs.h",
@@ -11169,6 +11304,22 @@
      "clock": "Clk",
      "label": "Interrupt",
      "tieOff": "open",
+     "irqRegisters": {
+      "enable": [
+       {
+        "name": "IRQ_EN",
+        "offset": 88
+       }
+      ],
+      "events": {
+       "name": "EVENTS",
+       "offset": 84
+      },
+      "status": {
+       "name": "IRQ_STATUS",
+       "offset": 92
+      }
+     },
      "signals": {
       "irq": "Irq"
      }
@@ -11956,6 +12107,28 @@
      }
     }
    },
+   "protection": {
+    "evidence": "user guide section 5 (protection scope) and the register map",
+    "ecc": {
+     "count": {
+      "name": "ECC_COUNT",
+      "offset": 136
+     },
+     "inject": {
+      "name": "ECC_INJECT",
+      "offset": 140
+     },
+     "select": {
+      "name": "ECC_SELECT",
+      "offset": 132
+     },
+     "status": {
+      "name": "ECC_STATUS",
+      "offset": 128
+     },
+     "channels": 6
+    }
+   },
    "registers": {
     "map": "hdl/owr_mib/regs/owr_regs.yml",
     "header": "sw/owr_regs.h",
@@ -12282,6 +12455,26 @@
      "clock": "MgmtClk",
      "label": "Interrupt",
      "tieOff": "open",
+     "irqRegisters": {
+      "enable": [
+       {
+        "name": "EVENTS_IRQ_EN",
+        "offset": 56
+       },
+       {
+        "name": "ERRORS_IRQ_EN",
+        "offset": 52
+       }
+      ],
+      "events": {
+       "name": "EVENTS",
+       "offset": 48
+      },
+      "status": {
+       "name": "IRQ_STATUS",
+       "offset": 60
+      }
+     },
      "signals": {
       "irq": "Irq"
      }

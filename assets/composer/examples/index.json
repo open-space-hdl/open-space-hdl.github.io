@@ -22,7 +22,7 @@
       "file": "encrypted_spp_over_spw.composer.json",
       "name": "encrypted_spp_over_spw",
       "title": "Encrypted packets over SpaceWire",
-      "description": "Encrypted packets over SpaceWire: the OpenCrypto framer cuts every input packet (for example a compressed image) into chunks, the AES-GCM core encrypts every chunk with a generated IV and a 4-byte position in the AAD, and OpenSPP sends every encrypted chunk as one Space Packet through an N-Char adapter and an OpenWire port."
+      "description": "Encrypted packets over SpaceWire: the OpenCrypto framer cuts every input packet (for example a compressed image) into chunks, the AES-GCM core encrypts every chunk with a generated IV and a 4-byte position in the AAD, and OpenSPP sends every encrypted chunk as one Space Packet through an N-Char adapter and an OpenWire port. An ECC monitor reports the corrected and detected errors of the buffers of the framer."
     },
     {
       "file": "spacefibre_node.composer.json",

@@ -981,6 +981,316 @@
               }
             }
           }
+        },
+        "interrupts": {
+          "type": "array",
+          "description": "Interrupt outputs of the system (since 0.6.0-beta), written when the system has one: the source, its clock domain, where it goes (to: a top-level port, the event input of a block, or open) and its enable, status and events registers in the register map of its block (name and byte offset).",
+          "items": {
+            "type": "object",
+            "required": [
+              "source",
+              "instance",
+              "entity",
+              "to",
+              "enable"
+            ],
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "instance": {
+                "type": "string"
+              },
+              "entity": {
+                "type": "string"
+              },
+              "domain": {
+                "type": "string"
+              },
+              "to": {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "port",
+                      "block",
+                      "open"
+                    ]
+                  },
+                  "port": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "toEntity": {
+                    "type": "string"
+                  },
+                  "channel": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              "enable": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "offset"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              },
+              "status": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "offset"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "offset": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "events": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "offset"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "offset": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "protection": {
+          "type": "object",
+          "description": "Protection scope of the system (since 0.6.0-beta), written when there is something to report. blocks: the blocks that protect their memories with SECDED ECC and report it in their registers (channels, status, select, count and injection registers, evidence). events: every ECC event output of a memory and where it is reported (to; open means not reported); inserted marks the crossings the Composer inserts. crossings: the inserted clock domain crossings. faultTolerance: whether they are fault-tolerant.",
+          "required": [
+            "faultTolerance",
+            "blocks",
+            "events",
+            "crossings"
+          ],
+          "properties": {
+            "faultTolerance": {
+              "type": "boolean"
+            },
+            "blocks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "instance",
+                  "entity",
+                  "channels",
+                  "status",
+                  "select",
+                  "count",
+                  "inject",
+                  "evidence"
+                ],
+                "properties": {
+                  "instance": {
+                    "type": "string"
+                  },
+                  "entity": {
+                    "type": "string"
+                  },
+                  "channels": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "status": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "offset"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "offset": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "select": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "offset"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "offset": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "count": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "offset"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "offset": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "inject": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "offset"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "offset": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "evidence": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "source",
+                  "instance",
+                  "entity",
+                  "memory",
+                  "inserted",
+                  "registers",
+                  "to"
+                ],
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "instance": {
+                    "type": "string"
+                  },
+                  "entity": {
+                    "type": "string"
+                  },
+                  "memory": {
+                    "type": "string"
+                  },
+                  "inserted": {
+                    "type": "boolean"
+                  },
+                  "registers": {
+                    "type": "boolean"
+                  },
+                  "to": {
+                    "type": "object",
+                    "required": [
+                      "kind"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "port",
+                          "block",
+                          "open"
+                        ]
+                      },
+                      "port": {
+                        "type": "string"
+                      },
+                      "to": {
+                        "type": "string"
+                      },
+                      "toEntity": {
+                        "type": "string"
+                      },
+                      "channel": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "crossings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "instance",
+                  "entity",
+                  "connection",
+                  "ecc"
+                ],
+                "properties": {
+                  "instance": {
+                    "type": "string"
+                  },
+                  "entity": {
+                    "type": "string"
+                  },
+                  "connection": {
+                    "type": "string"
+                  },
+                  "ecc": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2069,6 +2379,316 @@
               },
               "windows": {
                 "type": "object"
+              }
+            }
+          }
+        },
+        "interrupts": {
+          "type": "array",
+          "description": "Interrupt outputs of the system (since 0.6.0-beta), written when the system has one: the source, its clock domain, where it goes (to: a top-level port, the event input of a block, or open) and its enable, status and events registers in the register map of its block (name and byte offset).",
+          "items": {
+            "type": "object",
+            "required": [
+              "source",
+              "instance",
+              "entity",
+              "to",
+              "enable"
+            ],
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "instance": {
+                "type": "string"
+              },
+              "entity": {
+                "type": "string"
+              },
+              "domain": {
+                "type": "string"
+              },
+              "to": {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "port",
+                      "block",
+                      "open"
+                    ]
+                  },
+                  "port": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "toEntity": {
+                    "type": "string"
+                  },
+                  "channel": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              "enable": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "offset"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              },
+              "status": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "offset"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "offset": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "events": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "offset"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "offset": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "protection": {
+          "type": "object",
+          "description": "Protection scope of the system (since 0.6.0-beta), written when there is something to report. blocks: the blocks that protect their memories with SECDED ECC and report it in their registers (channels, status, select, count and injection registers, evidence). events: every ECC event output of a memory and where it is reported (to; open means not reported); inserted marks the crossings the Composer inserts. crossings: the inserted clock domain crossings. faultTolerance: whether they are fault-tolerant.",
+          "required": [
+            "faultTolerance",
+            "blocks",
+            "events",
+            "crossings"
+          ],
+          "properties": {
+            "faultTolerance": {
+              "type": "boolean"
+            },
+            "blocks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "instance",
+                  "entity",
+                  "channels",
+                  "status",
+                  "select",
+                  "count",
+                  "inject",
+                  "evidence"
+                ],
+                "properties": {
+                  "instance": {
+                    "type": "string"
+                  },
+                  "entity": {
+                    "type": "string"
+                  },
+                  "channels": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "status": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "offset"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "offset": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "select": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "offset"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "offset": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "count": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "offset"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "offset": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "inject": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "offset"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "offset": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  "evidence": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "source",
+                  "instance",
+                  "entity",
+                  "memory",
+                  "inserted",
+                  "registers",
+                  "to"
+                ],
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "instance": {
+                    "type": "string"
+                  },
+                  "entity": {
+                    "type": "string"
+                  },
+                  "memory": {
+                    "type": "string"
+                  },
+                  "inserted": {
+                    "type": "boolean"
+                  },
+                  "registers": {
+                    "type": "boolean"
+                  },
+                  "to": {
+                    "type": "object",
+                    "required": [
+                      "kind"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "port",
+                          "block",
+                          "open"
+                        ]
+                      },
+                      "port": {
+                        "type": "string"
+                      },
+                      "to": {
+                        "type": "string"
+                      },
+                      "toEntity": {
+                        "type": "string"
+                      },
+                      "channel": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "crossings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "instance",
+                  "entity",
+                  "connection",
+                  "ecc"
+                ],
+                "properties": {
+                  "instance": {
+                    "type": "string"
+                  },
+                  "entity": {
+                    "type": "string"
+                  },
+                  "connection": {
+                    "type": "string"
+                  },
+                  "ecc": {
+                    "type": "boolean"
+                  }
+                }
               }
             }
           }

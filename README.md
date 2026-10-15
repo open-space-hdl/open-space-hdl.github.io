@@ -95,6 +95,13 @@ target) says in `addressSpace` what its addresses are and which windows accept t
 map of a system from them (`/composer/format/#address-map`, rule `address_map`), and the export writes it with a C
 header.
 
+A core with registers also names the registers of its interrupt (`irqRegisters` on its `Irq` interface: events,
+enables, status) and, in `protection`, the ECC of its memories (status, select, count and injection registers, with
+the protection scope of its user guide as evidence). The catalog check finds them in the register map at the pin and
+takes the number of ECC channels from the double-error flags of the status register. An ECC event interface names the
+memory whose errors it reports (`memory`). The Composer shows the interrupts and the protection scope of a system from
+them (`/composer/format/#interrupts`, `#protection`, rule `protection`).
+
 In `sizes` the block description states the size limits of its interfaces (the longest packet, as a generic, an
 expression or a number, whether a generic or only the reset value of a register sets it, and what happens to a longer
 packet), the buffers that hold a whole message, the packets it sends over a link, the measured layout of a message

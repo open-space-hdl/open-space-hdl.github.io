@@ -1,0 +1,292 @@
+// @ts-check
+/**
+ * System views (pure, no DOM): the interrupts of a system and its protection scope.
+ *
+ *   interrupts   every interrupt output (type irq) with its clock domain, where it goes (a top-level port, the event
+ *                input of a block, or open) and its registers (enable, status, events) in the register map of its block
+ *   protection   the blocks that protect their memories with ECC themselves (channels, status and injection
+ *                registers), where every ECC event output goes (a channel of an ECC monitor, another block, a top-level
+ *                port, or open: not reported), and the clock crossings the Composer inserts
+ *
+ * Event outputs are followed through the interfaces of subsystems; the instances inside are named with their path. An
+ * open ECC event output of a block the user placed is a warning (its errors are not reported), an info where the block
+ * also reports its ECC in its own registers; an open one of an inserted crossing is an info (the Composer leaves it
+ * open, and the user cannot connect it).
+ */
+
+/** @typedef {import('./catalog.js').Catalog} Catalog */
+/** @typedef {import('./design.js').Design} Design */
+/** @typedef {import('./resolver.js').Resolved} Resolved */
+/** @typedef {import('./resolver.js').Check} Check */
+
+/**
+ * @typedef {object} EventTarget   where an event output goes
+ * @property {'port' | 'block' | 'open'} kind
+ * @property {string} [port]       prefix of the top-level port
+ * @property {string} [to]         the event input it is connected to ("edac0.In[3]")
+ * @property {string} [toEntity]   entity of the block with that input
+ * @property {number | null} [channel]   index of that input (the channel of an ECC monitor)
+ */
+
+/**
+ * @typedef {object} EventSource
+ * @property {string} key          "frm0.Ecc[1]", with the path of subsystems
+ * @property {string} instance
+ * @property {string} interface
+ * @property {number | null} index
+ * @property {any} block
+ * @property {any} rec
+ * @property {any} port
+ * @property {boolean} inserted    a block the Composer inserted
+ * @property {string} [domain]     clock domain id
+ * @property {EventTarget} to
+ */
+
+/**
+ * The event outputs of the given types and where they go, through the interfaces of subsystems.
+ * @param {Catalog} cat
+ * @param {Design} d
+ * @param {Resolved} res
+ * @param {Set<string>} types
+ * @returns {EventSource[]}
+ */
+export function eventSources(cat, d, res, types) {
+  /** @type {Map<string, { kind: 'block' | 'pass', rec: any, block: any, port: any, instance: string, dir: 'out' | 'in' }>} */
+  const nodes = new Map();
+  /** @type {Map<string, string>} */
+  const next = new Map();
+  /** @type {Map<string, string>} */
+  const externals = new Map();
+
+  /**
+   * @param {Design} dd
+   * @param {Resolved} rr
+   * @param {string} prefix
+   * @returns {Map<string, string>}
+   */
+  const level = (dd, rr, prefix) => {
+    for (const rec of rr.instances) {
+      const b = cat.blocks.get(rec.block);
+      if (!b) continue;
+      const sub = /** @type {any} */ (cat).subsystemInfo && b.kind === 'subsystem' ? b.entity : null;
+      if (sub) {
+        const info = /** @type {any} */ (cat).subsystemInfo.get(sub);
+        if (!info) continue;
+        const inner = level(info.design, info.res, `${prefix}${rec.id}/`);
+        for (const ext of info.res.externals) {
+          const name = ext.prefix.replace(/_$/, '');
+          const itf = b.interfaces.find((/** @type {any} */ i) => i.name === name);
+          const innerKey = inner.get(ext.interface);
+          if (!itf || !innerKey || !types.has(itf.type)) continue;
+          const key = `${prefix}${rec.id}.${name}`;
+          const dir = itf.role === 'event_out' ? 'out' : 'in';
+          nodes.set(key, { kind: 'pass', rec, block: b, port: null, instance: `${prefix}${rec.id}`, dir });
+          if (dir === 'out') next.set(innerKey, key);
+          else next.set(key, innerKey);
+        }
+        continue;
+      }
+      for (const p of cat.ports(b, rec.generics)) {
+        if (!types.has(p.itf.type) || (p.itf.role !== 'event_out' && p.itf.role !== 'event_in')) continue;
+        nodes.set(`${prefix}${rec.id}.${p.ref}`, { kind: 'block', rec, block: b, port: p, instance: `${prefix}${rec.id}`, dir: p.itf.role === 'event_out' ? 'out' : 'in' });
+      }
+    }
+    for (const c of rr.chains) {
+      for (const h of c.hops) {
+        const a = nodes.get(`${prefix}${h.from}`);
+        const z = nodes.get(`${prefix}${h.to}`);
+        if (!a || !z) continue;
+        if (a.dir === 'out' || z.dir === 'in') next.set(`${prefix}${h.from}`, `${prefix}${h.to}`);
+        else next.set(`${prefix}${h.to}`, `${prefix}${h.from}`);
+      }
+    }
+    /** @type {Map<string, string>} */
+    const exts = new Map();
+    for (const e of rr.externals) if (nodes.has(`${prefix}${e.interface}`)) exts.set(e.interface, `${prefix}${e.interface}`);
+    return exts;
+  };
+  level(d, res, '');
+  for (const e of res.externals) if (nodes.has(e.interface)) externals.set(e.interface, e.prefix);
+
+  /** @type {EventSource[]} */
+  const out = [];
+  for (const [key, n] of nodes) {
+    if (n.kind !== 'block' || n.dir !== 'out') continue;
+    let k = key;
+    for (let i = 0; i < 64; i += 1) {
+      const m = next.get(k);
+      if (!m) break;
+      k = m;
+      if (nodes.get(k)?.kind !== 'pass') break;
+    }
+    const end = nodes.get(k);
+    /** @type {EventTarget} */
+    let to = { kind: 'open' };
+    if (k !== key && end?.kind === 'block' && end.dir === 'in') to = { kind: 'block', to: k, toEntity: end.block.entity, channel: end.port.index };
+    else if (externals.has(k)) to = { kind: 'port', port: externals.get(k) };
+    out.push({
+      key,
+      instance: n.instance,
+      interface: n.port.itf.name,
+      index: n.port.index,
+      block: n.block,
+      rec: n.rec,
+      port: n.port,
+      inserted: n.rec.origin === 'auto',
+      domain: n.port.itf.clock ? n.rec.clocks?.[n.port.itf.clock] : n.rec.domain,
+      to,
+    });
+  }
+  return out.sort((a, b) => a.key.localeCompare(b.key, 'en', { numeric: true }));
+}
+
+/**
+ * @typedef {object} Interrupt
+ * @property {string} source       "spp0.Irq"
+ * @property {string} instance
+ * @property {string} entity
+ * @property {string} [domain]     clock domain id
+ * @property {EventTarget} to
+ * @property {{ name: string, offset: number }[]} enable
+ * @property {{ name: string, offset: number }} [status]
+ * @property {{ name: string, offset: number }} [events]
+ */
+
+/**
+ * The interrupts of a system.
+ * @param {Catalog} cat
+ * @param {Design} d
+ * @param {Resolved} res
+ * @returns {Interrupt[]}
+ */
+export function analyseInterrupts(cat, d, res) {
+  return eventSources(cat, d, res, new Set(['irq'])).map((s) => {
+    const regs = s.port.itf.irqRegisters;
+    return {
+      source: s.key,
+      instance: s.instance,
+      entity: s.block.entity,
+      ...(s.domain ? { domain: s.domain } : {}),
+      to: s.to,
+      enable: regs?.enable ?? [],
+      ...(regs?.status ? { status: regs.status } : {}),
+      ...(regs?.events ? { events: regs.events } : {}),
+    };
+  });
+}
+
+/**
+ * @typedef {object} ProtectedBlock   a block that protects its memories with ECC and reports it in its registers
+ * @property {string} instance
+ * @property {string} entity
+ * @property {number} channels
+ * @property {{ name: string, offset: number }} status
+ * @property {{ name: string, offset: number }} select
+ * @property {{ name: string, offset: number }} count
+ * @property {{ name: string, offset: number }} inject
+ * @property {string} evidence
+ */
+
+/**
+ * @typedef {object} EccEvent   an ECC event output and where it goes
+ * @property {string} source
+ * @property {string} instance
+ * @property {string} entity
+ * @property {string} memory       the memory whose errors it reports
+ * @property {boolean} inserted
+ * @property {boolean} registers   the block also reports its ECC in its own registers
+ * @property {EventTarget} to
+ */
+
+/**
+ * @typedef {object} Protection
+ * @property {boolean} faultTolerance   the crossings the Composer inserts are fault-tolerant
+ * @property {ProtectedBlock[]} blocks
+ * @property {EccEvent[]} events
+ * @property {{ instance: string, entity: string, connection: string, ecc: boolean }[]} crossings   inserted crossings
+ * @property {Check[]} checks
+ */
+
+/**
+ * The protection scope of a system.
+ * @param {Catalog} cat
+ * @param {Design} d
+ * @param {Resolved} res
+ * @returns {Protection}
+ */
+export function analyseProtection(cat, d, res) {
+  /** @type {ProtectedBlock[]} */
+  const blocks = [];
+  /** @param {Resolved} rr @param {string} prefix */
+  const walk = (rr, prefix) => {
+    for (const rec of rr.instances) {
+      const b = cat.blocks.get(rec.block);
+      if (!b) continue;
+      const info = b.kind === 'subsystem' ? /** @type {any} */ (cat).subsystemInfo?.get(b.entity) : null;
+      if (info) {
+        walk(info.res, `${prefix}${rec.id}/`);
+        continue;
+      }
+      const ecc = /** @type {any} */ (b).protection?.ecc;
+      if (ecc) {
+        blocks.push({
+          instance: `${prefix}${rec.id}`, entity: b.entity, channels: ecc.channels,
+          status: ecc.status, select: ecc.select, count: ecc.count, inject: ecc.inject,
+          evidence: /** @type {any} */ (b).protection.evidence,
+        });
+      }
+    }
+  };
+  walk(res, '');
+
+  // the ECC events of memories: not the summary outputs of a block that collects ECC events (a monitor)
+  const monitor = (/** @type {any} */ b) => b.interfaces.some((/** @type {any} */ i) => i.type === 'ecc.event' && i.role === 'event_in');
+  const events = eventSources(cat, d, res, new Set(['ecc.event']))
+    .filter((s) => !monitor(s.block))
+    .map((s) => {
+      const mem = s.port.itf.memory;
+      const memory = Array.isArray(mem) ? mem[s.index ?? 0] ?? mem[0] : mem ?? 'its memories';
+      return {
+        source: s.key,
+        instance: s.instance,
+        entity: s.block.entity,
+        memory: String(memory),
+        inserted: s.inserted,
+        registers: Boolean(/** @type {any} */ (s.block).protection?.ecc),
+        to: s.to,
+      };
+    });
+
+  const crossings = res.instances
+    .filter((r) => r.origin === 'auto' && /** @type {any} */ (r).role === 'cdc')
+    .map((r) => {
+      const b = cat.blocks.get(r.block);
+      return {
+        instance: r.id,
+        entity: r.entity,
+        connection: String(/** @type {any} */ (r).connection ?? ''),
+        ecc: Boolean(b?.interfaces.some((/** @type {any} */ i) => i.type === 'ecc.event')),
+      };
+    });
+
+  /** @type {Check[]} */
+  const checks = [];
+  for (const e of events) {
+    if (e.to.kind !== 'open') continue;
+    const where = e.instance.includes('/') ? {} : { instance: e.instance };
+    if (e.inserted) {
+      const c = crossings.find((x) => x.instance === e.instance);
+      checks.push({ severity: 'info', rule: 'protection', message: `The ECC events of the inserted crossing ${e.instance}${c?.connection ? ` (${c.connection})` : ''} are not reported: the Composer leaves them open.`, ...where });
+    } else {
+      checks.push({
+        severity: e.registers ? 'info' : 'warning',
+        rule: 'protection',
+        message: e.registers
+          ? `${e.source} reports the corrected and detected errors of the ${e.memory} of ${e.instance} but is not connected: they are reported only in the registers of ${e.instance}, not centrally. Connect it to a channel of an olo_ft_ecc_monitor_axi.`
+          : `${e.source} reports the corrected and detected errors of the ${e.memory} of ${e.instance} but is not connected: they are not reported. Connect it to a channel of an olo_ft_ecc_monitor_axi.`,
+        ...where,
+      });
+    }
+  }
+  return { faultTolerance: d.faultTolerance !== false, blocks, events, crossings, checks };
+}

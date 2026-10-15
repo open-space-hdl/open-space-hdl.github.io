@@ -142,13 +142,14 @@ function linkDomain(d, spw, hz) {
 {
   let d = base(
     'encrypted_spp_over_spw',
-    'Encrypted packets over SpaceWire: the OpenCrypto framer cuts every input packet (for example a compressed image) into chunks, the AES-GCM core encrypts every chunk with a generated IV and a 4-byte position in the AAD, and OpenSPP sends every encrypted chunk as one Space Packet through an N-Char adapter and an OpenWire port.',
+    'Encrypted packets over SpaceWire: the OpenCrypto framer cuts every input packet (for example a compressed image) into chunks, the AES-GCM core encrypts every chunk with a generated IV and a 4-byte position in the AAD, and OpenSPP sends every encrypted chunk as one Space Packet through an N-Char adapter and an OpenWire port. An ECC monitor reports the corrected and detected errors of the buffers of the framer.',
     [
       ['opencrypto/ocr_framer', undefined],
       ['opencrypto/ocr_core', undefined],
       ['openspp/spp_core', undefined],
       ['openspp/spp_nchar', undefined],
       ['openwire/owr_core', undefined],
+      ['olo/olo_ft_ecc_monitor_axi', undefined],
     ],
   );
   d = setGeneric(d, cat, 'ocr0', 'DenseOutput_g', true).design;
@@ -166,10 +167,14 @@ function linkDomain(d, spw, hz) {
   d = link(d, 'nchar0.M_Link', 'spp0.S_Link');
   d = link(d, 'nchar0.M_NChar', 'spw0.S_Pkt');
   d = link(d, 'spw0.M_Pkt', 'nchar0.S_NChar');
+  // the ECC events of the chunk buffer and the position FIFO of the framer, one channel each
+  d = setGeneric(d, cat, 'edac0', 'Channels_g', 2).design;
+  d = link(d, 'frm0.Ecc[0]', 'edac0.In[0]');
+  d = link(d, 'frm0.Ecc[1]', 'edac0.In[1]');
   d = linkDomain(d, 'spw0', 200e6);
   d = external(d, {
     'frm0.S_In': 'pkt_', 'spp0.M_Rx[0]': 'rx0_',
-    'ocr0.S_AxiLite': 'ocr_reg_', 'spp0.S_AxiLite': 'spp_reg_', 'spw0.S_AxiLite': 'spw_reg_',
+    'ocr0.S_AxiLite': 'ocr_reg_', 'spp0.S_AxiLite': 'spp_reg_', 'spw0.S_AxiLite': 'spw_reg_', 'edac0.S_AxiLite': 'edac_reg_',
   });
   examples.push(['encrypted_spp_over_spw', 'Encrypted packets over SpaceWire', d]);
 }

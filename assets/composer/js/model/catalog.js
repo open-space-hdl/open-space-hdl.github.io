@@ -67,6 +67,9 @@ export const CATALOG_VERSION = 1;
  *           actual, without a signal and an assignment between them
  * @property {any} [addressSpace]   the address space an AXI master starts: what its addresses are, and the windows of
  *           the block that accept them (model/addressmap.js)
+ * @property {{ enable: {name: string, offset: number}[], status?: {name: string, offset: number}, events?: {name: string, offset: number} }} [irqRegisters]
+ *           the registers of an interrupt in the register map of the block
+ * @property {string | string[]} [memory]   the memory whose errors an ecc.event interface reports (one per element)
  */
 
 /**
@@ -88,6 +91,8 @@ export const CATALOG_VERSION = 1;
  * @property {Record<string, unknown>[]} [rules]
  * @property {Record<string, unknown>[]} [constraints]
  * @property {{address: string, value: string}} [idRegister]   identification register
+ * @property {{ evidence: string, ecc?: any }} [protection]   what the block protects itself: the ECC of its memories
+ *           with the channels and the status, select, count and injection registers (model/systemviews.js)
  * @property {{map: string, header: string, doc: string, prefix: string}} [registers]   register map of the block in its
  *           repository at the pin: the YAML source, the C header (macros <prefix>_<register>) and the Markdown
  * @property {{text: string, when?: string[], unless?: string[], unlessAll?: string[]}[]} [init]   initialisation by

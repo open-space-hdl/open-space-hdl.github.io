@@ -159,6 +159,88 @@ function throughputSection(t) {
 }
 
 /**
+ * A register with its offset, as text.
+ * @param {{ name: string, offset: number } | undefined} r
+ */
+function regText(r) {
+  return r ? `\`${r.name}\` (0x${r.offset.toString(16).toUpperCase().padStart(3, '0')})` : '';
+}
+
+/**
+ * The section on the interrupts: every interrupt output, where it goes and its registers.
+ * @param {import('./systemviews.js').Interrupt[]} irqs
+ * @param {{ id: string, name: string }[]} domains
+ * @returns {string[]}
+ */
+function interruptsSection(irqs, domains) {
+  if (irqs.length === 0) return ['The system has no interrupt output.'];
+  const domain = (/** @type {string | undefined} */ id) => (id ? domains.find((x) => x.id === id)?.name ?? id : '');
+  return [
+    'Every interrupt output of the system (`resolved.interrupts`): a level that is high while an enabled event is pending. The Composer places no interrupt controller: route the interrupts to the processor, or leave them open and poll the status registers.',
+    '',
+    table(['Interrupt', 'Clock domain', 'Goes to', 'Enable', 'Status', 'Events (write 1 to clear)'], irqs.map((i) => {
+      const to = i.to.kind === 'port'
+        ? `top-level port \`${i.to.port}\``
+        : i.to.kind === 'block' ? `\`${i.to.to}\`` : i.status ? `open: poll \`${i.status.name}\`` : 'open: poll the registers';
+      const none = i.enable.length === 0 && !i.status && !i.events;
+      return [`\`${i.source}\``, domain(i.domain), to, none ? `see the documentation of \`${i.entity}\`` : i.enable.map(regText).join(', '), regText(i.status), regText(i.events)];
+    })),
+  ];
+}
+
+/**
+ * The section on the protection scope: the ECC of the blocks, where the ECC events go, the inserted crossings, what
+ * is not reported, and what the integrator does.
+ * @param {import('./systemviews.js').Protection} p
+ * @returns {string[]}
+ */
+function protectionSection(p) {
+  /** @type {string[]} */
+  const L = [
+    'The system is designed for radiation environments together with the triple modular redundancy (TMR) of the synthesis tool, like the Open Logic ft entities its blocks are built on (`resolved.protection`).',
+    '',
+  ];
+  if (p.blocks.length) {
+    L.push('Blocks that protect their memories with SECDED ECC and report it in their registers (the channels count the double-error flags of the status register):', '');
+    L.push(table(['Block', 'Channels', 'Status', 'Counters', 'Error injection', 'Evidence'], p.blocks.map((b) => [
+      `\`${b.instance}\` (\`${b.entity}\`)`, String(b.channels), regText(b.status), `${regText(b.select)}, ${regText(b.count)}`, regText(b.inject), b.evidence,
+    ])), '');
+  }
+  if (p.events.length) {
+    L.push('ECC events of memories (SECDED ECC of the Open Logic ft entities) and where they are reported:', '');
+    L.push(table(['Source', 'Memory', 'Reported at'], p.events.map((e) => [
+      `\`${e.source}\``,
+      `${e.memory} of \`${e.instance}\`${e.inserted ? ' (inserted crossing)' : ''}`,
+      e.to.kind === 'block'
+        ? e.to.channel !== null && e.to.channel !== undefined ? `channel ${e.to.channel} of \`${e.to.to?.slice(0, e.to.to.lastIndexOf('.'))}\` (\`${e.to.toEntity}\`)` : `\`${e.to.to}\``
+        : e.to.kind === 'port' ? `top-level port \`${e.to.port}\`` : 'not reported',
+    ])), '');
+  }
+  if (p.crossings.length) {
+    L.push(p.faultTolerance
+      ? `Clock domain crossings inserted by the Composer (${p.crossings.map((c) => `\`${c.instance}\``).join(', ')}): \`olo_ft_fifo_async\` with SECDED ECC and triplicated synchronisers (\`SyncTmr_g\` = true); the reset generators of the clock domains synchronise with triplicated chains as well.`
+      : `Clock domain crossings inserted by the Composer (${p.crossings.map((c) => `\`${c.instance}\``).join(', ')}): \`olo_base_fifo_async\` without ECC and with single synchronisers, because fault tolerance is off for this system; the reset generators of the clock domains use single synchronisers as well.`, '');
+  }
+  const gaps = p.events.filter((e) => e.to.kind === 'open');
+  if (gaps.length) {
+    L.push('Not reported: the ECC events of these memories are open, so their corrected and detected errors reach no monitor:', '');
+    for (const e of gaps) L.push(`- \`${e.source}\`: ${e.memory} of \`${e.instance}\`${e.inserted ? ', an inserted crossing (the Composer leaves its ECC events open)' : e.registers ? ` (reported in the registers of \`${e.instance}\`)` : ''}.`);
+    L.push('');
+  }
+  L.push(
+    'State machines recover through their `when others` branch and the reset. All other logic (registers of the control and data paths, counters, pointers, pipeline registers) relies on the TMR of the synthesis tool. The integrator:',
+    '',
+    '- enables the TMR of the synthesis tool for the system,',
+    '- checks in the synthesis report that TMR was applied, that the synchroniser chains of the crossings were not triplicated a second time, and that no register-based storage meant to be protected by TMR was inferred as a RAM primitive,',
+    '- requests safe state machines, so that synthesis keeps the `when others` branches (AMD Vivado: property `FSM_SAFE_STATE` = `default_state` on the state registers; Synplify: attribute `syn_encoding` = `safe`),',
+    '- protects the configuration memory of SRAM-based FPGAs by scrubbing; this is part of the FPGA design.',
+    '',
+    'The ECC paths of the blocks are verified in simulation by error injection. Whether the protection as a whole meets the requirements of a mission is shown by a radiation test of the system in operation.',
+  );
+  return L;
+}
+
+/**
  * The section on packet sizes and buffers: the largest packet at every interface with a limit, the buffers that hold
  * a whole message, what leaves over a link, and the blocks without a limit.
  * @param {import('./sizes.js').Sizes} s
@@ -238,7 +320,7 @@ export function agentBrief(cat, d, res, resolved, checks) {
     '',
   );
   if (errors.length > 0) {
-    L.push(`**The system has ${errors.length} open error${errors.length > 1 ? 's' : ''} (section 11). Fix ${errors.length > 1 ? 'them' : 'it'} in the Composer before building.**`, '');
+    L.push(`**The system has ${errors.length} open error${errors.length > 1 ? 's' : ''} (section 13). Fix ${errors.length > 1 ? 'them' : 'it'} in the Composer before building.**`, '');
   }
 
   // 1. sources
@@ -416,8 +498,16 @@ export function agentBrief(cat, d, res, resolved, checks) {
     L.push(...addressMapSections(spaces, '###', d.name));
   }
 
-  // 10. initialisation by software
-  L.push('## 10. Initialisation by software', '');
+  // 10. interrupts
+  L.push('## 10. Interrupts', '');
+  L.push(...interruptsSection(res.interrupts ?? [], res.domains), '');
+
+  // 11. protection scope
+  L.push('## 11. Protection scope', '');
+  if (res.protection) L.push(...protectionSection(res.protection), '');
+
+  // 12. initialisation by software
+  L.push('## 12. Initialisation by software', '');
   L.push('Register addresses are byte addresses of the AXI4-Lite port of the block; write registers as 32-bit words and wait for the write response before a read that depends on it.', '');
   // the blocks of the system, then those inside every subsystem (in each of its instances)
   for (const [dd, rr, sub] of /** @type {[Design, Resolved, string][]} */ ([[d, res, ''], ...subs.map((s) => [s.design, s.res, s.name])])) {
@@ -450,8 +540,8 @@ export function agentBrief(cat, d, res, resolved, checks) {
     }
   }
 
-  // 11. checks
-  L.push('## 11. Checks', '');
+  // 13. checks
+  L.push('## 13. Checks', '');
   if (checks.length === 0) L.push('No problems found.', '');
   else {
     for (const c of [...errors, ...warnings, ...checks.filter((x) => x.severity === 'info')]) {
@@ -460,8 +550,8 @@ export function agentBrief(cat, d, res, resolved, checks) {
     L.push('');
   }
 
-  // 12. verification
-  L.push('## 12. Verification', '');
+  // 14. verification
+  L.push('## 14. Verification', '');
   const clocks = resolved.clocks.filter((/** @type {any} */ c) => c.source === 'top');
   const slow = clocks.length ? Math.min(...clocks.map((/** @type {any} */ c) => c.frequencyHz)) : 100e6;
   L.push(
@@ -471,7 +561,7 @@ export function agentBrief(cat, d, res, resolved, checks) {
     `2. Hold \`Rst\` at '1' for 16 cycles of the slowest clock (${formatHz(slow)}), then '0'.`,
     '3. Keep every external input idle: stream inputs with valid at \'0\', ready inputs of external outputs at \'1\', bus requests idle, pins at \'0\'.',
     '4. Run for at least 100 us (the blocks initialise their tables after the reset) and stop the simulation: it must end without failed assertions, and the handshake outputs of the top level (valid, ready) and the line outputs must not be \'U\' or \'X\' after the reset. Data outputs may stay undefined while their valid is \'0\'.',
-    '5. Where an AXI4-Lite port is external, read the ID register of the block (section 10) and compare it with the documented value.',
+    '5. Where an AXI4-Lite port is external, read the ID register of the block (section 12) and compare it with the documented value.',
     '',
     `With GHDL: analyse the libraries of section 1, then \`ghdl -i --std=08 -frelaxed ${d.name}.vhd ${d.name}_tb.vhd\`, \`ghdl -m --std=08 -frelaxed ${d.name}_tb\` and \`ghdl -r --std=08 -frelaxed ${d.name}_tb --stop-time=100us --assert-level=error --ieee-asserts=disable\` (\`--ieee-asserts=disable\` silences the warnings of the numeric package about metavalues before the reset).`,
     '',
@@ -479,7 +569,7 @@ export function agentBrief(cat, d, res, resolved, checks) {
   // the optional end-to-end test: what every block contributes
   const e2e = blocks.map((id) => cat.blocks.get(id)).filter((b) => b?.endToEnd);
   if (e2e.length > 0) {
-    L.push('Optional end-to-end test, after the initialisation of section 10:', '');
+    L.push('Optional end-to-end test, after the initialisation of section 12:', '');
     for (const b of e2e) L.push(`- ${b?.name} (\`${b?.entity}\`): ${b?.endToEnd}`);
     L.push('');
   }
