@@ -25,7 +25,7 @@ export const FORMAT = 'open-space-composer-system';
 export const FORMAT_VERSION = 2;
 export const SCHEMA_URL = 'https://openspacehdl.org/composer/schema/system-1.json';
 export const SCHEMA_URL_2 = 'https://openspacehdl.org/composer/schema/system-2.json';
-export const GENERATOR = { name: 'Open Space Composer', version: '0.7.0-beta' };
+export const GENERATOR = { name: 'Open Space Composer', version: '0.8.0-beta' };
 
 export class FormatError extends Error {
   /** @param {string[]} problems */
@@ -210,6 +210,8 @@ function readParts(d, o, cat, errors, warnings) {
     else d.description = s.description ?? '';
     if (s.faultTolerance !== undefined && typeof s.faultTolerance !== 'boolean') errors.push('system.faultTolerance: must be true or false.');
     else d.faultTolerance = s.faultTolerance ?? true;
+    if (s.eccMonitor !== undefined && (typeof s.eccMonitor !== 'string' || identifierProblem(s.eccMonitor))) errors.push('system.eccMonitor: must name an instance.');
+    else if (s.eccMonitor !== undefined) d.eccMonitor = s.eccMonitor;
   }
 
   // clock domains (assigned from milestone 2 on; kept as they are)
@@ -322,6 +324,7 @@ function readParts(d, o, cat, errors, warnings) {
     }
     d.instances.push(rec);
   }
+  if (d.eccMonitor && !d.instances.some((i) => i.id === d.eccMonitor)) errors.push(`system.eccMonitor: no instance "${d.eccMonitor}".`);
 }
 
 /**

@@ -48,12 +48,13 @@ test('no reset generator without a synchronous reset; a maximum delay for every 
   assert.ok(!r.instances.some((/** @type {any} */ i) => i.id === 'auto_rst_link'));
   for (const x of r.resets) assert.ok(r.signals.some((/** @type {any} */ s) => s.name === x.output), `${x.output} is declared`);
   const two = example('spp_over_spw_two_clocks').resolved;
-  // the port crosses link and spw inside, the two FIFOs cross spw and sys: both directions, the faster period
+  // the port crosses link and spw inside; the two FIFOs and the pulse crossing of the ECC events of one of them to the
+  // system ECC monitor cross spw and sys: both directions, the faster period
   assert.deepEqual(two.constraints.filter((/** @type {any} */ c) => c.kind === 'max_delay').map((/** @type {any} */ c) => [c.from, c.to, c.ns, c.instances.join('+')]), [
     ['Clk_link', 'Clk_spw', 5, 'spw0'],
     ['Clk_spw', 'Clk_link', 5, 'spw0'],
-    ['Clk_spw', 'Clk_sys', 10, 'auto_cdc_c5+auto_cdc_c6'],
-    ['Clk_sys', 'Clk_spw', 10, 'auto_cdc_c5+auto_cdc_c6'],
+    ['Clk_spw', 'Clk_sys', 10, 'auto_cdc_auto_ecc_c6+auto_cdc_c5+auto_cdc_c6'],
+    ['Clk_sys', 'Clk_spw', 10, 'auto_cdc_auto_ecc_c6+auto_cdc_c5+auto_cdc_c6'],
   ]);
   assert.ok(!two.constraints.some((/** @type {any} */ c) => c.kind === 'async_clock_groups'));
   assert.ok(two.constraints.some((/** @type {any} */ c) => c.kind === 'vendor_scoped'));

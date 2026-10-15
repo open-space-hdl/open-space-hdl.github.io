@@ -4,7 +4,7 @@
   "formatVersion": 1,
   "generator": {
     "name": "Open Space Composer",
-    "version": "0.7.0-beta",
+    "version": "0.8.0-beta",
     "catalog": "2f7536b0b190"
   },
   "system": {
@@ -5026,7 +5026,9 @@
             "kind": "block",
             "to": "edac0.In[0]",
             "toEntity": "olo_ft_ecc_monitor_axi",
-            "channel": 0
+            "channel": 0,
+            "connection": "c8",
+            "crossed": false
           }
         },
         {
@@ -5040,7 +5042,9 @@
             "kind": "block",
             "to": "edac0.In[1]",
             "toEntity": "olo_ft_ecc_monitor_axi",
-            "channel": 1
+            "channel": 1,
+            "connection": "c9",
+            "crossed": false
           }
         }
       ],

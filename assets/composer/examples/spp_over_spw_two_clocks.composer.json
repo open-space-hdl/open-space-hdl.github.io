@@ -4,13 +4,14 @@
   "formatVersion": 1,
   "generator": {
     "name": "Open Space Composer",
-    "version": "0.7.0-beta",
+    "version": "0.8.0-beta",
     "catalog": "2f7536b0b190"
   },
   "system": {
     "name": "spp_over_spw_two_clocks",
-    "description": "Space Packets over SpaceWire with two clock domains: the SpaceWire side runs on a 50 MHz port clock, the Space Packet node on the 100 MHz system clock. The Composer inserts asynchronous FIFOs for the packet links.",
-    "faultTolerance": true
+    "description": "Space Packets over SpaceWire with two clock domains: the SpaceWire side runs on a 50 MHz port clock, the Space Packet node on the 100 MHz system clock. The Composer inserts asynchronous FIFOs for the packet links. An ECC monitor, marked as the system ECC monitor, reports the corrected and detected errors of these FIFOs.",
+    "faultTolerance": true,
+    "eccMonitor": "edac0"
   },
   "sources": [
     {
@@ -117,6 +118,16 @@
       "clocks": {
         "Clk": "sys"
       }
+    },
+    {
+      "id": "edac0",
+      "block": "olo/olo_ft_ecc_monitor_axi",
+      "generics": {
+        "Channels_g": 2
+      },
+      "clocks": {
+        "Clk": "sys"
+      }
     }
   ],
   "connections": [
@@ -175,6 +186,10 @@
     {
       "interface": "spp0.S_AxiLite",
       "prefix": "spp_reg_"
+    },
+    {
+      "interface": "edac0.S_AxiLite",
+      "prefix": "edac_reg_"
     }
   ],
   "resolved": {
@@ -1169,6 +1184,159 @@
         "type": "std_logic",
         "kind": "interface",
         "interface": "spp0.S_AxiLite",
+        "domain": "sys",
+        "signal": "RReady"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_AwAddr",
+        "dir": "in",
+        "type": "std_logic_vector(11 downto 0)",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "AwAddr"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_AwValid",
+        "dir": "in",
+        "type": "std_logic",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "AwValid"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_AwReady",
+        "dir": "out",
+        "type": "std_logic",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "AwReady"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_WData",
+        "dir": "in",
+        "type": "std_logic_vector(31 downto 0)",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "WData"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_WStrb",
+        "dir": "in",
+        "type": "std_logic_vector(3 downto 0)",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "WStrb"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_WValid",
+        "dir": "in",
+        "type": "std_logic",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "WValid"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_WReady",
+        "dir": "out",
+        "type": "std_logic",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "WReady"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_BResp",
+        "dir": "out",
+        "type": "std_logic_vector(1 downto 0)",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "BResp"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_BValid",
+        "dir": "out",
+        "type": "std_logic",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "BValid"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_BReady",
+        "dir": "in",
+        "type": "std_logic",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "BReady"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_ArAddr",
+        "dir": "in",
+        "type": "std_logic_vector(11 downto 0)",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "ArAddr"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_ArValid",
+        "dir": "in",
+        "type": "std_logic",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "ArValid"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_ArReady",
+        "dir": "out",
+        "type": "std_logic",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "ArReady"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_RData",
+        "dir": "out",
+        "type": "std_logic_vector(31 downto 0)",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "RData"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_RResp",
+        "dir": "out",
+        "type": "std_logic_vector(1 downto 0)",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "RResp"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_RValid",
+        "dir": "out",
+        "type": "std_logic",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
+        "domain": "sys",
+        "signal": "RValid"
+      },
+      {
+        "name": "edac_reg_S_AxiLite_RReady",
+        "dir": "in",
+        "type": "std_logic",
+        "kind": "interface",
+        "interface": "edac0.S_AxiLite",
         "domain": "sys",
         "signal": "RReady"
       }
@@ -3282,6 +3450,207 @@
         ]
       },
       {
+        "id": "edac0",
+        "entity": "olo_ft_ecc_monitor_axi",
+        "library": "olo",
+        "block": "olo/olo_ft_ecc_monitor_axi",
+        "origin": "user",
+        "domain": "sys",
+        "generics": [
+          {
+            "name": "Channels_g",
+            "value": 2,
+            "vhdl": "2",
+            "default": false
+          },
+          {
+            "name": "CounterWidth_g",
+            "value": 16,
+            "vhdl": "16",
+            "default": true
+          },
+          {
+            "name": "AxiAddrWidth_g",
+            "value": 12,
+            "vhdl": "12",
+            "default": true
+          },
+          {
+            "name": "ReadTimeoutClks_g",
+            "value": 100,
+            "vhdl": "100",
+            "default": true
+          }
+        ],
+        "ports": [
+          {
+            "name": "Clk",
+            "dir": "in",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "Clk_sys"
+          },
+          {
+            "name": "Rst",
+            "dir": "in",
+            "type": "std_logic",
+            "domain": "sys",
+            "reset": {
+              "kind": "sync",
+              "note": "Synchronous reset in the clock domain System clock (clock Clk): the output of the reset generator auto_rst_sys."
+            },
+            "actual": "auto_rst_sys_RstOut_s"
+          },
+          {
+            "name": "S_AxiLite_ArAddr",
+            "dir": "in",
+            "type": "std_logic_vector(11 downto 0)",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_ArAddr_s"
+          },
+          {
+            "name": "S_AxiLite_ArValid",
+            "dir": "in",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_ArValid_s"
+          },
+          {
+            "name": "S_AxiLite_ArReady",
+            "dir": "out",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_ArReady_s"
+          },
+          {
+            "name": "S_AxiLite_AwAddr",
+            "dir": "in",
+            "type": "std_logic_vector(11 downto 0)",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_AwAddr_s"
+          },
+          {
+            "name": "S_AxiLite_AwValid",
+            "dir": "in",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_AwValid_s"
+          },
+          {
+            "name": "S_AxiLite_AwReady",
+            "dir": "out",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_AwReady_s"
+          },
+          {
+            "name": "S_AxiLite_WData",
+            "dir": "in",
+            "type": "std_logic_vector(31 downto 0)",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_WData_s"
+          },
+          {
+            "name": "S_AxiLite_WStrb",
+            "dir": "in",
+            "type": "std_logic_vector(3 downto 0)",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_WStrb_s"
+          },
+          {
+            "name": "S_AxiLite_WValid",
+            "dir": "in",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_WValid_s"
+          },
+          {
+            "name": "S_AxiLite_WReady",
+            "dir": "out",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_WReady_s"
+          },
+          {
+            "name": "S_AxiLite_BResp",
+            "dir": "out",
+            "type": "std_logic_vector(1 downto 0)",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_BResp_s"
+          },
+          {
+            "name": "S_AxiLite_BValid",
+            "dir": "out",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_BValid_s"
+          },
+          {
+            "name": "S_AxiLite_BReady",
+            "dir": "in",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_BReady_s"
+          },
+          {
+            "name": "S_AxiLite_RData",
+            "dir": "out",
+            "type": "std_logic_vector(31 downto 0)",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_RData_s"
+          },
+          {
+            "name": "S_AxiLite_RResp",
+            "dir": "out",
+            "type": "std_logic_vector(1 downto 0)",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_RResp_s"
+          },
+          {
+            "name": "S_AxiLite_RValid",
+            "dir": "out",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_RValid_s"
+          },
+          {
+            "name": "S_AxiLite_RReady",
+            "dir": "in",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "edac0_S_AxiLite_RReady_s"
+          },
+          {
+            "name": "In_EccSec",
+            "dir": "in",
+            "type": "std_logic_vector(1 downto 0)",
+            "domain": "sys",
+            "actual": "edac0_In_EccSec_s"
+          },
+          {
+            "name": "In_EccDed",
+            "dir": "in",
+            "type": "std_logic_vector(1 downto 0)",
+            "domain": "sys",
+            "actual": "edac0_In_EccDed_s"
+          },
+          {
+            "name": "In_Valid",
+            "dir": "in",
+            "type": "std_logic_vector(1 downto 0)",
+            "domain": "sys",
+            "actual": "edac0_In_Valid_s"
+          },
+          {
+            "name": "Irq",
+            "dir": "out",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "open"
+          }
+        ]
+      },
+      {
         "id": "auto_cdc_c5",
         "entity": "olo_ft_fifo_async",
         "library": "olo",
@@ -3498,14 +3867,14 @@
             "dir": "out",
             "type": "std_logic",
             "domain": "sys",
-            "actual": "open"
+            "actual": "auto_cdc_c5_Out_EccSec_s"
           },
           {
             "name": "Out_EccDed",
             "dir": "out",
             "type": "std_logic",
             "domain": "sys",
-            "actual": "open"
+            "actual": "auto_cdc_c5_Out_EccDed_s"
           },
           {
             "name": "Out_Full",
@@ -3779,14 +4148,14 @@
             "dir": "out",
             "type": "std_logic",
             "domain": "spw",
-            "actual": "open"
+            "actual": "auto_cdc_c6_Out_EccSec_s"
           },
           {
             "name": "Out_EccDed",
             "dir": "out",
             "type": "std_logic",
             "domain": "spw",
-            "actual": "open"
+            "actual": "auto_cdc_c6_Out_EccDed_s"
           },
           {
             "name": "Out_Full",
@@ -3840,6 +4209,103 @@
             "actual": null,
             "useDefault": true,
             "default": "'0'"
+          }
+        ]
+      },
+      {
+        "id": "auto_cdc_auto_ecc_c6",
+        "entity": "olo_base_cc_pulse",
+        "library": "olo",
+        "block": "olo/olo_base_cc_pulse",
+        "origin": "auto",
+        "role": "cdc",
+        "reason": "auto_cdc_c6.Ecc runs in Port clock, edac0.In[1] in System clock.",
+        "connection": "auto_ecc_c6",
+        "domain": "spw",
+        "generics": [
+          {
+            "name": "NumPulses_g",
+            "value": 2,
+            "vhdl": "2",
+            "default": false
+          },
+          {
+            "name": "SyncStages_g",
+            "value": 2,
+            "vhdl": "2",
+            "default": true
+          },
+          {
+            "name": "SyncTmr_g",
+            "value": true,
+            "vhdl": "true",
+            "default": false
+          }
+        ],
+        "ports": [
+          {
+            "name": "In_Clk",
+            "dir": "in",
+            "type": "std_logic",
+            "domain": "spw",
+            "actual": "Clk_spw"
+          },
+          {
+            "name": "In_RstIn",
+            "dir": "in",
+            "type": "std_logic",
+            "domain": "spw",
+            "reset": {
+              "kind": "sync",
+              "note": "Synchronous reset in the clock domain Port clock (clock In_Clk): the output of the reset generator auto_rst_spw."
+            },
+            "actual": "auto_rst_spw_RstOut_s"
+          },
+          {
+            "name": "In_RstOut",
+            "dir": "out",
+            "type": "std_logic",
+            "domain": "spw",
+            "actual": "open"
+          },
+          {
+            "name": "In_Pulse",
+            "dir": "in",
+            "type": "std_logic_vector(1 downto 0)",
+            "domain": "spw",
+            "actual": "auto_cdc_auto_ecc_c6_In_Pulse_s"
+          },
+          {
+            "name": "Out_Clk",
+            "dir": "in",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "Clk_sys"
+          },
+          {
+            "name": "Out_RstIn",
+            "dir": "in",
+            "type": "std_logic",
+            "domain": "sys",
+            "reset": {
+              "kind": "sync",
+              "note": "Synchronous reset in the clock domain System clock (clock Out_Clk): the output of the reset generator auto_rst_sys."
+            },
+            "actual": "auto_rst_sys_RstOut_s"
+          },
+          {
+            "name": "Out_RstOut",
+            "dir": "out",
+            "type": "std_logic",
+            "domain": "sys",
+            "actual": "open"
+          },
+          {
+            "name": "Out_Pulse",
+            "dir": "out",
+            "type": "std_logic_vector(1 downto 0)",
+            "domain": "sys",
+            "actual": "auto_cdc_auto_ecc_c6_Out_Pulse_s"
           }
         ]
       },
@@ -3982,6 +4448,14 @@
     ],
     "signals": [
       {
+        "name": "auto_cdc_auto_ecc_c6_In_Pulse_s",
+        "type": "std_logic_vector(1 downto 0)"
+      },
+      {
+        "name": "auto_cdc_auto_ecc_c6_Out_Pulse_s",
+        "type": "std_logic_vector(1 downto 0)"
+      },
+      {
         "name": "auto_cdc_c5_In_Data_s",
         "type": "std_logic_vector(37 downto 0)"
       },
@@ -3996,6 +4470,14 @@
       {
         "name": "auto_cdc_c5_Out_Data_s",
         "type": "std_logic_vector(37 downto 0)"
+      },
+      {
+        "name": "auto_cdc_c5_Out_EccDed_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "auto_cdc_c5_Out_EccSec_s",
+        "type": "std_logic"
       },
       {
         "name": "auto_cdc_c5_Out_Ready_s",
@@ -4022,6 +4504,14 @@
         "type": "std_logic_vector(41 downto 0)"
       },
       {
+        "name": "auto_cdc_c6_Out_EccDed_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "auto_cdc_c6_Out_EccSec_s",
+        "type": "std_logic"
+      },
+      {
         "name": "auto_cdc_c6_Out_Ready_s",
         "type": "std_logic"
       },
@@ -4035,6 +4525,86 @@
       },
       {
         "name": "auto_rst_sys_RstOut_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "edac0_In_EccDed_s",
+        "type": "std_logic_vector(1 downto 0)"
+      },
+      {
+        "name": "edac0_In_EccSec_s",
+        "type": "std_logic_vector(1 downto 0)"
+      },
+      {
+        "name": "edac0_In_Valid_s",
+        "type": "std_logic_vector(1 downto 0)"
+      },
+      {
+        "name": "edac0_S_AxiLite_ArAddr_s",
+        "type": "std_logic_vector(11 downto 0)"
+      },
+      {
+        "name": "edac0_S_AxiLite_ArReady_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "edac0_S_AxiLite_ArValid_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "edac0_S_AxiLite_AwAddr_s",
+        "type": "std_logic_vector(11 downto 0)"
+      },
+      {
+        "name": "edac0_S_AxiLite_AwReady_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "edac0_S_AxiLite_AwValid_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "edac0_S_AxiLite_BReady_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "edac0_S_AxiLite_BResp_s",
+        "type": "std_logic_vector(1 downto 0)"
+      },
+      {
+        "name": "edac0_S_AxiLite_BValid_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "edac0_S_AxiLite_RData_s",
+        "type": "std_logic_vector(31 downto 0)"
+      },
+      {
+        "name": "edac0_S_AxiLite_RReady_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "edac0_S_AxiLite_RResp_s",
+        "type": "std_logic_vector(1 downto 0)"
+      },
+      {
+        "name": "edac0_S_AxiLite_RValid_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "edac0_S_AxiLite_WData_s",
+        "type": "std_logic_vector(31 downto 0)"
+      },
+      {
+        "name": "edac0_S_AxiLite_WReady_s",
+        "type": "std_logic"
+      },
+      {
+        "name": "edac0_S_AxiLite_WStrb_s",
+        "type": "std_logic_vector(3 downto 0)"
+      },
+      {
+        "name": "edac0_S_AxiLite_WValid_s",
         "type": "std_logic"
       },
       {
@@ -4944,6 +5514,64 @@
         "signal": "valid"
       },
       {
+        "to": "edac0_In_EccDed_s(0)",
+        "from": "auto_cdc_c5_Out_EccDed_s",
+        "kind": "connection",
+        "connection": "auto_ecc_c5",
+        "signal": "ded"
+      },
+      {
+        "to": "edac0_In_EccSec_s(0)",
+        "from": "auto_cdc_c5_Out_EccSec_s",
+        "kind": "connection",
+        "connection": "auto_ecc_c5",
+        "signal": "sec"
+      },
+      {
+        "to": "edac0_In_Valid_s(0)",
+        "from": "'1'",
+        "kind": "constant",
+        "connection": "auto_ecc_c5",
+        "signal": "valid",
+        "reason": "auto_cdc_c5.Ecc has no valid: events without valid are valid in every cycle, as the default of In_Valid of olo_ft_ecc_monitor."
+      },
+      {
+        "to": "auto_cdc_auto_ecc_c6_In_Pulse_s(1)",
+        "from": "auto_cdc_c6_Out_EccDed_s",
+        "kind": "connection",
+        "connection": "auto_ecc_c6",
+        "signal": "ded"
+      },
+      {
+        "to": "auto_cdc_auto_ecc_c6_In_Pulse_s(0)",
+        "from": "auto_cdc_c6_Out_EccSec_s",
+        "kind": "connection",
+        "connection": "auto_ecc_c6",
+        "signal": "sec"
+      },
+      {
+        "to": "edac0_In_EccDed_s(1)",
+        "from": "auto_cdc_auto_ecc_c6_Out_Pulse_s(1)",
+        "kind": "connection",
+        "connection": "auto_ecc_c6",
+        "signal": "ded"
+      },
+      {
+        "to": "edac0_In_EccSec_s(1)",
+        "from": "auto_cdc_auto_ecc_c6_Out_Pulse_s(0)",
+        "kind": "connection",
+        "connection": "auto_ecc_c6",
+        "signal": "sec"
+      },
+      {
+        "to": "edac0_In_Valid_s(1)",
+        "from": "'1'",
+        "kind": "constant",
+        "connection": "auto_ecc_c6",
+        "signal": "valid",
+        "reason": "auto_cdc_auto_ecc_c6.Out has no valid: events without valid are valid in every cycle, as the default of In_Valid of olo_ft_ecc_monitor."
+      },
+      {
         "to": "spw0_S_AxiLite_AwAddr_s",
         "from": "spw_reg_S_AxiLite_AwAddr",
         "kind": "top",
@@ -5542,6 +6170,108 @@
         "from": "spp_reg_S_AxiLite_RReady",
         "kind": "top",
         "signal": "S_AxiLite_RReady"
+      },
+      {
+        "to": "edac0_S_AxiLite_AwAddr_s",
+        "from": "edac_reg_S_AxiLite_AwAddr",
+        "kind": "top",
+        "signal": "S_AxiLite_AwAddr"
+      },
+      {
+        "to": "edac0_S_AxiLite_AwValid_s",
+        "from": "edac_reg_S_AxiLite_AwValid",
+        "kind": "top",
+        "signal": "S_AxiLite_AwValid"
+      },
+      {
+        "to": "edac_reg_S_AxiLite_AwReady",
+        "from": "edac0_S_AxiLite_AwReady_s",
+        "kind": "top",
+        "signal": "S_AxiLite_AwReady"
+      },
+      {
+        "to": "edac0_S_AxiLite_WData_s",
+        "from": "edac_reg_S_AxiLite_WData",
+        "kind": "top",
+        "signal": "S_AxiLite_WData"
+      },
+      {
+        "to": "edac0_S_AxiLite_WStrb_s",
+        "from": "edac_reg_S_AxiLite_WStrb",
+        "kind": "top",
+        "signal": "S_AxiLite_WStrb"
+      },
+      {
+        "to": "edac0_S_AxiLite_WValid_s",
+        "from": "edac_reg_S_AxiLite_WValid",
+        "kind": "top",
+        "signal": "S_AxiLite_WValid"
+      },
+      {
+        "to": "edac_reg_S_AxiLite_WReady",
+        "from": "edac0_S_AxiLite_WReady_s",
+        "kind": "top",
+        "signal": "S_AxiLite_WReady"
+      },
+      {
+        "to": "edac_reg_S_AxiLite_BResp",
+        "from": "edac0_S_AxiLite_BResp_s",
+        "kind": "top",
+        "signal": "S_AxiLite_BResp"
+      },
+      {
+        "to": "edac_reg_S_AxiLite_BValid",
+        "from": "edac0_S_AxiLite_BValid_s",
+        "kind": "top",
+        "signal": "S_AxiLite_BValid"
+      },
+      {
+        "to": "edac0_S_AxiLite_BReady_s",
+        "from": "edac_reg_S_AxiLite_BReady",
+        "kind": "top",
+        "signal": "S_AxiLite_BReady"
+      },
+      {
+        "to": "edac0_S_AxiLite_ArAddr_s",
+        "from": "edac_reg_S_AxiLite_ArAddr",
+        "kind": "top",
+        "signal": "S_AxiLite_ArAddr"
+      },
+      {
+        "to": "edac0_S_AxiLite_ArValid_s",
+        "from": "edac_reg_S_AxiLite_ArValid",
+        "kind": "top",
+        "signal": "S_AxiLite_ArValid"
+      },
+      {
+        "to": "edac_reg_S_AxiLite_ArReady",
+        "from": "edac0_S_AxiLite_ArReady_s",
+        "kind": "top",
+        "signal": "S_AxiLite_ArReady"
+      },
+      {
+        "to": "edac_reg_S_AxiLite_RData",
+        "from": "edac0_S_AxiLite_RData_s",
+        "kind": "top",
+        "signal": "S_AxiLite_RData"
+      },
+      {
+        "to": "edac_reg_S_AxiLite_RResp",
+        "from": "edac0_S_AxiLite_RResp_s",
+        "kind": "top",
+        "signal": "S_AxiLite_RResp"
+      },
+      {
+        "to": "edac_reg_S_AxiLite_RValid",
+        "from": "edac0_S_AxiLite_RValid_s",
+        "kind": "top",
+        "signal": "S_AxiLite_RValid"
+      },
+      {
+        "to": "edac0_S_AxiLite_RReady_s",
+        "from": "edac_reg_S_AxiLite_RReady",
+        "kind": "top",
+        "signal": "S_AxiLite_RReady"
       }
     ],
     "packing": [
@@ -5652,6 +6382,40 @@
             "width": 5
           }
         ]
+      },
+      {
+        "instance": "auto_cdc_auto_ecc_c6",
+        "interface": "In",
+        "width": 2,
+        "fields": [
+          {
+            "signal": "sec",
+            "lsb": 0,
+            "width": 1
+          },
+          {
+            "signal": "ded",
+            "lsb": 1,
+            "width": 1
+          }
+        ]
+      },
+      {
+        "instance": "auto_cdc_auto_ecc_c6",
+        "interface": "Out",
+        "width": 2,
+        "fields": [
+          {
+            "signal": "sec",
+            "lsb": 0,
+            "width": 1
+          },
+          {
+            "signal": "ded",
+            "lsb": 1,
+            "width": 1
+          }
+        ]
       }
     ],
     "constraints": [
@@ -5709,10 +6473,11 @@
         "ns": 10,
         "datapathOnly": true,
         "instances": [
+          "auto_cdc_auto_ecc_c6",
           "auto_cdc_c5",
           "auto_cdc_c6"
         ],
-        "note": "Clock crossings of auto_cdc_c5, auto_cdc_c6: the period of the faster clock."
+        "note": "Clock crossings of auto_cdc_auto_ecc_c6, auto_cdc_c5, auto_cdc_c6: the period of the faster clock."
       },
       {
         "kind": "max_delay",
@@ -5721,10 +6486,11 @@
         "ns": 10,
         "datapathOnly": true,
         "instances": [
+          "auto_cdc_auto_ecc_c6",
           "auto_cdc_c5",
           "auto_cdc_c6"
         ],
-        "note": "Clock crossings of auto_cdc_c5, auto_cdc_c6: the period of the faster clock."
+        "note": "Clock crossings of auto_cdc_auto_ecc_c6, auto_cdc_c5, auto_cdc_c6: the period of the faster clock."
       },
       {
         "kind": "vendor_scoped",
@@ -5743,7 +6509,9 @@
         "fileListFormat": "files",
         "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.5 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), and fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5); it changes no other source, so the cores verified with 4.7.0-ft.2, 4.7.0-ft.3 or 4.7.0-ft.4 use it unchanged. Of the cores only OpenRMAP uses olo_axi_master_simple.",
         "entities": [
+          "olo_base_cc_pulse",
           "olo_base_reset_gen",
+          "olo_ft_ecc_monitor_axi",
           "olo_ft_fifo_async"
         ]
       },
@@ -5798,6 +6566,28 @@
     ],
     "problems": [],
     "addressMap": [
+      {
+        "space": "edac0.S_AxiLite",
+        "label": "edac_reg_ (edac0.S_AxiLite)",
+        "kind": "port",
+        "addrWidth": 12,
+        "banks": [
+          {
+            "instance": "edac0",
+            "interface": "S_AxiLite",
+            "block": "olo/olo_ft_ecc_monitor_axi",
+            "entity": "olo_ft_ecc_monitor_axi",
+            "base": 0,
+            "size": 4096,
+            "addrWidth": 12,
+            "window": 4096,
+            "via": [],
+            "doc": "https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor_axi.html"
+          }
+        ],
+        "unused": [],
+        "decoders": []
+      },
       {
         "space": "rmap0.S_AxiLite",
         "label": "rmap_reg_ (rmap0.S_AxiLite)",
@@ -5916,6 +6706,16 @@
       }
     ],
     "interrupts": [
+      {
+        "source": "edac0.Irq",
+        "instance": "edac0",
+        "entity": "olo_ft_ecc_monitor_axi",
+        "domain": "sys",
+        "to": {
+          "kind": "open"
+        },
+        "enable": []
+      },
       {
         "source": "rmap0.Irq",
         "instance": "rmap0",
@@ -6069,7 +6869,12 @@
           "inserted": true,
           "registers": false,
           "to": {
-            "kind": "open"
+            "kind": "block",
+            "to": "edac0.In[0]",
+            "toEntity": "olo_ft_ecc_monitor_axi",
+            "channel": 0,
+            "connection": "auto_ecc_c5",
+            "crossed": false
           }
         },
         {
@@ -6080,7 +6885,12 @@
           "inserted": true,
           "registers": false,
           "to": {
-            "kind": "open"
+            "kind": "block",
+            "to": "edac0.In[1]",
+            "toEntity": "olo_ft_ecc_monitor_axi",
+            "channel": 1,
+            "connection": "auto_ecc_c6",
+            "crossed": true
           }
         }
       ],
@@ -6097,6 +6907,13 @@
           "entity": "olo_ft_fifo_async",
           "connection": "c6",
           "ecc": true,
+          "syncTmr": true
+        },
+        {
+          "instance": "auto_cdc_auto_ecc_c6",
+          "entity": "olo_base_cc_pulse",
+          "connection": "auto_ecc_c6",
+          "ecc": false,
           "syncTmr": true
         }
       ]
@@ -6137,8 +6954,10 @@
           "trl": 3,
           "status": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
           "instances": [
+            "edac0",
             "auto_cdc_c5",
             "auto_cdc_c6",
+            "auto_cdc_auto_ecc_c6",
             "auto_rst_sys",
             "auto_rst_spw"
           ]
@@ -6181,22 +7000,10 @@
       "severity": "info",
       "rule": "sizes",
       "message": "No length limit published for spp_nchar (nchar0): packets through it are checked against the other blocks only."
-    },
-    {
-      "severity": "info",
-      "rule": "protection",
-      "message": "The ECC events of the inserted crossing auto_cdc_c5 (c5) are not reported: the Composer leaves them open.",
-      "instance": "auto_cdc_c5"
-    },
-    {
-      "severity": "info",
-      "rule": "protection",
-      "message": "The ECC events of the inserted crossing auto_cdc_c6 (c6) are not reported: the Composer leaves them open.",
-      "instance": "auto_cdc_c6"
     }
   ],
   "agent": {
-    "brief": "# spp_over_spw_two_clocks: build brief\n\nSpace Packets over SpaceWire with two clock domains: the SpaceWire side runs on a 50 MHz port clock, the Space Packet node on the 100 MHz system clock. The Composer inserts asynchronous FIFOs for the packet links.\n\nThis brief was generated by the Open Space Composer from the system file `spp_over_spw_two_clocks.composer.json` (catalog `2f7536b0b190`).\nThe file holds the system as edited (`instances`, `connections`, `externals`), in `resolved` the netlist it resolves to and in `catalogSubset` the catalog entries of its blocks (interfaces, fields, clocks, generics).\nBuild a VHDL-2008 top level `spp_over_spw_two_clocks` from `resolved` as described below; everything needed is in the file and in the listed repositories.\nThe button Export HDL of the Composer, and `tools/composer_hdl.mjs` of the repository of the website, write this top level, its compile order and its constraints from the same netlist (`spp_over_spw_two_clocks.vhd`, `spp_over_spw_two_clocks_compile_order.txt`, `spp_over_spw_two_clocks.xdc`, `spp_over_spw_two_clocks_top.xdc`, and the address map `spp_over_spw_two_clocks_address_map.md` with the C header `spp_over_spw_two_clocks_regs.h`); use them, or build the top level by hand as described here.\n\n**Readiness:** Parts at TRL 3 or higher (lowest: 3). The composed system has no TRL of its own: it is checked by elaboration and a run to 0 ns. The parts are listed in section 15.\n\n## 1. Sources and libraries\n\nFetch every repository at the given version and compile one VHDL-2008 library per row, in this order:\n\n| Library | Repository | Version | Files | Entities used |\n| --- | --- | --- | --- | --- |\n| `olo` | https://github.com/open-space-hdl/open-logic-ft | tag `4.7.0-ft.5` (commit `1bc4fb90888cf24ac29bc54527c2982d2dec307c`) | every file listed in `compile_order.txt`, in its order | `olo_base_reset_gen`, `olo_ft_fifo_async` |\n| `openwire` | https://github.com/open-space-hdl/openwire | commit `2897668e2e519e9517a5c7270f243c5ab0d7fdb0` | every file listed in `compile_order.txt`, in its order | `owr_core` |\n| `openrmap` | https://github.com/open-space-hdl/openrmap | commit `55033637795a009132286f60da90a6a876a9c087` | every file listed in `compile_order.txt`, in its order | `omap_core` |\n| `openspp` | https://github.com/open-space-hdl/openspp | commit `2d7ee8f92175d15e41d1e069f0db663de951d0c6` | every file listed in `compile_order.txt`, in its order | `spp_core`, `spp_nchar` |\n\n- `olo`: Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.5 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), and fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5); it changes no other source, so the cores verified with 4.7.0-ft.2, 4.7.0-ft.3 or 4.7.0-ft.4 use it unchanged. Of the cores only OpenRMAP uses olo_axi_master_simple.\n- `openwire`: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.\n- `openrmap`: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.\n- `openspp`: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.\n- One `olo` library (Open Logic FT `4.7.0-ft.5`) serves the whole system. The cores were verified with the Open Logic FT tags `4.7.0-ft.2` (openwire), `4.7.0-ft.5` (openrmap), `4.7.0-ft.2` (openspp) (`verifiedWith`); their own `open-logic` submodules are not needed.\n- With GHDL: analyse Open Logic file by file (`ghdl -a --std=08 -frelaxed --work=olo <file>`), import the files of a core library (`ghdl -i --std=08 -frelaxed --work=<library> <files>`) and let `ghdl -m --std=08 -frelaxed <top>` find the order. `-frelaxed` is needed for Open Logic, whose RAMs use a shared variable without a protected type (`olo_base_ram_sdp`); the cores and the top level also analyse as strict VHDL-2008.\n- With other tools follow the order of the table.\n\n## 2. Top-level entity\n\nEntity `spp_over_spw_two_clocks`, ports in this order (`resolved.ports`; `domain` is the clock domain of the port):\n\n| Port | Direction | Type | Clock domain | Meaning |\n| --- | --- | --- | --- | --- |\n| `Rst` | in | `std_logic` |  | Asynchronous reset of the system, high-active |\n| `Clk_sys` | in | `std_logic` | System clock (`sys`) | Clock of the domain System clock (100 MHz) |\n| `Clk_spw` | in | `std_logic` | Port clock (`spw`) | Clock of the domain Port clock (50 MHz) |\n| `Clk_link` | in | `std_logic` | Link clock (`link`) | Clock of the domain Link clock (200 MHz) |\n| `spw_reg_S_AxiLite_AwAddr` | in | `std_logic_vector(7 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` AwAddr |\n| `spw_reg_S_AxiLite_AwValid` | in | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` AwValid |\n| `spw_reg_S_AxiLite_AwReady` | out | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` AwReady |\n| `spw_reg_S_AxiLite_WData` | in | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` WData |\n| `spw_reg_S_AxiLite_WStrb` | in | `std_logic_vector(3 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` WStrb |\n| `spw_reg_S_AxiLite_WValid` | in | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` WValid |\n| `spw_reg_S_AxiLite_WReady` | out | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` WReady |\n| `spw_reg_S_AxiLite_BResp` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` BResp |\n| `spw_reg_S_AxiLite_BValid` | out | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` BValid |\n| `spw_reg_S_AxiLite_BReady` | in | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` BReady |\n| `spw_reg_S_AxiLite_ArAddr` | in | `std_logic_vector(7 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` ArAddr |\n| `spw_reg_S_AxiLite_ArValid` | in | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` ArValid |\n| `spw_reg_S_AxiLite_ArReady` | out | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` ArReady |\n| `spw_reg_S_AxiLite_RData` | out | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` RData |\n| `spw_reg_S_AxiLite_RResp` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` RResp |\n| `spw_reg_S_AxiLite_RValid` | out | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` RValid |\n| `spw_reg_S_AxiLite_RReady` | in | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` RReady |\n| `spw0_Spw_DOut` | out | `std_logic` | Link clock (`link`) | `spw0.Spw` d_out |\n| `spw0_Spw_SOut` | out | `std_logic` | Link clock (`link`) | `spw0.Spw` s_out |\n| `spw0_Spw_DIn` | in | `std_logic` | Link clock (`link`) | `spw0.Spw` d_in |\n| `spw0_Spw_SIn` | in | `std_logic` | Link clock (`link`) | `spw0.Spw` s_in |\n| `spw0_Phy_TxEn` | out | `std_logic` | Link clock (`link`) | `spw0.Spw` tx_en |\n| `spw0_Phy_RxEn` | out | `std_logic` | Link clock (`link`) | `spw0.Spw` rx_en |\n| `rmap_reg_S_AxiLite_AwAddr` | in | `std_logic_vector(9 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` AwAddr |\n| `rmap_reg_S_AxiLite_AwValid` | in | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` AwValid |\n| `rmap_reg_S_AxiLite_AwReady` | out | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` AwReady |\n| `rmap_reg_S_AxiLite_WData` | in | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` WData |\n| `rmap_reg_S_AxiLite_WStrb` | in | `std_logic_vector(3 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` WStrb |\n| `rmap_reg_S_AxiLite_WValid` | in | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` WValid |\n| `rmap_reg_S_AxiLite_WReady` | out | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` WReady |\n| `rmap_reg_S_AxiLite_BResp` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` BResp |\n| `rmap_reg_S_AxiLite_BValid` | out | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` BValid |\n| `rmap_reg_S_AxiLite_BReady` | in | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` BReady |\n| `rmap_reg_S_AxiLite_ArAddr` | in | `std_logic_vector(9 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` ArAddr |\n| `rmap_reg_S_AxiLite_ArValid` | in | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` ArValid |\n| `rmap_reg_S_AxiLite_ArReady` | out | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` ArReady |\n| `rmap_reg_S_AxiLite_RData` | out | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` RData |\n| `rmap_reg_S_AxiLite_RResp` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` RResp |\n| `rmap_reg_S_AxiLite_RValid` | out | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` RValid |\n| `rmap_reg_S_AxiLite_RReady` | in | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` RReady |\n| `mem_M_Axi_AwAddr` | out | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwAddr |\n| `mem_M_Axi_AwLen` | out | `std_logic_vector(7 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwLen |\n| `mem_M_Axi_AwSize` | out | `std_logic_vector(2 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwSize |\n| `mem_M_Axi_AwBurst` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwBurst |\n| `mem_M_Axi_AwLock` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` AwLock |\n| `mem_M_Axi_AwCache` | out | `std_logic_vector(3 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwCache |\n| `mem_M_Axi_AwProt` | out | `std_logic_vector(2 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwProt |\n| `mem_M_Axi_AwValid` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` AwValid |\n| `mem_M_Axi_AwReady` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` AwReady |\n| `mem_M_Axi_WData` | out | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` WData |\n| `mem_M_Axi_WStrb` | out | `std_logic_vector(3 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` WStrb |\n| `mem_M_Axi_WLast` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` WLast |\n| `mem_M_Axi_WValid` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` WValid |\n| `mem_M_Axi_WReady` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` WReady |\n| `mem_M_Axi_BResp` | in | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` BResp |\n| `mem_M_Axi_BValid` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` BValid |\n| `mem_M_Axi_BReady` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` BReady |\n| `mem_M_Axi_ArAddr` | out | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArAddr |\n| `mem_M_Axi_ArLen` | out | `std_logic_vector(7 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArLen |\n| `mem_M_Axi_ArSize` | out | `std_logic_vector(2 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArSize |\n| `mem_M_Axi_ArBurst` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArBurst |\n| `mem_M_Axi_ArLock` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` ArLock |\n| `mem_M_Axi_ArCache` | out | `std_logic_vector(3 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArCache |\n| `mem_M_Axi_ArProt` | out | `std_logic_vector(2 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArProt |\n| `mem_M_Axi_ArValid` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` ArValid |\n| `mem_M_Axi_ArReady` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` ArReady |\n| `mem_M_Axi_RData` | in | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` RData |\n| `mem_M_Axi_RResp` | in | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` RResp |\n| `mem_M_Axi_RLast` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` RLast |\n| `mem_M_Axi_RValid` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` RValid |\n| `mem_M_Axi_RReady` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` RReady |\n| `tx0_S_Tx_Data_0` | in | `std_logic_vector(31 downto 0)` | System clock (`sys`) | `spp0.S_Tx[0]` data |\n| `tx0_S_Tx_Keep_0` | in | `std_logic_vector(3 downto 0)` | System clock (`sys`) | `spp0.S_Tx[0]` keep |\n| `tx0_S_Tx_Last_0` | in | `std_logic` | System clock (`sys`) | `spp0.S_Tx[0]` last |\n| `tx0_S_Tx_User_0` | in | `std_logic_vector(27 downto 0)` | System clock (`sys`) | `spp0.S_Tx[0]` user |\n| `tx0_S_Tx_Valid_0` | in | `std_logic` | System clock (`sys`) | `spp0.S_Tx[0]` valid |\n| `tx0_S_Tx_Ready_0` | out | `std_logic` | System clock (`sys`) | `spp0.S_Tx[0]` ready |\n| `rx0_M_Rx_Data_0` | out | `std_logic_vector(31 downto 0)` | System clock (`sys`) | `spp0.M_Rx[0]` data |\n| `rx0_M_Rx_Keep_0` | out | `std_logic_vector(3 downto 0)` | System clock (`sys`) | `spp0.M_Rx[0]` keep |\n| `rx0_M_Rx_Last_0` | out | `std_logic` | System clock (`sys`) | `spp0.M_Rx[0]` last |\n| `rx0_M_Rx_User_0` | out | `std_logic_vector(21 downto 0)` | System clock (`sys`) | `spp0.M_Rx[0]` user |\n| `rx0_M_Rx_Valid_0` | out | `std_logic` | System clock (`sys`) | `spp0.M_Rx[0]` valid |\n| `rx0_M_Rx_Ready_0` | in | `std_logic` | System clock (`sys`) | `spp0.M_Rx[0]` ready |\n| `spp_reg_S_AxiLite_AwAddr` | in | `std_logic_vector(10 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` AwAddr |\n| `spp_reg_S_AxiLite_AwValid` | in | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` AwValid |\n| `spp_reg_S_AxiLite_AwReady` | out | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` AwReady |\n| `spp_reg_S_AxiLite_WData` | in | `std_logic_vector(31 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` WData |\n| `spp_reg_S_AxiLite_WStrb` | in | `std_logic_vector(3 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` WStrb |\n| `spp_reg_S_AxiLite_WValid` | in | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` WValid |\n| `spp_reg_S_AxiLite_WReady` | out | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` WReady |\n| `spp_reg_S_AxiLite_BResp` | out | `std_logic_vector(1 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` BResp |\n| `spp_reg_S_AxiLite_BValid` | out | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` BValid |\n| `spp_reg_S_AxiLite_BReady` | in | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` BReady |\n| `spp_reg_S_AxiLite_ArAddr` | in | `std_logic_vector(10 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` ArAddr |\n| `spp_reg_S_AxiLite_ArValid` | in | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` ArValid |\n| `spp_reg_S_AxiLite_ArReady` | out | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` ArReady |\n| `spp_reg_S_AxiLite_RData` | out | `std_logic_vector(31 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` RData |\n| `spp_reg_S_AxiLite_RResp` | out | `std_logic_vector(1 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` RResp |\n| `spp_reg_S_AxiLite_RValid` | out | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` RValid |\n| `spp_reg_S_AxiLite_RReady` | in | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` RReady |\n\nExternal interfaces:\n\n- `spw0.S_AxiLite` (AXI4-Lite register bus, clock domain `spw`): AXI4-Lite register access (32 bit data), for example the register file of a core.\n- `spw0.Spw` (SpaceWire line, clock domain `link`): Data-strobe line drivers and receivers of a SpaceWire link (LVDS buffers outside the core).\n- `rmap0.S_AxiLite` (AXI4-Lite register bus, clock domain `spw`): AXI4-Lite register access (32 bit data), for example the register file of a core.\n- `rmap0.M_Axi` (AXI4 memory bus, clock domain `spw`): AXI4 memory-mapped bus (bursts), for example the memory access of an RMAP target.\n- `spp0.S_Tx[0]` (Space Packet send port, clock domain `sys`): Send port of OpenSPP: one SDU (Octet String Service) or one Space Packet (Packet Service) per stream packet, with the per-SDU side band (APID, packet type, secondary header flag, packet name) in user.\n  - `tx0_S_Tx_User_0`: 10:0 APID; 11 Secondary header flag; 12 Packet type (telecommand); 13 Packet name instead of sequence count; 27:14 Packet name.\n- `spp0.M_Rx[0]` (Space Packet receive port, clock domain `sys`): Receive port of OpenSPP: one SDU or Space Packet per stream packet, with APID, flags, loss indicator and the user application value in user.\n  - `rx0_M_Rx_User_0`: 10:0 APID; 11 Secondary Header Indicator (Octet String Service); 12 Packet Loss or Data Loss Indicator; 13 Double bit error in the receive buffer during this SDU, valid with last; 21:14 User Application value of the CPTP packet (0 without the CPTP layer).\n- `spp0.S_AxiLite` (AXI4-Lite register bus, clock domain `sys`): AXI4-Lite register access (32 bit data), for example the register file of a core.\n\n## 3. Architecture\n\n1. Context clause (`resolved.context`): `library ieee;` `use ieee.std_logic_1164.all;` `library olo;` `library openwire;` `library openrmap;` `library openspp;`\n2. Declare every signal of `resolved.signals` (one per port of an instance, named `<instance>_<port>_s`, with the type of the port).\n3. Instantiate every entry of `resolved.instances` as `i_<id> : entity <library>.<entity>`: a generic map with every generic (the value is the VHDL literal in `vhdl`, package constants fully qualified; write the defaults too, where `default` is true, so that a new default of a core cannot change the system unnoticed), and a port map with the `actual` of every port. Leave out the ports with `useDefault` (they keep their VHDL `default`). Clocks and resets are port actuals on purpose: never assign a clock to another signal.\n4. Write every entry of `resolved.nets` as a concurrent assignment `<to> <= <from>;`. They connect the interfaces signal by signal (a packed data word bit by bit), set the side band constants and tie-offs, and connect the top-level ports.\n\n| Instance | Entity | Library | Origin | Clock domain | Why |\n| --- | --- | --- | --- | --- | --- |\n| `spw0` | `owr_core` | `openwire` | placed | spw |  |\n| `rmap0` | `omap_core` | `openrmap` | placed | spw |  |\n| `nchar0` | `spp_nchar` | `openspp` | placed | spw |  |\n| `spp0` | `spp_core` | `openspp` | placed | sys |  |\n| `auto_cdc_c5` | `olo_ft_fifo_async` | `olo` | inserted: cdc | spw | nchar0.M_Link runs in Port clock, spp0.S_Link in System clock. |\n| `auto_cdc_c6` | `olo_ft_fifo_async` | `olo` | inserted: cdc | sys | spp0.M_Link runs in System clock, nchar0.S_Link in Port clock. |\n| `auto_rst_sys` | `olo_base_reset_gen` | `olo` | inserted: reset | sys | Synchronous reset of System clock. |\n| `auto_rst_spw` | `olo_base_reset_gen` | `olo` | inserted: reset | spw | Synchronous reset of Port clock. |\n\nGenerics that differ from the VHDL default:\n\n- `spw0`: `LinkClkFreq_g => 200.0e6`, `RunDiv_g => 2`\n- `rmap0`: `Initiator_g => false`\n- `nchar0`: none\n- `spp0`: none\n- `auto_cdc_c5`: `Width_g => 38`, `Depth_g => 32`, `SyncTmr_g => true`\n- `auto_cdc_c6`: `Width_g => 42`, `Depth_g => 32`, `SyncTmr_g => true`\n- `auto_rst_sys`: `SyncTmr_g => true`\n- `auto_rst_spw`: `SyncTmr_g => true`\n\nPacked data words (the nets already contain these bit fields):\n\n| Instance | Interface | Width | Fields |\n| --- | --- | --- | --- |\n| `auto_cdc_c5` | In | 38 | data 31:0, keep 35:32, last 36, user 37 |\n| `auto_cdc_c5` | Out | 38 | data 31:0, keep 35:32, last 36, user 37 |\n| `auto_cdc_c6` | In | 42 | data 31:0, keep 35:32, last 36, user 41:37 |\n| `auto_cdc_c6` | Out | 42 | data 31:0, keep 35:32, last 36, user 41:37 |\n\n## 4. Clocks and resets\n\n| Clock domain | Frequency | Clock | Reset generator |\n| --- | --- | --- | --- |\n| System clock (`sys`) | 100 MHz | top-level port `Clk_sys` | `auto_rst_sys` (olo_base_reset_gen, output `auto_rst_sys_RstOut_s`) |\n| Port clock (`spw`) | 50 MHz | top-level port `Clk_spw` | `auto_rst_spw` (olo_base_reset_gen, output `auto_rst_spw_RstOut_s`) |\n| Link clock (`link`) | 200 MHz | top-level port `Clk_link` | none: no block of the domain has a synchronous reset |\n\nReset ports (`reset` of the port):\n\n| Port | Reset | Actual | Why |\n| --- | --- | --- | --- |\n| `spw0.Rst` | asynchronous | `Rst` | Asynchronous reset; the core synchronises its release in every domain. |\n| `rmap0.Rst` | synchronous | `auto_rst_spw_RstOut_s` | Synchronous reset in the clock domain Port clock (clock Clk): the output of the reset generator auto_rst_spw. |\n| `nchar0.Rst` | synchronous | `auto_rst_spw_RstOut_s` | Synchronous reset in the clock domain Port clock (clock Clk): the output of the reset generator auto_rst_spw. |\n| `spp0.Rst` | synchronous | `auto_rst_sys_RstOut_s` | Synchronous reset in the clock domain System clock (clock Clk): the output of the reset generator auto_rst_sys. |\n| `auto_cdc_c5.In_Rst` | synchronous | `auto_rst_spw_RstOut_s` | Synchronous reset in the clock domain Port clock (clock In_Clk): the output of the reset generator auto_rst_spw. |\n| `auto_cdc_c5.Out_Rst` | synchronous | `auto_rst_sys_RstOut_s` | Synchronous reset in the clock domain System clock (clock Out_Clk): the output of the reset generator auto_rst_sys. |\n| `auto_cdc_c6.In_Rst` | synchronous | `auto_rst_sys_RstOut_s` | Synchronous reset in the clock domain System clock (clock In_Clk): the output of the reset generator auto_rst_sys. |\n| `auto_cdc_c6.Out_Rst` | synchronous | `auto_rst_spw_RstOut_s` | Synchronous reset in the clock domain Port clock (clock Out_Clk): the output of the reset generator auto_rst_spw. |\n| `auto_rst_sys.RstIn` | asynchronous | `Rst` | Asynchronous reset input (polarity from RstInPolarity_g). |\n| `auto_rst_spw.RstIn` | asynchronous | `Rst` | Asynchronous reset input (polarity from RstInPolarity_g). |\n\n`Rst` is the asynchronous system reset. A reset generator asserts the reset of its domain at once and releases it synchronously to the clock; a block with an asynchronous reset synchronises the release itself.\n\n## 5. Constraints\n\nEvery clock crossing is an Open Logic block. Between the clocks of a crossing a maximum delay applies in both directions, the period of the faster clock, data path only (Open Logic clock crossing principles). Do not declare these clocks as asynchronous clock groups: in Vivado `set_clock_groups -asynchronous` overrides the delay limits.\n\n- False path from `Rst`: Asynchronous reset input; the reset generators synchronise its release.\n- False path from `spw0_Spw_DIn`, `spw0_Spw_SIn`: Inputs that spw0 synchronises itself.\n- Output registers in the I/O blocks for `spw0_Spw_DOut`, `spw0_Spw_SOut`: Place the output flip-flops of data and strobe in the I/O blocks with matched routing.\n- Maximum delay from the clock of `Clk_link` to the clock of `Clk_spw`: 5 ns, data path only (`set_max_delay -datapath_only` in Vivado). Clock crossings of spw0: the period of the faster clock.\n- Maximum delay from the clock of `Clk_spw` to the clock of `Clk_link`: 5 ns, data path only (`set_max_delay -datapath_only` in Vivado). Clock crossings of spw0: the period of the faster clock.\n- Maximum delay from the clock of `Clk_spw` to the clock of `Clk_sys`: 10 ns, data path only (`set_max_delay -datapath_only` in Vivado). Clock crossings of auto_cdc_c5, auto_cdc_c6: the period of the faster clock.\n- Maximum delay from the clock of `Clk_sys` to the clock of `Clk_spw`: 10 ns, data path only (`set_max_delay -datapath_only` in Vivado). Clock crossings of auto_cdc_c5, auto_cdc_c6: the period of the faster clock.\n- AMD Vivado: source the script of Open Logic once. It reads the scoped constraints of olo_base_cc_reset, olo_base_cc_bits, olo_base_cc_simple, olo_base_reset_gen and olo_base_ram_sdp wherever the system uses them, also inside the cores. tools/vivado/all_constraints_amd.tcl would also read those of olo_intf_sync, which expect device pins at its input and stop the build (ERROR 18-513) where a block synchronises internal signals with it, as ofb_pa_gty does; a block that synchronises device pins declares its own false path for them. File `src/base/tcl/olo_base_constraints_amd.tcl` of Open Logic.\n\n## 6. Throughput\n\nThe capacity of every path from a source (an external stream input, the inbound side of a link) to a sink (an external stream output, the outbound side of a link), from the rate data of the catalog: every element at its packet length and at the frequency of its clock domain, the path at its slowest element (in bold). Capacities are payload rates at the source in bit/s (SI prefixes, three significant digits). The packet lengths are reference points, not stated traffic, unless the system states traffic for the interface.\n\nNo path from a source to a sink carries rate data.\n\nBlocks without rate data end the paths through them:\n\n- `omap_core` (`rmap0`).\n\n## 7. Packet sizes and buffers\n\nThe largest packet at every interface with a size limit, from the size data of the catalog: the largest packet a source states, the chunks of a route, the bytes the routes add. A source that states no largest packet, or a link, is not bounded: it meets the limit of the first interface that has one. A limit that is only the reset value of a register is marked: software can change it.\n\n| Interface | Largest packet | Limit | Kind | Reason |\n| --- | --- | --- | --- | --- |\n| `spp0.S_Tx[0]` | not bounded (tx0_ (spp0.S_Tx[0])) | 4096 B | fixed | the send buffer holds the longest SDU of the port (error code 0x01) |\n| `spp0.S_Tx[0]` | not bounded (tx0_ (spp0.S_Tx[0])) | 65536 B | fixed | an Octet String has at most 65536 bytes (SPP-6) |\n| `spp0.S_Link` | not bounded (rmap0.M_User) | 4100 B | fixed | the receive buffer holds the longest Space Packet (error code 0x17) |\n| `spp0.S_Link` | not bounded (rmap0.M_User) | 65546 B | fixed | a Space Packet has at most 65542 bytes (SPP-23) |\n| `spp0.S_Link` | not bounded (rmap0.M_User) | 65546 B | reset value | the Maximum Packet Length, MaxLength_g as the reset value of MAX_LENGTH |\n\nWhat leaves over a link (for the node at the far end):\n\n- spp0 sends Space Packets of up to TxBufferBytes_g + 6 = 4102 bytes.\n\nBlocks without a length limit:\n\n- `owr_core` (`spw0`): no length limit, tested up to 1000 B.\n- `olo_ft_fifo_async` (`auto_cdc_c5`, `auto_cdc_c6`): no length limit.\n\nBlocks that publish no length limit (packets through them are checked against the other blocks only):\n\n- `omap_core` (`rmap0`).\n- `spp_nchar` (`nchar0`).\n\nEvidence of the size data:\n\n- `olo_ft_fifo_async`: Open Logic documentation of olo_ft_fifo_async: a stream of words, no packet length.\n- `owr_core`: no length limit by design: N-Chars stream through N-Char FIFOs without a packet concept, the only counter of the data path is the credit (owr_data_link.vhd); tested up to 1000 B (TC-CORE-11, TC-DL-40).\n- `spp_core`: user guide section 7.1 and the integration table (the send buffer holds the longest SDU of a port, the receive buffer the longest Space Packet), requirements SPP-6 and SPP-23.\n\n## 8. Notes from the user guides\n\n**SpaceWire port** (`owr_core`, `spw0`): https://openspacehdl.org/openwire/docs/user_guide.html\n\n- LVDS output buffers for data and strobe and LVDS input buffers with fail-safe biasing belong to the top level; the core contains no I/O buffer.\n- Enable the safe implementation of state machines in the synthesis tool.\n- Set INT_HOLDOFF and INT_ACK_DELAY for the network before distributed interrupts are used.\n- Serve the indication ports before the indication FIFO (16 entries) fills.\n- Write registers as 32-bit words; a read that depends on a write waits for the write response.\n\n**RMAP node** (`omap_core`, `rmap0`): https://openspacehdl.org/openrmap/docs/user_guide.html\n\n- Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.\n- M_RepData, M_Conf and M_User must be served when connected; a stalled output stalls the received packet stream and the link.\n- RMAP address bits above AxiAddrWidth_g must be zero in the windows.\n- With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'. Known defect of Open Logic olo_axi_master_simple up to 4.7.0-ft.4 (fix pending in open-logic-ft): with AxiMaxBeats_g < AxiDataWidth_g/8, commands that the memory master splits into several AXI transactions read or write the first word repeatedly, with status 0.\n\n**N-Char adapter** (`spp_nchar`, `nchar0`): https://openspacehdl.org/openspp/docs/user_guide.html\n\n- A received end of packet marker without data characters is discarded.\n- A link packet that ends with a beat without valid bytes gets its marker after the bytes of the earlier beats; a link packet without any byte sends nothing.\n\n**Space Packet node** (`spp_core`, `spp0`): https://openspacehdl.org/openspp/docs/user_guide.html\n\n- Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.\n- After the reset the core initialises both APID tables (2048 clock cycles); packets are sent and delivered once the tables are ready.\n- Serve every receive port, or place a buffer behind a port whose user can stall for long.\n- TxBufferBytes_g holds the longest SDU of a port, RxBufferBytes_g the longest Space Packet.\n- Hold the side band (TUser) of a send port constant during an SDU.\n- A last beat without valid bytes (Keep all zero) ends an SDU or packet at the inputs; an SDU without any byte is rejected (0x02). The outputs never carry a beat without valid bytes.\n- The user supplies the packet secondary header at the start of the Octet String and keeps the secondary header flag of an APID static.\n\n## 9. Address map\n\nEvery address space of the system with its register banks (`resolved.addressMap`). A space starts at an AXI slave of the top level or at the AXI master of a block; an AXI4-Lite decoder gives each of its ports a window of equal size. The export writes the same as `spp_over_spw_two_clocks_address_map.md`, and the base, size and ID register value of every bank as C macros in `spp_over_spw_two_clocks_regs.h`.\n\n### rmap_reg_ (rmap0.S_AxiLite)\n\nAddresses of the top-level port rmap_reg_ (rmap0.S_AxiLite), 10 address bits.\n\n| Base | Last | Size | Instance | Block | ID register | Window | Register map |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| 0x0000 | 0x03FF | 1 KiB | `rmap0` | `omap_core` | 0x4F4D4101 | the whole space | `sw/omap_regs.h`, `hdl/omap_mib/docs/register_map.md` of openrmap |\n\n### rmap0.M_Axi\n\nRMAP memory addresses as seen by an initiator, 32 address bits. rmap0 accepts an access only inside its windows: WIN_CTRL, WIN_BASE and WIN_LAST of window n at 0x100 + 0x10 n of rmap0 (4 windows, Windows_g). After the reset (WinInit_g = WinInitOpen_c) window 0 is open over the whole address space with all permissions and the other windows are disabled, so the whole map is reachable after the reset. Software can narrow the windows. The space leaves the system at the top-level port mem_: its slave is outside.\n\n### spp_reg_ (spp0.S_AxiLite)\n\nAddresses of the top-level port spp_reg_ (spp0.S_AxiLite), 11 address bits.\n\n| Base | Last | Size | Instance | Block | ID register | Window | Register map |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| 0x0000 | 0x07FF | 2 KiB | `spp0` | `spp_core` | 0x53505001 | the whole space | `sw/spp_regs.h`, `hdl/spp_mib/docs/register_map.md` of openspp |\n\n### spw_reg_ (spw0.S_AxiLite)\n\nAddresses of the top-level port spw_reg_ (spw0.S_AxiLite), 8 address bits.\n\n| Base | Last | Size | Instance | Block | ID register | Window | Register map |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| 0x0000 | 0x00FF | 256 B | `spw0` | `owr_core` | 0x4F575201 | the whole space | `sw/owr_regs.h`, `hdl/owr_mib/docs/register_map.md` of openwire |\n\n### Register maps\n\nThe register offsets are in the C headers and register maps of the cores, at the commits the system is built with. `spp_over_spw_two_clocks_regs.h` includes the headers by name: the include path of the compiler must point to these directories.\n\n| Header | Repository | Commit | Path | Register map |\n| --- | --- | --- | --- | --- |\n| `omap_regs.h` | https://github.com/open-space-hdl/openrmap | `55033637795a009132286f60da90a6a876a9c087` | `sw/omap_regs.h` | `hdl/omap_mib/docs/register_map.md` |\n| `owr_regs.h` | https://github.com/open-space-hdl/openwire | `2897668e2e519e9517a5c7270f243c5ab0d7fdb0` | `sw/owr_regs.h` | `hdl/owr_mib/docs/register_map.md` |\n| `spp_regs.h` | https://github.com/open-space-hdl/openspp | `2d7ee8f92175d15e41d1e069f0db663de951d0c6` | `sw/spp_regs.h` | `hdl/spp_mib/docs/register_map.md` |\n\n## 10. Interrupts\n\nEvery interrupt output of the system (`resolved.interrupts`): a level that is high while an enabled event is pending. The Composer places no interrupt controller: route the interrupts to the processor, or leave them open and poll the status registers.\n\n| Interrupt | Clock domain | Goes to | Enable | Status | Events (write 1 to clear) |\n| --- | --- | --- | --- | --- | --- |\n| `rmap0.Irq` | Port clock | open: poll `IRQ_STATUS` | `IRQ_EN` (0x094) | `IRQ_STATUS` (0x098) | `EVENTS` (0x090) |\n| `spp0.Irq` | System clock | open: poll `IRQ_STATUS` | `IRQ_EN` (0x058) | `IRQ_STATUS` (0x05C) | `EVENTS` (0x054) |\n| `spw0.Irq` | Port clock | open: poll `IRQ_STATUS` | `EVENTS_IRQ_EN` (0x038), `ERRORS_IRQ_EN` (0x034) | `IRQ_STATUS` (0x03C) | `EVENTS` (0x030) |\n\n## 11. Protection scope\n\nThe system is designed for radiation environments together with the triple modular redundancy (TMR) of the synthesis tool, like the Open Logic ft entities its blocks are built on (`resolved.protection`).\n\nBlocks that protect their memories with SECDED ECC and report it in their registers (the channels count the double-error flags of the status register):\n\n| Block | Channels | Status | Counters | Error injection | Evidence |\n| --- | --- | --- | --- | --- | --- |\n| `spw0` (`owr_core`) | 6 | `ECC_STATUS` (0x080) | `ECC_SELECT` (0x084), `ECC_COUNT` (0x088) | `ECC_INJECT` (0x08C) | user guide section 5 (protection scope) and the register map |\n| `rmap0` (`omap_core`) | 3 | `ECC_STATUS` (0x0A0) | `ECC_SELECT` (0x0A4), `ECC_COUNT` (0x0A8) | `ECC_INJECT` (0x0AC) | user guide section 6 (protection scope) and the register map |\n| `spp0` (`spp_core`) | 8 | `ECC_STATUS` (0x060) | `ECC_SELECT` (0x064), `ECC_COUNT` (0x068) | `ECC_INJECT` (0x06C) | user guide section 6 (protection scope) and the register map |\n\nECC events of memories (SECDED ECC of the Open Logic ft entities) and where they are reported:\n\n| Source | Memory | Reported at |\n| --- | --- | --- |\n| `auto_cdc_c5.Ecc` | FIFO memory of `auto_cdc_c5` (inserted crossing) | not reported |\n| `auto_cdc_c6.Ecc` | FIFO memory of `auto_cdc_c6` (inserted crossing) | not reported |\n\nClock domain crossings inserted by the Composer:\n\n- `auto_cdc_c5`, `auto_cdc_c6`: `olo_ft_fifo_async` with SECDED ECC and triplicated synchronisers.\n\nThe reset generators of the clock domains synchronise with triplicated chains as well.\n\nNot reported: the ECC events of these memories are open, so their corrected and detected errors reach no monitor:\n\n- `auto_cdc_c5.Ecc`: FIFO memory of `auto_cdc_c5`, an inserted crossing (the Composer leaves its ECC events open).\n- `auto_cdc_c6.Ecc`: FIFO memory of `auto_cdc_c6`, an inserted crossing (the Composer leaves its ECC events open).\n\nState machines recover through their `when others` branch and the reset. All other logic (registers of the control and data paths, counters, pointers, pipeline registers) relies on the TMR of the synthesis tool. The integrator:\n\n- enables the TMR of the synthesis tool for the system,\n- checks in the synthesis report that TMR was applied, that the synchroniser chains of the crossings were not triplicated a second time, and that no register-based storage meant to be protected by TMR was inferred as a RAM primitive,\n- requests safe state machines, so that synthesis keeps the `when others` branches (AMD Vivado: property `FSM_SAFE_STATE` = `default_state` on the state registers; Synplify: attribute `syn_encoding` = `safe`),\n- protects the configuration memory of SRAM-based FPGAs by scrubbing; this is part of the FPGA design.\n\nThe ECC paths of the blocks are verified in simulation by error injection. Whether the protection as a whole meets the requirements of a mission is shown by a radiation test of the system in operation.\n\n## 12. Initialisation by software\n\nRegister addresses are byte addresses of the AXI4-Lite port of the block; write registers as 32-bit words and wait for the write response before a read that depends on it.\n\n**`spw0`** (SpaceWire port, `owr_core`) through the top-level ports `spw_reg_S_AxiLite_*`:\n\n1. Read ID (0x00): it reads 0x4F575201.\n2. Optionally write LINK_SPEED (0x14) bits 7:0 RUN_DIV: the bit period in the Run state in LinkClk cycles (reset value RunDiv_g); choose it for the far end, which samples at most about LinkClk / 1.2.\n3. Write PORT_CTRL (0x10) = 0x34 (RECEIVER_EN, DRIVER_EN, LINK_START) to start the link, or 0x38 (AUTO_START) to wait for the far end.\n4. Wait for PORT_STATUS (0x18) bits 2:0 LINK_STATE = 5 (Run) before packets are exchanged.\n\n**`rmap0`** (RMAP node, `omap_core`) through the top-level ports `rmap_reg_S_AxiLite_*`:\n\n1. Read ID (0x000): it reads 0x4F4D4101.\n2. None needed: with the default generics the target accepts every command to the logical address 0xFE with the key 0x00 on the whole address space (WinInit_g). A flight configuration narrows the logical addresses (TGT_LA 0x010), the key (TGT_KEY) and the windows (WIN_BASE, WIN_LAST, WIN_CTRL), see the register map.\n\n**`spp0`** (Space Packet node, `spp_core`) through the top-level ports `spp_reg_S_AxiLite_*`:\n\n1. Read ID (0x000): it reads 0x53505001.\n2. After the reset wait until TABLE_STATUS (0x040) bits 1:0 (TX_BUSY, RX_BUSY) are 0: the core initialises both APID tables (2048 clock cycles).\n3. Nothing else is needed: with TxPathDefault_g and RxPathDefault_g every APID has an enabled path to destination 0 and to receive port 0, destination 0 has the Target Logical Address 0xFE (DEST_CTRL 0x400) and the own address is Tla_g. A flight configuration writes the APID tables (TX_TABLE_APID 0x030 and TX_TABLE_ENTRY 0x034, RX_TABLE_APID 0x038 and RX_TABLE_ENTRY 0x03C) and the destinations (DEST_CTRL 0x400 + 0x20 n).\n\n## 13. Checks\n\n- Note: No rate data for omap_core (rmap0): the paths through it are not checked.\n- Note: Packets from tx0_ (spp0.S_Tx[0]) reach spp0.S_Tx[0], which takes at most 4096 bytes: the send buffer holds the longest SDU of the port (error code 0x01); longer ones are rejected.\n- Note: spp0 sends Space Packets of up to TxBufferBytes_g + 6 = 4102 bytes: the node that receives them needs RxBufferBytes_g of at least 4102 (spp0 has 4096, too small to receive its own packets).\n- Note: Packets from rmap0.M_User reach spp0.S_Link, which takes at most 4100 bytes: the receive buffer holds the longest Space Packet (error code 0x17); longer ones are discarded.\n- Note: No length limit published for omap_core (rmap0): packets through it are checked against the other blocks only.\n- Note: No length limit published for spp_nchar (nchar0): packets through it are checked against the other blocks only.\n- Note: The ECC events of the inserted crossing auto_cdc_c5 (c5) are not reported: the Composer leaves them open.\n- Note: The ECC events of the inserted crossing auto_cdc_c6 (c6) are not reported: the Composer leaves them open.\n\n## 14. Verification\n\nA smoke testbench `spp_over_spw_two_clocks_tb` (VHDL-2008, no extra libraries):\n\n1. Instantiate `spp_over_spw_two_clocks` and drive `Clk_sys` at 100 MHz, `Clk_spw` at 50 MHz, `Clk_link` at 200 MHz.\n2. Hold `Rst` at '1' for 16 cycles of the slowest clock (50 MHz), then '0'.\n3. Keep every external input idle: stream inputs with valid at '0', ready inputs of external outputs at '1', bus requests idle, pins at '0'.\n4. Run for at least 100 us (the blocks initialise their tables after the reset) and stop the simulation: it must end without failed assertions, and the handshake outputs of the top level (valid, ready) and the line outputs must not be 'U' or 'X' after the reset. Data outputs may stay undefined while their valid is '0'.\n5. Where an AXI4-Lite port is external, read the ID register of the block (section 12) and compare it with the documented value.\n\nWith GHDL: analyse the libraries of section 1, then `ghdl -i --std=08 -frelaxed spp_over_spw_two_clocks.vhd spp_over_spw_two_clocks_tb.vhd`, `ghdl -m --std=08 -frelaxed spp_over_spw_two_clocks_tb` and `ghdl -r --std=08 -frelaxed spp_over_spw_two_clocks_tb --stop-time=100us --assert-level=error --ieee-asserts=disable` (`--ieee-asserts=disable` silences the warnings of the numeric package about metavalues before the reset).\n\nOptional end-to-end test, after the initialisation of section 12:\n\n- SpaceWire port (`owr_core`): Loop the SpaceWire line back (Spw_DOut to Spw_DIn, Spw_SOut to Spw_SIn) or connect a second port, start the link and wait for PORT_STATUS LINK_STATE = 5 (Run).\n- Space Packet node (`spp_core`): Send one SDU on a send port (APID 0x123, for example) and expect it on receive port 0 with the same APID in user bits 10:0, once the APID tables are ready.\n\n## 15. Readiness of the parts\n\nThe technology readiness level (TRL) of every part, as its project states it (https://openspacehdl.org/trl/). Parts at TRL 3 or higher (lowest: 3). The composed system has no TRL of its own: it is checked by elaboration and a run to 0 ns.\n\n| Part | Repository | TRL | Status | Instances |\n| --- | --- | --- | --- | --- |\n| OpenWire | https://github.com/open-space-hdl/openwire | 3 | Fully verified by simulation. Not yet tested on hardware, no flight heritage. | `spw0` |\n| OpenRMAP | https://github.com/open-space-hdl/openrmap | 3 | Fully verified by simulation. Not yet tested on hardware, no flight heritage. | `rmap0` |\n| OpenSPP | https://github.com/open-space-hdl/openspp | 3 | Fully verified by simulation. Not yet tested on hardware, no flight heritage. | `nchar0`, `spp0` |\n| Open Logic FT | https://github.com/open-space-hdl/open-logic-ft | 3 | Fully verified by simulation. Not yet tested on hardware, no flight heritage. | `auto_cdc_c5`, `auto_cdc_c6`, `auto_rst_sys`, `auto_rst_spw` |\n"
+    "brief": "# spp_over_spw_two_clocks: build brief\n\nSpace Packets over SpaceWire with two clock domains: the SpaceWire side runs on a 50 MHz port clock, the Space Packet node on the 100 MHz system clock. The Composer inserts asynchronous FIFOs for the packet links. An ECC monitor, marked as the system ECC monitor, reports the corrected and detected errors of these FIFOs.\n\nThis brief was generated by the Open Space Composer from the system file `spp_over_spw_two_clocks.composer.json` (catalog `2f7536b0b190`).\nThe file holds the system as edited (`instances`, `connections`, `externals`), in `resolved` the netlist it resolves to and in `catalogSubset` the catalog entries of its blocks (interfaces, fields, clocks, generics).\nBuild a VHDL-2008 top level `spp_over_spw_two_clocks` from `resolved` as described below; everything needed is in the file and in the listed repositories.\nThe button Export HDL of the Composer, and `tools/composer_hdl.mjs` of the repository of the website, write this top level, its compile order and its constraints from the same netlist (`spp_over_spw_two_clocks.vhd`, `spp_over_spw_two_clocks_compile_order.txt`, `spp_over_spw_two_clocks.xdc`, `spp_over_spw_two_clocks_top.xdc`, and the address map `spp_over_spw_two_clocks_address_map.md` with the C header `spp_over_spw_two_clocks_regs.h`); use them, or build the top level by hand as described here.\n\n**Readiness:** Parts at TRL 3 or higher (lowest: 3). The composed system has no TRL of its own: it is checked by elaboration and a run to 0 ns. The parts are listed in section 15.\n\n## 1. Sources and libraries\n\nFetch every repository at the given version and compile one VHDL-2008 library per row, in this order:\n\n| Library | Repository | Version | Files | Entities used |\n| --- | --- | --- | --- | --- |\n| `olo` | https://github.com/open-space-hdl/open-logic-ft | tag `4.7.0-ft.5` (commit `1bc4fb90888cf24ac29bc54527c2982d2dec307c`) | every file listed in `compile_order.txt`, in its order | `olo_base_cc_pulse`, `olo_base_reset_gen`, `olo_ft_ecc_monitor_axi`, `olo_ft_fifo_async` |\n| `openwire` | https://github.com/open-space-hdl/openwire | commit `2897668e2e519e9517a5c7270f243c5ab0d7fdb0` | every file listed in `compile_order.txt`, in its order | `owr_core` |\n| `openrmap` | https://github.com/open-space-hdl/openrmap | commit `55033637795a009132286f60da90a6a876a9c087` | every file listed in `compile_order.txt`, in its order | `omap_core` |\n| `openspp` | https://github.com/open-space-hdl/openspp | commit `2d7ee8f92175d15e41d1e069f0db663de951d0c6` | every file listed in `compile_order.txt`, in its order | `spp_core`, `spp_nchar` |\n\n- `olo`: Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.5 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), and fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5); it changes no other source, so the cores verified with 4.7.0-ft.2, 4.7.0-ft.3 or 4.7.0-ft.4 use it unchanged. Of the cores only OpenRMAP uses olo_axi_master_simple.\n- `openwire`: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.\n- `openrmap`: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.\n- `openspp`: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.\n- One `olo` library (Open Logic FT `4.7.0-ft.5`) serves the whole system. The cores were verified with the Open Logic FT tags `4.7.0-ft.2` (openwire), `4.7.0-ft.5` (openrmap), `4.7.0-ft.2` (openspp) (`verifiedWith`); their own `open-logic` submodules are not needed.\n- With GHDL: analyse Open Logic file by file (`ghdl -a --std=08 -frelaxed --work=olo <file>`), import the files of a core library (`ghdl -i --std=08 -frelaxed --work=<library> <files>`) and let `ghdl -m --std=08 -frelaxed <top>` find the order. `-frelaxed` is needed for Open Logic, whose RAMs use a shared variable without a protected type (`olo_base_ram_sdp`); the cores and the top level also analyse as strict VHDL-2008.\n- With other tools follow the order of the table.\n\n## 2. Top-level entity\n\nEntity `spp_over_spw_two_clocks`, ports in this order (`resolved.ports`; `domain` is the clock domain of the port):\n\n| Port | Direction | Type | Clock domain | Meaning |\n| --- | --- | --- | --- | --- |\n| `Rst` | in | `std_logic` |  | Asynchronous reset of the system, high-active |\n| `Clk_sys` | in | `std_logic` | System clock (`sys`) | Clock of the domain System clock (100 MHz) |\n| `Clk_spw` | in | `std_logic` | Port clock (`spw`) | Clock of the domain Port clock (50 MHz) |\n| `Clk_link` | in | `std_logic` | Link clock (`link`) | Clock of the domain Link clock (200 MHz) |\n| `spw_reg_S_AxiLite_AwAddr` | in | `std_logic_vector(7 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` AwAddr |\n| `spw_reg_S_AxiLite_AwValid` | in | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` AwValid |\n| `spw_reg_S_AxiLite_AwReady` | out | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` AwReady |\n| `spw_reg_S_AxiLite_WData` | in | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` WData |\n| `spw_reg_S_AxiLite_WStrb` | in | `std_logic_vector(3 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` WStrb |\n| `spw_reg_S_AxiLite_WValid` | in | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` WValid |\n| `spw_reg_S_AxiLite_WReady` | out | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` WReady |\n| `spw_reg_S_AxiLite_BResp` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` BResp |\n| `spw_reg_S_AxiLite_BValid` | out | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` BValid |\n| `spw_reg_S_AxiLite_BReady` | in | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` BReady |\n| `spw_reg_S_AxiLite_ArAddr` | in | `std_logic_vector(7 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` ArAddr |\n| `spw_reg_S_AxiLite_ArValid` | in | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` ArValid |\n| `spw_reg_S_AxiLite_ArReady` | out | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` ArReady |\n| `spw_reg_S_AxiLite_RData` | out | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` RData |\n| `spw_reg_S_AxiLite_RResp` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `spw0.S_AxiLite` RResp |\n| `spw_reg_S_AxiLite_RValid` | out | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` RValid |\n| `spw_reg_S_AxiLite_RReady` | in | `std_logic` | Port clock (`spw`) | `spw0.S_AxiLite` RReady |\n| `spw0_Spw_DOut` | out | `std_logic` | Link clock (`link`) | `spw0.Spw` d_out |\n| `spw0_Spw_SOut` | out | `std_logic` | Link clock (`link`) | `spw0.Spw` s_out |\n| `spw0_Spw_DIn` | in | `std_logic` | Link clock (`link`) | `spw0.Spw` d_in |\n| `spw0_Spw_SIn` | in | `std_logic` | Link clock (`link`) | `spw0.Spw` s_in |\n| `spw0_Phy_TxEn` | out | `std_logic` | Link clock (`link`) | `spw0.Spw` tx_en |\n| `spw0_Phy_RxEn` | out | `std_logic` | Link clock (`link`) | `spw0.Spw` rx_en |\n| `rmap_reg_S_AxiLite_AwAddr` | in | `std_logic_vector(9 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` AwAddr |\n| `rmap_reg_S_AxiLite_AwValid` | in | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` AwValid |\n| `rmap_reg_S_AxiLite_AwReady` | out | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` AwReady |\n| `rmap_reg_S_AxiLite_WData` | in | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` WData |\n| `rmap_reg_S_AxiLite_WStrb` | in | `std_logic_vector(3 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` WStrb |\n| `rmap_reg_S_AxiLite_WValid` | in | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` WValid |\n| `rmap_reg_S_AxiLite_WReady` | out | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` WReady |\n| `rmap_reg_S_AxiLite_BResp` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` BResp |\n| `rmap_reg_S_AxiLite_BValid` | out | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` BValid |\n| `rmap_reg_S_AxiLite_BReady` | in | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` BReady |\n| `rmap_reg_S_AxiLite_ArAddr` | in | `std_logic_vector(9 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` ArAddr |\n| `rmap_reg_S_AxiLite_ArValid` | in | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` ArValid |\n| `rmap_reg_S_AxiLite_ArReady` | out | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` ArReady |\n| `rmap_reg_S_AxiLite_RData` | out | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` RData |\n| `rmap_reg_S_AxiLite_RResp` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.S_AxiLite` RResp |\n| `rmap_reg_S_AxiLite_RValid` | out | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` RValid |\n| `rmap_reg_S_AxiLite_RReady` | in | `std_logic` | Port clock (`spw`) | `rmap0.S_AxiLite` RReady |\n| `mem_M_Axi_AwAddr` | out | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwAddr |\n| `mem_M_Axi_AwLen` | out | `std_logic_vector(7 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwLen |\n| `mem_M_Axi_AwSize` | out | `std_logic_vector(2 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwSize |\n| `mem_M_Axi_AwBurst` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwBurst |\n| `mem_M_Axi_AwLock` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` AwLock |\n| `mem_M_Axi_AwCache` | out | `std_logic_vector(3 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwCache |\n| `mem_M_Axi_AwProt` | out | `std_logic_vector(2 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` AwProt |\n| `mem_M_Axi_AwValid` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` AwValid |\n| `mem_M_Axi_AwReady` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` AwReady |\n| `mem_M_Axi_WData` | out | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` WData |\n| `mem_M_Axi_WStrb` | out | `std_logic_vector(3 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` WStrb |\n| `mem_M_Axi_WLast` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` WLast |\n| `mem_M_Axi_WValid` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` WValid |\n| `mem_M_Axi_WReady` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` WReady |\n| `mem_M_Axi_BResp` | in | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` BResp |\n| `mem_M_Axi_BValid` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` BValid |\n| `mem_M_Axi_BReady` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` BReady |\n| `mem_M_Axi_ArAddr` | out | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArAddr |\n| `mem_M_Axi_ArLen` | out | `std_logic_vector(7 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArLen |\n| `mem_M_Axi_ArSize` | out | `std_logic_vector(2 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArSize |\n| `mem_M_Axi_ArBurst` | out | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArBurst |\n| `mem_M_Axi_ArLock` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` ArLock |\n| `mem_M_Axi_ArCache` | out | `std_logic_vector(3 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArCache |\n| `mem_M_Axi_ArProt` | out | `std_logic_vector(2 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` ArProt |\n| `mem_M_Axi_ArValid` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` ArValid |\n| `mem_M_Axi_ArReady` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` ArReady |\n| `mem_M_Axi_RData` | in | `std_logic_vector(31 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` RData |\n| `mem_M_Axi_RResp` | in | `std_logic_vector(1 downto 0)` | Port clock (`spw`) | `rmap0.M_Axi` RResp |\n| `mem_M_Axi_RLast` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` RLast |\n| `mem_M_Axi_RValid` | in | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` RValid |\n| `mem_M_Axi_RReady` | out | `std_logic` | Port clock (`spw`) | `rmap0.M_Axi` RReady |\n| `tx0_S_Tx_Data_0` | in | `std_logic_vector(31 downto 0)` | System clock (`sys`) | `spp0.S_Tx[0]` data |\n| `tx0_S_Tx_Keep_0` | in | `std_logic_vector(3 downto 0)` | System clock (`sys`) | `spp0.S_Tx[0]` keep |\n| `tx0_S_Tx_Last_0` | in | `std_logic` | System clock (`sys`) | `spp0.S_Tx[0]` last |\n| `tx0_S_Tx_User_0` | in | `std_logic_vector(27 downto 0)` | System clock (`sys`) | `spp0.S_Tx[0]` user |\n| `tx0_S_Tx_Valid_0` | in | `std_logic` | System clock (`sys`) | `spp0.S_Tx[0]` valid |\n| `tx0_S_Tx_Ready_0` | out | `std_logic` | System clock (`sys`) | `spp0.S_Tx[0]` ready |\n| `rx0_M_Rx_Data_0` | out | `std_logic_vector(31 downto 0)` | System clock (`sys`) | `spp0.M_Rx[0]` data |\n| `rx0_M_Rx_Keep_0` | out | `std_logic_vector(3 downto 0)` | System clock (`sys`) | `spp0.M_Rx[0]` keep |\n| `rx0_M_Rx_Last_0` | out | `std_logic` | System clock (`sys`) | `spp0.M_Rx[0]` last |\n| `rx0_M_Rx_User_0` | out | `std_logic_vector(21 downto 0)` | System clock (`sys`) | `spp0.M_Rx[0]` user |\n| `rx0_M_Rx_Valid_0` | out | `std_logic` | System clock (`sys`) | `spp0.M_Rx[0]` valid |\n| `rx0_M_Rx_Ready_0` | in | `std_logic` | System clock (`sys`) | `spp0.M_Rx[0]` ready |\n| `spp_reg_S_AxiLite_AwAddr` | in | `std_logic_vector(10 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` AwAddr |\n| `spp_reg_S_AxiLite_AwValid` | in | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` AwValid |\n| `spp_reg_S_AxiLite_AwReady` | out | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` AwReady |\n| `spp_reg_S_AxiLite_WData` | in | `std_logic_vector(31 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` WData |\n| `spp_reg_S_AxiLite_WStrb` | in | `std_logic_vector(3 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` WStrb |\n| `spp_reg_S_AxiLite_WValid` | in | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` WValid |\n| `spp_reg_S_AxiLite_WReady` | out | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` WReady |\n| `spp_reg_S_AxiLite_BResp` | out | `std_logic_vector(1 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` BResp |\n| `spp_reg_S_AxiLite_BValid` | out | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` BValid |\n| `spp_reg_S_AxiLite_BReady` | in | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` BReady |\n| `spp_reg_S_AxiLite_ArAddr` | in | `std_logic_vector(10 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` ArAddr |\n| `spp_reg_S_AxiLite_ArValid` | in | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` ArValid |\n| `spp_reg_S_AxiLite_ArReady` | out | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` ArReady |\n| `spp_reg_S_AxiLite_RData` | out | `std_logic_vector(31 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` RData |\n| `spp_reg_S_AxiLite_RResp` | out | `std_logic_vector(1 downto 0)` | System clock (`sys`) | `spp0.S_AxiLite` RResp |\n| `spp_reg_S_AxiLite_RValid` | out | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` RValid |\n| `spp_reg_S_AxiLite_RReady` | in | `std_logic` | System clock (`sys`) | `spp0.S_AxiLite` RReady |\n| `edac_reg_S_AxiLite_AwAddr` | in | `std_logic_vector(11 downto 0)` | System clock (`sys`) | `edac0.S_AxiLite` AwAddr |\n| `edac_reg_S_AxiLite_AwValid` | in | `std_logic` | System clock (`sys`) | `edac0.S_AxiLite` AwValid |\n| `edac_reg_S_AxiLite_AwReady` | out | `std_logic` | System clock (`sys`) | `edac0.S_AxiLite` AwReady |\n| `edac_reg_S_AxiLite_WData` | in | `std_logic_vector(31 downto 0)` | System clock (`sys`) | `edac0.S_AxiLite` WData |\n| `edac_reg_S_AxiLite_WStrb` | in | `std_logic_vector(3 downto 0)` | System clock (`sys`) | `edac0.S_AxiLite` WStrb |\n| `edac_reg_S_AxiLite_WValid` | in | `std_logic` | System clock (`sys`) | `edac0.S_AxiLite` WValid |\n| `edac_reg_S_AxiLite_WReady` | out | `std_logic` | System clock (`sys`) | `edac0.S_AxiLite` WReady |\n| `edac_reg_S_AxiLite_BResp` | out | `std_logic_vector(1 downto 0)` | System clock (`sys`) | `edac0.S_AxiLite` BResp |\n| `edac_reg_S_AxiLite_BValid` | out | `std_logic` | System clock (`sys`) | `edac0.S_AxiLite` BValid |\n| `edac_reg_S_AxiLite_BReady` | in | `std_logic` | System clock (`sys`) | `edac0.S_AxiLite` BReady |\n| `edac_reg_S_AxiLite_ArAddr` | in | `std_logic_vector(11 downto 0)` | System clock (`sys`) | `edac0.S_AxiLite` ArAddr |\n| `edac_reg_S_AxiLite_ArValid` | in | `std_logic` | System clock (`sys`) | `edac0.S_AxiLite` ArValid |\n| `edac_reg_S_AxiLite_ArReady` | out | `std_logic` | System clock (`sys`) | `edac0.S_AxiLite` ArReady |\n| `edac_reg_S_AxiLite_RData` | out | `std_logic_vector(31 downto 0)` | System clock (`sys`) | `edac0.S_AxiLite` RData |\n| `edac_reg_S_AxiLite_RResp` | out | `std_logic_vector(1 downto 0)` | System clock (`sys`) | `edac0.S_AxiLite` RResp |\n| `edac_reg_S_AxiLite_RValid` | out | `std_logic` | System clock (`sys`) | `edac0.S_AxiLite` RValid |\n| `edac_reg_S_AxiLite_RReady` | in | `std_logic` | System clock (`sys`) | `edac0.S_AxiLite` RReady |\n\nExternal interfaces:\n\n- `spw0.S_AxiLite` (AXI4-Lite register bus, clock domain `spw`): AXI4-Lite register access (32 bit data), for example the register file of a core.\n- `spw0.Spw` (SpaceWire line, clock domain `link`): Data-strobe line drivers and receivers of a SpaceWire link (LVDS buffers outside the core).\n- `rmap0.S_AxiLite` (AXI4-Lite register bus, clock domain `spw`): AXI4-Lite register access (32 bit data), for example the register file of a core.\n- `rmap0.M_Axi` (AXI4 memory bus, clock domain `spw`): AXI4 memory-mapped bus (bursts), for example the memory access of an RMAP target.\n- `spp0.S_Tx[0]` (Space Packet send port, clock domain `sys`): Send port of OpenSPP: one SDU (Octet String Service) or one Space Packet (Packet Service) per stream packet, with the per-SDU side band (APID, packet type, secondary header flag, packet name) in user.\n  - `tx0_S_Tx_User_0`: 10:0 APID; 11 Secondary header flag; 12 Packet type (telecommand); 13 Packet name instead of sequence count; 27:14 Packet name.\n- `spp0.M_Rx[0]` (Space Packet receive port, clock domain `sys`): Receive port of OpenSPP: one SDU or Space Packet per stream packet, with APID, flags, loss indicator and the user application value in user.\n  - `rx0_M_Rx_User_0`: 10:0 APID; 11 Secondary Header Indicator (Octet String Service); 12 Packet Loss or Data Loss Indicator; 13 Double bit error in the receive buffer during this SDU, valid with last; 21:14 User Application value of the CPTP packet (0 without the CPTP layer).\n- `spp0.S_AxiLite` (AXI4-Lite register bus, clock domain `sys`): AXI4-Lite register access (32 bit data), for example the register file of a core.\n- `edac0.S_AxiLite` (AXI4-Lite register bus, clock domain `sys`): AXI4-Lite register access (32 bit data), for example the register file of a core.\n\n## 3. Architecture\n\n1. Context clause (`resolved.context`): `library ieee;` `use ieee.std_logic_1164.all;` `library olo;` `library openwire;` `library openrmap;` `library openspp;`\n2. Declare every signal of `resolved.signals` (one per port of an instance, named `<instance>_<port>_s`, with the type of the port).\n3. Instantiate every entry of `resolved.instances` as `i_<id> : entity <library>.<entity>`: a generic map with every generic (the value is the VHDL literal in `vhdl`, package constants fully qualified; write the defaults too, where `default` is true, so that a new default of a core cannot change the system unnoticed), and a port map with the `actual` of every port. Leave out the ports with `useDefault` (they keep their VHDL `default`). Clocks and resets are port actuals on purpose: never assign a clock to another signal.\n4. Write every entry of `resolved.nets` as a concurrent assignment `<to> <= <from>;`. They connect the interfaces signal by signal (a packed data word bit by bit), set the side band constants and tie-offs, and connect the top-level ports.\n\n| Instance | Entity | Library | Origin | Clock domain | Why |\n| --- | --- | --- | --- | --- | --- |\n| `spw0` | `owr_core` | `openwire` | placed | spw |  |\n| `rmap0` | `omap_core` | `openrmap` | placed | spw |  |\n| `nchar0` | `spp_nchar` | `openspp` | placed | spw |  |\n| `spp0` | `spp_core` | `openspp` | placed | sys |  |\n| `edac0` | `olo_ft_ecc_monitor_axi` | `olo` | placed | sys |  |\n| `auto_cdc_c5` | `olo_ft_fifo_async` | `olo` | inserted: cdc | spw | nchar0.M_Link runs in Port clock, spp0.S_Link in System clock. |\n| `auto_cdc_c6` | `olo_ft_fifo_async` | `olo` | inserted: cdc | sys | spp0.M_Link runs in System clock, nchar0.S_Link in Port clock. |\n| `auto_cdc_auto_ecc_c6` | `olo_base_cc_pulse` | `olo` | inserted: cdc | spw | auto_cdc_c6.Ecc runs in Port clock, edac0.In[1] in System clock. |\n| `auto_rst_sys` | `olo_base_reset_gen` | `olo` | inserted: reset | sys | Synchronous reset of System clock. |\n| `auto_rst_spw` | `olo_base_reset_gen` | `olo` | inserted: reset | spw | Synchronous reset of Port clock. |\n\nGenerics that differ from the VHDL default:\n\n- `spw0`: `LinkClkFreq_g => 200.0e6`, `RunDiv_g => 2`\n- `rmap0`: `Initiator_g => false`\n- `nchar0`: none\n- `spp0`: none\n- `edac0`: `Channels_g => 2`\n- `auto_cdc_c5`: `Width_g => 38`, `Depth_g => 32`, `SyncTmr_g => true`\n- `auto_cdc_c6`: `Width_g => 42`, `Depth_g => 32`, `SyncTmr_g => true`\n- `auto_cdc_auto_ecc_c6`: `NumPulses_g => 2`, `SyncTmr_g => true`\n- `auto_rst_sys`: `SyncTmr_g => true`\n- `auto_rst_spw`: `SyncTmr_g => true`\n\nPacked data words (the nets already contain these bit fields):\n\n| Instance | Interface | Width | Fields |\n| --- | --- | --- | --- |\n| `auto_cdc_c5` | In | 38 | data 31:0, keep 35:32, last 36, user 37 |\n| `auto_cdc_c5` | Out | 38 | data 31:0, keep 35:32, last 36, user 37 |\n| `auto_cdc_c6` | In | 42 | data 31:0, keep 35:32, last 36, user 41:37 |\n| `auto_cdc_c6` | Out | 42 | data 31:0, keep 35:32, last 36, user 41:37 |\n| `auto_cdc_auto_ecc_c6` | In | 2 | sec 0, ded 1 |\n| `auto_cdc_auto_ecc_c6` | Out | 2 | sec 0, ded 1 |\n\n## 4. Clocks and resets\n\n| Clock domain | Frequency | Clock | Reset generator |\n| --- | --- | --- | --- |\n| System clock (`sys`) | 100 MHz | top-level port `Clk_sys` | `auto_rst_sys` (olo_base_reset_gen, output `auto_rst_sys_RstOut_s`) |\n| Port clock (`spw`) | 50 MHz | top-level port `Clk_spw` | `auto_rst_spw` (olo_base_reset_gen, output `auto_rst_spw_RstOut_s`) |\n| Link clock (`link`) | 200 MHz | top-level port `Clk_link` | none: no block of the domain has a synchronous reset |\n\nReset ports (`reset` of the port):\n\n| Port | Reset | Actual | Why |\n| --- | --- | --- | --- |\n| `spw0.Rst` | asynchronous | `Rst` | Asynchronous reset; the core synchronises its release in every domain. |\n| `rmap0.Rst` | synchronous | `auto_rst_spw_RstOut_s` | Synchronous reset in the clock domain Port clock (clock Clk): the output of the reset generator auto_rst_spw. |\n| `nchar0.Rst` | synchronous | `auto_rst_spw_RstOut_s` | Synchronous reset in the clock domain Port clock (clock Clk): the output of the reset generator auto_rst_spw. |\n| `spp0.Rst` | synchronous | `auto_rst_sys_RstOut_s` | Synchronous reset in the clock domain System clock (clock Clk): the output of the reset generator auto_rst_sys. |\n| `edac0.Rst` | synchronous | `auto_rst_sys_RstOut_s` | Synchronous reset in the clock domain System clock (clock Clk): the output of the reset generator auto_rst_sys. |\n| `auto_cdc_c5.In_Rst` | synchronous | `auto_rst_spw_RstOut_s` | Synchronous reset in the clock domain Port clock (clock In_Clk): the output of the reset generator auto_rst_spw. |\n| `auto_cdc_c5.Out_Rst` | synchronous | `auto_rst_sys_RstOut_s` | Synchronous reset in the clock domain System clock (clock Out_Clk): the output of the reset generator auto_rst_sys. |\n| `auto_cdc_c6.In_Rst` | synchronous | `auto_rst_sys_RstOut_s` | Synchronous reset in the clock domain System clock (clock In_Clk): the output of the reset generator auto_rst_sys. |\n| `auto_cdc_c6.Out_Rst` | synchronous | `auto_rst_spw_RstOut_s` | Synchronous reset in the clock domain Port clock (clock Out_Clk): the output of the reset generator auto_rst_spw. |\n| `auto_cdc_auto_ecc_c6.In_RstIn` | synchronous | `auto_rst_spw_RstOut_s` | Synchronous reset in the clock domain Port clock (clock In_Clk): the output of the reset generator auto_rst_spw. |\n| `auto_cdc_auto_ecc_c6.Out_RstIn` | synchronous | `auto_rst_sys_RstOut_s` | Synchronous reset in the clock domain System clock (clock Out_Clk): the output of the reset generator auto_rst_sys. |\n| `auto_rst_sys.RstIn` | asynchronous | `Rst` | Asynchronous reset input (polarity from RstInPolarity_g). |\n| `auto_rst_spw.RstIn` | asynchronous | `Rst` | Asynchronous reset input (polarity from RstInPolarity_g). |\n\n`Rst` is the asynchronous system reset. A reset generator asserts the reset of its domain at once and releases it synchronously to the clock; a block with an asynchronous reset synchronises the release itself.\n\n## 5. Constraints\n\nEvery clock crossing is an Open Logic block. Between the clocks of a crossing a maximum delay applies in both directions, the period of the faster clock, data path only (Open Logic clock crossing principles). Do not declare these clocks as asynchronous clock groups: in Vivado `set_clock_groups -asynchronous` overrides the delay limits.\n\n- False path from `Rst`: Asynchronous reset input; the reset generators synchronise its release.\n- False path from `spw0_Spw_DIn`, `spw0_Spw_SIn`: Inputs that spw0 synchronises itself.\n- Output registers in the I/O blocks for `spw0_Spw_DOut`, `spw0_Spw_SOut`: Place the output flip-flops of data and strobe in the I/O blocks with matched routing.\n- Maximum delay from the clock of `Clk_link` to the clock of `Clk_spw`: 5 ns, data path only (`set_max_delay -datapath_only` in Vivado). Clock crossings of spw0: the period of the faster clock.\n- Maximum delay from the clock of `Clk_spw` to the clock of `Clk_link`: 5 ns, data path only (`set_max_delay -datapath_only` in Vivado). Clock crossings of spw0: the period of the faster clock.\n- Maximum delay from the clock of `Clk_spw` to the clock of `Clk_sys`: 10 ns, data path only (`set_max_delay -datapath_only` in Vivado). Clock crossings of auto_cdc_auto_ecc_c6, auto_cdc_c5, auto_cdc_c6: the period of the faster clock.\n- Maximum delay from the clock of `Clk_sys` to the clock of `Clk_spw`: 10 ns, data path only (`set_max_delay -datapath_only` in Vivado). Clock crossings of auto_cdc_auto_ecc_c6, auto_cdc_c5, auto_cdc_c6: the period of the faster clock.\n- AMD Vivado: source the script of Open Logic once. It reads the scoped constraints of olo_base_cc_reset, olo_base_cc_bits, olo_base_cc_simple, olo_base_reset_gen and olo_base_ram_sdp wherever the system uses them, also inside the cores. tools/vivado/all_constraints_amd.tcl would also read those of olo_intf_sync, which expect device pins at its input and stop the build (ERROR 18-513) where a block synchronises internal signals with it, as ofb_pa_gty does; a block that synchronises device pins declares its own false path for them. File `src/base/tcl/olo_base_constraints_amd.tcl` of Open Logic.\n\n## 6. Throughput\n\nThe capacity of every path from a source (an external stream input, the inbound side of a link) to a sink (an external stream output, the outbound side of a link), from the rate data of the catalog: every element at its packet length and at the frequency of its clock domain, the path at its slowest element (in bold). Capacities are payload rates at the source in bit/s (SI prefixes, three significant digits). The packet lengths are reference points, not stated traffic, unless the system states traffic for the interface.\n\nNo path from a source to a sink carries rate data.\n\nBlocks without rate data end the paths through them:\n\n- `omap_core` (`rmap0`).\n\n## 7. Packet sizes and buffers\n\nThe largest packet at every interface with a size limit, from the size data of the catalog: the largest packet a source states, the chunks of a route, the bytes the routes add. A source that states no largest packet, or a link, is not bounded: it meets the limit of the first interface that has one. A limit that is only the reset value of a register is marked: software can change it.\n\n| Interface | Largest packet | Limit | Kind | Reason |\n| --- | --- | --- | --- | --- |\n| `spp0.S_Tx[0]` | not bounded (tx0_ (spp0.S_Tx[0])) | 4096 B | fixed | the send buffer holds the longest SDU of the port (error code 0x01) |\n| `spp0.S_Tx[0]` | not bounded (tx0_ (spp0.S_Tx[0])) | 65536 B | fixed | an Octet String has at most 65536 bytes (SPP-6) |\n| `spp0.S_Link` | not bounded (rmap0.M_User) | 4100 B | fixed | the receive buffer holds the longest Space Packet (error code 0x17) |\n| `spp0.S_Link` | not bounded (rmap0.M_User) | 65546 B | fixed | a Space Packet has at most 65542 bytes (SPP-23) |\n| `spp0.S_Link` | not bounded (rmap0.M_User) | 65546 B | reset value | the Maximum Packet Length, MaxLength_g as the reset value of MAX_LENGTH |\n\nWhat leaves over a link (for the node at the far end):\n\n- spp0 sends Space Packets of up to TxBufferBytes_g + 6 = 4102 bytes.\n\nBlocks without a length limit:\n\n- `owr_core` (`spw0`): no length limit, tested up to 1000 B.\n- `olo_ft_fifo_async` (`auto_cdc_c5`, `auto_cdc_c6`): no length limit.\n\nBlocks that publish no length limit (packets through them are checked against the other blocks only):\n\n- `omap_core` (`rmap0`).\n- `spp_nchar` (`nchar0`).\n\nEvidence of the size data:\n\n- `olo_ft_fifo_async`: Open Logic documentation of olo_ft_fifo_async: a stream of words, no packet length.\n- `owr_core`: no length limit by design: N-Chars stream through N-Char FIFOs without a packet concept, the only counter of the data path is the credit (owr_data_link.vhd); tested up to 1000 B (TC-CORE-11, TC-DL-40).\n- `spp_core`: user guide section 7.1 and the integration table (the send buffer holds the longest SDU of a port, the receive buffer the longest Space Packet), requirements SPP-6 and SPP-23.\n\n## 8. Notes from the user guides\n\n**SpaceWire port** (`owr_core`, `spw0`): https://openspacehdl.org/openwire/docs/user_guide.html\n\n- LVDS output buffers for data and strobe and LVDS input buffers with fail-safe biasing belong to the top level; the core contains no I/O buffer.\n- Enable the safe implementation of state machines in the synthesis tool.\n- Set INT_HOLDOFF and INT_ACK_DELAY for the network before distributed interrupts are used.\n- Serve the indication ports before the indication FIFO (16 entries) fills.\n- Write registers as 32-bit words; a read that depends on a write waits for the write response.\n\n**RMAP node** (`omap_core`, `rmap0`): https://openspacehdl.org/openrmap/docs/user_guide.html\n\n- Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.\n- M_RepData, M_Conf and M_User must be served when connected; a stalled output stalls the received packet stream and the link.\n- RMAP address bits above AxiAddrWidth_g must be zero in the windows.\n- With AxiMaxBeats_g = 1 and AxiDataWidth_g = 32 the memory master issues single transfers only and can drive an AXI4-Lite slave; tie M_Axi_RLast to '1'. Known defect of Open Logic olo_axi_master_simple up to 4.7.0-ft.4 (fix pending in open-logic-ft): with AxiMaxBeats_g < AxiDataWidth_g/8, commands that the memory master splits into several AXI transactions read or write the first word repeatedly, with status 0.\n\n**N-Char adapter** (`spp_nchar`, `nchar0`): https://openspacehdl.org/openspp/docs/user_guide.html\n\n- A received end of packet marker without data characters is discarded.\n- A link packet that ends with a beat without valid bytes gets its marker after the bytes of the earlier beats; a link packet without any byte sends nothing.\n\n**Space Packet node** (`spp_core`, `spp0`): https://openspacehdl.org/openspp/docs/user_guide.html\n\n- Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.\n- After the reset the core initialises both APID tables (2048 clock cycles); packets are sent and delivered once the tables are ready.\n- Serve every receive port, or place a buffer behind a port whose user can stall for long.\n- TxBufferBytes_g holds the longest SDU of a port, RxBufferBytes_g the longest Space Packet.\n- Hold the side band (TUser) of a send port constant during an SDU.\n- A last beat without valid bytes (Keep all zero) ends an SDU or packet at the inputs; an SDU without any byte is rejected (0x02). The outputs never carry a beat without valid bytes.\n- The user supplies the packet secondary header at the start of the Octet String and keeps the secondary header flag of an APID static.\n\n**EDAC monitor with registers** (`olo_ft_ecc_monitor_axi`, `edac0`): https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor_axi.html\n\n- EDAC monitor with an AXI4-Lite register file and an interrupt.\n\n## 9. Address map\n\nEvery address space of the system with its register banks (`resolved.addressMap`). A space starts at an AXI slave of the top level or at the AXI master of a block; an AXI4-Lite decoder gives each of its ports a window of equal size. The export writes the same as `spp_over_spw_two_clocks_address_map.md`, and the base, size and ID register value of every bank as C macros in `spp_over_spw_two_clocks_regs.h`.\n\n### edac_reg_ (edac0.S_AxiLite)\n\nAddresses of the top-level port edac_reg_ (edac0.S_AxiLite), 12 address bits.\n\n| Base | Last | Size | Instance | Block | ID register | Window | Register map |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| 0x0000 | 0x0FFF | 4 KiB | `edac0` | `olo_ft_ecc_monitor_axi` |  | the whole space | https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor_axi.html |\n\n### rmap_reg_ (rmap0.S_AxiLite)\n\nAddresses of the top-level port rmap_reg_ (rmap0.S_AxiLite), 10 address bits.\n\n| Base | Last | Size | Instance | Block | ID register | Window | Register map |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| 0x0000 | 0x03FF | 1 KiB | `rmap0` | `omap_core` | 0x4F4D4101 | the whole space | `sw/omap_regs.h`, `hdl/omap_mib/docs/register_map.md` of openrmap |\n\n### rmap0.M_Axi\n\nRMAP memory addresses as seen by an initiator, 32 address bits. rmap0 accepts an access only inside its windows: WIN_CTRL, WIN_BASE and WIN_LAST of window n at 0x100 + 0x10 n of rmap0 (4 windows, Windows_g). After the reset (WinInit_g = WinInitOpen_c) window 0 is open over the whole address space with all permissions and the other windows are disabled, so the whole map is reachable after the reset. Software can narrow the windows. The space leaves the system at the top-level port mem_: its slave is outside.\n\n### spp_reg_ (spp0.S_AxiLite)\n\nAddresses of the top-level port spp_reg_ (spp0.S_AxiLite), 11 address bits.\n\n| Base | Last | Size | Instance | Block | ID register | Window | Register map |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| 0x0000 | 0x07FF | 2 KiB | `spp0` | `spp_core` | 0x53505001 | the whole space | `sw/spp_regs.h`, `hdl/spp_mib/docs/register_map.md` of openspp |\n\n### spw_reg_ (spw0.S_AxiLite)\n\nAddresses of the top-level port spw_reg_ (spw0.S_AxiLite), 8 address bits.\n\n| Base | Last | Size | Instance | Block | ID register | Window | Register map |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| 0x0000 | 0x00FF | 256 B | `spw0` | `owr_core` | 0x4F575201 | the whole space | `sw/owr_regs.h`, `hdl/owr_mib/docs/register_map.md` of openwire |\n\n### Register maps\n\nThe register offsets are in the C headers and register maps of the cores, at the commits the system is built with. `spp_over_spw_two_clocks_regs.h` includes the headers by name: the include path of the compiler must point to these directories.\n\n| Header | Repository | Commit | Path | Register map |\n| --- | --- | --- | --- | --- |\n| `omap_regs.h` | https://github.com/open-space-hdl/openrmap | `55033637795a009132286f60da90a6a876a9c087` | `sw/omap_regs.h` | `hdl/omap_mib/docs/register_map.md` |\n| `owr_regs.h` | https://github.com/open-space-hdl/openwire | `2897668e2e519e9517a5c7270f243c5ab0d7fdb0` | `sw/owr_regs.h` | `hdl/owr_mib/docs/register_map.md` |\n| `spp_regs.h` | https://github.com/open-space-hdl/openspp | `2d7ee8f92175d15e41d1e069f0db663de951d0c6` | `sw/spp_regs.h` | `hdl/spp_mib/docs/register_map.md` |\n\n## 10. Interrupts\n\nEvery interrupt output of the system (`resolved.interrupts`): a level that is high while an enabled event is pending. The Composer places no interrupt controller: route the interrupts to the processor, or leave them open and poll the status registers.\n\n| Interrupt | Clock domain | Goes to | Enable | Status | Events (write 1 to clear) |\n| --- | --- | --- | --- | --- | --- |\n| `edac0.Irq` | System clock | open: poll the registers | see the documentation of `olo_ft_ecc_monitor_axi` |  |  |\n| `rmap0.Irq` | Port clock | open: poll `IRQ_STATUS` | `IRQ_EN` (0x094) | `IRQ_STATUS` (0x098) | `EVENTS` (0x090) |\n| `spp0.Irq` | System clock | open: poll `IRQ_STATUS` | `IRQ_EN` (0x058) | `IRQ_STATUS` (0x05C) | `EVENTS` (0x054) |\n| `spw0.Irq` | Port clock | open: poll `IRQ_STATUS` | `EVENTS_IRQ_EN` (0x038), `ERRORS_IRQ_EN` (0x034) | `IRQ_STATUS` (0x03C) | `EVENTS` (0x030) |\n\n## 11. Protection scope\n\nThe system is designed for radiation environments together with the triple modular redundancy (TMR) of the synthesis tool, like the Open Logic ft entities its blocks are built on (`resolved.protection`).\n\nBlocks that protect their memories with SECDED ECC and report it in their registers (the channels count the double-error flags of the status register):\n\n| Block | Channels | Status | Counters | Error injection | Evidence |\n| --- | --- | --- | --- | --- | --- |\n| `spw0` (`owr_core`) | 6 | `ECC_STATUS` (0x080) | `ECC_SELECT` (0x084), `ECC_COUNT` (0x088) | `ECC_INJECT` (0x08C) | user guide section 5 (protection scope) and the register map |\n| `rmap0` (`omap_core`) | 3 | `ECC_STATUS` (0x0A0) | `ECC_SELECT` (0x0A4), `ECC_COUNT` (0x0A8) | `ECC_INJECT` (0x0AC) | user guide section 6 (protection scope) and the register map |\n| `spp0` (`spp_core`) | 8 | `ECC_STATUS` (0x060) | `ECC_SELECT` (0x064), `ECC_COUNT` (0x068) | `ECC_INJECT` (0x06C) | user guide section 6 (protection scope) and the register map |\n\nECC events of memories (SECDED ECC of the Open Logic ft entities) and where they are reported:\n\n| Source | Memory | Reported at |\n| --- | --- | --- |\n| `auto_cdc_c5.Ecc` | FIFO memory of `auto_cdc_c5` (inserted crossing) | channel 0 of `edac0` (`olo_ft_ecc_monitor_axi`), connected by the Composer |\n| `auto_cdc_c6.Ecc` | FIFO memory of `auto_cdc_c6` (inserted crossing) | channel 1 of `edac0` (`olo_ft_ecc_monitor_axi`), connected by the Composer |\n\nThe Composer assigns the channels of the system ECC monitor to the inserted crossings in the order of their connections, after the channels the connections use: these channels are not stable across edits of the system. Software uses the channel macros of the C header of the address map.\n\nWhere an ECC event crosses into the clock domain of its monitor, events closer than two cycles of the slower clock can merge into one, so the counter can be lower than the number of events, but at least one event is always reported.\n\nClock domain crossings inserted by the Composer:\n\n- `auto_cdc_c5`, `auto_cdc_c6`: `olo_ft_fifo_async` with SECDED ECC and triplicated synchronisers.\n- `auto_cdc_auto_ecc_c6`: `olo_base_cc_pulse` with triplicated synchronisers (no memory).\n\nThe reset generators of the clock domains synchronise with triplicated chains as well.\n\nState machines recover through their `when others` branch and the reset. All other logic (registers of the control and data paths, counters, pointers, pipeline registers) relies on the TMR of the synthesis tool. The integrator:\n\n- enables the TMR of the synthesis tool for the system,\n- checks in the synthesis report that TMR was applied, that the synchroniser chains of the crossings were not triplicated a second time, and that no register-based storage meant to be protected by TMR was inferred as a RAM primitive,\n- requests safe state machines, so that synthesis keeps the `when others` branches (AMD Vivado: property `FSM_SAFE_STATE` = `default_state` on the state registers; Synplify: attribute `syn_encoding` = `safe`),\n- protects the configuration memory of SRAM-based FPGAs by scrubbing; this is part of the FPGA design.\n\nThe ECC paths of the blocks are verified in simulation by error injection. Whether the protection as a whole meets the requirements of a mission is shown by a radiation test of the system in operation.\n\n## 12. Initialisation by software\n\nRegister addresses are byte addresses of the AXI4-Lite port of the block; write registers as 32-bit words and wait for the write response before a read that depends on it.\n\n**`spw0`** (SpaceWire port, `owr_core`) through the top-level ports `spw_reg_S_AxiLite_*`:\n\n1. Read ID (0x00): it reads 0x4F575201.\n2. Optionally write LINK_SPEED (0x14) bits 7:0 RUN_DIV: the bit period in the Run state in LinkClk cycles (reset value RunDiv_g); choose it for the far end, which samples at most about LinkClk / 1.2.\n3. Write PORT_CTRL (0x10) = 0x34 (RECEIVER_EN, DRIVER_EN, LINK_START) to start the link, or 0x38 (AUTO_START) to wait for the far end.\n4. Wait for PORT_STATUS (0x18) bits 2:0 LINK_STATE = 5 (Run) before packets are exchanged.\n\n**`rmap0`** (RMAP node, `omap_core`) through the top-level ports `rmap_reg_S_AxiLite_*`:\n\n1. Read ID (0x000): it reads 0x4F4D4101.\n2. None needed: with the default generics the target accepts every command to the logical address 0xFE with the key 0x00 on the whole address space (WinInit_g). A flight configuration narrows the logical addresses (TGT_LA 0x010), the key (TGT_KEY) and the windows (WIN_BASE, WIN_LAST, WIN_CTRL), see the register map.\n\n**`spp0`** (Space Packet node, `spp_core`) through the top-level ports `spp_reg_S_AxiLite_*`:\n\n1. Read ID (0x000): it reads 0x53505001.\n2. After the reset wait until TABLE_STATUS (0x040) bits 1:0 (TX_BUSY, RX_BUSY) are 0: the core initialises both APID tables (2048 clock cycles).\n3. Nothing else is needed: with TxPathDefault_g and RxPathDefault_g every APID has an enabled path to destination 0 and to receive port 0, destination 0 has the Target Logical Address 0xFE (DEST_CTRL 0x400) and the own address is Tla_g. A flight configuration writes the APID tables (TX_TABLE_APID 0x030 and TX_TABLE_ENTRY 0x034, RX_TABLE_APID 0x038 and RX_TABLE_ENTRY 0x03C) and the destinations (DEST_CTRL 0x400 + 0x20 n).\n\n## 13. Checks\n\n- Note: No rate data for omap_core (rmap0): the paths through it are not checked.\n- Note: Packets from tx0_ (spp0.S_Tx[0]) reach spp0.S_Tx[0], which takes at most 4096 bytes: the send buffer holds the longest SDU of the port (error code 0x01); longer ones are rejected.\n- Note: spp0 sends Space Packets of up to TxBufferBytes_g + 6 = 4102 bytes: the node that receives them needs RxBufferBytes_g of at least 4102 (spp0 has 4096, too small to receive its own packets).\n- Note: Packets from rmap0.M_User reach spp0.S_Link, which takes at most 4100 bytes: the receive buffer holds the longest Space Packet (error code 0x17); longer ones are discarded.\n- Note: No length limit published for omap_core (rmap0): packets through it are checked against the other blocks only.\n- Note: No length limit published for spp_nchar (nchar0): packets through it are checked against the other blocks only.\n\n## 14. Verification\n\nA smoke testbench `spp_over_spw_two_clocks_tb` (VHDL-2008, no extra libraries):\n\n1. Instantiate `spp_over_spw_two_clocks` and drive `Clk_sys` at 100 MHz, `Clk_spw` at 50 MHz, `Clk_link` at 200 MHz.\n2. Hold `Rst` at '1' for 16 cycles of the slowest clock (50 MHz), then '0'.\n3. Keep every external input idle: stream inputs with valid at '0', ready inputs of external outputs at '1', bus requests idle, pins at '0'.\n4. Run for at least 100 us (the blocks initialise their tables after the reset) and stop the simulation: it must end without failed assertions, and the handshake outputs of the top level (valid, ready) and the line outputs must not be 'U' or 'X' after the reset. Data outputs may stay undefined while their valid is '0'.\n5. Where an AXI4-Lite port is external, read the ID register of the block (section 12) and compare it with the documented value.\n\nWith GHDL: analyse the libraries of section 1, then `ghdl -i --std=08 -frelaxed spp_over_spw_two_clocks.vhd spp_over_spw_two_clocks_tb.vhd`, `ghdl -m --std=08 -frelaxed spp_over_spw_two_clocks_tb` and `ghdl -r --std=08 -frelaxed spp_over_spw_two_clocks_tb --stop-time=100us --assert-level=error --ieee-asserts=disable` (`--ieee-asserts=disable` silences the warnings of the numeric package about metavalues before the reset).\n\nOptional end-to-end test, after the initialisation of section 12:\n\n- SpaceWire port (`owr_core`): Loop the SpaceWire line back (Spw_DOut to Spw_DIn, Spw_SOut to Spw_SIn) or connect a second port, start the link and wait for PORT_STATUS LINK_STATE = 5 (Run).\n- Space Packet node (`spp_core`): Send one SDU on a send port (APID 0x123, for example) and expect it on receive port 0 with the same APID in user bits 10:0, once the APID tables are ready.\n\n## 15. Readiness of the parts\n\nThe technology readiness level (TRL) of every part, as its project states it (https://openspacehdl.org/trl/). Parts at TRL 3 or higher (lowest: 3). The composed system has no TRL of its own: it is checked by elaboration and a run to 0 ns.\n\n| Part | Repository | TRL | Status | Instances |\n| --- | --- | --- | --- | --- |\n| OpenWire | https://github.com/open-space-hdl/openwire | 3 | Fully verified by simulation. Not yet tested on hardware, no flight heritage. | `spw0` |\n| OpenRMAP | https://github.com/open-space-hdl/openrmap | 3 | Fully verified by simulation. Not yet tested on hardware, no flight heritage. | `rmap0` |\n| OpenSPP | https://github.com/open-space-hdl/openspp | 3 | Fully verified by simulation. Not yet tested on hardware, no flight heritage. | `nchar0`, `spp0` |\n| Open Logic FT | https://github.com/open-space-hdl/open-logic-ft | 3 | Fully verified by simulation. Not yet tested on hardware, no flight heritage. | `edac0`, `auto_cdc_c5`, `auto_cdc_c6`, `auto_cdc_auto_ecc_c6`, `auto_rst_sys`, `auto_rst_spw` |\n"
   },
   "catalogSubset": {
     "id": "2f7536b0b190",
@@ -6864,6 +7671,16 @@
             "absentWhy": "every byte of a beat is valid"
           }
         },
+        "fields": "out",
+        "generic": true
+      },
+      {
+        "id": "event.any",
+        "name": "Generic event",
+        "family": "Generic",
+        "kind": "event",
+        "color": "#6C757D",
+        "description": "Untyped Open Logic signals of a clock crossing; they take the type of the first interface they are connected to.",
         "fields": "out",
         "generic": true
       }
@@ -10388,6 +11205,283 @@
         ]
       },
       {
+        "id": "olo/olo_ft_ecc_monitor_axi",
+        "kind": "olo",
+        "name": "EDAC monitor with registers",
+        "group": "olo-edac",
+        "source": "olo",
+        "library": "olo",
+        "entity": "olo_ft_ecc_monitor_axi",
+        "path": "src/ft/vhdl/olo_ft_ecc_monitor_axi.vhd",
+        "summary": "EDAC monitor with an AXI4-Lite register file and an interrupt.",
+        "idPrefix": "edac",
+        "doc": "https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor_axi.html",
+        "rules": [
+          {
+            "kind": "generic_range",
+            "generic": "AxiAddrWidth_g",
+            "min": "log2ceil(16 + 4 * Channels_g)"
+          }
+        ],
+        "generics": [
+          {
+            "name": "Channels_g",
+            "vhdlType": "positive range 1 to 255",
+            "kind": "integer",
+            "min": 1,
+            "max": 255,
+            "required": true,
+            "label": "Channels",
+            "example": 4
+          },
+          {
+            "name": "CounterWidth_g",
+            "vhdlType": "positive range 1 to 16",
+            "kind": "integer",
+            "min": 1,
+            "max": 16,
+            "defaultText": "16",
+            "default": 16,
+            "label": "Counter width",
+            "unit": "bits"
+          },
+          {
+            "name": "AxiAddrWidth_g",
+            "vhdlType": "positive range 6 to 30",
+            "kind": "integer",
+            "min": 6,
+            "max": 30,
+            "defaultText": "12",
+            "default": 12,
+            "label": "Register address width",
+            "unit": "bits"
+          },
+          {
+            "name": "ReadTimeoutClks_g",
+            "vhdlType": "positive",
+            "kind": "integer",
+            "min": 1,
+            "max": 2147483647,
+            "defaultText": "100",
+            "default": 100,
+            "label": "Read timeout",
+            "advanced": true,
+            "unit": "cycles"
+          }
+        ],
+        "clocks": [
+          {
+            "port": "Clk",
+            "primary": true,
+            "label": "Clock"
+          }
+        ],
+        "resets": [
+          {
+            "port": "Rst",
+            "active": "high",
+            "sync": "sync",
+            "clock": "Clk"
+          }
+        ],
+        "interfaces": [
+          {
+            "name": "S_AxiLite",
+            "type": "axi4lite",
+            "role": "slave",
+            "clock": "Clk",
+            "label": "Registers",
+            "params": {
+              "addrWidth": "AxiAddrWidth_g"
+            },
+            "signals": {
+              "AwAddr": "S_AxiLite_AwAddr",
+              "AwValid": "S_AxiLite_AwValid",
+              "AwReady": "S_AxiLite_AwReady",
+              "WData": "S_AxiLite_WData",
+              "WStrb": "S_AxiLite_WStrb",
+              "WValid": "S_AxiLite_WValid",
+              "WReady": "S_AxiLite_WReady",
+              "BResp": "S_AxiLite_BResp",
+              "BValid": "S_AxiLite_BValid",
+              "BReady": "S_AxiLite_BReady",
+              "ArAddr": "S_AxiLite_ArAddr",
+              "ArValid": "S_AxiLite_ArValid",
+              "ArReady": "S_AxiLite_ArReady",
+              "RData": "S_AxiLite_RData",
+              "RResp": "S_AxiLite_RResp",
+              "RValid": "S_AxiLite_RValid",
+              "RReady": "S_AxiLite_RReady"
+            }
+          },
+          {
+            "name": "In",
+            "type": "ecc.event",
+            "role": "event_in",
+            "clock": "Clk",
+            "label": "EDAC events",
+            "vector": "Channels_g",
+            "signals": {
+              "sec": "In_EccSec",
+              "ded": "In_EccDed",
+              "valid": "In_Valid"
+            }
+          },
+          {
+            "name": "Irq",
+            "type": "irq",
+            "role": "event_out",
+            "clock": "Clk",
+            "label": "Interrupt",
+            "tieOff": "open",
+            "signals": {
+              "irq": "Irq"
+            }
+          }
+        ],
+        "ports": [
+          {
+            "name": "Clk",
+            "dir": "in",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "Rst",
+            "dir": "in",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "S_AxiLite_ArAddr",
+            "dir": "in",
+            "vhdlType": "std_logic_vector(AxiAddrWidth_g - 1 downto 0)",
+            "width": "AxiAddrWidth_g"
+          },
+          {
+            "name": "S_AxiLite_ArValid",
+            "dir": "in",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "S_AxiLite_ArReady",
+            "dir": "out",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "S_AxiLite_AwAddr",
+            "dir": "in",
+            "vhdlType": "std_logic_vector(AxiAddrWidth_g - 1 downto 0)",
+            "width": "AxiAddrWidth_g"
+          },
+          {
+            "name": "S_AxiLite_AwValid",
+            "dir": "in",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "S_AxiLite_AwReady",
+            "dir": "out",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "S_AxiLite_WData",
+            "dir": "in",
+            "vhdlType": "std_logic_vector(31 downto 0)",
+            "width": "32"
+          },
+          {
+            "name": "S_AxiLite_WStrb",
+            "dir": "in",
+            "vhdlType": "std_logic_vector(3 downto 0)",
+            "width": "4"
+          },
+          {
+            "name": "S_AxiLite_WValid",
+            "dir": "in",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "S_AxiLite_WReady",
+            "dir": "out",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "S_AxiLite_BResp",
+            "dir": "out",
+            "vhdlType": "std_logic_vector(1 downto 0)",
+            "width": "2"
+          },
+          {
+            "name": "S_AxiLite_BValid",
+            "dir": "out",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "S_AxiLite_BReady",
+            "dir": "in",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "S_AxiLite_RData",
+            "dir": "out",
+            "vhdlType": "std_logic_vector(31 downto 0)",
+            "width": "32"
+          },
+          {
+            "name": "S_AxiLite_RResp",
+            "dir": "out",
+            "vhdlType": "std_logic_vector(1 downto 0)",
+            "width": "2"
+          },
+          {
+            "name": "S_AxiLite_RValid",
+            "dir": "out",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "S_AxiLite_RReady",
+            "dir": "in",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "In_EccSec",
+            "dir": "in",
+            "vhdlType": "std_logic_vector(Channels_g - 1 downto 0)",
+            "width": "Channels_g"
+          },
+          {
+            "name": "In_EccDed",
+            "dir": "in",
+            "vhdlType": "std_logic_vector(Channels_g - 1 downto 0)",
+            "width": "Channels_g"
+          },
+          {
+            "name": "In_Valid",
+            "dir": "in",
+            "vhdlType": "std_logic_vector(Channels_g - 1 downto 0)",
+            "width": "Channels_g",
+            "default": "(others => '1')"
+          },
+          {
+            "name": "Irq",
+            "dir": "out",
+            "vhdlType": "std_logic",
+            "width": "1"
+          }
+        ]
+      },
+      {
         "id": "olo/olo_ft_fifo_async",
         "kind": "olo",
         "name": "Asynchronous FIFO (SECDED)",
@@ -10863,6 +11957,174 @@
         ]
       },
       {
+        "id": "olo/olo_base_cc_pulse",
+        "kind": "olo",
+        "name": "Clock crossing of pulses",
+        "group": "olo-cc",
+        "source": "olo",
+        "library": "olo",
+        "entity": "olo_base_cc_pulse",
+        "path": "src/base/vhdl/olo_base_cc_pulse.vhd",
+        "summary": "Passes single-cycle pulses into another clock domain.",
+        "idPrefix": "ccpulse",
+        "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_pulse.html",
+        "constraints": [
+          {
+            "kind": "vendor_scoped",
+            "file": "src/base/tcl/olo_base_constraints_amd.tcl",
+            "note": "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)."
+          }
+        ],
+        "generics": [
+          {
+            "name": "NumPulses_g",
+            "vhdlType": "positive",
+            "kind": "integer",
+            "min": 1,
+            "max": 2147483647,
+            "defaultText": "1",
+            "default": 1,
+            "label": "Pulses",
+            "follow": {
+              "interfaces": [
+                "In",
+                "Out"
+              ],
+              "measure": "packed"
+            }
+          },
+          {
+            "name": "SyncStages_g",
+            "vhdlType": "positive range 2 to 4",
+            "kind": "integer",
+            "min": 2,
+            "max": 4,
+            "defaultText": "2",
+            "default": 2,
+            "label": "Synchroniser stages"
+          },
+          {
+            "name": "SyncTmr_g",
+            "vhdlType": "boolean",
+            "kind": "boolean",
+            "defaultText": "false",
+            "default": false,
+            "label": "Triplicated synchronisers"
+          }
+        ],
+        "clocks": [
+          {
+            "port": "In_Clk",
+            "primary": true,
+            "label": "Input clock"
+          },
+          {
+            "port": "Out_Clk",
+            "label": "Output clock"
+          }
+        ],
+        "resets": [
+          {
+            "port": "In_RstIn",
+            "active": "high",
+            "sync": "sync",
+            "clock": "In_Clk"
+          },
+          {
+            "port": "Out_RstIn",
+            "active": "high",
+            "sync": "sync",
+            "clock": "Out_Clk"
+          },
+          {
+            "port": "In_RstOut",
+            "dir": "out",
+            "active": "high",
+            "clock": "In_Clk"
+          },
+          {
+            "port": "Out_RstOut",
+            "dir": "out",
+            "active": "high",
+            "clock": "Out_Clk"
+          }
+        ],
+        "interfaces": [
+          {
+            "name": "In",
+            "type": "event.any",
+            "role": "event_in",
+            "clock": "In_Clk",
+            "label": "Input",
+            "signals": {
+              "pulse": "In_Pulse"
+            }
+          },
+          {
+            "name": "Out",
+            "type": "event.any",
+            "role": "event_out",
+            "clock": "Out_Clk",
+            "label": "Output",
+            "signals": {
+              "pulse": "Out_Pulse"
+            }
+          }
+        ],
+        "ports": [
+          {
+            "name": "In_Clk",
+            "dir": "in",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "In_RstIn",
+            "dir": "in",
+            "vhdlType": "std_logic",
+            "width": "1",
+            "default": "'0'"
+          },
+          {
+            "name": "In_RstOut",
+            "dir": "out",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "In_Pulse",
+            "dir": "in",
+            "vhdlType": "std_logic_vector(NumPulses_g - 1 downto 0)",
+            "width": "NumPulses_g"
+          },
+          {
+            "name": "Out_Clk",
+            "dir": "in",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "Out_RstIn",
+            "dir": "in",
+            "vhdlType": "std_logic",
+            "width": "1",
+            "default": "'0'"
+          },
+          {
+            "name": "Out_RstOut",
+            "dir": "out",
+            "vhdlType": "std_logic",
+            "width": "1"
+          },
+          {
+            "name": "Out_Pulse",
+            "dir": "out",
+            "vhdlType": "std_logic_vector(NumPulses_g - 1 downto 0)",
+            "width": "NumPulses_g"
+          }
+        ]
+      },
+      {
         "id": "olo/olo_base_reset_gen",
         "kind": "olo",
         "name": "Reset generator",
@@ -10990,6 +12252,10 @@
       "spp0": {
         "x": 1164,
         "y": 126
+      },
+      "edac0": {
+        "x": 1164,
+        "y": 364
       }
     },
     "domains": {},

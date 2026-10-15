@@ -486,9 +486,11 @@ export function addressMapSections(spaces, heading, system) {
  * @param {Space[]} spaces
  * @param {string} system
  * @param {string[]} header   lines of the generator header
+ * @param {{ source: string, to: { kind: string, to?: string, channel?: number | null, toEntity?: string } }[]} [events]
+ *        the ECC events of the system (resolved.protection.events): the channel of every one at an ECC monitor
  * @returns {string}
  */
-export function addressMapHeader(spaces, system, header) {
+export function addressMapHeader(spaces, system, header, events = []) {
   const upper = (/** @type {string} */ s) => s.replace(/[^A-Za-z0-9]+/g, '_').toUpperCase();
   const guard = `${upper(system)}_REGS_H`;
   const headers = headersOf(spaces);
@@ -530,6 +532,20 @@ export function addressMapHeader(spaces, system, header) {
       defs.push([`${name}_BASE`, `${hex(b.base, s.addrWidth)}${suffix}`], [`${name}_SIZE`, `${hex(b.size, s.addrWidth)}${suffix}`]);
       if (b.id) defs.push([`${name}_ID`, `${b.id}u`]);
     }
+    const w = Math.max(...defs.map(([n]) => n.length));
+    L.push(...defs.map(([n, v]) => `#define ${n.padEnd(w)} ${v}`), '');
+  }
+  // the channel of every ECC event at an ECC monitor, for its status and counter registers
+  /** @type {Map<string, [string, string][]>} */
+  const monitors = new Map();
+  for (const e of events) {
+    if (e.to.kind !== 'block' || e.to.channel === null || e.to.channel === undefined || !e.to.to) continue;
+    const mon = e.to.to.slice(0, e.to.to.lastIndexOf('.'));
+    const name = `${upper(system)}_${upper(mon)}_CH_${upper(e.source).replace(/_+$/, '')}`;
+    monitors.set(mon, [...(monitors.get(mon) ?? []), [name, `${e.to.channel}u`]]);
+  }
+  for (const [mon, defs] of [...monitors].sort((a, b) => a[0].localeCompare(b[0]))) {
+    L.push(`/* Channels of the ECC monitor ${mon} */`);
     const w = Math.max(...defs.map(([n]) => n.length));
     L.push(...defs.map(([n, v]) => `#define ${n.padEnd(w)} ${v}`), '');
   }

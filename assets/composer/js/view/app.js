@@ -1054,7 +1054,7 @@ export class App {
   }
 
   /**
-   * @param {{ name?: string, description?: string, faultTolerance?: boolean }} props
+   * @param {{ name?: string, description?: string, faultTolerance?: boolean, eccMonitor?: string }} props
    * @returns {string | null}
    */
   setSystem(props) {

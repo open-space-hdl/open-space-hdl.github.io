@@ -83,7 +83,7 @@ export function definitionOrder(defs, roots) {
 export function definitionDocument(def) {
   return {
     name: def.name,
-    system: { name: def.name, description: def.description, faultTolerance: def.faultTolerance },
+    system: { name: def.name, description: def.description, faultTolerance: def.faultTolerance, ...(def.eccMonitor ? { eccMonitor: def.eccMonitor } : {}) },
     clockDomains: def.clockDomains.map((c) => ({ id: c.id, name: c.name, frequencyHz: c.frequencyHz, source: { ...c.source } })),
     instances: def.instances.map((i) => {
       const sub = subsystemName(i.block);

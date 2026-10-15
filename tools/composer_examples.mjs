@@ -113,12 +113,13 @@ function linkDomain(d, spw, hz) {
 {
   let d = base(
     'spp_over_spw_two_clocks',
-    'Space Packets over SpaceWire with two clock domains: the SpaceWire side runs on a 50 MHz port clock, the Space Packet node on the 100 MHz system clock. The Composer inserts asynchronous FIFOs for the packet links.',
+    'Space Packets over SpaceWire with two clock domains: the SpaceWire side runs on a 50 MHz port clock, the Space Packet node on the 100 MHz system clock. The Composer inserts asynchronous FIFOs for the packet links. An ECC monitor, marked as the system ECC monitor, reports the corrected and detected errors of these FIFOs.',
     [
       ['openwire/owr_core', undefined],
       ['openrmap/omap_core', 'target'],
       ['openspp/spp_nchar', undefined],
       ['openspp/spp_core', undefined],
+      ['olo/olo_ft_ecc_monitor_axi', undefined],
     ],
   );
   d = link(d, 'spw0.M_Pkt', 'rmap0.S_Pkt');
@@ -132,9 +133,12 @@ function linkDomain(d, spw, hz) {
   for (const id of ['spw0', 'rmap0', 'nchar0']) d = moveToDomain(d, cat, id, port.id);
   d = renameDomain(d, port.id, 'spw');
   d = linkDomain(d, 'spw0', 200e6);
+  // the system ECC monitor: one channel for each FIFO the Composer inserts (one of them crosses to the system clock)
+  d = setGeneric(d, cat, 'edac0', 'Channels_g', 2).design;
+  d = setSystem(d, { eccMonitor: 'edac0' });
   d = external(d, {
     'spp0.S_Tx[0]': 'tx0_', 'spp0.M_Rx[0]': 'rx0_', 'rmap0.M_Axi': 'mem_',
-    'spw0.S_AxiLite': 'spw_reg_', 'rmap0.S_AxiLite': 'rmap_reg_', 'spp0.S_AxiLite': 'spp_reg_',
+    'spw0.S_AxiLite': 'spw_reg_', 'rmap0.S_AxiLite': 'rmap_reg_', 'spp0.S_AxiLite': 'spp_reg_', 'edac0.S_AxiLite': 'edac_reg_',
   });
   examples.push(['spp_over_spw_two_clocks', 'Space Packets over SpaceWire, two clocks', d]);
 }

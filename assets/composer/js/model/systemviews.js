@@ -28,6 +28,8 @@
  * @property {string} [to]         the event input it is connected to ("edac0.In[3]")
  * @property {string} [toEntity]   entity of the block with that input
  * @property {number | null} [channel]   index of that input (the channel of an ECC monitor)
+ * @property {string} [connection]   the connection it goes through (auto_ecc_<crossing>: added by the Composer)
+ * @property {boolean} [crossed]     the connection crosses clock domains (an inserted pulse or bit crossing)
  */
 
 /**
@@ -59,6 +61,8 @@ export function eventSources(cat, d, res, types) {
   const next = new Map();
   /** @type {Map<string, string>} */
   const externals = new Map();
+  /** @type {Map<string, { connection: string, crossed: boolean }>} the connection an event output starts */
+  const via = new Map();
 
   /**
    * @param {Design} dd
@@ -98,8 +102,9 @@ export function eventSources(cat, d, res, types) {
       const a = nodes.get(`${prefix}${c.from}`);
       const z = nodes.get(`${prefix}${c.to}`);
       if (!a || !z) continue;
-      if (a.dir === 'out' || z.dir === 'in') next.set(`${prefix}${c.from}`, `${prefix}${c.to}`);
-      else next.set(`${prefix}${c.to}`, `${prefix}${c.from}`);
+      const [from, to] = a.dir === 'out' || z.dir === 'in' ? [c.from, c.to] : [c.to, c.from];
+      next.set(`${prefix}${from}`, `${prefix}${to}`);
+      via.set(`${prefix}${from}`, { connection: c.connection, crossed: c.adapters.some((id) => rr.byId.get(id)?.role === 'cdc') });
     }
     /** @type {Map<string, string>} */
     const exts = new Map();
@@ -123,7 +128,8 @@ export function eventSources(cat, d, res, types) {
     const end = nodes.get(k);
     /** @type {EventTarget} */
     let to = { kind: 'open' };
-    if (k !== key && end?.kind === 'block' && end.dir === 'in') to = { kind: 'block', to: k, toEntity: end.block.entity, channel: end.port.index };
+    const link = via.get(key);
+    if (k !== key && end?.kind === 'block' && end.dir === 'in') to = { kind: 'block', to: k, toEntity: end.block.entity, channel: end.port.index, ...(link ? { connection: link.connection, crossed: link.crossed } : {}) };
     else if (externals.has(k)) to = { kind: 'port', port: externals.get(k) };
     out.push({
       key,

@@ -33,7 +33,7 @@ permalink: /composer/format/
           <tr><td data-label="Key"><code>$schema</code></td><td data-label="Content">Address of the JSON schema</td><td data-label="Written by">Editor</td></tr>
           <tr><td data-label="Key"><code>format</code>, <code>formatVersion</code></td><td data-label="Content"><code>open-space-composer-system</code>, <code>1</code> (<code>2</code> with subsystems)</td><td data-label="Written by">Editor</td></tr>
           <tr><td data-label="Key"><code>generator</code></td><td data-label="Content">Composer version and the content identifier of the block catalog</td><td data-label="Written by">Editor</td></tr>
-          <tr><td data-label="Key"><code>system</code></td><td data-label="Content">Name of the top-level entity, description, fault tolerance of the inserted blocks</td><td data-label="Written by">User</td></tr>
+          <tr><td data-label="Key"><code>system</code></td><td data-label="Content">Name of the top-level entity, description, fault tolerance of the inserted blocks, the system ECC monitor</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>sources</code></td><td data-label="Content">Repositories of the blocks with their pinned commit or tag, VHDL library and the Open Logic FT tag they were verified with (<code>verifiedWith</code>)</td><td data-label="Written by">Editor</td></tr>
           <tr><td data-label="Key"><code>clockDomains</code></td><td data-label="Content">Clock domains with name, frequency and source (top-level port or a clock output)</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>instances</code></td><td data-label="Content">Placed blocks with generics that differ from the defaults, clock assignment and constants</td><td data-label="Written by">User</td></tr>
@@ -271,6 +271,12 @@ permalink: /composer/format/
       <li>every ECC event output of a memory (an Open Logic ft FIFO, the buffers of a framer) and where it is reported:
         a channel of an ECC monitor (<code>olo_ft_ecc_monitor_axi</code>), another block, a top-level port, or not at
         all;</li>
+      <li>the system ECC monitor (<code>system.eccMonitor</code>, since 0.8.0-beta): an ECC monitor the user marks
+        (the checkbox System ECC monitor in its inspector). The ECC events of the crossings the Composer inserts take
+        its free channels, in the order of their connections, and their connections are resolved like the user's, with
+        a pulse crossing into the clock domain of the monitor where needed. These channels can change when crossings
+        appear or disappear; the C header of the address map defines a macro for every channel of every monitor. A
+        crossing beyond the free channels stays open, with a warning that names the number of channels needed;</li>
       <li>the clock domain crossings the Composer inserts: FIFOs for streams (with fault tolerance on
         <code>olo_ft_fifo_async</code> with SECDED ECC, with it off <code>olo_base_fifo_async</code> without ECC) and
         pulse or bit crossings for events and levels, which have no memory; their synchronisers are triplicated with

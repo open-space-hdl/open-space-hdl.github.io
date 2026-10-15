@@ -4,7 +4,7 @@
   "formatVersion": 1,
   "generator": {
     "name": "Open Space Composer",
-    "version": "0.7.0-beta",
+    "version": "0.8.0-beta",
     "catalog": "2f7536b0b190"
   },
   "system": {
@@ -11068,7 +11068,9 @@
             "kind": "block",
             "to": "edac0.In[0]",
             "toEntity": "olo_ft_ecc_monitor_axi",
-            "channel": 0
+            "channel": 0,
+            "connection": "c15",
+            "crossed": false
           }
         },
         {
@@ -11082,7 +11084,9 @@
             "kind": "block",
             "to": "edac0.In[1]",
             "toEntity": "olo_ft_ecc_monitor_axi",
-            "channel": 1
+            "channel": 1,
+            "connection": "c16",
+            "crossed": false
           }
         },
         {
@@ -11096,7 +11100,9 @@
             "kind": "block",
             "to": "edac0.In[2]",
             "toEntity": "olo_ft_ecc_monitor_axi",
-            "channel": 2
+            "channel": 2,
+            "connection": "c33",
+            "crossed": false
           }
         },
         {
@@ -11110,7 +11116,9 @@
             "kind": "block",
             "to": "edac0.In[3]",
             "toEntity": "olo_ft_ecc_monitor_axi",
-            "channel": 3
+            "channel": 3,
+            "connection": "c34",
+            "crossed": false
           }
         },
         {
@@ -11124,7 +11132,9 @@
             "kind": "block",
             "to": "edac0.In[4]",
             "toEntity": "olo_ft_ecc_monitor_axi",
-            "channel": 4
+            "channel": 4,
+            "connection": "c35",
+            "crossed": false
           }
         },
         {
@@ -11138,7 +11148,9 @@
             "kind": "block",
             "to": "edac0.In[5]",
             "toEntity": "olo_ft_ecc_monitor_axi",
-            "channel": 5
+            "channel": 5,
+            "connection": "c36",
+            "crossed": false
           }
         },
         {
@@ -11152,7 +11164,9 @@
             "kind": "block",
             "to": "edac0.In[6]",
             "toEntity": "olo_ft_ecc_monitor_axi",
-            "channel": 6
+            "channel": 6,
+            "connection": "c37",
+            "crossed": false
           }
         },
         {
@@ -11166,7 +11180,9 @@
             "kind": "block",
             "to": "edac0.In[7]",
             "toEntity": "olo_ft_ecc_monitor_axi",
-            "channel": 7
+            "channel": 7,
+            "connection": "c38",
+            "crossed": false
           }
         }
       ],

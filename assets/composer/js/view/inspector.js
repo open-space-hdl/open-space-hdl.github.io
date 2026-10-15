@@ -38,7 +38,8 @@ function irqTarget(i) {
  */
 function eccTarget(to) {
   if (to.kind === 'block') {
-    return to.channel !== null && to.channel !== undefined ? `channel ${to.channel} of ${to.to?.slice(0, to.to.lastIndexOf('.'))}` : `to ${to.to}`;
+    const by = to.connection?.startsWith('auto_ecc_') ? ' (connected by the Composer)' : '';
+    return to.channel !== null && to.channel !== undefined ? `channel ${to.channel} of ${to.to?.slice(0, to.to.lastIndexOf('.'))}${by}` : `to ${to.to}${by}`;
   }
   if (to.kind === 'port') return `to the top-level port ${to.port}`;
   return 'not reported';
@@ -197,6 +198,26 @@ export class InspectorView {
               ` ${sp.addrWidth} address bits${sp.external ? `, its slave is outside (${sp.external})` : ''}`),
             rows.length ? h('ul', { class: 'cmp-list', role: 'list' }, rows.map((r) => r.row)) : null);
         }));
+  }
+
+  /**
+   * The mark of the system ECC monitor, on a block with ECC event inputs: the Composer connects the ECC events of the
+   * crossings it inserts to its free channels.
+   * @param {string} id
+   * @param {import('../model/catalog.js').BlockDef} b
+   */
+  monitorField(id, b) {
+    if (!b.interfaces.some((i) => i.type === 'ecc.event' && i.role === 'event_in' && i.vector)) return null;
+    const box = h('input', {
+      id: 'cmp-inst-monitor',
+      type: 'checkbox',
+      checked: this.app.design.eccMonitor === id,
+      'aria-describedby': 'cmp-inst-monitor-help',
+      onchange: () => this.app.setSystem({ eccMonitor: box.checked ? id : '' }),
+    });
+    return h('div', { class: 'cmp-field cmp-check' },
+      box, h('label', { for: 'cmp-inst-monitor' }, 'System ECC monitor'),
+      h('p', { class: 'cmp-help', id: 'cmp-inst-monitor-help' }, 'Reports the ECC events of the crossings the Composer inserts, on its free channels.'));
   }
 
   /**
@@ -382,6 +403,7 @@ export class InspectorView {
             h('summary', {}, `Advanced (${adv.length})`),
             adv.map((g) => this.genericField(inst.id, g, values[g.name], inst.generics, rec)))
           : null),
+      this.monitorField(inst.id, b),
       this.clocksSection(inst.id, b, rec),
       h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-itf' },
         h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-itf' }, 'Interfaces'),

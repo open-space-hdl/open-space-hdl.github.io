@@ -89,8 +89,13 @@ test('the user\'s system: eight register banks behind the decoder, in the space 
   assert.match(header, /^#define SPFI_ENCRYPT_OFB0_BASE  0x00070000u$/m);
   assert.match(header, /^#include "omap_regs\.h"$/m);
   assert.match(header, / \* {3}omap_regs\.h {2}sw\/omap_regs\.h of https:\/\/github\.com\/open-space-hdl\/openrmap\n \* {16}at commit [0-9a-f]{40}\n/);
-  // no register offsets of its own: the guard and base, size and ID register value of the banks only
-  for (const [, name] of header.matchAll(/^#define (\w+)/gm)) assert.match(name, /^SPFI_ENCRYPT_(REGS_H|\w+_(BASE|SIZE|ID))$/);
+  // no register offsets of its own: the guard, base, size and ID register value of the banks, and the channels of the
+  // ECC monitor
+  for (const [, name] of header.matchAll(/^#define (\w+)/gm)) assert.match(name, /^SPFI_ENCRYPT_(REGS_H|\w+_(BASE|SIZE|ID)|EDAC0_CH_\w+)$/);
+  assert.deepEqual([...header.matchAll(/^#define (SPFI_ENCRYPT_EDAC0_CH_\w+) +(\d+)u$/gm)].map((m) => `${m[1]} ${m[2]}`), [
+    'SPFI_ENCRYPT_EDAC0_CH_FRM0_ECC_0 0', 'SPFI_ENCRYPT_EDAC0_CH_FRM0_ECC_1 1', 'SPFI_ENCRYPT_EDAC0_CH_FRM1_ECC_0 2', 'SPFI_ENCRYPT_EDAC0_CH_FRM1_ECC_1 3',
+    'SPFI_ENCRYPT_EDAC0_CH_FRM2_ECC_0 4', 'SPFI_ENCRYPT_EDAC0_CH_FRM2_ECC_1 5', 'SPFI_ENCRYPT_EDAC0_CH_FRM3_ECC_0 6', 'SPFI_ENCRYPT_EDAC0_CH_FRM3_ECC_1 7',
+  ]);
   // the brief: the section and the base of every bank behind the decoder in the initialisation
   const brief = doc.agent.brief;
   assert.match(brief, /## 9\. Address map\n/);

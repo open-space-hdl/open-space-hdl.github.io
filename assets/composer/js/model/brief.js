@@ -213,9 +213,15 @@ function protectionSection(p) {
       `\`${e.source}\``,
       `${e.memory} of \`${e.instance}\`${e.inserted ? ' (inserted crossing)' : ''}`,
       e.to.kind === 'block'
-        ? e.to.channel !== null && e.to.channel !== undefined ? `channel ${e.to.channel} of \`${e.to.to?.slice(0, e.to.to.lastIndexOf('.'))}\` (\`${e.to.toEntity}\`)` : `\`${e.to.to}\``
+        ? `${e.to.channel !== null && e.to.channel !== undefined ? `channel ${e.to.channel} of \`${e.to.to?.slice(0, e.to.to.lastIndexOf('.'))}\` (\`${e.to.toEntity}\`)` : `\`${e.to.to}\``}${e.to.connection?.startsWith('auto_ecc_') ? ', connected by the Composer' : ''}`
         : e.to.kind === 'port' ? `top-level port \`${e.to.port}\`` : 'not reported',
     ])), '');
+    if (p.events.some((e) => e.to.connection?.startsWith('auto_ecc_'))) {
+      L.push('The Composer assigns the channels of the system ECC monitor to the inserted crossings in the order of their connections, after the channels the connections use: these channels are not stable across edits of the system. Software uses the channel macros of the C header of the address map.', '');
+    }
+    if (p.events.some((e) => e.to.kind === 'block' && e.to.crossed)) {
+      L.push('Where an ECC event crosses into the clock domain of its monitor, events closer than two cycles of the slower clock can merge into one, so the counter can be lower than the number of events, but at least one event is always reported.', '');
+    }
   }
   if (p.crossings.length) {
     L.push('Clock domain crossings inserted by the Composer:', '');

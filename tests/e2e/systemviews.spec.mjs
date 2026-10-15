@@ -46,16 +46,35 @@ test('the interrupts and the protection of the user\'s system, and their lines a
   await expect(page.locator('[data-itf="frm0.Ecc[0]"] .cmp-itf-addr')).toHaveText('ECC events of the chunk buffer: channel 0 of edac0.');
 });
 
-test('the inserted crossings of a system with two clocks and their ECC events that are not reported', async ({ page }) => {
+test('the system ECC monitor reports the inserted crossings; unmarked, their ECC events are not reported', async ({ page }, info) => {
   await open(page);
   await openExample(page, 'Space Packets over SpaceWire, two clocks');
   const section = page.locator('.cmp-inspector section', { has: page.locator('#cmp-h-prot') });
-  await expect(page.locator('[data-view="crossings"]')).toHaveText('Inserted crossings (2): olo_ft_fifo_async (2) with SECDED ECC and triplicated synchronisers.');
+  // marked in the example: one FIFO ends in the clock domain of the monitor, the other reaches it through a pulse crossing
+  await expect(page.locator('[data-view="crossings"]')).toHaveText('Inserted crossings (3): olo_ft_fifo_async (2) with SECDED ECC and triplicated synchronisers; olo_base_cc_pulse (1) with triplicated synchronisers (no memory).');
+  await expect(page.locator('[data-view="ecc-events"] li')).toHaveText([
+    'auto_cdc_c5.Ecc FIFO memory: channel 0 of edac0 (connected by the Composer)',
+    'auto_cdc_c6.Ecc FIFO memory: channel 1 of edac0 (connected by the Composer)',
+  ]);
+  await expect(section).not.toContainText('Not reported');
+  // the checkbox of the monitor: unmarked, the ECC events stay open and a remark names the checkbox
+  await page.locator('[data-block="edac0"]').focus();
+  const box = page.getByLabel('System ECC monitor');
+  await expect(box).toBeChecked();
+  await shot(page, info, 'views-02-monitor');
+  await box.uncheck();
+  await expect.poll(async () => (await page.evaluate(() => /** @type {any} */ (window).composer.design.eccMonitor))).toBeUndefined();
+  await expect(page.locator('.cmp-check-item.cmp-sev-info', { hasText: 'mark it as the system ECC monitor' })).toHaveCount(1);
+  // the system again: nothing selected
+  await page.evaluate(() => /** @type {any} */ (window).composer.selectInstances([]));
   await expect(page.locator('[data-view="ecc-events"] li')).toHaveText([
     'auto_cdc_c5.Ecc FIFO memory: not reported',
     'auto_cdc_c6.Ecc FIFO memory: not reported',
   ]);
   await expect(section).toContainText('Not reported: the ECC events of 2 memories are open.');
+  // one undo step marks it again
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect.poll(async () => (await page.evaluate(() => /** @type {any} */ (window).composer.design.eccMonitor))).toBe('edac0');
 });
 
 test('the readiness of the parts of the user\'s system, without a TRL of the system', async ({ page }) => {

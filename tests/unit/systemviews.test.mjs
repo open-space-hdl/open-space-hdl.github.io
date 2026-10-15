@@ -109,8 +109,11 @@ test('a block that also reports its ECC in its own registers gets an info for an
 });
 
 test('the inserted crossings: an info for their open ECC events, listed as not reported; without fault tolerance no ECC', () => {
-  let d = open(`${EXAMPLES}spp_over_spw_two_clocks.composer.json`);
+  // the example marks a system ECC monitor; without the mark the ECC events of the crossings stay open
+  let d = setSystem(open(`${EXAMPLES}spp_over_spw_two_clocks.composer.json`), { eccMonitor: '' });
   assert.deepEqual(findings(cat, d), [
+    // the monitor of the example has free channels: a hint to mark it
+    'info [edac0] edac0 has free channels: mark it as the system ECC monitor (the checkbox System ECC monitor in its inspector) to report the ECC events of the inserted crossings auto_cdc_c5, auto_cdc_c6.',
     'info [auto_cdc_c5] The ECC events of the inserted crossing auto_cdc_c5 (c5) are not reported: the Composer leaves them open.',
     'info [auto_cdc_c6] The ECC events of the inserted crossing auto_cdc_c6 (c6) are not reported: the Composer leaves them open.',
   ]);

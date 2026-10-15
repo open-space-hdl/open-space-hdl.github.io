@@ -15,7 +15,8 @@
 
 import { absentValue, isDriver } from './catalog.js';
 import { typedEndpoint } from './compat.js';
-import { tryEvaluate } from './expr.js';
+import { evaluate, tryEvaluate } from './expr.js';
+import { smallestValid } from './suggest.js';
 import { runRules } from './rules.js';
 import { analyseAddressMap } from './addressmap.js';
 import { analyseInterrupts, analyseProtection, analyseReadiness } from './systemviews.js';
@@ -255,6 +256,8 @@ export class Resolution {
     this.byId = new Map();
     /** @type {ResolvedInstance[]} */
     this.autos = [];
+    /** @type {Set<string>} interfaces the Composer connects itself (the ECC events at the system ECC monitor) */
+    this.autoConnected = new Set();
     /** @type {Chain[]} */
     this.chains = [];
     /** @type {Map<string, any>} */
@@ -287,6 +290,7 @@ export class Resolution {
     this.userInstances();
     this.followGenerics();
     this.connectionsPass();
+    this.eccMonitorPass();
     this.resetsPass();
     this.boundaryPass();
     runRules(this);
@@ -576,95 +580,171 @@ export class Resolution {
   }
 
   connectionsPass() {
-    for (const c of this.d.connections) {
-      const drv = this.endpoint(c.from);
-      const rcv = this.endpoint(c.to);
-      if (!drv || !rcv) {
-        this.check('error', 'connection', `Connection ${c.id} (${c.from} to ${c.to}) refers to an interface that does not exist.`, { connection: c.id });
-        continue;
+    for (const c of this.d.connections) this.connect(c);
+  }
+
+  /**
+   * The ECC events of the crossings the Composer inserts at the channels of the system ECC monitor (system.eccMonitor):
+   * every inserted crossing with ECC, in the order of its connection, takes the lowest channel of the monitor that no
+   * connection and no earlier crossing uses. Its connection is resolved like one of the user, with a pulse crossing to
+   * the clock domain of the monitor where needed. Crossings beyond the free channels stay open, with a warning. Without
+   * a marked monitor, a monitor with free channels gets a remark.
+   */
+  eccMonitorPass() {
+    const eccOut = (/** @type {any} */ b) => b?.interfaces.find((/** @type {any} */ i) => i.type === 'ecc.event' && i.role === 'event_out');
+    const eccIn = (/** @type {any} */ b) => b?.interfaces.find((/** @type {any} */ i) => i.type === 'ecc.event' && i.role === 'event_in' && i.vector);
+    const crossings = this.autos
+      .filter((r) => r.role === 'cdc' && eccOut(this.cat.blocks.get(r.block)))
+      .sort((a, z) => String(a.connection).localeCompare(String(z.connection), 'en', { numeric: true }));
+    const used = new Set(this.d.connections.flatMap((c) => [c.from, c.to]));
+    /** @param {ResolvedInstance} rec @param {any} b @param {any} input */
+    const freeOf = (rec, b, input) => this.cat.ports(b, rec.generics).filter((p) => p.itf.name === input.name && !used.has(`${rec.id}.${p.ref}`));
+    const mon = this.d.eccMonitor;
+    if (!mon) {
+      if (!crossings.length) return;
+      for (const inst of this.d.instances) {
+        const rec = this.byId.get(inst.id);
+        const b = rec && this.cat.blocks.get(rec.block);
+        const input = eccIn(b);
+        if (!rec || !input || freeOf(rec, b, input).length === 0) continue;
+        this.check('info', 'protection', `${inst.id} has free channels: mark it as the system ECC monitor (the checkbox System ECC monitor in its inspector) to report the ECC events of the inserted crossings ${crossings.map((x) => x.id).join(', ')}.`, { instance: inst.id });
       }
-      const fd = this.sideFormat(c.from, c.id);
-      const fr = this.sideFormat(c.to, c.id);
-      if (!fd || !fr) continue;
-      const typeId = !fd.type.generic ? fd.type.id : fr.type.id;
-      // a sink that needs packet boundaries or applies back-pressure cannot work with a source that has no last or no
-      // valid: an error, not a constant (a packet would never end, data would be lost)
-      const needsLast = Boolean(rcv.port.itf.needsLast || (!rcv.port.type.generic && rcv.port.type.needsLast));
-      if (needsLast && !fd.sigs.some((s) => s.name === 'last')) {
-        this.check('error', 'packets', `${c.to} needs packet boundaries; ${c.from} has no last.`, { connection: c.id });
+      return;
+    }
+    const rec = this.byId.get(mon);
+    const b = rec && this.cat.blocks.get(rec.block);
+    const input = eccIn(b);
+    if (!rec || !b || !input) {
+      this.check('error', 'protection', `The system ECC monitor ${mon} is no block with ECC event inputs.`, rec ? { instance: mon } : {});
+      return;
+    }
+    const free = freeOf(rec, b, input);
+    crossings.forEach((x, k) => {
+      if (k >= free.length) return;
+      const c = { id: `auto_ecc_${x.connection}`, from: `${x.id}.${eccOut(this.cat.blocks.get(x.block)).name}`, to: `${mon}.${free[k].ref}` };
+      this.autoConnected.add(c.from).add(c.to);
+      this.connect(c);
+    });
+    const rest = crossings.slice(free.length);
+    if (rest.length === 0) return;
+    const total = this.cat.ports(b, rec.generics).filter((p) => p.itf.name === input.name).length;
+    const gen = typeof input.vector === 'string' && /^\w+_g$/.test(input.vector) ? input.vector : '';
+    const need = total + rest.length;
+    const sugg = gen ? smallestValid(this.cat, b, rec.generics, gen, need) : null;
+    // other generics whose range depends on the channels (the address width of the registers)
+    const also = [];
+    if (sugg !== null) {
+      const env = this.cat.envFor(b, { ...rec.generics, [gen]: sugg });
+      for (const r of /** @type {any[]} */ (b.rules ?? [])) {
+        if (r.kind !== 'generic_range' || r.min === undefined || !String(r.min).includes(gen)) continue;
+        let min;
+        try {
+          min = evaluate(String(r.min), env);
+        } catch {
+          continue;
+        }
+        if (Number(rec.generics[r.generic]) < min) also.push(` and ${r.generic} to at least ${min}`);
       }
-      if (rcv.port.type.kind === 'stream' && fr.hasReady && !fd.hasValid) {
-        this.check('error', 'packets', `${c.to} applies back-pressure; ${c.from} has no valid and does not wait.`, { connection: c.id });
-      }
-      // a receiver that accepts the type of the driver under a condition on the generics of the driver: checked on
-      // every resolution, because the generics can change after the connection was made
-      if (!fd.type.generic && !fr.type.generic && fd.type.id !== fr.type.id) {
-        const acc = (fr.type.accepts ?? []).find((a) => a.type === fd.type.id);
-        if (acc?.condition === 'liteWhen') {
-          // a subsystem decides the condition inside: true or false instead of the conditions
-          const lite = drv.port.itf.params?.liteWhen;
-          const conds = /** @type {{generic: string, value: unknown}[]} */ (Array.isArray(lite) ? lite : []);
-          const failing = conds.filter((x) => drv.rec.generics[x.generic] !== x.value);
-          if (lite === false) {
-            this.check('error', 'accepts',
-              `${fr.type.name} at ${c.to} needs single transfers from ${c.from}: set them on the block inside the subsystem ${drv.rec.block.slice(SUBSYSTEM_PREFIX.length)}.`,
-              { connection: c.id, instance: drv.rec.id });
-          } else if (lite !== true && (conds.length === 0 || failing.length > 0)) {
-            const need = failing.map((x) => `${x.generic} = ${String(x.value)}`).join(' and ');
-            this.check('error', 'accepts',
-              `${fr.type.name} at ${c.to} needs single transfers from ${c.from}: set ${need || 'single transfers'} on ${drv.rec.id}.`,
-              { connection: c.id, instance: drv.rec.id });
-          }
+    }
+    this.check('warning', 'protection',
+      `${mon} has ${total} channel${total === 1 ? '' : 's'}, ${total - free.length} used by connections; the inserted crossings ${rest.map((x) => x.id).join(', ')} need ${rest.length} more, so their ECC events are not reported.${sugg !== null ? ` Set ${gen} of ${mon} to at least ${sugg}${also.join('')}.` : ''}`,
+      { instance: mon });
+  }
+
+  /**
+   * One connection: its chain from the driver to the receiver with the adapters it needs (width converter, clock
+   * crossing), and the packing of a carried side band. Also used for the connections the Composer adds itself (the
+   * ECC events of the inserted crossings at the system ECC monitor).
+   * @param {{ id: string, from: string, to: string, sideband?: Record<string, number | boolean>, adapters?: any }} c
+   */
+  connect(c) {
+    const drv = this.endpoint(c.from);
+    const rcv = this.endpoint(c.to);
+    if (!drv || !rcv) {
+      this.check('error', 'connection', `Connection ${c.id} (${c.from} to ${c.to}) refers to an interface that does not exist.`, { connection: c.id });
+      return;
+    }
+    const fd = this.sideFormat(c.from, c.id);
+    const fr = this.sideFormat(c.to, c.id);
+    if (!fd || !fr) return;
+    const typeId = !fd.type.generic ? fd.type.id : fr.type.id;
+    // a sink that needs packet boundaries or applies back-pressure cannot work with a source that has no last or no
+    // valid: an error, not a constant (a packet would never end, data would be lost)
+    const needsLast = Boolean(rcv.port.itf.needsLast || (!rcv.port.type.generic && rcv.port.type.needsLast));
+    if (needsLast && !fd.sigs.some((s) => s.name === 'last')) {
+      this.check('error', 'packets', `${c.to} needs packet boundaries; ${c.from} has no last.`, { connection: c.id });
+    }
+    if (rcv.port.type.kind === 'stream' && fr.hasReady && !fd.hasValid) {
+      this.check('error', 'packets', `${c.to} applies back-pressure; ${c.from} has no valid and does not wait.`, { connection: c.id });
+    }
+    // a receiver that accepts the type of the driver under a condition on the generics of the driver: checked on
+    // every resolution, because the generics can change after the connection was made
+    if (!fd.type.generic && !fr.type.generic && fd.type.id !== fr.type.id) {
+      const acc = (fr.type.accepts ?? []).find((a) => a.type === fd.type.id);
+      if (acc?.condition === 'liteWhen') {
+        // a subsystem decides the condition inside: true or false instead of the conditions
+        const lite = drv.port.itf.params?.liteWhen;
+        const conds = /** @type {{generic: string, value: unknown}[]} */ (Array.isArray(lite) ? lite : []);
+        const failing = conds.filter((x) => drv.rec.generics[x.generic] !== x.value);
+        if (lite === false) {
+          this.check('error', 'accepts',
+            `${fr.type.name} at ${c.to} needs single transfers from ${c.from}: set them on the block inside the subsystem ${drv.rec.block.slice(SUBSYSTEM_PREFIX.length)}.`,
+            { connection: c.id, instance: drv.rec.id });
+        } else if (lite !== true && (conds.length === 0 || failing.length > 0)) {
+          const need = failing.map((x) => `${x.generic} = ${String(x.value)}`).join(' and ');
+          this.check('error', 'accepts',
+            `${fr.type.name} at ${c.to} needs single transfers from ${c.from}: set ${need || 'single transfers'} on ${drv.rec.id}.`,
+            { connection: c.id, instance: drv.rec.id });
         }
       }
-      /** @type {Chain} */
-      const chain = { connection: c.id, from: c.from, to: c.to, type: typeId, adapters: [], hops: [] };
-      if (c.sideband) chain.sideband = { ...c.sideband };
+    }
+    /** @type {Chain} */
+    const chain = { connection: c.id, from: c.from, to: c.to, type: typeId, adapters: [], hops: [] };
+    if (c.sideband) chain.sideband = { ...c.sideband };
 
-      const srcDom = this.domainOf(drv.rec, drv.port);
-      const dstDom = this.domainOf(rcv.rec, rcv.port);
-      /** @type {string[]} */
-      const path = [c.from];
+    const srcDom = this.domainOf(drv.rec, drv.port);
+    const dstDom = this.domainOf(rcv.rec, rcv.port);
+    /** @type {string[]} */
+    const path = [c.from];
 
-      // width conversion between two typed interfaces, in the source domain
-      let carried = fd;
-      const typedBoth = !drv.port.type.generic && !rcv.port.type.generic;
-      const wd = fd.sigs.find((s) => s.name === 'data')?.width;
-      const wr = fr.sigs.find((s) => s.name === 'data')?.width;
-      if (typedBoth && wd && wr && wd !== wr) {
-        const conv = this.widthConverter(c, fd, fr, wd, wr, srcDom);
-        if (conv) {
-          chain.adapters.push(conv.id);
-          path.push(`${conv.id}.In`, `${conv.id}.Out`);
-          carried = { ...fd, sigs: fd.sigs.map((s) => (s.name === 'data' ? { ...s, width: wr } : s.name === 'keep' ? { ...s, width: wr / 8 } : s)) };
-          if (!carried.sigs.some((s) => s.name === 'keep') && fr.sigs.some((s) => s.name === 'keep')) {
-            carried = { ...carried, sigs: [...carried.sigs, { name: 'keep', width: wr / 8 }] };
-          }
+    // width conversion between two typed interfaces, in the source domain
+    let carried = fd;
+    const typedBoth = !drv.port.type.generic && !rcv.port.type.generic;
+    const wd = fd.sigs.find((s) => s.name === 'data')?.width;
+    const wr = fr.sigs.find((s) => s.name === 'data')?.width;
+    if (typedBoth && wd && wr && wd !== wr) {
+      const conv = this.widthConverter(c, fd, fr, wd, wr, srcDom);
+      if (conv) {
+        chain.adapters.push(conv.id);
+        path.push(`${conv.id}.In`, `${conv.id}.Out`);
+        carried = { ...fd, sigs: fd.sigs.map((s) => (s.name === 'data' ? { ...s, width: wr } : s.name === 'keep' ? { ...s, width: wr / 8 } : s)) };
+        if (!carried.sigs.some((s) => s.name === 'keep') && fr.sigs.some((s) => s.name === 'keep')) {
+          carried = { ...carried, sigs: [...carried.sigs, { name: 'keep', width: wr / 8 }] };
         }
       }
-      this.carrierWidths(c, drv, rcv, fd, fr);
-      this.signalMismatch(c, drv, rcv, fd, fr, chain);
+    }
+    this.carrierWidths(c, drv, rcv, fd, fr);
+    this.signalMismatch(c, drv, rcv, fd, fr, chain);
 
-      // clock crossing
-      if (srcDom && dstDom && srcDom !== dstDom) {
-        const cc = this.clockCrossing(c, carried, srcDom, dstDom);
-        if (cc) {
-          chain.adapters.push(cc.id);
-          path.push(`${cc.id}.In`, `${cc.id}.Out`);
-        }
+    // clock crossing
+    if (srcDom && dstDom && srcDom !== dstDom) {
+      const cc = this.clockCrossing(c, carried, srcDom, dstDom);
+      if (cc) {
+        chain.adapters.push(cc.id);
+        path.push(`${cc.id}.In`, `${cc.id}.Out`);
       }
-      path.push(c.to);
-      for (let k = 0; k + 1 < path.length; k += 2) chain.hops.push({ from: path[k], to: path[k + 1] });
-      this.chains.push(chain);
+    }
+    path.push(c.to);
+    for (let k = 0; k + 1 < path.length; k += 2) chain.hops.push({ from: path[k], to: path[k + 1] });
+    this.chains.push(chain);
 
-      // packing of the carried side band in user-placed untyped blocks
-      for (const side of [drv, rcv]) {
-        if (!side.port.type.generic) continue;
-        let f = side === drv ? fd : fr;
-        if (f.type.generic) f = side === drv ? fr : fd;
-        if (f.type.generic) continue;
-        side.rec.packing[side.port.itf.name] = side.port.itf.carry === 'native' ? { width: 0, fields: [] } : packing(f, side.port.itf);
-      }
+    // packing of the carried side band in user-placed untyped blocks
+    for (const side of [drv, rcv]) {
+      if (!side.port.type.generic) continue;
+      let f = side === drv ? fd : fr;
+      if (f.type.generic) f = side === drv ? fr : fd;
+      if (f.type.generic) continue;
+      side.rec.packing[side.port.itf.name] = side.port.itf.carry === 'native' ? { width: 0, fields: [] } : packing(f, side.port.itf);
     }
   }
 
@@ -925,7 +1005,7 @@ export class Resolution {
 
   boundaryPass() {
     const d = this.d;
-    const connected = new Set(d.connections.flatMap((c) => [c.from, c.to]));
+    const connected = new Set([...d.connections.flatMap((c) => [c.from, c.to]), ...this.autoConnected]);
     /** @type {Map<string, {prefix: string, implicit: boolean}>} */
     const ext = new Map();
     for (const e of d.externals) {
