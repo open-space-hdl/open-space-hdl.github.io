@@ -415,6 +415,9 @@ function exceptions(resolved, info, parent) {
   if (!parent && resolved.subsystems?.length) {
     out.push('#', ...comment('#', `The subsystems have their own files, read scoped to their entities as well: ${resolved.subsystems.map((s) => `${s.name}.xdc`).join(', ')}.`));
   }
+  if (resolved.instances.length) {
+    out.push('#', ...comment('#', 'The reset input Rst needs no exception: every block that takes it releases it through olo_base_reset_gen, whose scoped constraints (the script of Open Logic, below) cut the paths into its synchronisers. The inputs that blocks synchronise themselves get a false path through the port, which holds whether the port is a device pin or the pin of the system inside a larger design.'));
+  }
   const io = resolved.constraints.filter((c) => c.kind === 'io_register');
   if (io.length) {
     const ports = io.flatMap((c) => c.ports).join(', ');
@@ -441,7 +444,7 @@ function exceptions(resolved, info, parent) {
     if (c.kind === 'max_delay') {
       body.push('', ...comment('#', c.note), `set_max_delay${c.datapathOnly ? ' -datapath_only' : ''} -from ${clockVar(c.from)} -to ${clockVar(c.to)} ${Number(c.ns).toFixed(3)}`);
     } else if (c.kind === 'false_path') {
-      body.push('', ...comment('#', c.note), `set_false_path -from ${portList(c.from)}`);
+      body.push('', ...comment('#', c.note), `set_false_path -through ${portList(c.from)}`);
     } else if (c.kind === 'vendor_scoped' && !parent) {
       // once, in the file of the system
       body.push('', ...comment('#', `${c.note} The script ${c.file} is part of the Open Logic sources; add it to the project once (see the compile order).`));

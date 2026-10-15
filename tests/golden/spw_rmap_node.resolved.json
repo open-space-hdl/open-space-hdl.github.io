@@ -1,5 +1,5 @@
 {
-  "catalog": "2f7536b0b190",
+  "catalog": "bebf58067f6a",
   "entity": "spw_rmap_node",
   "ports": [
     {
@@ -3038,13 +3038,6 @@
   ],
   "packing": [],
   "constraints": [
-    {
-      "kind": "false_path",
-      "from": [
-        "Rst"
-      ],
-      "note": "Asynchronous reset input; the reset generators synchronise its release."
-    },
     {
       "kind": "false_path",
       "from": [

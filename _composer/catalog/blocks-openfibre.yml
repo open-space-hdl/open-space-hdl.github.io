@@ -210,7 +210,8 @@ blocks:
       - { port: FreeRunClk, primary: true, label: Free-running, description: "Free-running clock of the transceiver reset controller; it runs before the transceivers, for example the management clock." }
       - { port: LaneClk, output: true, frequency: 156.25e6, label: Lane clock, description: "Transmit user clock of the quad (6.25 Gbit/s / 40 bits); the lane clock of the core." }
     resets:
-      - { port: Rst, active: high, sync: async, description: "Asynchronous reset of the transceivers and their reset controller." }
+      # at this pin the adapter resets FreeRunClk registers with Rst directly: it gets the reset generator of that domain
+      - { port: Rst, active: high, sync: sync, clock: FreeRunClk, description: "Reset of the transceivers, their reset controller and the logic of FreeRunClk, which uses it synchronously: the Composer connects the reset generator of the clock domain of FreeRunClk." }
     generics:
       - { name: NumLanes_g, label: Lanes, description: "Lanes of the quad in use (1 to 4); follows the core.", follow: { interfaces: [Phy], measure: generic, generic: NumLanes_g } }
       - { name: SimDevice_g, label: Device family, advanced: true, description: "SIM_DEVICE of the BUFG_GT (device family)." }

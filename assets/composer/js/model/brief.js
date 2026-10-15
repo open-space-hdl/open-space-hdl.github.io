@@ -466,7 +466,7 @@ export function agentBrief(cat, d, res, resolved, checks) {
   const list = (/** @type {string[]} */ v) => v.map((x) => `\`${x}\``).join(', ');
   for (const c of resolved.constraints) {
     if (c.kind === 'max_delay') L.push(`- Maximum delay from the clock of \`${c.from}\` to the clock of \`${c.to}\`: ${c.ns} ns, data path only (\`set_max_delay -datapath_only\` in Vivado). ${c.note ?? ''}`.trimEnd());
-    else if (c.kind === 'false_path') L.push(`- False path from ${list(c.from)}${c.note ? `: ${c.note}` : '.'}`);
+    else if (c.kind === 'false_path') L.push(`- False path through ${list(c.from)} (\`set_false_path -through\` in Vivado: valid whether the port is a device pin or a pin of the system inside a larger design)${c.note ? `: ${c.note}` : '.'}`);
     else if (c.kind === 'io_register') L.push(`- Output registers in the I/O blocks for ${list(c.ports)}${c.note ? `: ${c.note}` : '.'}`);
     else if (c.kind === 'vendor_scoped') L.push(`- ${c.note ?? ''} File \`${c.file}\` of Open Logic.`);
     else L.push(`- \`${c.kind}\`${c.instance ? ` for \`${c.instance}\`` : ''}: ${Object.entries(c).filter(([k]) => k !== 'kind' && k !== 'instance').map(([k, v]) => `${k} ${Array.isArray(v) ? v.join(', ') : String(v)}`).join('; ')}`);

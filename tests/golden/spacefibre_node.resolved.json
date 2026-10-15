@@ -1,5 +1,5 @@
 {
-  "catalog": "2f7536b0b190",
+  "catalog": "bebf58067f6a",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -2694,11 +2694,12 @@
           "name": "Rst",
           "dir": "in",
           "type": "std_logic",
+          "domain": "sys",
           "reset": {
-            "kind": "async",
-            "note": "Asynchronous reset of the transceivers and their reset controller."
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain System clock (clock FreeRunClk): the output of the reset generator auto_rst_sys."
           },
-          "actual": "Rst"
+          "actual": "auto_rst_sys_RstOut_s"
         },
         {
           "name": "RefClk",
@@ -5243,13 +5244,6 @@
   ],
   "packing": [],
   "constraints": [
-    {
-      "kind": "false_path",
-      "from": [
-        "Rst"
-      ],
-      "note": "Asynchronous reset input; the reset generators synchronise its release."
-    },
     {
       "kind": "max_delay",
       "from": "pa0.LaneClk",
