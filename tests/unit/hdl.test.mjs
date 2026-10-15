@@ -182,15 +182,14 @@ test('the command line tool refuses a changed netlist, exports with --resolve an
     assert.match(errors.stderr, /the system has errors; nothing exported/);
     assert.match(errors.stderr, /ocr0: ReleaseBytes_g = 4128 must be a power of two/);
     assert.throws(() => readdirSync(join(dir, 'b')), 'nothing written');
-    // the system of the user hits two known defects, so the export is refused: its RMAP target on the AXI4-Lite decoder
-    // (AxiMaxBeats_g = 1) the one of olo_axi_master_simple up to Open Logic 4.7.0-ft.4, and its SpaceFibre port with 4
-    // lanes and the default input VC buffer of 256 words (one flow control unit) the one of ofb_core. Once OpenRMAP is
-    // pinned with 4.7.0-ft.5 and ofb_core is fixed, this fixture becomes a positive export test with the GHDL check and
-    // the run to 0 ns, like the examples.
+    // the system of the user: its RMAP target on the AXI4-Lite decoder (AxiMaxBeats_g = 1) hits the known defect of
+    // olo_axi_master_simple up to Open Logic 4.7.0-ft.4, so the export is refused. Its SpaceFibre port has 4 lanes with an
+    // input VC buffer of 1024 words, clear of the known defect of ofb_core. Once OpenRMAP is pinned with 4.7.0-ft.5, this
+    // fixture becomes a positive export test with the GHDL check and the run to 0 ns, like the examples.
     const user = run([`${ROOT}tests/fixtures/spfi_encrypt.composer.json`, join(dir, 'e'), '--resolve']);
     assert.equal(user.status, 2, user.stdout);
     assert.match(user.stderr, /rmap0: Known defect of Open Logic olo_axi_master_simple up to 4\.7\.0-ft\.4: with AxiMaxBeats_g < AxiDataWidth_g\/8, /);
-    assert.match(user.stderr, /ofb0: Known defect of ofb_core: with more than one lane and an input VC buffer of one flow control unit/);
+    assert.doesNotMatch(user.stderr, /Known defect of ofb_core/);
     assert.throws(() => readdirSync(join(dir, 'e')), 'nothing written');
     // an example of the current catalog exports without --resolve, with the input file and its hash in the header
     const example = run([`${EXAMPLES}spw_rmap_node.composer.json`, join(dir, 'c')]);
