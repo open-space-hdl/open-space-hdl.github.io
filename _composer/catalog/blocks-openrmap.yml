@@ -85,6 +85,8 @@ blocks:
         clock: Clk
         tieOff: open
         signals: { irq: Irq }
+        # the registers of the interrupt in the register map of the block (the brief gives their offsets)
+        irqRegisters: { events: EVENTS, enable: [IRQ_EN], status: IRQ_STATUS }
       - name: M_Axi
         label: Target memory
         type: axi4
@@ -210,6 +212,10 @@ blocks:
       - { kind: same_domain, interfaces: [S_Pkt, M_Pkt], message: "The RMAP node normally runs on the user clock of its SpaceWire port; an asynchronous FIFO was inserted instead." }
     idRegister: { address: "0x000", value: "0x4F4D4101" }
     registers: { map: hdl/omap_mib/regs/omap_regs.yml, header: sw/omap_regs.h, doc: hdl/omap_mib/docs/register_map.md, prefix: OMAP }
+    # the ECC of the memories inside the core: double-error flags per channel, counters, error injection
+    protection:
+      evidence: "user guide section 6 (protection scope) and the register map"
+      ecc: { status: ECC_STATUS, select: ECC_SELECT, count: ECC_COUNT, inject: ECC_INJECT }
     init:
       - { text: "None needed: with the default generics the target accepts every command to the logical address 0xFE with the key 0x00 on the whole address space (WinInit_g). A flight configuration narrows the logical addresses (TGT_LA 0x010), the key (TGT_KEY) and the windows (WIN_BASE, WIN_LAST, WIN_CTRL), see the register map." }
     notes:

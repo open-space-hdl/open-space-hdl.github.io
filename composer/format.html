@@ -248,6 +248,41 @@ permalink: /composer/format/
       well. Banks smaller than their windows, and a decoder whose map repeats in a wider space, are remarks.
     </p>
 
+    <h2 id="interrupts">Interrupts</h2>
+    <p>
+      <code>resolved.interrupts</code> lists every interrupt output of the system: a level that is high while an
+      enabled event is pending. Each entry names its clock domain and where it goes: a top-level port, the event input
+      of a block, or open. It also names its registers in the register map of its block: the enables, the status and
+      the events, which are cleared by writing ones. The catalog names these registers per core, and the catalog check
+      finds them in the register map at the pin. The Composer places no interrupt controller. An open interrupt is no
+      finding: software can poll the status register.
+    </p>
+
+    <h2 id="protection">Protection scope</h2>
+    <p>
+      The blocks are designed for radiation environments together with the triple modular redundancy (TMR) of the
+      synthesis tool. <code>resolved.protection</code> and the brief show what the system protects itself and what it
+      leaves to the integrator:
+    </p>
+    <ul>
+      <li>the blocks that protect their memories with SECDED ECC and report it in their registers. The number of
+        channels is the number of double-error flags of the status register in the register map at the pin; the
+        catalog check also verifies that the select register can address every channel;</li>
+      <li>every ECC event output of a memory (an Open Logic ft FIFO, the buffers of a framer) and where it is reported:
+        a channel of an ECC monitor (<code>olo_ft_ecc_monitor_axi</code>), another block, a top-level port, or not at
+        all;</li>
+      <li>the clock domain crossings the Composer inserts: with fault tolerance on, <code>olo_ft_fifo_async</code> with
+        SECDED ECC and triplicated synchronisers; with it off, <code>olo_base_fifo_async</code> without ECC;</li>
+      <li>what the integrator does: enable the TMR of the synthesis tool, check the synthesis report, request safe
+        state machines, and protect the configuration memory of SRAM-based FPGAs by scrubbing.</li>
+    </ul>
+    <p>
+      The rule <code>protection</code> reports an open ECC event output of a block the user placed as a warning: the
+      corrected and detected errors of that memory are not reported. Where the block also reports its ECC in its own
+      registers, it is a remark: the errors are not lost, only not monitored centrally. The ECC events of an inserted
+      crossing are open as the Composer writes it; that is a remark, and the brief lists it under "not reported".
+    </p>
+
     <h2 id="resolved">The resolved netlist</h2>
     <p>
       <code>resolved</code> describes the top level completely. It contains the placed blocks and the blocks the
@@ -291,6 +326,8 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
           <tr><td data-label="Entry"><code>compile</code></td><td data-label="Meaning">VHDL libraries in compile order with repository, commit or tag, file list and its format, and the entities used. <code>files</code>: one VHDL file per line in compile order. <code>modules</code>: one module directory per line, relative to the repository root; blank lines and lines starting with <code>#</code> are ignored; the sources of a module are its <code>src/*.vhd</code> files, which have no given order inside the module (packages first, then in dependency order, or let the tool order them). <code>verifiedWith</code> is the Open Logic FT tag the repository was verified with.</td></tr>
           <tr><td data-label="Entry"><code>problems</code></td><td data-label="Meaning">Inconsistencies found while building the netlist; empty for a correct catalog.</td></tr>
           <tr><td data-label="Entry"><code>addressMap</code></td><td data-label="Meaning">Since 0.5.0-beta: the <a href="#address-map">address spaces</a> of the system with their register banks, written when the system has one.</td></tr>
+          <tr><td data-label="Entry"><code>interrupts</code></td><td data-label="Meaning">Since 0.6.0-beta: every <a href="#interrupts">interrupt output</a> with its clock domain, where it goes and its registers, written when the system has one.</td></tr>
+          <tr><td data-label="Entry"><code>protection</code></td><td data-label="Meaning">Since 0.6.0-beta: the <a href="#protection">protection scope</a> of the system: the ECC of the blocks, where every ECC event goes, the inserted crossings.</td></tr>
           <tr><td data-label="Entry"><code>subsystems</code></td><td data-label="Meaning">Version 2: the netlist of every subsystem definition, leaves first, flat, each in the form described here. An instance of a subsystem has the library <code>work</code> and the entity named after it. <code>compile</code> also lists the libraries used inside the subsystems; <code>context</code> holds the libraries of the instances of the top level only.</td></tr>
         </tbody>
       </table>
@@ -307,7 +344,8 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
       <code>checks</code> lists the results of the structural checks (missing connections of interfaces that must be
       served, side band constants, widths, clock crossings) and of the design rules of the catalog (clock relations,
       generics that depend on each other), of the <a href="#throughput">throughput budget</a>, of the
-      <a href="#sizes">packet sizes and buffers</a> and of the <a href="#address-map">address map</a>. Each entry has a severity (<code>error</code>,
+      <a href="#sizes">packet sizes and buffers</a>, of the <a href="#address-map">address map</a> and of the
+      <a href="#protection">protection scope</a>. Each entry has a severity (<code>error</code>,
       <code>warning</code>, <code>info</code>), the rule and a message, and names the instance, connection or clock
       domain it is about. A system with an error is not ready to build.
     </p>
@@ -317,8 +355,8 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
       <code>agent.brief</code> is a Markdown text for a person or an AI agent: the repositories and their compile
       order, the ports of the top level with their clock domains and the field maps of the external interfaces, how
       to write the architecture from <code>resolved</code>, the clock domains and resets, the constraints, the
-      throughput of every path, the packet sizes and buffers, the address map, the notes of the user guides of the
-      blocks, the initialisation by software (identification registers and the register writes
+      throughput of every path, the packet sizes and buffers, the address map, the interrupts, the protection
+      scope, the notes of the user guides of the blocks, the initialisation by software (identification registers and the register writes
       that start the blocks), the open checks, a smoke test bench to verify the result with GHDL and an optional
       end-to-end test.
     </p>

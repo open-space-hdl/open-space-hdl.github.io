@@ -83,6 +83,8 @@ export function signalName(inst, port) {
  * @property {string[]} context  context clause of the top level
  * @property {string[]} problems   inconsistencies found while building the netlist (none in a correct catalog)
  * @property {import('./addressmap.js').Space[]} [addressMap]   address spaces with their register banks (top only)
+ * @property {import('./systemviews.js').Interrupt[]} [interrupts]   interrupt outputs (top only)
+ * @property {Omit<import('./systemviews.js').Protection, 'checks'>} [protection]   protection scope (top only)
  * @property {{ name: string, netlist: ResolvedNetlist }[]} [subsystems]   definitions used, leaves first (top only)
  */
 
@@ -539,6 +541,10 @@ class Netlist {
       problems: this.problems,
       // the address spaces of the system (model/addressmap.js); a definition has none of its own
       ...(res.addressMap?.spaces.length ? { addressMap: res.addressMap.spaces } : {}),
+      // the interrupts and the protection scope (model/systemviews.js)
+      ...(res.interrupts?.length ? { interrupts: res.interrupts } : {}),
+      ...(res.protection && (res.protection.blocks.length || res.protection.events.length || res.protection.crossings.length)
+        ? { protection: (({ checks, ...rest }) => rest)(res.protection) } : {}),
       // the definitions, flat at the top level; a definition itself lists none
       ...(this.d.subsystems && defs.length ? { subsystems: defs.map((s) => ({ name: s.name, netlist: s.resolved })) } : {}),
     };

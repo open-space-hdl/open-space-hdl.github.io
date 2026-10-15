@@ -1,5 +1,5 @@
 {
-  "catalog": "c0f984e5216d",
+  "catalog": "ed8d65f4c507",
   "entity": "encrypted_spp_over_spw",
   "ports": [
     {
@@ -665,6 +665,159 @@
       "interface": "spw0.Spw",
       "domain": "link",
       "signal": "rx_en"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_AwAddr",
+      "dir": "in",
+      "type": "std_logic_vector(11 downto 0)",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwAddr"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_AwValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwValid"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_AwReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "AwReady"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_WData",
+      "dir": "in",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WData"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_WStrb",
+      "dir": "in",
+      "type": "std_logic_vector(3 downto 0)",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WStrb"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_WValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WValid"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_WReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "WReady"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_BResp",
+      "dir": "out",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BResp"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_BValid",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BValid"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_BReady",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "BReady"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_ArAddr",
+      "dir": "in",
+      "type": "std_logic_vector(11 downto 0)",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArAddr"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_ArValid",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArValid"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_ArReady",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "ArReady"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_RData",
+      "dir": "out",
+      "type": "std_logic_vector(31 downto 0)",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RData"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_RResp",
+      "dir": "out",
+      "type": "std_logic_vector(1 downto 0)",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RResp"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_RValid",
+      "dir": "out",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RValid"
+    },
+    {
+      "name": "edac_reg_S_AxiLite_RReady",
+      "dir": "in",
+      "type": "std_logic",
+      "kind": "interface",
+      "interface": "edac0.S_AxiLite",
+      "domain": "sys",
+      "signal": "RReady"
     }
   ],
   "clocks": [
@@ -881,14 +1034,14 @@
           "dir": "out",
           "type": "std_logic_vector(1 downto 0)",
           "domain": "sys",
-          "actual": "open"
+          "actual": "frm0_Ecc_Sec_s"
         },
         {
           "name": "Ecc_Ded",
           "dir": "out",
           "type": "std_logic_vector(1 downto 0)",
           "domain": "sys",
-          "actual": "open"
+          "actual": "frm0_Ecc_Ded_s"
         },
         {
           "name": "ErrInj_Sel",
@@ -2439,6 +2592,207 @@
       ]
     },
     {
+      "id": "edac0",
+      "entity": "olo_ft_ecc_monitor_axi",
+      "library": "olo",
+      "block": "olo/olo_ft_ecc_monitor_axi",
+      "origin": "user",
+      "domain": "sys",
+      "generics": [
+        {
+          "name": "Channels_g",
+          "value": 2,
+          "vhdl": "2",
+          "default": false
+        },
+        {
+          "name": "CounterWidth_g",
+          "value": 16,
+          "vhdl": "16",
+          "default": true
+        },
+        {
+          "name": "AxiAddrWidth_g",
+          "value": 12,
+          "vhdl": "12",
+          "default": true
+        },
+        {
+          "name": "ReadTimeoutClks_g",
+          "value": 100,
+          "vhdl": "100",
+          "default": true
+        }
+      ],
+      "ports": [
+        {
+          "name": "Clk",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "Clk_sys"
+        },
+        {
+          "name": "Rst",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain System clock (clock Clk): the output of the reset generator auto_rst_sys."
+          },
+          "actual": "auto_rst_sys_RstOut_s"
+        },
+        {
+          "name": "S_AxiLite_ArAddr",
+          "dir": "in",
+          "type": "std_logic_vector(11 downto 0)",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_ArAddr_s"
+        },
+        {
+          "name": "S_AxiLite_ArValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_ArValid_s"
+        },
+        {
+          "name": "S_AxiLite_ArReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_ArReady_s"
+        },
+        {
+          "name": "S_AxiLite_AwAddr",
+          "dir": "in",
+          "type": "std_logic_vector(11 downto 0)",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_AwAddr_s"
+        },
+        {
+          "name": "S_AxiLite_AwValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_AwValid_s"
+        },
+        {
+          "name": "S_AxiLite_AwReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_AwReady_s"
+        },
+        {
+          "name": "S_AxiLite_WData",
+          "dir": "in",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_WData_s"
+        },
+        {
+          "name": "S_AxiLite_WStrb",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_WStrb_s"
+        },
+        {
+          "name": "S_AxiLite_WValid",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_WValid_s"
+        },
+        {
+          "name": "S_AxiLite_WReady",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_WReady_s"
+        },
+        {
+          "name": "S_AxiLite_BResp",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_BResp_s"
+        },
+        {
+          "name": "S_AxiLite_BValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_BValid_s"
+        },
+        {
+          "name": "S_AxiLite_BReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_BReady_s"
+        },
+        {
+          "name": "S_AxiLite_RData",
+          "dir": "out",
+          "type": "std_logic_vector(31 downto 0)",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_RData_s"
+        },
+        {
+          "name": "S_AxiLite_RResp",
+          "dir": "out",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_RResp_s"
+        },
+        {
+          "name": "S_AxiLite_RValid",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_RValid_s"
+        },
+        {
+          "name": "S_AxiLite_RReady",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "edac0_S_AxiLite_RReady_s"
+        },
+        {
+          "name": "In_EccSec",
+          "dir": "in",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "edac0_In_EccSec_s"
+        },
+        {
+          "name": "In_EccDed",
+          "dir": "in",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "edac0_In_EccDed_s"
+        },
+        {
+          "name": "In_Valid",
+          "dir": "in",
+          "type": "std_logic_vector(1 downto 0)",
+          "domain": "sys",
+          "actual": "edac0_In_Valid_s"
+        },
+        {
+          "name": "Irq",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        }
+      ]
+    },
+    {
       "id": "auto_rst_sys",
       "entity": "olo_base_reset_gen",
       "library": "olo",
@@ -2513,7 +2867,95 @@
       "type": "std_logic"
     },
     {
+      "name": "edac0_In_EccDed_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "edac0_In_EccSec_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "edac0_In_Valid_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "edac0_S_AxiLite_ArAddr_s",
+      "type": "std_logic_vector(11 downto 0)"
+    },
+    {
+      "name": "edac0_S_AxiLite_ArReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "edac0_S_AxiLite_ArValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "edac0_S_AxiLite_AwAddr_s",
+      "type": "std_logic_vector(11 downto 0)"
+    },
+    {
+      "name": "edac0_S_AxiLite_AwReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "edac0_S_AxiLite_AwValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "edac0_S_AxiLite_BReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "edac0_S_AxiLite_BResp_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "edac0_S_AxiLite_BValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "edac0_S_AxiLite_RData_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "edac0_S_AxiLite_RReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "edac0_S_AxiLite_RResp_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "edac0_S_AxiLite_RValid_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "edac0_S_AxiLite_WData_s",
+      "type": "std_logic_vector(31 downto 0)"
+    },
+    {
+      "name": "edac0_S_AxiLite_WReady_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "edac0_S_AxiLite_WStrb_s",
+      "type": "std_logic_vector(3 downto 0)"
+    },
+    {
+      "name": "edac0_S_AxiLite_WValid_s",
+      "type": "std_logic"
+    },
+    {
       "name": "frm0_Cfg_Slot_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "frm0_Ecc_Ded_s",
+      "type": "std_logic_vector(1 downto 0)"
+    },
+    {
+      "name": "frm0_Ecc_Sec_s",
       "type": "std_logic_vector(1 downto 0)"
     },
     {
@@ -3395,6 +3837,50 @@
       "signal": "valid"
     },
     {
+      "to": "edac0_In_EccDed_s(0)",
+      "from": "frm0_Ecc_Ded_s(0)",
+      "kind": "connection",
+      "connection": "c8",
+      "signal": "ded"
+    },
+    {
+      "to": "edac0_In_EccSec_s(0)",
+      "from": "frm0_Ecc_Sec_s(0)",
+      "kind": "connection",
+      "connection": "c8",
+      "signal": "sec"
+    },
+    {
+      "to": "edac0_In_Valid_s(0)",
+      "from": "'1'",
+      "kind": "constant",
+      "connection": "c8",
+      "signal": "valid",
+      "reason": "frm0.Ecc[0] has no valid: events without valid are valid in every cycle, as the default of In_Valid of olo_ft_ecc_monitor."
+    },
+    {
+      "to": "edac0_In_EccDed_s(1)",
+      "from": "frm0_Ecc_Ded_s(1)",
+      "kind": "connection",
+      "connection": "c9",
+      "signal": "ded"
+    },
+    {
+      "to": "edac0_In_EccSec_s(1)",
+      "from": "frm0_Ecc_Sec_s(1)",
+      "kind": "connection",
+      "connection": "c9",
+      "signal": "sec"
+    },
+    {
+      "to": "edac0_In_Valid_s(1)",
+      "from": "'1'",
+      "kind": "constant",
+      "connection": "c9",
+      "signal": "valid",
+      "reason": "frm0.Ecc[1] has no valid: events without valid are valid in every cycle, as the default of In_Valid of olo_ft_ecc_monitor."
+    },
+    {
       "to": "frm0_S_In_Data_s",
       "from": "pkt_S_In_Data",
       "kind": "top",
@@ -3803,6 +4289,108 @@
       "signal": "Phy_RxEn"
     },
     {
+      "to": "edac0_S_AxiLite_AwAddr_s",
+      "from": "edac_reg_S_AxiLite_AwAddr",
+      "kind": "top",
+      "signal": "S_AxiLite_AwAddr"
+    },
+    {
+      "to": "edac0_S_AxiLite_AwValid_s",
+      "from": "edac_reg_S_AxiLite_AwValid",
+      "kind": "top",
+      "signal": "S_AxiLite_AwValid"
+    },
+    {
+      "to": "edac_reg_S_AxiLite_AwReady",
+      "from": "edac0_S_AxiLite_AwReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_AwReady"
+    },
+    {
+      "to": "edac0_S_AxiLite_WData_s",
+      "from": "edac_reg_S_AxiLite_WData",
+      "kind": "top",
+      "signal": "S_AxiLite_WData"
+    },
+    {
+      "to": "edac0_S_AxiLite_WStrb_s",
+      "from": "edac_reg_S_AxiLite_WStrb",
+      "kind": "top",
+      "signal": "S_AxiLite_WStrb"
+    },
+    {
+      "to": "edac0_S_AxiLite_WValid_s",
+      "from": "edac_reg_S_AxiLite_WValid",
+      "kind": "top",
+      "signal": "S_AxiLite_WValid"
+    },
+    {
+      "to": "edac_reg_S_AxiLite_WReady",
+      "from": "edac0_S_AxiLite_WReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_WReady"
+    },
+    {
+      "to": "edac_reg_S_AxiLite_BResp",
+      "from": "edac0_S_AxiLite_BResp_s",
+      "kind": "top",
+      "signal": "S_AxiLite_BResp"
+    },
+    {
+      "to": "edac_reg_S_AxiLite_BValid",
+      "from": "edac0_S_AxiLite_BValid_s",
+      "kind": "top",
+      "signal": "S_AxiLite_BValid"
+    },
+    {
+      "to": "edac0_S_AxiLite_BReady_s",
+      "from": "edac_reg_S_AxiLite_BReady",
+      "kind": "top",
+      "signal": "S_AxiLite_BReady"
+    },
+    {
+      "to": "edac0_S_AxiLite_ArAddr_s",
+      "from": "edac_reg_S_AxiLite_ArAddr",
+      "kind": "top",
+      "signal": "S_AxiLite_ArAddr"
+    },
+    {
+      "to": "edac0_S_AxiLite_ArValid_s",
+      "from": "edac_reg_S_AxiLite_ArValid",
+      "kind": "top",
+      "signal": "S_AxiLite_ArValid"
+    },
+    {
+      "to": "edac_reg_S_AxiLite_ArReady",
+      "from": "edac0_S_AxiLite_ArReady_s",
+      "kind": "top",
+      "signal": "S_AxiLite_ArReady"
+    },
+    {
+      "to": "edac_reg_S_AxiLite_RData",
+      "from": "edac0_S_AxiLite_RData_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RData"
+    },
+    {
+      "to": "edac_reg_S_AxiLite_RResp",
+      "from": "edac0_S_AxiLite_RResp_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RResp"
+    },
+    {
+      "to": "edac_reg_S_AxiLite_RValid",
+      "from": "edac0_S_AxiLite_RValid_s",
+      "kind": "top",
+      "signal": "S_AxiLite_RValid"
+    },
+    {
+      "to": "edac0_S_AxiLite_RReady_s",
+      "from": "edac_reg_S_AxiLite_RReady",
+      "kind": "top",
+      "signal": "S_AxiLite_RReady"
+    },
+    {
       "to": "frm0_Cfg_Slot_s",
       "from": "\"00\"",
       "kind": "tie-off",
@@ -3885,7 +4473,8 @@
       "fileListFormat": "files",
       "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.5 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), and fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5); it changes no other source, so the cores verified with 4.7.0-ft.2, 4.7.0-ft.3 or 4.7.0-ft.4 use it unchanged. Of the cores only OpenRMAP uses olo_axi_master_simple.",
       "entities": [
-        "olo_base_reset_gen"
+        "olo_base_reset_gen",
+        "olo_ft_ecc_monitor_axi"
       ]
     },
     {
@@ -3940,6 +4529,28 @@
   ],
   "problems": [],
   "addressMap": [
+    {
+      "space": "edac0.S_AxiLite",
+      "label": "edac_reg_ (edac0.S_AxiLite)",
+      "kind": "port",
+      "addrWidth": 12,
+      "banks": [
+        {
+          "instance": "edac0",
+          "interface": "S_AxiLite",
+          "block": "olo/olo_ft_ecc_monitor_axi",
+          "entity": "olo_ft_ecc_monitor_axi",
+          "base": 0,
+          "size": 4096,
+          "addrWidth": 12,
+          "window": 4096,
+          "via": [],
+          "doc": "https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor_axi.html"
+        }
+      ],
+      "unused": [],
+      "decoders": []
+    },
     {
       "space": "ocr0.S_AxiLite",
       "label": "ocr_reg_ (ocr0.S_AxiLite)",
@@ -4030,5 +4641,192 @@
       "unused": [],
       "decoders": []
     }
-  ]
+  ],
+  "interrupts": [
+    {
+      "source": "edac0.Irq",
+      "instance": "edac0",
+      "entity": "olo_ft_ecc_monitor_axi",
+      "domain": "sys",
+      "to": {
+        "kind": "open"
+      },
+      "enable": []
+    },
+    {
+      "source": "ocr0.Irq",
+      "instance": "ocr0",
+      "entity": "ocr_core",
+      "domain": "sys",
+      "to": {
+        "kind": "open"
+      },
+      "enable": [
+        {
+          "name": "IRQ_EN",
+          "offset": 28
+        }
+      ],
+      "status": {
+        "name": "IRQ_STATUS",
+        "offset": 32
+      },
+      "events": {
+        "name": "EVENTS",
+        "offset": 24
+      }
+    },
+    {
+      "source": "spp0.Irq",
+      "instance": "spp0",
+      "entity": "spp_core",
+      "domain": "sys",
+      "to": {
+        "kind": "open"
+      },
+      "enable": [
+        {
+          "name": "IRQ_EN",
+          "offset": 88
+        }
+      ],
+      "status": {
+        "name": "IRQ_STATUS",
+        "offset": 92
+      },
+      "events": {
+        "name": "EVENTS",
+        "offset": 84
+      }
+    },
+    {
+      "source": "spw0.Irq",
+      "instance": "spw0",
+      "entity": "owr_core",
+      "domain": "sys",
+      "to": {
+        "kind": "open"
+      },
+      "enable": [
+        {
+          "name": "EVENTS_IRQ_EN",
+          "offset": 56
+        },
+        {
+          "name": "ERRORS_IRQ_EN",
+          "offset": 52
+        }
+      ],
+      "status": {
+        "name": "IRQ_STATUS",
+        "offset": 60
+      },
+      "events": {
+        "name": "EVENTS",
+        "offset": 48
+      }
+    }
+  ],
+  "protection": {
+    "faultTolerance": true,
+    "blocks": [
+      {
+        "instance": "ocr0",
+        "entity": "ocr_core",
+        "channels": 18,
+        "status": {
+          "name": "ECC_STATUS",
+          "offset": 192
+        },
+        "select": {
+          "name": "ECC_SELECT",
+          "offset": 196
+        },
+        "count": {
+          "name": "ECC_COUNT",
+          "offset": 200
+        },
+        "inject": {
+          "name": "ECC_INJECT",
+          "offset": 204
+        },
+        "evidence": "user guide section 6 (protection scope) and the register map"
+      },
+      {
+        "instance": "spp0",
+        "entity": "spp_core",
+        "channels": 8,
+        "status": {
+          "name": "ECC_STATUS",
+          "offset": 96
+        },
+        "select": {
+          "name": "ECC_SELECT",
+          "offset": 100
+        },
+        "count": {
+          "name": "ECC_COUNT",
+          "offset": 104
+        },
+        "inject": {
+          "name": "ECC_INJECT",
+          "offset": 108
+        },
+        "evidence": "user guide section 6 (protection scope) and the register map"
+      },
+      {
+        "instance": "spw0",
+        "entity": "owr_core",
+        "channels": 6,
+        "status": {
+          "name": "ECC_STATUS",
+          "offset": 128
+        },
+        "select": {
+          "name": "ECC_SELECT",
+          "offset": 132
+        },
+        "count": {
+          "name": "ECC_COUNT",
+          "offset": 136
+        },
+        "inject": {
+          "name": "ECC_INJECT",
+          "offset": 140
+        },
+        "evidence": "user guide section 5 (protection scope) and the register map"
+      }
+    ],
+    "events": [
+      {
+        "source": "frm0.Ecc[0]",
+        "instance": "frm0",
+        "entity": "ocr_framer",
+        "memory": "chunk buffer",
+        "inserted": false,
+        "registers": false,
+        "to": {
+          "kind": "block",
+          "to": "edac0.In[0]",
+          "toEntity": "olo_ft_ecc_monitor_axi",
+          "channel": 0
+        }
+      },
+      {
+        "source": "frm0.Ecc[1]",
+        "instance": "frm0",
+        "entity": "ocr_framer",
+        "memory": "position FIFO",
+        "inserted": false,
+        "registers": false,
+        "to": {
+          "kind": "block",
+          "to": "edac0.In[1]",
+          "toEntity": "olo_ft_ecc_monitor_axi",
+          "channel": 1
+        }
+      }
+    ],
+    "crossings": []
+  }
 }

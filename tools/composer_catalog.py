@@ -164,6 +164,14 @@ def check_rates(ctx: "Context", where: str, rates: object, gen_names: set, itf_n
 
 REGISTER_KEYS = {"map", "header", "doc", "prefix"}
 WINDOW_KEYS = {"array", "registers", "count", "reset", "states"}
+IRQ_REGISTER_KEYS = {"events", "enable", "status"}
+ECC_REGISTER_KEYS = {"status", "select", "count", "inject"}
+
+
+def field_width(bits: str) -> int:
+    """Width of a field of a register map ("17:0", "5")."""
+    hi, _, lo = str(bits).partition(":")
+    return int(hi) - int(lo or hi) + 1
 
 
 def register_extent(regmap: dict, maxima: dict[str, int]) -> int:
@@ -177,7 +185,8 @@ def register_extent(regmap: dict, maxima: dict[str, int]) -> int:
     return max(ends, default=0)
 
 
-def check_registers(ctx: "Context", where: str, b: dict, src: dict, interfaces: list, generics: list) -> dict | None:
+def check_registers(ctx: "Context", where: str, b: dict, src: dict, interfaces: list, generics: list,
+                    block: dict) -> dict | None:
     """The register map of a block in its repository at the pin (the YAML source of the core, its C header and its
     Markdown): it exists, its ID is the ID register of the catalog, it fits the address width of the AXI4-Lite slave,
     and the header defines <prefix>_REGMAP_ID. An address space that a master of the block starts names the windows of
@@ -235,6 +244,60 @@ def check_registers(ctx: "Context", where: str, b: dict, src: dict, interfaces: 
             if win[key] not in gen_names:
                 ctx.err(iwhere, f"windows: {key} names {win[key]}, which is no generic")
         itf["addressSpace"] = {**space, "windows": {**win, "base": int(arr["base"]), "stride": int(arr["stride"])}}
+    by_name = {r["name"]: r for r in regmap.get("registers") or []}
+
+    def register(name: object, iwhere: str) -> dict | None:
+        r = by_name.get(str(name))
+        if r is None:
+            ctx.err(iwhere, f"{regs['map']} has no register {name}")
+            return None
+        return {"name": r["name"], "offset": int(r["offset"])}
+
+    # the registers of an interrupt: its events (cleared by writing ones), the enables and the status
+    for itf in interfaces:
+        irq = itf.get("irqRegisters")
+        if irq is None:
+            continue
+        iwhere = f"{where}: interface {itf['name']}: irqRegisters"
+        if itf["type"] != "irq" or not isinstance(irq, dict) or set(irq) - IRQ_REGISTER_KEYS or not isinstance(irq.get("enable"), list):
+            ctx.err(iwhere, "on an irq interface, needs enable (a list) and optionally events and status")
+            continue
+        out = {"enable": [x for x in (register(n, iwhere) for n in irq["enable"]) if x]}
+        for key in ("events", "status"):
+            if key in irq:
+                found = register(irq[key], iwhere)
+                if found:
+                    out[key] = found
+        itf["irqRegisters"] = out
+    # the ECC of the memories inside the block: the double-error flags of the status register give the channels, and
+    # the select register must address every channel
+    prot = b.get("protection")
+    if prot is not None:
+        pwhere = f"{where}: protection"
+        ecc = prot.get("ecc") if isinstance(prot, dict) else None
+        if not isinstance(prot, dict) or set(prot) - {"evidence", "ecc"} or not isinstance(prot.get("evidence"), str):
+            ctx.err(pwhere, "needs evidence (the protection scope of the user guide) and optionally ecc")
+        elif ecc is not None:
+            if not isinstance(ecc, dict) or set(ecc) != ECC_REGISTER_KEYS:
+                ctx.err(pwhere, f"ecc needs {', '.join(sorted(ECC_REGISTER_KEYS))}")
+            else:
+                found = {key: register(ecc[key], pwhere) for key in sorted(ECC_REGISTER_KEYS)}
+                status = by_name.get(str(ecc["status"])) or {}
+                ded = next((f for f in status.get("fields") or [] if f.get("name") == "DED"), None)
+                select = by_name.get(str(ecc["select"])) or {}
+                channel = next((f for f in select.get("fields") or [] if f.get("name") == "CHANNEL"), None)
+                if ded is None:
+                    ctx.err(pwhere, f"{ecc['status']} has no field DED (one double-error flag per channel)")
+                elif channel is None:
+                    ctx.err(pwhere, f"{ecc['select']} has no field CHANNEL")
+                else:
+                    channels = field_width(ded["bits"])
+                    if 2 ** field_width(channel["bits"]) < channels:
+                        ctx.err(pwhere, f"{ecc['select']}.CHANNEL ({channel['bits']}) cannot address the {channels} channels of {ecc['status']}.DED")
+                    elif all(found.values()):
+                        block["protection"] = {"evidence": prot["evidence"], "ecc": {**found, "channels": channels}}
+        if ecc is None and isinstance(prot, dict) and isinstance(prot.get("evidence"), str):
+            block["protection"] = {"evidence": prot["evidence"]}
     return dict(regs)
 
 
@@ -1287,9 +1350,13 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 ctx.err(iwhere, f"required signal '{sname}' of type {tid} not mapped")
         out = {"name": iname, "type": tid, "role": role}
         for key in ("clock", "label", "description", "mustServe", "externalOnly", "enabledBy", "sideband",
-                    "params", "vector", "tieOff", "carry", "userFields", "needsLast", "clockSignals", "addressSpace"):
+                    "params", "vector", "tieOff", "carry", "userFields", "needsLast", "clockSignals", "addressSpace",
+                    "irqRegisters", "memory"):
             if key in itf:
                 out[key] = itf[key]
+        mem = itf.get("memory")
+        if mem is not None and (tid != "ecc.event" or not (isinstance(mem, str) or (isinstance(mem, list) and all(isinstance(x, str) for x in mem)))):
+            ctx.err(iwhere, "memory names the memory whose errors an ecc.event interface reports (a text, or one per element)")
         for cs in itf.get("clockSignals") or []:
             if cs not in signals or role != "pins":
                 ctx.err(iwhere, f"clockSignals: {cs} is not a signal of these pins")
@@ -1515,11 +1582,18 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         block["packages"] = names
     # the register map of the block at the pin (address map of a system); an address space needs it for its windows
     if "registers" in b:
-        checked = check_registers(ctx, where, b, src, interfaces, generics)
+        checked = check_registers(ctx, where, b, src, interfaces, generics, block)
         if checked:
             block["registers"] = checked
-    elif any("addressSpace" in i for i in interfaces):
-        ctx.err(where, "an addressSpace with windows needs the registers of the block")
+    elif any("addressSpace" in i or "irqRegisters" in i for i in interfaces):
+        ctx.err(where, "an addressSpace or irqRegisters needs the registers of the block")
+    elif "protection" in b:
+        # a block without a register map of its own (Open Logic): the evidence only
+        prot = b["protection"]
+        if not isinstance(prot, dict) or set(prot) != {"evidence"} or not isinstance(prot["evidence"], str):
+            ctx.err(where, "protection of a block without registers needs evidence only")
+        else:
+            block["protection"] = {"evidence": prot["evidence"]}
     block["generics"] = generics
     block["clocks"] = clocks
     block["resets"] = resets

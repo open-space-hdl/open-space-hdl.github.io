@@ -1,5 +1,5 @@
 {
-  "catalog": "c0f984e5216d",
+  "catalog": "ed8d65f4c507",
   "entity": "spw_rmap_node",
   "ports": [
     {
@@ -3227,5 +3227,108 @@
       "unused": [],
       "decoders": []
     }
-  ]
+  ],
+  "interrupts": [
+    {
+      "source": "rmap0.Irq",
+      "instance": "rmap0",
+      "entity": "omap_core",
+      "domain": "sys",
+      "to": {
+        "kind": "open"
+      },
+      "enable": [
+        {
+          "name": "IRQ_EN",
+          "offset": 148
+        }
+      ],
+      "status": {
+        "name": "IRQ_STATUS",
+        "offset": 152
+      },
+      "events": {
+        "name": "EVENTS",
+        "offset": 144
+      }
+    },
+    {
+      "source": "spw0.Irq",
+      "instance": "spw0",
+      "entity": "owr_core",
+      "domain": "sys",
+      "to": {
+        "kind": "open"
+      },
+      "enable": [
+        {
+          "name": "EVENTS_IRQ_EN",
+          "offset": 56
+        },
+        {
+          "name": "ERRORS_IRQ_EN",
+          "offset": 52
+        }
+      ],
+      "status": {
+        "name": "IRQ_STATUS",
+        "offset": 60
+      },
+      "events": {
+        "name": "EVENTS",
+        "offset": 48
+      }
+    }
+  ],
+  "protection": {
+    "faultTolerance": true,
+    "blocks": [
+      {
+        "instance": "spw0",
+        "entity": "owr_core",
+        "channels": 6,
+        "status": {
+          "name": "ECC_STATUS",
+          "offset": 128
+        },
+        "select": {
+          "name": "ECC_SELECT",
+          "offset": 132
+        },
+        "count": {
+          "name": "ECC_COUNT",
+          "offset": 136
+        },
+        "inject": {
+          "name": "ECC_INJECT",
+          "offset": 140
+        },
+        "evidence": "user guide section 5 (protection scope) and the register map"
+      },
+      {
+        "instance": "rmap0",
+        "entity": "omap_core",
+        "channels": 3,
+        "status": {
+          "name": "ECC_STATUS",
+          "offset": 160
+        },
+        "select": {
+          "name": "ECC_SELECT",
+          "offset": 164
+        },
+        "count": {
+          "name": "ECC_COUNT",
+          "offset": 168
+        },
+        "inject": {
+          "name": "ECC_INJECT",
+          "offset": 172
+        },
+        "evidence": "user guide section 6 (protection scope) and the register map"
+      }
+    ],
+    "events": [],
+    "crossings": []
+  }
 }
