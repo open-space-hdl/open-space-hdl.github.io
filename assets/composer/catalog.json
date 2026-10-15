@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "6a3354cec985",
+ "id": "a044cb5d9675",
  "sources": [
   {
    "id": "openwire",
@@ -7529,6 +7529,19 @@
       "to": "M_Out",
       "chunk": "ChunkBytes_g",
       "addBytes": "4"
+     }
+    ],
+    "chains": [
+     {
+      "from": "M_Out",
+      "to": {
+       "block": "opencrypto/ocr_core",
+       "in": "S_In",
+       "out": "M_Out",
+       "when": "DenseOutput_g"
+      },
+      "cycles": "cdiv(12, B) + cdiv(4, B) + cdiv(n - 4, B) + cdiv(16, B) + min(1, (n - 4) mod B)",
+      "evidence": "user guide section 7.2 and TC-FR-08 (framer and core with the dense output, C(n) exactly at 16, 32, 64 and 128 bit, hdl/ocr_framer/docs/verification_report.md)"
      }
     ]
    },

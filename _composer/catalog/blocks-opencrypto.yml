@@ -240,6 +240,13 @@ blocks:
         M_Out: { cycles: "cdiv(4, B) + cdiv(n - 4, B)" }                    # AAD (position) and the chunk
       routes:
         - { from: S_In, to: M_Out, chunk: ChunkBytes_g, addBytes: "4" }
+      # the framer in front of the core with the dense output: every chunk takes exactly C cycles, for a message of n
+      # bytes at the output of the framer (the chunk and its 4 bytes of AAD)
+      chains:
+        - from: M_Out
+          to: { block: opencrypto/ocr_core, in: S_In, out: M_Out, when: DenseOutput_g }
+          cycles: "cdiv(12, B) + cdiv(4, B) + cdiv(n - 4, B) + cdiv(16, B) + min(1, (n - 4) mod B)"
+          evidence: "user guide section 7.2 and TC-FR-08 (framer and core with the dense output, C(n) exactly at 16, 32, 64 and 128 bit, hdl/ocr_framer/docs/verification_report.md)"
     sizes:
       evidence: "user guide section 4.6: every packet is cut into chunks of ChunkBytes_g bytes"
       interfaces:

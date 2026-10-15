@@ -43,28 +43,13 @@ test('rates and numbers are shown with three significant digits and an SI prefix
   assert.equal(formatNumber(112.345), '112');
 });
 
-// The chain formula of the framer and the core with the dense output (OpenCrypto, user guide 7.2 and TC-FR-08): it
-// enters the catalog once TC-FR-08 is published on the main branch of OpenCrypto; until then the catalog uses the
-// per-interface model with the published bounds, and this test checks the chain element with the prepared entry.
-const CHAIN = {
-  from: 'M_Out',
-  to: { block: 'opencrypto/ocr_core', in: 'S_In', out: 'M_Out', when: 'DenseOutput_g' },
-  cycles: 'cdiv(12, B) + cdiv(4, B) + cdiv(n - 4, B) + cdiv(16, B) + min(1, (n - 4) mod B)',
-  evidence: 'TC-FR-08',
-};
-const chainCat = (() => {
-  const json = loadCatalogJson();
-  json.blocks.find((/** @type {any} */ b) => b.id === 'opencrypto/ocr_framer').rates.chains = [CHAIN];
-  return new Catalog(json);
-})();
-
 /**
- * Framer and core with the dense output: the cycles of the chain element for chunks of the given lengths.
+ * Framer and core with the dense output (the chain formula of OpenCrypto, user guide 7.2 and TC-FR-08): the cycles of
+ * the chain element for chunks of the given lengths.
  * @param {number} width
  * @param {number} chunk
  */
 function framerChain(width, chunk) {
-  const cat = chainCat;
   let d = createDesign('chain');
   d = addInstance(d, cat, 'opencrypto/ocr_framer', { x: 0, y: 0 }).design;
   d = addInstance(d, cat, 'opencrypto/ocr_core', { x: 0, y: 0 }).design;
@@ -84,33 +69,35 @@ function framerChain(width, chunk) {
   return (/** @type {number} */ n) => /** @type {number} */ (p.at(n)?.elements[k].cycles);
 }
 
-test('the chain formula of the framer and the core reproduces TC-FR-08 at 32, 64 and 128 bit', () => {
+test('the chain formula of the framer and the core reproduces TC-FR-08 at 16, 32, 64 and 128 bit', () => {
   // OpenCrypto, hdl/ocr_framer/docs/verification_report.md: four packets in 20 chunks (18 of C bytes, one of 5 and
   // one of 1 byte); the cycles of the 19 chunks after the first
-  for (const [width, chunk, sum] of [[32, 64, 429], [64, 1024, 2275], [128, 256, 333], [128, 4096, 4413]]) {
+  for (const [width, chunk, sum] of [[16, 32, 582], [32, 64, 429], [64, 1024, 2275], [128, 256, 333], [128, 4096, 4413]]) {
     const c = framerChain(width, chunk);
     assert.equal(17 * c(chunk) + c(5) + c(1), sum, `${width} bit, chunks of ${chunk} bytes`);
   }
   // user guide 7.2: C(4096)
-  for (const [width, cycles] of [[32, 1032], [64, 517], [128, 259]]) assert.equal(framerChain(width, 4096)(4096), cycles, `${width} bit`);
+  for (const [width, cycles] of [[16, 2064], [32, 1032], [64, 517], [128, 259]]) assert.equal(framerChain(width, 4096)(4096), cycles, `${width} bit`);
   // a packet longer than a chunk crosses the core as several chunks
   const c = framerChain(32, 1024);
   assert.equal(c(2048 + 100), 2 * c(1024) + c(100));
 });
 
-test('without the chain formula the framer and the core use the published bounds (one cycle more per chunk)', () => {
+test('the chain formula applies to the framer and the core with the dense output, the bounds per interface without it', () => {
   let d = example('encrypted_spp_over_spw');
   const p = analyse(d).paths.find((x) => x.source.label.startsWith('pkt_'));
   const pt = p?.at(1024);
   assert.ok(p && pt);
-  assert.ok(!p.elements.some((el) => el.model === 'chain'));
-  const k = p.elements.findIndex((el) => el.label === 'ocr0.M_Out');
-  // TC-CO-10: the dense output takes at most one cycle more per message than its beats, ceil(1056 / 4) + 1
-  assert.equal(pt.elements[k].cycles, 265);
+  const c = p.elements.findIndex((el) => el.model === 'chain');
+  assert.ok(c >= 0, 'the chain element replaces the output of the framer and the core');
+  // C(1024) at 32 bit: 3 + 1 + 256 + 4 cycles (TC-FR-08), one cycle less than the bound of the dense output alone
+  assert.equal(pt.elements[c].cycles, 264);
   d = setGeneric(d, cat, 'ocr0', 'DenseOutput_g', false).design;
-  const q = analyse(d).paths.find((x) => x.source.label.startsWith('pkt_'))?.at(1024);
+  const q = analyse(d).paths.find((x) => x.source.label.startsWith('pkt_'));
+  assert.ok(q && !q.elements.some((el) => el.model === 'chain'));
+  const k = q.elements.findIndex((el) => el.label === 'ocr0.M_Out');
   // sectioned: IV, data and tag each start a beat: 3 + 257 + 4
-  assert.equal(q?.elements[k].cycles, 264);
+  assert.equal(q.at(1024)?.elements[k].cycles, 264);
 });
 
 test('the link capacities of OpenWire and OpenFibre match their measurements', () => {
