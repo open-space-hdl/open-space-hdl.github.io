@@ -64,6 +64,8 @@ import { withSubsystems } from './subsystems.js';
  * @property {Connection[]} connections
  * @property {External[]} externals
  * @property {{ instances: Record<string, {x: number, y: number}>, domains: Record<string, {x: number, y: number, w: number, h: number}>, viewport: {x: number, y: number, zoom: number} }} layout
+ * @property {string} [eccMonitor]   the instance of an ECC monitor that reports the ECC events of the crossings the
+ *           Composer inserts (system.eccMonitor)
  * @property {Record<string, Design>} [subsystems]   definitions of the subsystems used, also inside them, by name
  * @property {import('./migration.js').MigrationNote[]} [migrations]   the changes of the catalog since the pins of the
  *           file the design was opened from, until it is saved (not part of the file)
@@ -260,8 +262,10 @@ export function removeInstances(d, ids) {
   const fallback = domains[0]?.id;
   const domainBoxes = { ...(d.layout.domains ?? {}) };
   for (const id of goneDomains) delete domainBoxes[id];
+  const { eccMonitor, ...rest } = d;
   return {
-    ...d,
+    ...rest,
+    ...(eccMonitor && !gone.has(eccMonitor) ? { eccMonitor } : {}),
     clockDomains: domains,
     instances: d.instances
       .filter((i) => !gone.has(i.id))
@@ -605,6 +609,7 @@ export function renameInstance(d, oldId, newId) {
   for (const [k, v] of Object.entries(d.layout.instances)) layout[k === oldId ? newId : k] = v;
   return {
     ...d,
+    ...(d.eccMonitor === oldId ? { eccMonitor: newId } : {}),
     instances: d.instances.map((i) => (i.id === oldId ? { ...i, id: newId } : i)),
     connections: d.connections.map((c) => ({ ...c, from: re(c.from), to: re(c.to) })),
     externals: d.externals.map((e) => ({ ...e, interface: re(e.interface) })),
@@ -772,14 +777,19 @@ export function setSideband(d, connId, field, value) {
 
 /**
  * @param {Design} d
- * @param {{ name?: string, description?: string, faultTolerance?: boolean }} props
+ * @param {{ name?: string, description?: string, faultTolerance?: boolean, eccMonitor?: string }} props   eccMonitor: an
+ *        instance, or empty to remove the mark
  */
 export function setSystem(d, props) {
   if (props.name !== undefined) {
     const problem = identifierProblem(props.name);
     if (problem) throw new DesignError(`System name: ${problem}`);
   }
-  return { ...d, ...props };
+  if (props.eccMonitor && !getInstance(d, props.eccMonitor)) throw new DesignError(`Unknown instance "${props.eccMonitor}".`);
+  const next = { ...d, ...props };
+  // no monitor: the key is gone (the file has none)
+  if ('eccMonitor' in props && !props.eccMonitor) delete next.eccMonitor;
+  return next;
 }
 
 /**

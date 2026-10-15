@@ -59,6 +59,10 @@
         "faultTolerance": {
           "type": "boolean",
           "description": "Adapters the Composer inserts use the fault-tolerant Open Logic entities and triplicated synchronisers."
+        },
+        "eccMonitor": {
+          "$ref": "#/$defs/identifier",
+          "description": "Since 0.8.0-beta: the instance of an ECC monitor (a block with ECC event inputs) that reports the ECC events of the crossings the Composer inserts: each takes a free channel, in the order of its connection."
         }
       }
     },
@@ -169,6 +173,10 @@
               "faultTolerance": {
                 "type": "boolean",
                 "description": "Adapters the Composer inserts use the fault-tolerant Open Logic entities and triplicated synchronisers."
+              },
+              "eccMonitor": {
+                "$ref": "#/$defs/identifier",
+                "description": "Since 0.8.0-beta: the instance of an ECC monitor (a block with ECC event inputs) that reports the ECC events of the crossings the Composer inserts: each takes a free channel, in the order of its connection."
               }
             }
           },

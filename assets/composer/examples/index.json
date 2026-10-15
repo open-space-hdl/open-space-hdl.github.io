@@ -16,7 +16,7 @@
       "file": "spp_over_spw_two_clocks.composer.json",
       "name": "spp_over_spw_two_clocks",
       "title": "Space Packets over SpaceWire, two clocks",
-      "description": "Space Packets over SpaceWire with two clock domains: the SpaceWire side runs on a 50 MHz port clock, the Space Packet node on the 100 MHz system clock. The Composer inserts asynchronous FIFOs for the packet links."
+      "description": "Space Packets over SpaceWire with two clock domains: the SpaceWire side runs on a 50 MHz port clock, the Space Packet node on the 100 MHz system clock. The Composer inserts asynchronous FIFOs for the packet links. An ECC monitor, marked as the system ECC monitor, reports the corrected and detected errors of these FIFOs."
     },
     {
       "file": "encrypted_spp_over_spw.composer.json",
