@@ -372,7 +372,11 @@ ECC events of memories (SECDED ECC of the Open Logic ft entities) and where they
 | `auto_cdc_c5.Ecc` | FIFO memory of `auto_cdc_c5` (inserted crossing) | not reported |
 | `auto_cdc_c6.Ecc` | FIFO memory of `auto_cdc_c6` (inserted crossing) | not reported |
 
-Clock domain crossings inserted by the Composer (`auto_cdc_c5`, `auto_cdc_c6`): `olo_ft_fifo_async` with SECDED ECC and triplicated synchronisers (`SyncTmr_g` = true); the reset generators of the clock domains synchronise with triplicated chains as well.
+Clock domain crossings inserted by the Composer:
+
+- `auto_cdc_c5`, `auto_cdc_c6`: `olo_ft_fifo_async` with SECDED ECC and triplicated synchronisers.
+
+The reset generators of the clock domains synchronise with triplicated chains as well.
 
 Not reported: the ECC events of these memories are open, so their corrected and detected errors reach no monitor:
 

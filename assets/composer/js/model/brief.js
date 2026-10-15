@@ -10,7 +10,7 @@ import { formatHz } from './rules.js';
 import { subsystemsOf, withSubsystems } from './subsystems.js';
 import { addressMapSections, hex } from './addressmap.js';
 import { bytesText } from './sizes.js';
-import { readinessStatement } from './systemviews.js';
+import { crossingGroups, readinessStatement } from './systemviews.js';
 import { analyseThroughput, elementText, formatRate } from './throughput.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
@@ -218,9 +218,11 @@ function protectionSection(p) {
     ])), '');
   }
   if (p.crossings.length) {
-    L.push(p.faultTolerance
-      ? `Clock domain crossings inserted by the Composer (${p.crossings.map((c) => `\`${c.instance}\``).join(', ')}): \`olo_ft_fifo_async\` with SECDED ECC and triplicated synchronisers (\`SyncTmr_g\` = true); the reset generators of the clock domains synchronise with triplicated chains as well.`
-      : `Clock domain crossings inserted by the Composer (${p.crossings.map((c) => `\`${c.instance}\``).join(', ')}): \`olo_base_fifo_async\` without ECC and with single synchronisers, because fault tolerance is off for this system; the reset generators of the clock domains use single synchronisers as well.`, '');
+    L.push('Clock domain crossings inserted by the Composer:', '');
+    for (const g of crossingGroups(p.crossings)) L.push(`- ${g.instances.map((i) => `\`${i}\``).join(', ')}: \`${g.entity}\` ${g.text}.`);
+    L.push('', p.faultTolerance
+      ? 'The reset generators of the clock domains synchronise with triplicated chains as well.'
+      : 'Fault tolerance is off for this system: the crossings have no ECC and single synchronisers, and so have the reset generators of the clock domains.', '');
   }
   const gaps = p.events.filter((e) => e.to.kind === 'open');
   if (gaps.length) {

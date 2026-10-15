@@ -271,8 +271,10 @@ permalink: /composer/format/
       <li>every ECC event output of a memory (an Open Logic ft FIFO, the buffers of a framer) and where it is reported:
         a channel of an ECC monitor (<code>olo_ft_ecc_monitor_axi</code>), another block, a top-level port, or not at
         all;</li>
-      <li>the clock domain crossings the Composer inserts: with fault tolerance on, <code>olo_ft_fifo_async</code> with
-        SECDED ECC and triplicated synchronisers; with it off, <code>olo_base_fifo_async</code> without ECC;</li>
+      <li>the clock domain crossings the Composer inserts: FIFOs for streams (with fault tolerance on
+        <code>olo_ft_fifo_async</code> with SECDED ECC, with it off <code>olo_base_fifo_async</code> without ECC) and
+        pulse or bit crossings for events and levels, which have no memory; their synchronisers are triplicated with
+        fault tolerance on;</li>
       <li>what the integrator does: enable the TMR of the synthesis tool, check the synthesis report, request safe
         state machines, and protect the configuration memory of SRAM-based FPGAs by scrubbing.</li>
     </ul>

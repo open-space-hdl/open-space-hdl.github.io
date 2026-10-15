@@ -50,7 +50,7 @@ test('the inserted crossings of a system with two clocks and their ECC events th
   await open(page);
   await openExample(page, 'Space Packets over SpaceWire, two clocks');
   const section = page.locator('.cmp-inspector section', { has: page.locator('#cmp-h-prot') });
-  await expect(section).toContainText('Inserted crossings (2): olo_ft_fifo_async with SECDED ECC and triplicated synchronisers.');
+  await expect(page.locator('[data-view="crossings"]')).toHaveText('Inserted crossings (2): olo_ft_fifo_async (2) with SECDED ECC and triplicated synchronisers.');
   await expect(page.locator('[data-view="ecc-events"] li')).toHaveText([
     'auto_cdc_c5.Ecc FIFO memory: not reported',
     'auto_cdc_c6.Ecc FIFO memory: not reported',

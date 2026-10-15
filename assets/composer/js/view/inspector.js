@@ -11,7 +11,7 @@
  */
 
 import { hex, sizeText } from '../model/addressmap.js';
-import { readinessStatement } from '../model/systemviews.js';
+import { crossingGroups, readinessStatement } from '../model/systemviews.js';
 import { candidates, checkConnection, effectiveType, resolveEndpoint } from '../model/compat.js';
 import { connectionsAt, getInstance, PREFIX_RE, trafficFields, trafficFromFields } from '../model/design.js';
 import { formatReal, formatValue, isEditable, isEnabled, parseInput } from '../model/generics.js';
@@ -258,9 +258,7 @@ export class InspectorView {
                 h('span', { class: `cmp-facts${e.to.kind === 'open' ? ' cmp-warn' : ''}` }, ` ${e.memory}: ${eccTarget(e.to)}`))))]
             : null,
           p.crossings.length
-            ? h('p', { class: 'cmp-help' }, p.faultTolerance
-              ? `Inserted crossings (${p.crossings.length}): olo_ft_fifo_async with SECDED ECC and triplicated synchronisers.`
-              : `Inserted crossings (${p.crossings.length}): olo_base_fifo_async without ECC, because fault tolerance is off.`)
+            ? h('p', { class: 'cmp-help', 'data-view': 'crossings' }, `Inserted crossings (${p.crossings.length}): ${crossingGroups(p.crossings).map((g) => `${g.entity} (${g.instances.length}) ${g.text}`).join('; ')}.`)
             : null,
           gaps.length ? h('p', { class: 'cmp-help cmp-warn' }, `Not reported: the ECC events of ${gaps.length} ${gaps.length === 1 ? 'memory are' : 'memories are'} open.`) : null,
         ]);
