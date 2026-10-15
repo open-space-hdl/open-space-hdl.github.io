@@ -283,6 +283,16 @@ permalink: /composer/format/
       crossing are open as the Composer writes it; that is a remark, and the brief lists it under "not reported".
     </p>
 
+    <h2 id="readiness">Readiness</h2>
+    <p>
+      <code>resolved.readiness</code> lists the parts of the system: every source repository of its blocks, with the
+      technology readiness level (TRL) its project states on the <a href="/trl/">TRL page</a> and the instances of
+      its blocks. The brief opens with one line on it and lists the parts in its last section. The composed system has
+      no TRL of its own: it is checked by elaboration and a run to 0 ns, which is no evidence of a readiness level.
+      The line says "Parts at TRL 3 or higher (lowest: 3)" with the lowest level of the parts, not a level of the
+      system.
+    </p>
+
     <h2 id="resolved">The resolved netlist</h2>
     <p>
       <code>resolved</code> describes the top level completely. It contains the placed blocks and the blocks the
@@ -327,6 +337,7 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
           <tr><td data-label="Entry"><code>problems</code></td><td data-label="Meaning">Inconsistencies found while building the netlist; empty for a correct catalog.</td></tr>
           <tr><td data-label="Entry"><code>addressMap</code></td><td data-label="Meaning">Since 0.5.0-beta: the <a href="#address-map">address spaces</a> of the system with their register banks, written when the system has one.</td></tr>
           <tr><td data-label="Entry"><code>interrupts</code></td><td data-label="Meaning">Since 0.6.0-beta: every <a href="#interrupts">interrupt output</a> with its clock domain, where it goes and its registers, written when the system has one.</td></tr>
+          <tr><td data-label="Entry"><code>readiness</code></td><td data-label="Meaning">Since 0.7.0-beta: the <a href="#readiness">readiness</a> of the parts of the system.</td></tr>
           <tr><td data-label="Entry"><code>protection</code></td><td data-label="Meaning">Since 0.6.0-beta: the <a href="#protection">protection scope</a> of the system: the ECC of the blocks, where every ECC event goes, the inserted crossings.</td></tr>
           <tr><td data-label="Entry"><code>subsystems</code></td><td data-label="Meaning">Version 2: the netlist of every subsystem definition, leaves first, flat, each in the form described here. An instance of a subsystem has the library <code>work</code> and the entity named after it. <code>compile</code> also lists the libraries used inside the subsystems; <code>context</code> holds the libraries of the instances of the top level only.</td></tr>
         </tbody>
@@ -356,7 +367,7 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
       order, the ports of the top level with their clock domains and the field maps of the external interfaces, how
       to write the architecture from <code>resolved</code>, the clock domains and resets, the constraints, the
       throughput of every path, the packet sizes and buffers, the address map, the interrupts, the protection
-      scope, the notes of the user guides of the blocks, the initialisation by software (identification registers and the register writes
+      scope, the readiness of the parts, the notes of the user guides of the blocks, the initialisation by software (identification registers and the register writes
       that start the blocks), the open checks, a smoke test bench to verify the result with GHDL and an optional
       end-to-end test.
     </p>

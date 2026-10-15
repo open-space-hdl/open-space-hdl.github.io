@@ -1291,6 +1291,57 @@
               }
             }
           }
+        },
+        "readiness": {
+          "type": "object",
+          "description": "Readiness of the parts of the system (since 0.7.0-beta): every source repository of its blocks with the technology readiness level its project states (trl, status: the sentence of the TRL page) and the instances of its blocks; lowest is the lowest TRL. The composed system has no TRL of its own.",
+          "required": [
+            "parts",
+            "lowest"
+          ],
+          "properties": {
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "source",
+                  "name",
+                  "trl",
+                  "status",
+                  "instances"
+                ],
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "trl": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "instances": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "lowest": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
         }
       }
     },
@@ -2690,6 +2741,57 @@
                   }
                 }
               }
+            }
+          }
+        },
+        "readiness": {
+          "type": "object",
+          "description": "Readiness of the parts of the system (since 0.7.0-beta): every source repository of its blocks with the technology readiness level its project states (trl, status: the sentence of the TRL page) and the instances of its blocks; lowest is the lowest TRL. The composed system has no TRL of its own.",
+          "required": [
+            "parts",
+            "lowest"
+          ],
+          "properties": {
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "source",
+                  "name",
+                  "trl",
+                  "status",
+                  "instances"
+                ],
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "trl": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "instances": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "lowest": {
+              "type": [
+                "integer",
+                "null"
+              ]
             }
           }
         }

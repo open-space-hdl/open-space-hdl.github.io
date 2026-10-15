@@ -1,5 +1,5 @@
 {
-  "catalog": "ed8d65f4c507",
+  "catalog": "2f7536b0b190",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -5596,5 +5596,48 @@
     ],
     "events": [],
     "crossings": []
+  },
+  "readiness": {
+    "parts": [
+      {
+        "source": "openrmap",
+        "name": "OpenRMAP",
+        "trl": 3,
+        "status": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+        "instances": [
+          "rmap0"
+        ]
+      },
+      {
+        "source": "openspp",
+        "name": "OpenSPP",
+        "trl": 3,
+        "status": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+        "instances": [
+          "nchar0",
+          "spp0"
+        ]
+      },
+      {
+        "source": "openfibre",
+        "name": "OpenFibre",
+        "trl": 3,
+        "status": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+        "instances": [
+          "ofb0",
+          "pa0"
+        ]
+      },
+      {
+        "source": "olo",
+        "name": "Open Logic FT",
+        "trl": 3,
+        "status": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+        "instances": [
+          "auto_rst_sys"
+        ]
+      }
+    ],
+    "lowest": 3
   }
 }

@@ -10,6 +10,7 @@ import { formatHz } from './rules.js';
 import { subsystemsOf, withSubsystems } from './subsystems.js';
 import { addressMapSections, hex } from './addressmap.js';
 import { bytesText } from './sizes.js';
+import { readinessStatement } from './systemviews.js';
 import { analyseThroughput, elementText, formatRate } from './throughput.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
@@ -322,6 +323,9 @@ export function agentBrief(cat, d, res, resolved, checks) {
   if (errors.length > 0) {
     L.push(`**The system has ${errors.length} open error${errors.length > 1 ? 's' : ''} (section 13). Fix ${errors.length > 1 ? 'them' : 'it'} in the Composer before building.**`, '');
   }
+  if (res.readiness?.parts.length) {
+    L.push(`**Readiness:** ${readinessStatement(res.readiness)} The parts are listed in section 15.`, '');
+  }
 
   // 1. sources
   L.push('## 1. Sources and libraries', '');
@@ -578,5 +582,14 @@ export function agentBrief(cat, d, res, resolved, checks) {
   if (vendor.length > 0) {
     L.push(`Vendor-specific blocks need the simulation libraries of their vendor: ${vendor.map((x) => `\`${x.id}\` (${x.b?.entity}, ${x.b?.vendor})`).join(', ')}; see their notes in section 8.`, '');
   }
+
+  // 15. readiness of the parts
+  L.push('## 15. Readiness of the parts', '');
+  if (res.readiness?.parts.length) {
+    L.push(`The technology readiness level (TRL) of every part, as its project states it (https://openspacehdl.org/trl/). ${readinessStatement(res.readiness)}`, '');
+    L.push(table(['Part', 'Repository', 'TRL', 'Status', 'Instances'], res.readiness.parts.map((x) => [
+      x.name, cat.sourceById.get(x.source)?.url ?? x.source, String(x.trl), x.status, x.instances.map((i) => `\`${i}\``).join(', '),
+    ])), '');
+  } else L.push('The system has no blocks yet.', '');
   return `${L.join('\n').replace(/\n{3,}/g, '\n\n').trim()}\n`;
 }

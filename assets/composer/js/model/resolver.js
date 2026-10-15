@@ -18,7 +18,7 @@ import { typedEndpoint } from './compat.js';
 import { tryEvaluate } from './expr.js';
 import { runRules } from './rules.js';
 import { analyseAddressMap } from './addressmap.js';
-import { analyseInterrupts, analyseProtection } from './systemviews.js';
+import { analyseInterrupts, analyseProtection, analyseReadiness } from './systemviews.js';
 import { analyseThroughput } from './throughput.js';
 import { netlist } from './netlist.js';
 import {
@@ -94,6 +94,7 @@ import {
  * @property {import('./addressmap.js').AddressMap} [addressMap]   address map of the system (not of a definition)
  * @property {import('./systemviews.js').Interrupt[]} [interrupts]   interrupts of the system (not of a definition)
  * @property {import('./systemviews.js').Protection} [protection]   protection scope of the system (not of a definition)
+ * @property {import('./systemviews.js').Readiness} [readiness]   readiness of the parts of the system (not of a definition)
  */
 
 const HANDSHAKE = new Set(['valid', 'ready', 'rsp_valid', 'rsp_accept']);
@@ -229,6 +230,7 @@ export function resolve(cat, d) {
   res.interrupts = analyseInterrupts(cat, d, res);
   res.protection = analyseProtection(cat, d, res);
   res.checks.push(...res.protection.checks);
+  res.readiness = analyseReadiness(cat, d, res);
   return res;
 }
 

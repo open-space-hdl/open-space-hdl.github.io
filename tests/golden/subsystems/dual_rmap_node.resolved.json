@@ -1,5 +1,5 @@
 {
-  "catalog": "ed8d65f4c507",
+  "catalog": "2f7536b0b190",
   "entity": "dual_rmap_node",
   "ports": [
     {
@@ -4276,11 +4276,46 @@
     "events": [],
     "crossings": []
   },
+  "readiness": {
+    "parts": [
+      {
+        "source": "openwire",
+        "name": "OpenWire",
+        "trl": 3,
+        "status": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+        "instances": [
+          "rmap_node0/spw_port0/spw0",
+          "rmap_node1/spw_port0/spw0"
+        ]
+      },
+      {
+        "source": "openrmap",
+        "name": "OpenRMAP",
+        "trl": 3,
+        "status": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+        "instances": [
+          "rmap_node0/rmap0",
+          "rmap_node1/rmap0"
+        ]
+      },
+      {
+        "source": "olo",
+        "name": "Open Logic FT",
+        "trl": 3,
+        "status": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
+        "instances": [
+          "rmap_node0/auto_rst_sys",
+          "rmap_node1/auto_rst_sys"
+        ]
+      }
+    ],
+    "lowest": 3
+  },
   "subsystems": [
     {
       "name": "spw_port",
       "netlist": {
-        "catalog": "ed8d65f4c507",
+        "catalog": "2f7536b0b190",
         "entity": "spw_port",
         "ports": [
           {
@@ -5474,7 +5509,7 @@
     {
       "name": "rmap_node",
       "netlist": {
-        "catalog": "ed8d65f4c507",
+        "catalog": "2f7536b0b190",
         "entity": "rmap_node",
         "ports": [
           {

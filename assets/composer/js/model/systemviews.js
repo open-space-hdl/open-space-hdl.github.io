@@ -1,12 +1,14 @@
 // @ts-check
 /**
- * System views (pure, no DOM): the interrupts of a system and its protection scope.
+ * System views (pure, no DOM): the interrupts of a system, its protection scope and the readiness of its parts.
  *
  *   interrupts   every interrupt output (type irq) with its clock domain, where it goes (a top-level port, the event
  *                input of a block, or open) and its registers (enable, status, events) in the register map of its block
  *   protection   the blocks that protect their memories with ECC themselves (channels, status and injection
  *                registers), where every ECC event output goes (a channel of an ECC monitor, another block, a top-level
  *                port, or open: not reported), and the clock crossings the Composer inserts
+ *   readiness    the technology readiness level of every part (the source repositories of its blocks, from the
+ *                projects of the website); the composed system has no TRL of its own
  *
  * Event outputs are followed through the interfaces of subsystems; the instances inside are named with their path. An
  * open ECC event output of a block the user placed is a warning (its errors are not reported), an info where the block
@@ -289,4 +291,69 @@ export function analyseProtection(cat, d, res) {
     }
   }
   return { faultTolerance: d.faultTolerance !== false, blocks, events, crossings, checks };
+}
+
+/**
+ * @typedef {object} ReadinessPart   a source repository of blocks of the system
+ * @property {string} source       source id of the catalog
+ * @property {string} name
+ * @property {number} trl
+ * @property {string} status       one sentence of the TRL page
+ * @property {string[]} instances  the instances of its blocks, with the path of subsystems (inserted ones included)
+ */
+
+/**
+ * @typedef {object} Readiness
+ * @property {ReadinessPart[]} parts   in the order of the catalog sources
+ * @property {number | null} lowest    the lowest TRL of the parts
+ */
+
+/**
+ * The readiness of the parts of a system.
+ * @param {Catalog} cat
+ * @param {Design} d
+ * @param {Resolved} res
+ * @returns {Readiness}
+ */
+export function analyseReadiness(cat, d, res) {
+  /** @type {Map<string, string[]>} */
+  const used = new Map();
+  /** @param {Resolved} rr @param {string} prefix */
+  const walk = (rr, prefix) => {
+    for (const rec of rr.instances) {
+      const b = cat.blocks.get(rec.block);
+      if (!b) continue;
+      const info = b.kind === 'subsystem' ? /** @type {any} */ (cat).subsystemInfo?.get(b.entity) : null;
+      if (info) {
+        walk(info.res, `${prefix}${rec.id}/`);
+        continue;
+      }
+      used.set(b.source, [...(used.get(b.source) ?? []), `${prefix}${rec.id}`]);
+    }
+  };
+  walk(res, '');
+  /** @type {ReadinessPart[]} */
+  const parts = [];
+  for (const s of cat.sources) {
+    const instances = used.get(s.id);
+    if (!instances || typeof s.trl !== 'number') continue;
+    parts.push({ source: s.id, name: s.name, trl: s.trl, status: String(s.trlStatus ?? ''), instances });
+  }
+  return { parts, lowest: parts.length ? Math.min(...parts.map((p) => p.trl)) : null };
+}
+
+/**
+ * The statement on the readiness of a system. The composed system has no TRL of its own; where a system has its own
+ * published verification evidence (a reference system with its test bench or a hardware test), that evidence takes the
+ * place of the second sentence. No system carries such evidence yet.
+ * @param {Readiness} r
+ * @param {string} [evidence]   the published verification evidence of the system
+ * @returns {string}
+ */
+export function readinessStatement(r, evidence) {
+  if (r.lowest === null) return 'The system has no blocks yet.';
+  const parts = `Parts at TRL ${r.lowest} or higher (lowest: ${r.lowest}).`;
+  return evidence
+    ? `${parts} The composed system is verified by ${evidence}.`
+    : `${parts} The composed system has no TRL of its own: it is checked by elaboration and a run to 0 ns.`;
 }
