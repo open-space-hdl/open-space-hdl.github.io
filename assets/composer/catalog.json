@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "a044cb5d9675",
+ "id": "dbee0d786ebd",
  "sources": [
   {
    "id": "openwire",
@@ -44,11 +44,11 @@
    "repo": "openrmap",
    "url": "https://github.com/open-space-hdl/openrmap",
    "doc": "https://openspacehdl.org/openrmap/",
-   "commit": "afb40c72afd5a7cc64e733c9ffcdfe78630d1125",
+   "commit": "55033637795a009132286f60da90a6a876a9c087",
    "library": "openrmap",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.4",
+   "verifiedWith": "4.7.0-ft.5",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
    "files": [
     "hdl/omap_pkg/src/omap_regs_pkg.vhd",
@@ -193,11 +193,11 @@
    "repo": "open-logic-ft",
    "url": "https://github.com/open-space-hdl/open-logic-ft",
    "doc": "https://openspacehdl.org/open-logic-ft/",
-   "tag": "4.7.0-ft.4",
+   "tag": "4.7.0-ft.5",
    "library": "olo",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.4 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3) and fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4); it changes no other source, so the cores verified with 4.7.0-ft.2 or 4.7.0-ft.3 use it unchanged.",
+   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.5 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), and fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5); it changes no other source, so the cores verified with 4.7.0-ft.2, 4.7.0-ft.3 or 4.7.0-ft.4 use it unchanged. Of the cores only OpenRMAP uses olo_axi_master_simple.",
    "files": [
     "src/base/vhdl/olo_base_pkg_crc.vhd",
     "src/base/vhdl/olo_base_pkg_attribute.vhd",
@@ -326,7 +326,7 @@
     "3rdParty/en_cl_fix/hdl/en_cl_fix_resize.vhd"
    ],
    "submodules": true,
-   "commit": "441bcd5d6f881eeeff359ba8bb5f51cce1f12824"
+   "commit": "1bc4fb90888cf24ac29bc54527c2982d2dec307c"
   }
  ],
  "categories": [
@@ -9274,13 +9274,6 @@
       "M_Pkt"
      ],
      "message": "The RMAP node normally runs on the user clock of its SpaceWire port; an asynchronous FIFO was inserted instead."
-    },
-    {
-     "kind": "known_defect",
-     "generic": "AxiMaxBeats_g",
-     "below": "AxiDataWidth_g / 8",
-     "when": "Target_g",
-     "message": "Known defect of Open Logic olo_axi_master_simple up to 4.7.0-ft.4: with AxiMaxBeats_g < AxiDataWidth_g/8, commands that the memory master splits into several AXI transactions read or write the first word repeatedly, with status 0. Fix pending in open-logic-ft."
     }
    ],
    "idRegister": {
