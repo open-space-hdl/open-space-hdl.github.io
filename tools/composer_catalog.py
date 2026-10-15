@@ -1696,6 +1696,15 @@ def build_catalog(ctx: Context) -> dict:
         t.pop("_", None)
     for s in sources.values():
         source_files(ctx, s)
+    # the technology readiness level of every source, from the projects of the website (the only place it is decided)
+    projects = {pr.get("repo"): pr for pr in load_yaml(ROOT / "_data" / "projects.yml") or []}
+    for s in sources.values():
+        pr = projects.get(s["repo"])
+        if pr is None or not isinstance(pr.get("trl"), int) or not isinstance(pr.get("trl_status"), str):
+            ctx.err(f"source {s['id']}", f"_data/projects.yml has no trl and trl_status for the repository {s['repo']}")
+            continue
+        s["trl"] = pr["trl"]
+        s["trl_status"] = pr["trl_status"]
     catalog = {
         "format": CATALOG_FORMAT,
         "formatVersion": CATALOG_VERSION,

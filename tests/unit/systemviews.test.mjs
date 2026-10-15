@@ -1,13 +1,15 @@
-// The interrupts and the protection scope of a system (model/systemviews.js): where every interrupt and every ECC
-// event output goes, the registers from the register maps of the cores, the ECC of the blocks, the inserted crossings,
-// the checks of rule protection and the sections of the brief.
+// The interrupts, the protection scope and the readiness of a system (model/systemviews.js): where every interrupt and
+// every ECC event output goes, the registers from the register maps of the cores, the ECC of the blocks, the inserted
+// crossings, the checks of rule protection, the TRL of the parts and the sections of the brief.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { Catalog } from '../../assets/composer/js/model/catalog.js';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
 import { addConnection, addInstance, createDesign, setExternal, setGeneric, setSystem, sidebandDefaults } from '../../assets/composer/js/model/design.js';
+import { netlist } from '../../assets/composer/js/model/netlist.js';
 import { resolve } from '../../assets/composer/js/model/resolver.js';
+import { readinessStatement } from '../../assets/composer/js/model/systemviews.js';
 import { fromText, toDocument } from '../../assets/composer/js/model/serialize.js';
 import { loadCatalog, loadCatalogJson, ROOT } from './helpers.mjs';
 
@@ -124,4 +126,33 @@ test('the inserted crossings: an info for their open ECC events, listed as not r
   brief = /** @type {any} */ (toDocument(d, cat)).agent.brief;
   section = brief.slice(brief.indexOf('## 11. Protection scope'), brief.indexOf('## 12.'));
   assert.match(section, /`olo_base_fifo_async` without ECC and with single synchronisers, because fault tolerance is off for this system/);
+});
+
+test('the readiness of the user\'s system: the TRL of every part, and no TRL of the composed system', () => {
+  const d = open(USER);
+  const r = /** @type {import('../../assets/composer/js/model/systemviews.js').Readiness} */ (resolve(cat, d).readiness);
+  // the parts in the order of the catalog sources, each with the TRL of its project (_data/projects.yml)
+  assert.deepEqual(r.parts.map((x) => [x.source, x.trl]), [['openrmap', 3], ['openspp', 3], ['openfibre', 3], ['opencrypto', 3], ['olo', 3]]);
+  assert.deepEqual([...(r.parts.find((x) => x.source === 'opencrypto')?.instances ?? [])].sort(), ['frm0', 'frm1', 'frm2', 'frm3', 'ocr0', 'ocr1', 'ocr2', 'ocr3']);
+  // Open Logic: the decoder, the ECC monitor and the inserted reset generator
+  assert.ok(['dec0', 'edac0'].every((x) => r.parts.find((p) => p.source === 'olo')?.instances.includes(x)));
+  assert.equal(r.lowest, 3);
+  assert.equal(readinessStatement(r), 'Parts at TRL 3 or higher (lowest: 3). The composed system has no TRL of its own: it is checked by elaboration and a run to 0 ns.');
+  const brief = /** @type {any} */ (toDocument(d, cat)).agent.brief;
+  assert.match(brief, /\n\*\*Readiness:\*\* Parts at TRL 3 or higher \(lowest: 3\)\. The composed system has no TRL of its own: it is checked by elaboration and a run to 0 ns\. The parts are listed in section 15\.\n/);
+  assert.match(brief, /## 15\. Readiness of the parts\n[\s\S]*\| OpenCrypto \| https:\/\/github\.com\/open-space-hdl\/opencrypto \| 3 \| Fully verified by simulation\. Not yet tested on hardware, no flight heritage\. \| `ocr0`, /);
+});
+
+test('the readiness statement names published evidence of a system in place of the second sentence', () => {
+  // the hook for a system with its own verification evidence (no system carries such evidence yet)
+  const r = { parts: [{ source: 'openwire', name: 'OpenWire', trl: 4, status: 's', instances: ['spw0'] }, { source: 'olo', name: 'Open Logic FT', trl: 3, status: 's', instances: ['x'] }], lowest: 3 };
+  assert.equal(readinessStatement(r, 'its test bench in the reference systems'), 'Parts at TRL 3 or higher (lowest: 3). The composed system is verified by its test bench in the reference systems.');
+  assert.equal(readinessStatement({ parts: [], lowest: null }), 'The system has no blocks yet.');
+});
+
+test('a system without blocks has no readiness in its netlist', () => {
+  const d = createDesign('empty');
+  const r = /** @type {any} */ (netlist(cat, d, resolve(cat, d)));
+  assert.equal(r.readiness, undefined);
+  assert.match(/** @type {any} */ (toDocument(d, cat)).agent.brief, /## 15\. Readiness of the parts\n\nThe system has no blocks yet\./);
 });

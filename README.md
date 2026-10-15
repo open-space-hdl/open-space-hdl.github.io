@@ -95,6 +95,10 @@ target) says in `addressSpace` what its addresses are and which windows accept t
 map of a system from them (`/composer/format/#address-map`, rule `address_map`), and the export writes it with a C
 header.
 
+The catalog gives every source the technology readiness level of its project (`trl`, `trlStatus`), copied from
+`_data/projects.yml` when it is built; that file stays the only place where a TRL is decided. The Composer lists the
+parts of a system with their TRL (`/composer/format/#readiness`); the composed system has no TRL of its own.
+
 A core with registers also names the registers of its interrupt (`irqRegisters` on its `Irq` interface: events,
 enables, status) and, in `protection`, the ECC of its memories (status, select, count and injection registers, with
 the protection scope of its user guide as evidence). The catalog check finds them in the register map at the pin and

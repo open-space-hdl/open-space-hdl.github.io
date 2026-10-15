@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "ed8d65f4c507",
+ "id": "2f7536b0b190",
  "sources": [
   {
    "id": "openwire",
@@ -36,7 +36,9 @@
     "hdl/owr_data_link/src/owr_data_link_flow_control.vhd",
     "hdl/owr_data_link/src/owr_data_link.vhd",
     "hdl/owr_core/src/owr_core.vhd"
-   ]
+   ],
+   "trl": 3,
+   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage."
   },
   {
    "id": "openrmap",
@@ -67,7 +69,9 @@
     "hdl/omap_core/src/omap_core_mux.vhd",
     "hdl/omap_core/src/omap_core_demux.vhd",
     "hdl/omap_core/src/omap_core.vhd"
-   ]
+   ],
+   "trl": 3,
+   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage."
   },
   {
    "id": "openspp",
@@ -100,7 +104,9 @@
     "hdl/spp_mib/src/spp_mib.vhd",
     "hdl/spp_core/src/spp_core.vhd",
     "hdl/spp_nchar/src/spp_nchar.vhd"
-   ]
+   ],
+   "trl": 3,
+   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage."
   },
   {
    "id": "openfibre",
@@ -153,7 +159,9 @@
     "hdl/ofb_dl/src/ofb_dl.vhd",
     "hdl/ofb_core/src/ofb_core_cc.vhd",
     "hdl/ofb_core/src/ofb_core.vhd"
-   ]
+   ],
+   "trl": 3,
+   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage."
   },
   {
    "id": "opencrypto",
@@ -185,7 +193,9 @@
     "hdl/ocr_gcm/src/ocr_gcm_keystream.vhd",
     "hdl/ocr_gcm/src/ocr_gcm.vhd",
     "hdl/ocr_core/src/ocr_core.vhd"
-   ]
+   ],
+   "trl": 3,
+   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage."
   },
   {
    "id": "olo",
@@ -326,6 +336,8 @@
     "3rdParty/en_cl_fix/hdl/en_cl_fix_resize.vhd"
    ],
    "submodules": true,
+   "trl": 3,
+   "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
    "commit": "1bc4fb90888cf24ac29bc54527c2982d2dec307c"
   }
  ],

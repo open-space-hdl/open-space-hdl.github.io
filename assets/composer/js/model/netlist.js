@@ -85,6 +85,7 @@ export function signalName(inst, port) {
  * @property {import('./addressmap.js').Space[]} [addressMap]   address spaces with their register banks (top only)
  * @property {import('./systemviews.js').Interrupt[]} [interrupts]   interrupt outputs (top only)
  * @property {Omit<import('./systemviews.js').Protection, 'checks'>} [protection]   protection scope (top only)
+ * @property {import('./systemviews.js').Readiness} [readiness]   readiness of the parts (top only)
  * @property {{ name: string, netlist: ResolvedNetlist }[]} [subsystems]   definitions used, leaves first (top only)
  */
 
@@ -545,6 +546,7 @@ class Netlist {
       ...(res.interrupts?.length ? { interrupts: res.interrupts } : {}),
       ...(res.protection && (res.protection.blocks.length || res.protection.events.length || res.protection.crossings.length)
         ? { protection: (({ checks, ...rest }) => rest)(res.protection) } : {}),
+      ...(res.readiness?.parts.length ? { readiness: res.readiness } : {}),
       // the definitions, flat at the top level; a definition itself lists none
       ...(this.d.subsystems && defs.length ? { subsystems: defs.map((s) => ({ name: s.name, netlist: s.resolved })) } : {}),
     };
