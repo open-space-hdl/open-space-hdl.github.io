@@ -85,6 +85,13 @@ permalink: /composer/format/
         0.4.0-beta it may hold <code>maxPacketBytes</code>, the largest packet of the interface in bytes, at least
         <code>packetBytes</code>, for the <a href="#sizes">packet sizes</a> along the chain; without it the source is
         not bounded. A Composer older than 0.4.0-beta does not read a file that has it.</li>
+      <li><code>traffic</code> of an instance (since 0.9.0-beta): values about the data that the rate data of its block
+        names, stated by the user. So far <code>ratio</code>, the assumed compression ratio of a compressor (bytes of
+        the samples per byte of the compressed image): <code>{ "ratio": 2.5 }</code>. The
+        <a href="#throughput">throughput budget</a> and the <a href="#sizes">packet sizes</a> use it behind the
+        compressor instead of the worst case, and the brief marks every number that depends on it as
+        <code>assumed ratio 2.5</code>: it is an assumption about the data, not a property of the block. The key is
+        written only when it is set; a Composer older than 0.9.0-beta does not read a file that has it.</li>
       <li>Values of generics: booleans and numbers as JSON, <code>std_logic</code> as <code>"0"</code> or
         <code>"1"</code>, vectors as VHDL literals (<code>"x\"FE\""</code>), strings without quotes.</li>
     </ul>
@@ -174,6 +181,15 @@ permalink: /composer/format/
         and those for one direction otherwise.</li>
       <li>Where a route has several outputs whose choice the system makes at run time (receive ports by APID, virtual
         channels), the path to each output assumes that every packet of the source reaches it.</li>
+      <li>Where no expression can state the rate, the Composer computes it with a port of the published model of the
+        core, checked against that model for every configuration of its regression: the cycles of an image in the
+        predictor of OpenCompact (<code>tools/ocp_throughput.py</code>) and the length of its header. A compressor
+        cuts the samples into images and sends each as one compressed image, whose length depends on the data: the
+        compression ratio the user assumes for the instance (<code>traffic</code> of an instance), marked as
+        <code>assumed ratio</code> wherever a number depends on it, else the upper bound on the compressed image that
+        the core publishes (<code>max_image_bytes</code> of OpenCompact), so that the paths behind it carry at least
+        the computed rates. Where a model cannot give a value for a configuration, the paths through the block are not
+        computed, with the reason.</li>
     </ul>
     <p>
       The brief shows every path at reference lengths of 64 and 1024 bytes, at the largest packet where the catalog

@@ -1522,6 +1522,18 @@
               ]
             }
           }
+        },
+        "traffic": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Since 0.9.0-beta: values about the data that the rate data of the block cannot know, stated by the user and written only when set.",
+          "properties": {
+            "ratio": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Assumed compression ratio of a compressor (uncompressed bytes per compressed byte), used by the throughput budget and the packet sizes instead of the worst case; an assumption about the data, not a property of the block."
+            }
+          }
         }
       }
     },

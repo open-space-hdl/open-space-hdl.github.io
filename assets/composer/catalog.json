@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "d1ab84361e49",
+ "id": "0b808376887d",
  "sources": [
   {
    "id": "openwire",
@@ -7246,6 +7246,44 @@
      "text": "None: the core starts from the initial state of the standard with every image; all parameters are generics."
     }
    ],
+   "rates": {
+    "evidence": "tools/ocp_throughput.py: the cycle in which the predictor takes every sample of a configuration (checked cycle by cycle by the predictor testbench: TC-PR-01 to TC-PR-37, PR-TP-01 to PR-TP-03) and image_period, the cycles between the first samples of consecutive images (TC-CO-50); tools/ocp_model.py: the header (compared with the CNES reference software for every configuration of the regression) and max_image_bytes, the upper bound on the compressed image (TC-CO-51: every compressed image of the regression and of the CCSDS test data set); user guide section 8.1; the bit packer outputs OutWidth_g bits per cycle (TC-CO-39 to TC-CO-41, TC-CO-45)",
+    "model": "ocp",
+    "packet": "image",
+    "assumed": {
+     "name": "ratio",
+     "label": "Assumed compression ratio",
+     "description": "Bytes of the samples per byte of the compressed image, for the throughput budget and the packet sizes behind the core; empty: the upper bound on the compressed image that the core publishes. An assumption about the data, not a property of the core: the brief marks every number that depends on it."
+    },
+    "vars": {
+     "S": "XSize_g * YSize_g * ZSize_g"
+    },
+    "interfaces": {
+     "In": {
+      "cycles": "n * 8.0 * ocp_cycles_per_image / (DynamicRange_g * S)",
+      "reference": "cdiv(S * DynamicRange_g, 8)"
+     },
+     "Out": {
+      "bytesPerBeat": "OutWidth_g / 8"
+     }
+    },
+    "routes": [
+     {
+      "from": "In",
+      "to": "Out",
+      "chunk": "cdiv(S * DynamicRange_g, 8)",
+      "addBytes": "ocp_image_bytes - n"
+     }
+    ]
+   },
+   "sizes": {
+    "evidence": "user guide sections 4 and 5: the core counts the NX NY NZ samples of an image and outputs every image as one packet (Out_Last on its last word)",
+    "interfaces": {
+     "In": {
+      "noLimit": true
+     }
+    }
+   },
    "packages": [
     "ocp_pkg"
    ],

@@ -20,6 +20,7 @@
  */
 
 import { evaluate, ExprError } from './expr.js';
+import { headerBytes, imagePeriod, maxImageBytes } from './ocp.js';
 import { formatHz } from './rules.js';
 import { analyseSizes } from './sizes.js';
 import { subsystemName } from './subsystems.js';
@@ -80,6 +81,15 @@ export const REFERENCE_BYTES = [64, 1024];
  * @property {any} [route]     the route inside a block: its length changes apply on this edge
  * @property {Map<string, Num>} [env]
  * @property {boolean} [split] one of several outputs of a route
+ * @property {Assumption} [assumed]   the route depends on a value the user assumes for the instance
+ */
+
+/**
+ * @typedef {object} Assumption
+ * @property {string} label   the instance
+ * @property {string} text    "assumed ratio 2", or the worst case the block publishes
+ * @property {boolean} mark   an assumption of the user: every number behind it carries the text
+ * @property {number} [edge]  index of the route on a path: the elements behind it depend on the assumption
  */
 
 /**
@@ -113,6 +123,7 @@ export const REFERENCE_BYTES = [64, 1024];
  * @property {boolean} chunked   a route on the path cuts packets into chunks
  * @property {(bytes: number) => Point | null} at
  * @property {number[]} references
+ * @property {Assumption[]} assumptions   values the user assumes on the path (an assumed compression ratio)
  */
 
 /**
@@ -183,19 +194,75 @@ function value(text, env, n) {
 }
 
 /**
- * The environment of an instance for its rate data: its generics, the variables of its rate data and the frequency
- * of every clock (Freq_<port>, real).
+ * Named models of the rate data (rates.model): variables that no expression of the catalog can give, from the
+ * generics of the instance and the values the user states for it (traffic of the instance). A text instead of a
+ * number is the reason why the model cannot give the variable for this configuration; an expression that uses it
+ * reports that reason.
+ * @type {Record<string, (g: Record<string, any>, stated: import('./design.js').InstanceTraffic | undefined) => Record<string, number | string>>}
+ */
+const MODELS = {
+  // OpenCompact ocp_core (model/ocp.js): the cycles between the first samples of consecutive images (image_period() of
+  // tools/ocp_throughput.py), the header, and the compressed image: from the assumed ratio, else its upper bound
+  // (max_image_bytes() of tools/ocp_model.py)
+  ocp: (g, stated) => {
+    const spec = g.Speculation_g !== false;
+    const header = headerBytes(g);
+    const word = g.OutputWordSize_g;
+    const input = Math.ceil((g.XSize_g * g.YSize_g * g.ZSize_g * g.DynamicRange_g) / 8);
+    const key = JSON.stringify(g);
+    return {
+      ocp_cycles_per_image: cached(`period ${spec} ${key}`, () => imagePeriod(g, spec)),
+      ocp_header_bytes: header,
+      // the assumed ratio relates the bytes of the samples to the bytes of the compressed image, header included
+      ocp_image_bytes: stated?.ratio
+        ? Math.ceil(Math.max(header, Math.ceil(input / stated.ratio)) / word) * word
+        : cached(`bound ${key}`, () => maxImageBytes(g)),
+    };
+  },
+};
+
+/** @type {Map<string, number>} */
+const modelCache = new Map();
+/**
+ * A model value, computed once per configuration (the predictor model runs a few milliseconds per image).
+ * @param {string} key
+ * @param {() => number} fn
+ */
+function cached(key, fn) {
+  const hit = modelCache.get(key);
+  if (hit !== undefined) return hit;
+  const v = fn();
+  if (modelCache.size >= 64) modelCache.delete(/** @type {string} */ (modelCache.keys().next().value));
+  modelCache.set(key, v);
+  return v;
+}
+
+/**
+ * The environment of an instance for its rate data: its generics, the variables of its model, of its rate data and
+ * the frequency of every clock (Freq_<port>, real).
  * @param {Catalog} cat
  * @param {any} b
  * @param {any} rec
  * @param {Map<string, number>} freqs   domain id -> Hz
  * @param {(reason: string) => void} report   a variable that cannot be evaluated
+ * @param {import('./design.js').InstanceTraffic} [stated]   values the user states for the instance
  */
-function envOf(cat, b, rec, freqs, report) {
+function envOf(cat, b, rec, freqs, report, stated) {
   const env = cat.envFor(b, rec.generics);
   for (const [port, dom] of Object.entries(/** @type {Record<string, string>} */ (rec.clocks ?? {}))) {
     const f = freqs.get(dom);
     if (f !== undefined) env.set(`freq_${port}`.toLowerCase(), { value: f, real: true });
+  }
+  const model = b.rates?.model ? MODELS[b.rates.model] : undefined;
+  if (model) {
+    try {
+      for (const [k, v] of Object.entries(model(rec.generics, stated))) {
+        env.set(k.toLowerCase(), typeof v === 'number' ? { value: v, real: !Number.isInteger(v) } : { value: NaN, real: true, unknown: v });
+      }
+    } catch (e) {
+      if (!(e instanceof Error)) throw e;
+      report(`model ${b.rates.model}: ${e.message}`);
+    }
   }
   for (const [k, v] of Object.entries(b.rates?.vars ?? {})) {
     try {
@@ -281,8 +348,13 @@ function addLevel(g, cat, d, res, prefix, top) {
       }
       continue;
     }
-    const env = envOf(cat, b, rec, freqs, (reason) => problem(g, rec, b, prefix, reason));
+    const stated = d.instances.find((i) => i.id === rec.id)?.traffic;
+    const env = envOf(cat, b, rec, freqs, (reason) => problem(g, rec, b, prefix, reason), stated);
     const rates = b.rates;
+    /** @type {Assumption | undefined} */
+    const assumed = rates?.assumed?.name !== 'ratio' ? undefined : stated?.ratio !== undefined
+      ? { label: `${prefix}${rec.id}`, text: `assumed ratio ${formatNumber(stated.ratio)}`, mark: true }
+      : { label: `${prefix}${rec.id}`, text: 'worst-case length of the compressed images, a bound the core publishes', mark: false };
     const ports = cat.ports(b, rec.generics).filter((p) => p.type.kind === 'stream');
     const paced = new Set((rates?.routes ?? []).filter((/** @type {any} */ r) => r.paced).map((/** @type {any} */ r) => r.to));
     for (const p of ports) {
@@ -309,7 +381,7 @@ function addLevel(g, cat, d, res, prefix, top) {
       for (const [k, p] of from.entries()) {
         const targets = pairwise ? [to[k]] : to;
         for (const q of targets) {
-          edge(`${prefix}${rec.id}.${p.ref}`, { to: `${prefix}${rec.id}.${q.ref}`, route: r, env, split: targets.length > 1 });
+          edge(`${prefix}${rec.id}.${p.ref}`, { to: `${prefix}${rec.id}.${q.ref}`, route: r, env, split: targets.length > 1, ...(assumed ? { assumed } : {}) });
         }
       }
     }
@@ -544,9 +616,37 @@ function makePath(g, keys, edges) {
     }
   }
   if (max !== undefined) refs.add(max);
+  // the natural packet of an interface before the first route (one image of a compressor) replaces the reference
+  // lengths: a shorter packet means nothing there
+  for (let i = 0; i < keys.length && (i === 0 || !edges[i - 1].route); i += 1) {
+    const node = /** @type {Node} */ (g.nodes.get(keys[i]));
+    if (node.entry?.reference === undefined) continue;
+    try {
+      const v = value(node.entry.reference, /** @type {Map<string, Num>} */ (node.env));
+      for (const b of REFERENCE_BYTES) refs.delete(b);
+      refs.add(v);
+    } catch (e) {
+      if (!rateProblem(e)) throw e;
+      report(i, e, `reference of ${node.itf}`);
+    }
+  }
   const stated = g.traffic.get(source.key);
   if (stated) refs.add(stated.packetBytes);
-  return { source, sink, nodes: keys, edges, elements, split, chunked, at, references: [...refs].sort((a, b) => a - b) };
+  /** @type {Assumption[]} */
+  const assumptions = [];
+  edges.forEach((e, i) => {
+    if (e.assumed) assumptions.push({ ...e.assumed, edge: i });
+  });
+  return { source, sink, nodes: keys, edges, elements, split, chunked, at, references: [...refs].sort((a, b) => a - b), assumptions };
+}
+
+/**
+ * The assumptions an element of a path depends on: those of the routes before it.
+ * @param {Path} p
+ * @param {number} k   element index
+ */
+export function assumptionsOf(p, k) {
+  return p.assumptions.filter((a) => a.mark && /** @type {number} */ (a.edge) < p.elements[k].first);
 }
 
 /**
@@ -595,14 +695,15 @@ function instanceOf(el) {
 
 /**
  * The length at which the editor shows a path: the stated length of its source or sink, else 1024 bytes (a reference
- * point), and the path at that length.
+ * point), or the natural packet of the path where it replaces the reference points (one image of a compressor), and
+ * the path at that length.
  * @param {Throughput} t
  * @param {Path} p
  * @returns {{ bytes: number, stated: boolean, point: Point | null }}
  */
 export function pathAt(t, p) {
   const s = t.traffic.get(p.source.key) ?? t.traffic.get(p.sink.key);
-  const bytes = s?.packetBytes ?? 1024;
+  const bytes = s?.packetBytes ?? (p.references.includes(1024) || p.references.length === 0 ? 1024 : p.references[0]);
   return { bytes, stated: Boolean(s), point: p.at(bytes) };
 }
 
@@ -683,7 +784,8 @@ export function analyseThroughput(cat, d, res, opts = {}) {
 
   /** @type {Check[]} */
   const checks = [];
-  const assume = (/** @type {Path} */ p) => (p.split ? ` Assuming every packet of ${p.source.label} reaches ${p.sink.label}.` : '');
+  const assume = (/** @type {Path} */ p) => (p.split ? ` Assuming every packet of ${p.source.label} reaches ${p.sink.label}.` : '')
+    + p.assumptions.map((a) => ` The numbers behind ${a.label} use its ${a.text}.`).join('');
   /** @type {Limit[]} */
   const limits = [];
   // stated rates of sources

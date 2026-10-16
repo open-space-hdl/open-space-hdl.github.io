@@ -111,3 +111,29 @@ test('the largest packet of an external interface bounds the packets along the c
   await expect(error).toHaveCount(0);
   await expect(remark).toHaveCount(1);
 });
+
+test('the assumed compression ratio of a compressor: its paths carry it, an empty field takes the bound of the core', async ({ page }) => {
+  await open(page);
+  await openExample(page, 'Compressed and encrypted images over SpaceWire');
+  await page.locator('[data-block="ocp0"]').focus();
+  const field = page.getByLabel('Assumed compression ratio');
+  await expect(field).toHaveValue('2');
+  // the path from the samples at one image (the natural packet of the compressor), with the assumption it depends on
+  const row = page.locator('[data-itf="ocp0.In"]');
+  await expect(row).toContainText('to the link of spw0: 151 Mbit/s at 393216 B packets, limited by the link of spw0 (assumed ratio 2 of ocp0)');
+  await field.fill('4');
+  await field.press('Tab');
+  await expect.poll(async () => (await design(page)).instances.find((/** @type {any} */ i) => i.id === 'ocp0').traffic).toEqual({ ratio: 4 });
+  await page.locator('[data-block="ocp0"]').focus();
+  await expect(row).toContainText(/to the link of spw0: \d+ Mbit\/s at 393216 B packets, limited by the link of spw0 \(assumed ratio 4 of ocp0\)/);
+  // empty: the upper bound on the compressed image, a property of the core, so no number is marked
+  await field.fill('');
+  await field.press('Tab');
+  await expect.poll(async () => (await design(page)).instances.find((/** @type {any} */ i) => i.id === 'ocp0').traffic).toBeUndefined();
+  await page.locator('[data-block="ocp0"]').focus();
+  await expect(row).toContainText(/to the link of spw0: [\d.]+ Mbit\/s at 393216 B packets, limited by the link of spw0/);
+  await expect(row).not.toContainText('assumed ratio');
+  // one undo step brings the ratio back
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect.poll(async () => (await design(page)).instances.find((/** @type {any} */ i) => i.id === 'ocp0').traffic).toEqual({ ratio: 4 });
+});

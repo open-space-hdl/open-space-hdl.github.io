@@ -10,9 +10,9 @@ import { presetLinks } from './catalog.js';
 import { formatHz } from './rules.js';
 import { subsystemsOf, withSubsystems } from './subsystems.js';
 import { addressMapSections, hex } from './addressmap.js';
-import { bytesText } from './sizes.js';
+import { assumedMark, bytesText } from './sizes.js';
 import { crossingGroups, readinessStatement } from './systemviews.js';
-import { analyseThroughput, elementText, formatRate } from './throughput.js';
+import { analyseThroughput, assumptionsOf, elementText, formatRate } from './throughput.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./catalog.js').BlockDef} BlockDef */
@@ -114,17 +114,25 @@ function throughputSection(t) {
       // the clock the capacity depends on: the domain of the interface, the clock of a link
       const n = el.node;
       const clock = n.freq === undefined ? '' : `${el.model === 'link' && n.clockPort ? `${n.clockPort}: ` : ''}${n.domainName}, ${formatHz(n.freq)}`;
+      // a number behind a route that depends on a value the user assumes carries it
+      const mark = assumptionsOf(p, i).map((a) => ` (${a.text})`).join('');
       const cells = points.map((pt) => {
         if (!pt) return '';
-        const text = formatRate((8 * pt.bytes) / pt.elements[i].seconds);
+        const text = `${formatRate((8 * pt.bytes) / pt.elements[i].seconds)}${mark}`;
         return pt.bottleneck === i ? `**${text}**` : text;
       });
       return [`\`${el.label}\``, clock, model, ...cells];
     });
-    rows.push(['**Path**', '', '', ...points.map((pt) => (pt ? `**${formatRate(pt.bitsPerSecond)}**` : ''))]);
+    const pathMark = p.assumptions.filter((a) => a.mark).map((a) => ` (${a.text})`).join('');
+    rows.push(['**Path**', '', '', ...points.map((pt) => (pt ? `**${formatRate(pt.bitsPerSecond)}**${pathMark}` : ''))]);
     L.push(table(head, rows), '');
     for (const pt of points) {
-      if (pt) L.push(`- At ${pt.bytes} B: limited by \`${p.elements[pt.bottleneck].label}\` (${elementText(p, pt, pt.bottleneck)}).`);
+      if (pt) L.push(`- At ${pt.bytes} B: limited by \`${p.elements[pt.bottleneck].label}\` (${elementText(p, pt, pt.bottleneck)})${assumptionsOf(p, pt.bottleneck).map((a) => ` (${a.text})`).join('')}.`);
+    }
+    for (const a of p.assumptions) {
+      L.push(a.mark
+        ? `- The numbers behind \`${a.label}\` use its ${a.text}: an assumption about the data, not a property of the block.`
+        : `- The numbers behind \`${a.label}\` use the ${a.text}: the path carries at least these rates.`);
     }
     const stated = t.traffic.get(p.source.key) ?? t.traffic.get(p.sink.key);
     if (stated?.bitsPerSecond) {
@@ -266,7 +274,7 @@ function sizesSection(s) {
   if (s.limits.length === 0 && s.buffers.length === 0) L.push('No interface with a size limit receives packets.', '');
   if (s.limits.length > 0) {
     L.push(table(['Interface', 'Largest packet', 'Limit', 'Kind', 'Reason'], s.limits.map((l) => {
-      const largest = Number.isFinite(l.largest.bytes) ? `${bytesText(l.largest)} B` : `not bounded${l.largest.source ? ` (${l.largest.source})` : ''}`;
+      const largest = Number.isFinite(l.largest.bytes) ? `${bytesText(l.largest)} B${assumedMark(l.largest)}` : `not bounded${l.largest.source ? ` (${l.largest.source})` : ''}`;
       const over = Number.isFinite(l.largest.bytes) && l.largest.bytes > l.bytes;
       return [`\`${l.ref}\``, over ? `**${largest}**` : largest, `${l.bytes} B`, l.soft ? 'reset value' : 'fixed', l.why];
     })), '');
@@ -274,7 +282,7 @@ function sizesSection(s) {
   if (s.buffers.length > 0) {
     L.push('Buffers that hold a whole message (counted in beats):', '');
     for (const b of s.buffers) {
-      L.push(`- \`${b.ref}\`: the longest message (${bytesText(b.largest)} B) takes ${b.beats} beats of ${b.beat} B; the buffer holds ${b.holds} B = ${b.capacity} beats${b.beats > b.capacity ? ' (too small, see the checks)' : ''}.`);
+      L.push(`- \`${b.ref}\`: the longest message (${bytesText(b.largest)} B${assumedMark(b.largest)}) takes ${b.beats} beats of ${b.beat} B; the buffer holds ${b.holds} B = ${b.capacity} beats${b.beats > b.capacity ? ' (too small, see the checks)' : ''}.`);
     }
     L.push('');
   }

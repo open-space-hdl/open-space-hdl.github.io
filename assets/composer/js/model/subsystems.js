@@ -94,6 +94,7 @@ export function definitionDocument(def) {
       o.clocks = { ...i.clocks };
       const constants = Object.entries(i.constants ?? {}).filter(([, v]) => Object.keys(v).length > 0);
       if (!sub && constants.length) o.constants = Object.fromEntries(constants.map(([k, v]) => [k, { ...v }]));
+      if (!sub && i.traffic) o.traffic = { ...i.traffic };
       return o;
     }),
     connections: def.connections.map((c) => {

@@ -20,6 +20,14 @@ import { withSubsystems } from './subsystems.js';
  * @property {Record<string, string>} clocks      clock port -> clock domain id (from M2 on)
  * @property {Record<string, Record<string, number | boolean>>} [constants]  interface -> field values of an unconnected
  *           interface whose inputs are constants of the instance (catalog tieOff "constant")
+ * @property {InstanceTraffic} [traffic]   values about the data that the rate data of the block cannot know (throughput
+ *           budget and packet sizes), stated by the user
+ */
+
+/**
+ * @typedef {object} InstanceTraffic
+ * @property {number} [ratio]   assumed compression ratio of a compressor (uncompressed bytes per compressed byte): an
+ *                              assumption about the data, not a property of the block
  */
 
 /**
@@ -550,6 +558,43 @@ export function setTraffic(d, ref, traffic) {
   if (JSON.stringify(old ?? null) === JSON.stringify(traffic)) return d;
   const ext = traffic === null ? rest : { ...rest, traffic: { ...traffic } };
   return { ...d, externals: d.externals.map((e, j) => (j === k ? ext : e)) };
+}
+
+/**
+ * What is wrong with the stated values of an instance, or '' when nothing is.
+ * @param {unknown} t
+ */
+export function instanceTrafficProblem(t) {
+  if (typeof t !== 'object' || t === null || Array.isArray(t)) return 'must be an object with ratio.';
+  const o = /** @type {Record<string, unknown>} */ (t);
+  const extra = Object.keys(o).filter((k) => k !== 'ratio');
+  if (extra.length) return `unknown keys ${extra.join(', ')}.`;
+  if (o.ratio !== undefined && !(typeof o.ratio === 'number' && Number.isFinite(o.ratio) && o.ratio > 0)) return 'ratio must be a positive number.';
+  return '';
+}
+
+/**
+ * Sets or removes the stated values of an instance (an assumed compression ratio); a block whose rate data names no
+ * such value takes none.
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {string} id
+ * @param {InstanceTraffic | null} traffic   null or {}: none
+ */
+export function setInstanceTraffic(d, cat, id, traffic) {
+  const inst = getInstance(d, id);
+  if (!inst) throw new DesignError(`Unknown instance "${id}".`);
+  const value = traffic && Object.keys(traffic).length ? traffic : null;
+  if (value !== null) {
+    const problem = instanceTrafficProblem(value);
+    if (problem) throw new DesignError(`Traffic of ${id}: ${problem}`);
+    const assumed = withSubsystems(cat, d).block(inst.block).rates?.assumed;
+    if (value.ratio !== undefined && assumed?.name !== 'ratio') throw new DesignError(`${id} takes no assumed ratio.`);
+  }
+  const { traffic: old, ...rest } = inst;
+  if (JSON.stringify(old ?? null) === JSON.stringify(value)) return d;
+  const next = value === null ? rest : { ...rest, traffic: { ...value } };
+  return { ...d, instances: d.instances.map((i) => (i.id === id ? next : i)) };
 }
 
 /**
