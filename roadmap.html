@@ -1,0 +1,221 @@
+---
+layout: default
+title: Roadmap
+description: >-
+  What comes next for the Open Space HDL family: hardware tests of the cores, a CCSDS space link core, new Open Logic
+  building blocks, further cores, reference systems and evaluation boards.
+permalink: /roadmap/
+---
+<section class="page">
+  <div class="wrap prose">
+    <h1>Roadmap</h1>
+    <p>
+      This page shows where the Open Space HDL family goes next as a whole. It gives an order, not dates, and the
+      order can change as the work progresses. The
+      <a href="{{ '/trl/' | relative_url }}">TRL page</a> states where every project stands today, and the roadmap of
+      each project lists its own steps in detail:
+    </p>
+    <ul class="link-row">
+      {%- for p in site.data.projects %}
+      {%- if p.roadmap %}
+      <li><a href="{{ '/' | append: p.repo | append: '/docs/roadmap.html' | relative_url }}">{{ p.name }}</a></li>
+      {%- endif %}
+      {%- endfor %}
+    </ul>
+
+    <nav class="roadmap-toc" aria-label="Roadmap">
+      <ol>
+        <li><a href="#hardware"><span class="toc-state">In progress</span> Hardware tests for TRL 4</a></li>
+        <li><a href="#space-link"><span class="toc-state">Next</span> CCSDS space link core</a></li>
+        <li><a href="#building-blocks"><span class="toc-state">Next</span> New Open Logic building blocks</a></li>
+        <li><a href="#cores"><span class="toc-state">Planned</span> Further cores</a></li>
+        <li><a href="#systems"><span class="toc-state">Planned</span> Reference systems and evaluation boards</a></li>
+        <li><a href="#composer"><span class="toc-state">Planned</span> Composer</a></li>
+      </ol>
+    </nav>
+
+    <section class="roadmap-section" id="hardware" aria-labelledby="hardware-title">
+      <p class="eyebrow">In progress</p>
+      <h2 id="hardware-title">Hardware tests for TRL 4</h2>
+      <p>
+        The cores are at TRL 3: fully verified by simulation. TRL 4 needs synthesis and timing closure on a target
+        FPGA and a hardware test in the laboratory, with a test plan and a test report.
+      </p>
+      <p>
+        The first system in hardware is a SpaceFibre node with RMAP control and AES-GCM encryption of Space Packets on
+        an AMD Versal evaluation board. It covers four cores:
+      </p>
+      <div class="table-frame">
+        <table class="trl-table roadmap-table">
+          <thead>
+            <tr><th scope="col">Core</th><th scope="col">Role in the system</th></tr>
+          </thead>
+          <tbody>
+            <tr><td data-label="Core">OpenFibre</td><td data-label="Role">The SpaceFibre port with its transceiver adapter</td></tr>
+            <tr><td data-label="Core">OpenRMAP</td><td data-label="Role">The RMAP target through which the far end of the link controls the system</td></tr>
+            <tr><td data-label="Core">OpenSPP</td><td data-label="Role">The Space Packets on a virtual channel of the link</td></tr>
+            <tr><td data-label="Core">OpenCrypto</td><td data-label="Role">The AES-GCM encryption of the packets</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>OpenWire and OpenCompact follow with their own hardware runs.</p>
+    </section>
+
+    <section class="roadmap-section" id="space-link" aria-labelledby="space-link-title">
+      <p class="eyebrow">Next</p>
+      <h2 id="space-link-title">CCSDS space link core</h2>
+      <p>
+        The first new core implements the space data link with its synchronisation, channel coding and security. It
+        completes the on-board chain from the instrument to the transmitter:
+      </p>
+      <ol class="chain" aria-label="On-board data chain">
+        <li><span class="chain-step">Instrument</span></li>
+        <li><span class="chain-step">Compression <small>OpenCompact</small></span></li>
+        <li><span class="chain-step">Encryption <small>OpenCrypto</small></span></li>
+        <li><span class="chain-step">Space Packets <small>OpenSPP</small></span></li>
+        <li><span class="chain-step is-new">Transfer frames <small>space link core</small></span></li>
+        <li><span class="chain-step">Transmitter</span></li>
+      </ol>
+      <p>The core grows in phases:</p>
+      <div class="table-frame">
+        <table class="trl-table roadmap-table phase-table">
+          <thead>
+            <tr><th scope="col">Phase</th><th scope="col">Content</th><th scope="col">Standards</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Phase"><span class="level-num">1</span></td>
+              <td data-label="Content">AOS transfer frames and virtual channels, with TM synchronisation and channel coding: attached sync marker, pseudo-randomiser, Reed-Solomon code with interleaving, convolutional code</td>
+              <td data-label="Standards"><ul class="chips"><li>CCSDS 732.0-B</li><li>CCSDS 131.0-B</li></ul></td>
+            </tr>
+            <tr>
+              <td data-label="Phase"><span class="level-num">1b</span></td>
+              <td data-label="Content">TM transfer frames</td>
+              <td data-label="Standards"><ul class="chips"><li>CCSDS 132.0-B</li></ul></td>
+            </tr>
+            <tr>
+              <td data-label="Phase"><span class="level-num">2</span></td>
+              <td data-label="Content">TC uplink: CLTU and BCH decoding, TC transfer frames, FARM-1 with the CLCW</td>
+              <td data-label="Standards"><ul class="chips"><li>CCSDS 231.0-B</li><li>CCSDS 232.0-B</li><li>CCSDS 232.1-B</li></ul></td>
+            </tr>
+            <tr>
+              <td data-label="Phase"><span class="level-num">3</span></td>
+              <td data-label="Content">Space Data Link Security (SDLS) with the AES-GCM engine of OpenCrypto</td>
+              <td data-label="Standards"><ul class="chips"><li>CCSDS 355.0-B</li></ul></td>
+            </tr>
+            <tr>
+              <td data-label="Phase"><span class="level-num">4</span></td>
+              <td data-label="Content">LDPC codes</td>
+              <td data-label="Standards"><ul class="chips"><li>CCSDS 131.0-B</li></ul></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="roadmap-section" id="building-blocks" aria-labelledby="building-blocks-title">
+      <p class="eyebrow">Next</p>
+      <h2 id="building-blocks-title">New Open Logic building blocks</h2>
+      <p>
+        The space link core and later cores need general-purpose functions that belong in a VHDL library rather than in
+        one core. They are developed in Open Logic FT first and then proposed to Open Logic. The first three are
+        prerequisites of phase 1 of the space link core and come with it; the others follow with the cores that use
+        them.
+      </p>
+      <div class="table-frame">
+        <table class="trl-table roadmap-table blocks-table">
+          <thead>
+            <tr><th scope="col">Building block</th><th scope="col">Purpose</th><th scope="col">State</th></tr>
+          </thead>
+          <tbody>
+            <tr><td data-label="Building block">Galois field package</td><td data-label="Purpose">Arithmetic in GF(2<sup>m</sup>) for any field polynomial: the common base of Reed-Solomon and BCH codes</td><td data-label="State"><span class="state-tag is-next">Next</span></td></tr>
+            <tr><td data-label="Building block">Reed-Solomon encoder and decoder</td><td data-label="Purpose">Streaming codecs for configurable codes, shortened codes and interleaving; the decoder reports the corrected symbols and uncorrectable codewords</td><td data-label="State"><span class="state-tag is-next">Next</span></td></tr>
+            <tr><td data-label="Building block">Convolutional encoder</td><td data-label="Purpose">Configurable constraint length, polynomials and puncturing</td><td data-label="State"><span class="state-tag is-next">Next</span></td></tr>
+            <tr><td data-label="Building block">Sync word detector</td><td data-label="Purpose">Finds a sync word in a bit stream despite a configurable number of bit errors</td><td data-label="State"><span class="state-tag">Planned</span></td></tr>
+            <tr><td data-label="Building block">Symbol ECC for external memories</td><td data-label="Purpose">A single-symbol-correcting, double-symbol-detecting option of the ECC codecs, for external memories such as DDR and Flash</td><td data-label="State"><span class="state-tag">Planned</span></td></tr>
+            <tr><td data-label="Building block">CAN 2.0 controller</td><td data-label="Purpose">The CAN data link layer with messages in and out as streams (<code>olo_intf_can</code>), the base of the CAN core below</td><td data-label="State"><span class="state-tag">Planned</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="roadmap-section" id="cores" aria-labelledby="cores-title">
+      <p class="eyebrow">Planned</p>
+      <h2 id="cores-title">Further cores</h2>
+      <p>
+        After the space link core, the MIL-STD-1553B interface, the routing switch and the DMA follow in this order,
+        then three smaller cores.
+      </p>
+      <div class="table-frame">
+        <table class="trl-table roadmap-table">
+          <thead>
+            <tr><th scope="col">Core</th><th scope="col">Standard or interface</th><th scope="col">Scope</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Core">MIL-STD-1553B bus interface</td>
+              <td data-label="Standard or interface"><ul class="chips"><li>ECSS-E-ST-50-13C</li></ul></td>
+              <td data-label="Scope">Bus controller, remote terminal and bus monitor</td>
+            </tr>
+            <tr>
+              <td data-label="Core">Routing switch</td>
+              <td data-label="Standard or interface"><ul class="chips"><li>ECSS-E-ST-50-12C</li><li>ECSS-E-ST-50-11C</li></ul></td>
+              <td data-label="Scope">One switch fabric for SpaceWire and SpaceFibre: SpaceWire ports first, then SpaceFibre ports</td>
+            </tr>
+            <tr>
+              <td data-label="Core">DMA</td>
+              <td data-label="Standard or interface"><ul class="chips"><li>AMD AXI DMA register interface (PG021)</li></ul></td>
+              <td data-label="Scope">Data movement between memory and AXI4-Stream, register-compatible with the AMD AXI DMA so that its drivers work, vendor-independent and fault-tolerant: direct register mode, then scatter/gather, then the control and status streams</td>
+            </tr>
+            <tr>
+              <td data-label="Core">CAN bus</td>
+              <td data-label="Standard or interface"><ul class="chips"><li>ECSS-E-ST-50-15C</li></ul></td>
+              <td data-label="Scope">CAN networks of the standard, with redundant buses, on the generic CAN controller of Open Logic</td>
+            </tr>
+            <tr>
+              <td data-label="Core">Lossless data compression</td>
+              <td data-label="Standard or interface"><ul class="chips"><li>CCSDS 121.0-B</li></ul></td>
+              <td data-label="Scope">Lossless compression of any data</td>
+            </tr>
+            <tr>
+              <td data-label="Core">Time codes</td>
+              <td data-label="Standard or interface"><ul class="chips"><li>CCSDS 301.0-B</li></ul></td>
+              <td data-label="Scope">CCSDS time codes with on-board time</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="roadmap-section" id="systems" aria-labelledby="systems-title">
+      <p class="eyebrow">Planned</p>
+      <h2 id="systems-title">Reference systems and evaluation boards</h2>
+      <p>
+        A reference system is a complete FPGA design built from the cores for a test in the laboratory. After the
+        SpaceFibre node with encryption above, the second reference system adds CCSDS 123.0-B-2 image compression with
+        OpenCompact in front of the encryption.
+      </p>
+      <p>Further evaluation boards follow the AMD Versal board, in this order:</p>
+      <ol class="board-list">
+        <li>Microchip PolarFire</li>
+        <li>Microchip RTG4</li>
+        <li>AMD Versal AI Edge Series Gen 2</li>
+      </ol>
+      <p>
+        The Microchip boards will show the vendor independence of the cores on space FPGA families. Each board family needs
+        its own physical adapter of OpenFibre for its transceivers.
+      </p>
+    </section>
+
+    <section class="roadmap-section" id="composer" aria-labelledby="composer-title">
+      <p class="eyebrow">Planned</p>
+      <h2 id="composer-title">Composer</h2>
+      <p>
+        Once the catalog of the <a href="{{ '/composer/' | relative_url }}">Composer</a> has a memory block, the
+        Composer connects an RMAP target directly to its AXI4 port with bursts. Systems that move bulk data by RMAP
+        into memory with a high latency, such as DDR, then reach the burst rates. Register banks stay on the AXI4-Lite
+        decoder, where one beat per access costs little.
+      </p>
+    </section>
+  </div>
+</section>

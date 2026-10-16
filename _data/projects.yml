@@ -14,6 +14,8 @@
 #              -> card links to openspacehdl.org/<repo>/
 #   trl:       technology readiness level (see trl.html, openspacehdl.org/trl/) -> badge on the card
 #   trl_status: one sentence for the status table of the TRL page
+#   roadmap:   true once the documentation site has the roadmap of the project (docs/roadmap.html) -> linked from the
+#              roadmap page
 #
 # While public is false the card shows "Coming soon" and no links.
 
@@ -26,6 +28,7 @@
   docs: true
   trl: 3
   trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
+  roadmap: true
 
 - name: OpenFibre
   repo: openfibre
@@ -36,6 +39,7 @@
   docs: true
   trl: 3
   trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
+  roadmap: true
 
 - name: OpenRMAP
   repo: openrmap
@@ -46,6 +50,7 @@
   docs: true
   trl: 3
   trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
+  roadmap: true
 
 - name: OpenSPP
   repo: openspp
@@ -56,6 +61,7 @@
   docs: true
   trl: 3
   trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
+  roadmap: true
 
 - name: OpenCompact
   repo: opencompact
@@ -66,6 +72,7 @@
   docs: true
   trl: 3
   trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
+  roadmap: true
 
 - name: OpenCrypto
   repo: opencrypto
@@ -76,6 +83,7 @@
   docs: true
   trl: 3
   trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
+  roadmap: true
 
 - name: Open Logic FT
   repo: open-logic-ft
