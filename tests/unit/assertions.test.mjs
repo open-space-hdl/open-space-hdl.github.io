@@ -50,6 +50,12 @@ const CASES = [
   ['ofb_dl_vc_in.vhd: one unit with one lane', 'openfibre/ofb_core', undefined, [['NumLanes_g', 1], ['VcInDepth_g', 64]], null],
   // OpenRMAP omap_pkg.vhd coreConfigError (CO-NO-03)
   ['omap_pkg.vhd: the chunk fits the write buffer', 'openrmap/omap_core', undefined, [['BufferBytes_g', 256], ['ChunkBytes_g', 512]], /^rmap0: ChunkBytes_g = 512 must be at most BufferBytes_g = 256 \(a chunk of a non-verified write fits the write buffer\)\.$/],
+  ['olo_axi_master_simple.vhd: a burst within 4 KB', 'openrmap/omap_core', undefined, [['AxiDataWidth_g', 1024], ['ChunkBytes_g', 128], ['AxiMaxBeats_g', 64]], /^rmap0: AxiMaxBeats_g = 64 must be at most min\(4096, 2 \*\* \(AxiAddrWidth_g - 2\)\) \/ \(AxiDataWidth_g \/ 8\) = 32 \(a burst never exceeds 4 KB nor the largest memory command; larger values fail elaboration\)\.$/],
+  ['olo_axi_master_simple.vhd: bursts of 4 KB', 'openrmap/omap_core', undefined, [['AxiDataWidth_g', 1024], ['ChunkBytes_g', 128], ['AxiMaxBeats_g', 32]], null],
+  ['olo_axi_master_full.vhd: a burst within the largest command', 'openrmap/omap_core', undefined, [['AxiAddrWidth_g', 12], ['AxiDataWidth_g', 64], ['AxiMaxBeats_g', 256]], /^rmap0: AxiMaxBeats_g = 256 must be at most min\(4096, 2 \*\* \(AxiAddrWidth_g - 2\)\) \/ \(AxiDataWidth_g \/ 8\) = 128 \(a burst never exceeds 4 KB nor the largest memory command; larger values fail elaboration\)\.$/],
+  ['olo_axi_master_full.vhd: bursts of the largest command', 'openrmap/omap_core', undefined, [['AxiAddrWidth_g', 12], ['AxiDataWidth_g', 64], ['AxiMaxBeats_g', 128]], null],
+  ['olo_axi_master_full.vhd: 8-bit data at the smallest address width', 'openrmap/omap_core', undefined, [['AxiAddrWidth_g', 12], ['AxiDataWidth_g', 8], ['AxiMaxBeats_g', 256]], null],
+  ['no memory master without the target', 'openrmap/omap_core', 'initiator', [['AxiAddrWidth_g', 12], ['AxiDataWidth_g', 1024], ['ChunkBytes_g', 128], ['AxiMaxBeats_g', 256]], null],
   ['omap_pkg.vhd: the chunk in whole memory words', 'openrmap/omap_core', undefined, [['AxiDataWidth_g', 64], ['ChunkBytes_g', 36]], /^rmap0: ChunkBytes_g = 36 must be a multiple of AxiDataWidth_g \/ 8 = 8 \(a single-address write moves whole memory words\); the next valid value is 40\.$/],
   ['omap_pkg.vhd: the address width needs no extra bits any more', 'openrmap/omap_core', 'target', [['AxiAddrWidth_g', 16]], null],
   // OpenSPP spp_core.vhd (CO-GN-02 to CO-GN-04), at 32-bit streams (4 bytes per beat)

@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "ed519fc26674",
+ "id": "d012c32ccfc8",
  "sources": [
   {
    "id": "openwire",
@@ -9757,6 +9757,13 @@
      "generic": "ChunkBytes_g",
      "of": "AxiDataWidth_g / 8",
      "message": "a single-address write moves whole memory words"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "AxiMaxBeats_g",
+     "max": "min(4096, 2 ** (AxiAddrWidth_g - 2)) / (AxiDataWidth_g / 8)",
+     "when": "Target_g",
+     "message": "a burst never exceeds 4 KB nor the largest memory command; larger values fail elaboration"
     },
     {
      "kind": "generic_any_true",
