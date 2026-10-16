@@ -1,5 +1,5 @@
 // The site around the Composer: the entry with the Beta badge in header and footer, the project groups and cards,
-// the teaser on the start page, no external requests on the pages that link to it.
+// the teaser on the start page, the roadmap page, no external requests on the pages that link to it.
 import { test } from '@playwright/test';
 import { expect, watch } from './helpers.mjs';
 
@@ -16,7 +16,7 @@ test.afterEach(() => {
 });
 
 test('header and footer of every page lead to the Composer, marked as beta', async ({ page }) => {
-  for (const path of ['/', '/trl/', '/composer/format/']) {
+  for (const path of ['/', '/trl/', '/roadmap/', '/composer/format/']) {
     await page.goto(path);
     const nav = page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Composer Beta' });
     await expect(nav).toHaveAttribute('href', '/composer/');
@@ -80,4 +80,39 @@ test('the start page shows the Composer with a picture of the editor', async ({ 
   await teaser.getByRole('link', { name: 'Open the Composer' }).click();
   await page.waitForSelector('.cmp.is-ready');
   await expect(page).toHaveURL(/\/composer\/$/);
+});
+
+test('the roadmap page is in the header of every page and on the TRL page, and links the roadmap of every project', async ({ page }) => {
+  for (const path of ['/', '/trl/', '/composer/format/']) {
+    await page.goto(path);
+    await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Roadmap', exact: true })).toHaveAttribute('href', '/roadmap/');
+  }
+  await page.goto('/trl/');
+  await page.getByRole('link', { name: 'family roadmap' }).click();
+  await expect(page).toHaveURL(/\/roadmap\/$/);
+  await expect(page).toHaveTitle('Roadmap · Open Space HDL');
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Roadmap', exact: true })).toHaveAttribute('aria-current', 'page');
+  // the sections in their order, each reachable from the overview
+  const titles = ['Hardware tests for TRL 4', 'CCSDS space link core', 'New Open Logic building blocks', 'Further cores', 'Reference systems and evaluation boards', 'Composer'];
+  await expect(page.locator('.roadmap-section h2')).toHaveText(titles);
+  const toc = page.getByRole('navigation', { name: 'Roadmap' }).getByRole('link');
+  await expect(toc).toHaveCount(titles.length);
+  for (let i = 0; i < titles.length; i++) {
+    const target = await toc.nth(i).getAttribute('href');
+    await expect(page.locator(`${target} h2`)).toHaveText(titles[i]);
+  }
+  // the roadmap of every core with a documentation site
+  await expect(page.locator('.link-row a')).toHaveText(['OpenWire', 'OpenFibre', 'OpenRMAP', 'OpenSPP', 'OpenCompact', 'OpenCrypto']);
+  for (const a of await page.locator('.link-row a').all()) await expect(a).toHaveAttribute('href', /^\/[a-z-]+\/docs\/roadmap\.html$/);
+  // the on-board chain ends with the transfer frames of the new core before the transmitter
+  await expect(page.locator('.chain .chain-step.is-new')).toContainText('Transfer frames');
+  expect(await page.locator('main').textContent()).not.toContain(String.fromCharCode(0x2014));
+});
+
+test('the roadmap page fits a phone: no horizontal scrolling, tables stacked', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto('/roadmap/');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  await expect(page.locator('.roadmap-table thead').first()).toBeHidden();
 });
