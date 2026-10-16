@@ -110,7 +110,8 @@
       "block": "openfibre/ofb_core",
       "generics": {
         "NumVc_g": 2,
-        "NumLanes_g": 4
+        "NumLanes_g": 4,
+        "VcInDepth_g": 1024
       },
       "clocks": {
         "UserClk": "sys",

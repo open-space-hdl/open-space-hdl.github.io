@@ -65,6 +65,7 @@ export const CATALOG_VERSION = 1;
  * @property {boolean} [needsLast]   a generic sink that needs packet boundaries
  * @property {string[]} [clockSignals]   signals of pins that are clocks: the block port takes the top-level port as its
  *           actual, without a signal and an assignment between them
+ * @property {string[]} [asyncSignals]   signals that are asynchronous levels, not in the clock domain of the interface
  * @property {any} [addressSpace]   the address space an AXI master starts: what its addresses are, and the windows of
  *           the block that accept them (model/addressmap.js)
  * @property {{ enable: {name: string, offset: number}[], status?: {name: string, offset: number}, events?: {name: string, offset: number} }} [irqRegisters]

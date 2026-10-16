@@ -129,12 +129,18 @@ blocks:
         signals: { d_out: Spw_DOut, s_out: Spw_SOut, d_in: Spw_DIn, s_in: Spw_SIn, tx_en: Phy_TxEn, rx_en: Phy_RxEn }
     rules:
       - { kind: clock_freq_multiple, clock: LinkClk, multipleHz: 10.0e6, tolerance: 0.1 }
+      # hdl/owr_core/src/owr_core.vhd (CORE-CF-02): with the multiple of 10 MHz the ranges 18 to 22, 27 to 33, 36 to 44 and
+      # 45 to 2554 MHz; the initial divider round(LinkClkFreq_g / 10 MHz) of owr_pkg.vhd is at most 255
+      - { kind: generic_range, generic: LinkClkFreq_g, min: 13200000, message: "the receiver samples the initial rate of the far end, at most 11 Mb/s, with 1.2 LinkClk periods per bit (CORE-CF-02)" }
+      - { kind: generic_range, generic: LinkClkFreq_g, max: 2554999999, message: "LINK_SPEED.INIT_DIV, round(LinkClkFreq_g / 10 MHz), is an 8-bit field: below 2555 MHz (CORE-CF-02)" }
       - { kind: run_rate, clock: LinkClk, divider: RunDiv_g, sampling: 1.2, message: "A receiver samples a bit period that is longer than 1.2 of its LinkClk periods (user guide, section 3)" }
       # a flow control token needs room for 8 N-Chars plus the place the receiver keeps for an EEP
       - { kind: generic_range, generic: RxFifoDepth_g, min: 16, message: "the port never has room for a flow control token: 8 N-Chars plus the reserved EEP place; it receives no data" }
       # the register map reports depth and fill level of both FIFOs in 16-bit fields
       - { kind: generic_range, generic: RxFifoDepth_g, max: 32768, message: "FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields" }
       - { kind: generic_range, generic: TxFifoDepth_g, max: 32768, message: "FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields" }
+      # the transmit FIFO of Open Logic holds at least 2 N-Chars (CORE-CF-01)
+      - { kind: generic_range, generic: TxFifoDepth_g, min: 2, message: "the Open Logic FIFO holds at least 2 entries (CORE-CF-01)" }
     idRegister: { address: "0x00", value: "0x4F575201" }
     registers: { map: hdl/owr_mib/regs/owr_regs.yml, header: sw/owr_regs.h, doc: hdl/owr_mib/docs/register_map.md, prefix: OWR }
     # the ECC of the memories inside the core: double-error flags per channel, counters, error injection
@@ -174,7 +180,7 @@ blocks:
           capacityBoth: "n * Freq_LinkClk / RunDiv_g / (10.5 * n + 4.5)"
           note: "the bit rate follows RunDiv_g, the reset value of LINK_SPEED.RUN_DIV; software can change it"
     sizes:
-      evidence: "no length limit by design: N-Chars stream through N-Char FIFOs without a packet concept, the only counter of the data path is the credit (owr_data_link.vhd); tested up to 1000 B (TC-CORE-11, TC-DL-40)"
+      evidence: "no length limit by design: N-Chars stream through N-Char FIFOs without a packet concept, the only counter of the data path is the credit (owr_data_link.vhd); packets of up to 65542 bytes simulated, also with a link error in the middle (TC-CORE-17, TC-CORE-18, user guide section 7)"
       interfaces:
-        S_Pkt: { noLimit: true, tested: 1000 }
-        M_Pkt: { noLimit: true, tested: 1000 }
+        S_Pkt: { noLimit: true, tested: 65542 }
+        M_Pkt: { noLimit: true, tested: 65542 }

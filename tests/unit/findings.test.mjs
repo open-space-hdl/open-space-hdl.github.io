@@ -77,7 +77,7 @@ test('field maps: the user bits of external ports and the side band constants, f
 test('context clause, verified tags and the catalog entries in the file', () => {
   const doc = example('spp_over_spw');
   assert.deepEqual(doc.resolved.context, ['library ieee;', 'use ieee.std_logic_1164.all;', 'library olo;', 'library openwire;', 'library openrmap;', 'library openspp;']);
-  assert.deepEqual(doc.sources.map((/** @type {any} */ s) => [s.id, s.verifiedWith]), [['openwire', '4.7.0-ft.2'], ['openrmap', '4.7.0-ft.5'], ['openspp', '4.7.0-ft.2'], ['olo', undefined]]);
+  assert.deepEqual(doc.sources.map((/** @type {any} */ s) => [s.id, s.verifiedWith]), [['openwire', '4.7.0-ft.6'], ['openrmap', '4.7.0-ft.6'], ['openspp', '4.7.0-ft.6'], ['olo', undefined]]);
   assert.ok(doc.resolved.compile.every((/** @type {any} */ c) => c.library === 'olo' || /^4\.7\.0-ft\.\d+$/.test(c.verifiedWith)));
   // the catalog entries of every block of the system, inserted ones included, and of their types
   const sub = doc.catalogSubset;
@@ -105,8 +105,8 @@ test('the brief names the file on disk, compiles with -frelaxed and initialises 
   assert.match(brief, /1\. Read ID \(0x00\): it reads 0x4F575201\./);
   assert.match(brief, /Write PORT_CTRL \(0x10\) = 0x34 \(RECEIVER_EN, DRIVER_EN, LINK_START\)/);
   assert.match(brief, /Optional end-to-end test/);
-  assert.match(brief, /4\.7\.0-ft\.5 adds olo_base_chunker and olo_axi_lite_decoder to 4\.7\.0-ft\.2 \(ft\.3\)/);
-  assert.match(brief, /fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g \(ft\.5\)/);
+  assert.match(brief, /4\.7\.0-ft\.6 adds olo_base_chunker and olo_axi_lite_decoder to 4\.7\.0-ft\.2 \(ft\.3\)/);
+  assert.match(brief, /the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g \(ft\.5\), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses \(ft\.6\)/);
   // a port that starts by itself needs no PORT_CTRL write
   let d = fromText(readFileSync(`${ROOT}assets/composer/examples/spw_rmap_node.composer.json`, 'utf-8'), cat).design;
   d = setGeneric(d, cat, 'spw0', 'LinkStart_g', true).design;
@@ -166,8 +166,8 @@ test('every system reads the scoped constraints of the Open Logic base entities,
 });
 
 test('an RMAP target with fewer beats than bytes per word has no known defect at the pin of OpenRMAP', () => {
-  // OpenRMAP is pinned with Open Logic 4.7.0-ft.5, which fixes the address of the transfers that olo_axi_master_simple
-  // splits at AxiMaxBeats_g
+  // OpenRMAP is pinned with Open Logic 4.7.0-ft.6, which fixes the address of the transfers that olo_axi_master_simple
+  // splits at AxiMaxBeats_g (ft.5)
   let d = addInstance(createDesign('t'), cat, 'openrmap/omap_core', { x: 0, y: 0 }, 'target').design;
   for (const [width, beats] of [[32, 1], [32, 3], [64, 7]]) {
     d = setGeneric(setGeneric(d, cat, 'rmap0', 'AxiDataWidth_g', width).design, cat, 'rmap0', 'AxiMaxBeats_g', beats).design;
@@ -175,21 +175,22 @@ test('an RMAP target with fewer beats than bytes per word has no known defect at
   }
 });
 
-test('the known defect of ofb_core is an error with more than one lane and an input VC buffer of one flow control unit', () => {
+test('with more than one lane the input VC buffer of ofb_core holds two flow control units: a range rule, no known defect', () => {
   let d = addInstance(createDesign('t'), cat, 'openfibre/ofb_core', { x: 0, y: 0 }).design;
-  const defect = () => resolve(cat, d).checks.filter((c) => c.rule === 'known_defect');
-  assert.deepEqual(defect(), [], 'one lane with the default buffer of 256 words');
-  // lanes, VcInDepth_g, hit: one lane passes at 64; with more lanes one unit of 64 x NumLanes_g stops, two pass
+  const range = () => resolve(cat, d).checks.filter((c) => c.rule === 'generic_range' && c.message.includes('VcInDepth_g'));
+  assert.deepEqual(range(), [], 'one lane with the default buffer of 256 words');
+  // lanes, VcInDepth_g, hit: one lane passes at 64; with more lanes one unit of 64 x NumLanes_g is rejected, two pass
   for (const [lanes, depth, hit] of /** @type {[number, number, boolean][]} */ ([
     [1, 64, false], [2, 128, true], [2, 256, false], [4, 256, true], [4, 512, false], [4, 1024, false],
   ])) {
     d = setGeneric(setGeneric(d, cat, 'ofb0', 'NumLanes_g', lanes).design, cat, 'ofb0', 'VcInDepth_g', depth).design;
-    const e = defect();
+    const e = range();
     assert.equal(e.length, hit ? 1 : 0, `${lanes} lanes, ${depth} words`);
     if (hit) {
       assert.equal(e[0].severity, 'error');
       assert.equal(e[0].instance, 'ofb0');
-      assert.equal(e[0].message, 'ofb0: Known defect of ofb_core: with more than one lane and an input VC buffer of one flow control unit (VcInDepth_g = 64 x NumLanes_g) the traffic can stop permanently. Set VcInDepth_g to at least 128 x NumLanes_g; the reference design uses 256 x NumLanes_g. The cause is under analysis in OpenFibre.');
+      assert.equal(e[0].message, `ofb0: VcInDepth_g = ${depth} must be at least 128 * NumLanes_g = ${128 * lanes} (with several lanes the input VC buffer holds two flow control units (DL-VI-05); reference value 256 x NumLanes_g).`);
     }
+    assert.deepEqual(resolve(cat, d).checks.filter((c) => c.rule === 'known_defect'), []);
   }
 });

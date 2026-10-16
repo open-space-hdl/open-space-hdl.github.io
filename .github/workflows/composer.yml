@@ -74,7 +74,7 @@ jobs:
             echo "The GHDL check passed a top level that violates an assertion of a core."
             exit 1
           fi
-          grep "ReleaseBytes_g must be a power of two" invalid.log
+          grep "ReleaseBytes_g must be a power of two" invalid.log || { cat invalid.log; echo "The GHDL check stopped the top level for another reason."; exit 1; }
 
   browser:
     name: Browser tests (${{ matrix.browser }})

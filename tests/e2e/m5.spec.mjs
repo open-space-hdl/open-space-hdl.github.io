@@ -23,9 +23,8 @@ test('the SpaceFibre node opens without errors and saves the netlist of its gold
   await openExample(page, 'SpaceFibre node');
   for (const id of ['rmap0', 'nchar0', 'ofb0', 'pa0', 'spp0']) await expect(page.locator(`[data-block="${id}"]`)).toHaveCount(1);
   await expect(page.locator('.cmp-check-item.cmp-sev-error')).toHaveCount(0);
-  // the one warning: the core cannot wait for the transceivers yet (rule of ofb_core with the adapter)
-  await expect(page.locator('.cmp-check-item.cmp-sev-warning')).toHaveCount(1);
-  await expect(page.locator('.cmp-check-item.cmp-sev-warning')).toContainText('ofb0 with pa0: ofb_core leaves reset before the transceivers are ready');
+  // no warning: the core waits for the transceivers through the TX ready of its Phy interface
+  await expect(page.locator('.cmp-check-item.cmp-sev-warning')).toHaveCount(0);
   // the user bits between OpenSPP and the virtual channel are a note, not a problem
   await expect(page.locator('.cmp-check-item.cmp-sev-info')).toContainText(['ofb0.M_Vc[0] has 1 user bit', 'spp0.M_Link has 5 user bits, ofb0.S_Vc[1] 1: bit 0 is connected, bits 4 to 1 are not used.']);
   await shot(page, info, 'ofb-01-spacefibre-node');

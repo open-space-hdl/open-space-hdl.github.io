@@ -1,5 +1,5 @@
 {
-  "catalog": "bebf58067f6a",
+  "catalog": "d012c32ccfc8",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -2187,6 +2187,18 @@
           "value": 64,
           "vhdl": "64",
           "default": true
+        },
+        {
+          "name": "LaneStart_g",
+          "value": false,
+          "vhdl": "false",
+          "default": true
+        },
+        {
+          "name": "AutoStart_g",
+          "value": true,
+          "vhdl": "true",
+          "default": true
         }
       ],
       "ports": [
@@ -2597,6 +2609,12 @@
           "actual": "ofb0_Phy_NoSignal_s"
         },
         {
+          "name": "Phy_TxReady",
+          "dir": "in",
+          "type": "std_logic",
+          "actual": "ofb0_Phy_TxReady_s"
+        },
+        {
           "name": "Phy_BitSync",
           "dir": "in",
           "type": "std_logic_vector(0 downto 0)",
@@ -2680,6 +2698,12 @@
           "value": "VERSAL_AI_CORE",
           "vhdl": "\"VERSAL_AI_CORE\"",
           "default": true
+        },
+        {
+          "name": "RstPulseCycles_g",
+          "value": 1000,
+          "vhdl": "1000",
+          "default": true
         }
       ],
       "ports": [
@@ -2694,12 +2718,11 @@
           "name": "Rst",
           "dir": "in",
           "type": "std_logic",
-          "domain": "sys",
           "reset": {
-            "kind": "sync",
-            "note": "Synchronous reset in the clock domain System clock (clock FreeRunClk): the output of the reset generator auto_rst_sys."
+            "kind": "async",
+            "note": "Asynchronous reset of the transceivers, their reset controller and the logic of FreeRunClk, of any pulse width; a reset generator of the adapter releases it synchronously to FreeRunClk after RstPulseCycles_g cycles."
           },
-          "actual": "auto_rst_sys_RstOut_s"
+          "actual": "Rst"
         },
         {
           "name": "RefClk",
@@ -2889,8 +2912,7 @@
           "name": "Stat_TxReady",
           "dir": "out",
           "type": "std_logic",
-          "domain": "lane",
-          "actual": "open"
+          "actual": "pa0_Stat_TxReady_s"
         },
         {
           "name": "Stat_RxReady",
@@ -3621,6 +3643,10 @@
       "type": "std_logic_vector(0 downto 0)"
     },
     {
+      "name": "ofb0_Phy_TxReady_s",
+      "type": "std_logic"
+    },
+    {
       "name": "ofb0_PhyRx_CodeErr_s",
       "type": "std_logic_vector(3 downto 0)"
     },
@@ -3855,6 +3881,10 @@
     {
       "name": "pa0_Stat_Aligned_s",
       "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Stat_TxReady_s",
+      "type": "std_logic"
     },
     {
       "name": "rmap0_M_Axi_ArAddr_s",
@@ -4626,6 +4656,13 @@
       "signal": "tx_k"
     },
     {
+      "to": "ofb0_Phy_TxReady_s",
+      "from": "pa0_Stat_TxReady_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "tx_ready"
+    },
+    {
       "to": "rmap0_S_AxiLite_AwAddr_s",
       "from": "rmap_reg_S_AxiLite_AwAddr",
       "kind": "top",
@@ -5277,11 +5314,11 @@
       "library": "olo",
       "source": "olo",
       "url": "https://github.com/open-space-hdl/open-logic-ft",
-      "tag": "4.7.0-ft.5",
-      "commit": "1bc4fb90888cf24ac29bc54527c2982d2dec307c",
+      "tag": "4.7.0-ft.6",
+      "commit": "5d8ae56dcd6362f77e5cffc1cf718e605323c1e7",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.5 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), and fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5); it changes no other source, so the cores verified with 4.7.0-ft.2, 4.7.0-ft.3 or 4.7.0-ft.4 use it unchanged. Of the cores only OpenRMAP uses olo_axi_master_simple.",
+      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). Every core of the catalog is verified with 4.7.0-ft.6.",
       "entities": [
         "olo_base_reset_gen"
       ]
@@ -5290,10 +5327,10 @@
       "library": "openrmap",
       "source": "openrmap",
       "url": "https://github.com/open-space-hdl/openrmap",
-      "commit": "55033637795a009132286f60da90a6a876a9c087",
+      "commit": "e1e13d3ed369c06f3093c745d6b2f8da38d0eba0",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "verifiedWith": "4.7.0-ft.5",
+      "verifiedWith": "4.7.0-ft.6",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
       "entities": [
         "omap_core"
@@ -5303,10 +5340,10 @@
       "library": "openspp",
       "source": "openspp",
       "url": "https://github.com/open-space-hdl/openspp",
-      "commit": "2d7ee8f92175d15e41d1e069f0db663de951d0c6",
+      "commit": "018ebe17992d578dea037fa47251b3309a863bb8",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "verifiedWith": "4.7.0-ft.2",
+      "verifiedWith": "4.7.0-ft.6",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
       "entities": [
         "spp_core",
@@ -5317,10 +5354,10 @@
       "library": "openfibre",
       "source": "openfibre",
       "url": "https://github.com/open-space-hdl/openfibre",
-      "commit": "bd4d80b1f05ee5fda67a97ff4c760952a25a79a7",
+      "commit": "9fc03fb8b0d954501240b28fbeded14c5b5c70c6",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "verifiedWith": "4.7.0-ft.2",
+      "verifiedWith": "4.7.0-ft.6",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. compile_order.txt lists the technology-independent sources; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).",
       "entities": [
         "ofb_core",
@@ -5354,11 +5391,11 @@
           "addrWidth": 12,
           "window": 4096,
           "via": [],
-          "id": "0x0FB10007",
+          "id": "0x0FB10008",
           "registers": {
             "source": "openfibre",
             "url": "https://github.com/open-space-hdl/openfibre",
-            "commit": "bd4d80b1f05ee5fda67a97ff4c760952a25a79a7",
+            "commit": "9fc03fb8b0d954501240b28fbeded14c5b5c70c6",
             "header": "sw/ofb_regs.h",
             "doc": "hdl/ofb_mib/docs/register_map.md",
             "prefix": "OFB"
@@ -5388,7 +5425,7 @@
           "registers": {
             "source": "openrmap",
             "url": "https://github.com/open-space-hdl/openrmap",
-            "commit": "55033637795a009132286f60da90a6a876a9c087",
+            "commit": "e1e13d3ed369c06f3093c745d6b2f8da38d0eba0",
             "header": "sw/omap_regs.h",
             "doc": "hdl/omap_mib/docs/register_map.md",
             "prefix": "OMAP"
@@ -5444,7 +5481,7 @@
           "registers": {
             "source": "openspp",
             "url": "https://github.com/open-space-hdl/openspp",
-            "commit": "2d7ee8f92175d15e41d1e069f0db663de951d0c6",
+            "commit": "018ebe17992d578dea037fa47251b3309a863bb8",
             "header": "sw/spp_regs.h",
             "doc": "hdl/spp_mib/docs/register_map.md",
             "prefix": "SPP"

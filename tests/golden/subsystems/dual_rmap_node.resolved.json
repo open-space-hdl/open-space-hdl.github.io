@@ -1,5 +1,5 @@
 {
-  "catalog": "bebf58067f6a",
+  "catalog": "d012c32ccfc8",
   "entity": "dual_rmap_node",
   "ports": [
     {
@@ -3857,11 +3857,11 @@
       "library": "olo",
       "source": "olo",
       "url": "https://github.com/open-space-hdl/open-logic-ft",
-      "tag": "4.7.0-ft.5",
-      "commit": "1bc4fb90888cf24ac29bc54527c2982d2dec307c",
+      "tag": "4.7.0-ft.6",
+      "commit": "5d8ae56dcd6362f77e5cffc1cf718e605323c1e7",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.5 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), and fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5); it changes no other source, so the cores verified with 4.7.0-ft.2, 4.7.0-ft.3 or 4.7.0-ft.4 use it unchanged. Of the cores only OpenRMAP uses olo_axi_master_simple.",
+      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). Every core of the catalog is verified with 4.7.0-ft.6.",
       "entities": [
         "olo_base_reset_gen"
       ]
@@ -3870,10 +3870,10 @@
       "library": "openwire",
       "source": "openwire",
       "url": "https://github.com/open-space-hdl/openwire",
-      "commit": "2897668e2e519e9517a5c7270f243c5ab0d7fdb0",
+      "commit": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "verifiedWith": "4.7.0-ft.2",
+      "verifiedWith": "4.7.0-ft.6",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
       "entities": [
         "owr_core"
@@ -3883,10 +3883,10 @@
       "library": "openrmap",
       "source": "openrmap",
       "url": "https://github.com/open-space-hdl/openrmap",
-      "commit": "55033637795a009132286f60da90a6a876a9c087",
+      "commit": "e1e13d3ed369c06f3093c745d6b2f8da38d0eba0",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "verifiedWith": "4.7.0-ft.5",
+      "verifiedWith": "4.7.0-ft.6",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
       "entities": [
         "omap_core"
@@ -3919,7 +3919,7 @@
           "registers": {
             "source": "openrmap",
             "url": "https://github.com/open-space-hdl/openrmap",
-            "commit": "55033637795a009132286f60da90a6a876a9c087",
+            "commit": "e1e13d3ed369c06f3093c745d6b2f8da38d0eba0",
             "header": "sw/omap_regs.h",
             "doc": "hdl/omap_mib/docs/register_map.md",
             "prefix": "OMAP"
@@ -3949,7 +3949,7 @@
           "registers": {
             "source": "openwire",
             "url": "https://github.com/open-space-hdl/openwire",
-            "commit": "2897668e2e519e9517a5c7270f243c5ab0d7fdb0",
+            "commit": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
             "header": "sw/owr_regs.h",
             "doc": "hdl/owr_mib/docs/register_map.md",
             "prefix": "OWR"
@@ -3979,7 +3979,7 @@
           "registers": {
             "source": "openrmap",
             "url": "https://github.com/open-space-hdl/openrmap",
-            "commit": "55033637795a009132286f60da90a6a876a9c087",
+            "commit": "e1e13d3ed369c06f3093c745d6b2f8da38d0eba0",
             "header": "sw/omap_regs.h",
             "doc": "hdl/omap_mib/docs/register_map.md",
             "prefix": "OMAP"
@@ -4009,7 +4009,7 @@
           "registers": {
             "source": "openwire",
             "url": "https://github.com/open-space-hdl/openwire",
-            "commit": "2897668e2e519e9517a5c7270f243c5ab0d7fdb0",
+            "commit": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
             "header": "sw/owr_regs.h",
             "doc": "hdl/owr_mib/docs/register_map.md",
             "prefix": "OWR"
@@ -4308,7 +4308,7 @@
     {
       "name": "spw_port",
       "netlist": {
-        "catalog": "bebf58067f6a",
+        "catalog": "d012c32ccfc8",
         "entity": "spw_port",
         "ports": [
           {
@@ -5474,10 +5474,10 @@
             "library": "openwire",
             "source": "openwire",
             "url": "https://github.com/open-space-hdl/openwire",
-            "commit": "2897668e2e519e9517a5c7270f243c5ab0d7fdb0",
+            "commit": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
             "fileList": "compile_order.txt",
             "fileListFormat": "files",
-            "verifiedWith": "4.7.0-ft.2",
+            "verifiedWith": "4.7.0-ft.6",
             "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
             "entities": [
               "owr_core"
@@ -5495,7 +5495,7 @@
     {
       "name": "rmap_node",
       "netlist": {
-        "catalog": "bebf58067f6a",
+        "catalog": "d012c32ccfc8",
         "entity": "rmap_node",
         "ports": [
           {
@@ -8338,11 +8338,11 @@
             "library": "olo",
             "source": "olo",
             "url": "https://github.com/open-space-hdl/open-logic-ft",
-            "tag": "4.7.0-ft.5",
-            "commit": "1bc4fb90888cf24ac29bc54527c2982d2dec307c",
+            "tag": "4.7.0-ft.6",
+            "commit": "5d8ae56dcd6362f77e5cffc1cf718e605323c1e7",
             "fileList": "compile_order.txt",
             "fileListFormat": "files",
-            "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.5 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), and fixes the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5); it changes no other source, so the cores verified with 4.7.0-ft.2, 4.7.0-ft.3 or 4.7.0-ft.4 use it unchanged. Of the cores only OpenRMAP uses olo_axi_master_simple.",
+            "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). Every core of the catalog is verified with 4.7.0-ft.6.",
             "entities": [
               "olo_base_reset_gen"
             ]
@@ -8351,10 +8351,10 @@
             "library": "openwire",
             "source": "openwire",
             "url": "https://github.com/open-space-hdl/openwire",
-            "commit": "2897668e2e519e9517a5c7270f243c5ab0d7fdb0",
+            "commit": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
             "fileList": "compile_order.txt",
             "fileListFormat": "files",
-            "verifiedWith": "4.7.0-ft.2",
+            "verifiedWith": "4.7.0-ft.6",
             "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
             "entities": [
               "owr_core"
@@ -8364,10 +8364,10 @@
             "library": "openrmap",
             "source": "openrmap",
             "url": "https://github.com/open-space-hdl/openrmap",
-            "commit": "55033637795a009132286f60da90a6a876a9c087",
+            "commit": "e1e13d3ed369c06f3093c745d6b2f8da38d0eba0",
             "fileList": "compile_order.txt",
             "fileListFormat": "files",
-            "verifiedWith": "4.7.0-ft.5",
+            "verifiedWith": "4.7.0-ft.6",
             "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
             "entities": [
               "omap_core"
