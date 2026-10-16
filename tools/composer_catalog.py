@@ -1440,8 +1440,8 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 ctx.err(iwhere, f"required signal '{sname}' of type {tid} not mapped")
         out = {"name": iname, "type": tid, "role": role}
         for key in ("clock", "label", "description", "mustServe", "externalOnly", "enabledBy", "sideband",
-                    "params", "vector", "tieOff", "carry", "userFields", "needsLast", "clockSignals", "addressSpace",
-                    "irqRegisters", "memory"):
+                    "params", "vector", "tieOff", "carry", "userFields", "needsLast", "clockSignals", "asyncSignals",
+                    "addressSpace", "irqRegisters", "memory"):
             if key in itf:
                 out[key] = itf[key]
         mem = itf.get("memory")
@@ -1450,6 +1450,9 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         for cs in itf.get("clockSignals") or []:
             if cs not in signals or role != "pins":
                 ctx.err(iwhere, f"clockSignals: {cs} is not a signal of these pins")
+        for an in itf.get("asyncSignals") or []:
+            if an not in signals:
+                ctx.err(iwhere, f"asyncSignals: {an} is not a signal of the interface")
         if itf.get("needsLast") and (role != "sink" or "last" not in signals):
             ctx.err(iwhere, "needsLast is for a sink with a last signal")
         for uf in itf.get("userFields") or []:

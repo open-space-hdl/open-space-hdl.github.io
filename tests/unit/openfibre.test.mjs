@@ -3,11 +3,13 @@
 // constraints of the core.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
-import { addInstance, assignClock, createDesign, setGeneric, updateDomain } from '../../assets/composer/js/model/design.js';
+import { addInstance, assignClock, createDesign, setExternal, setGeneric, updateDomain } from '../../assets/composer/js/model/design.js';
 import { netlist } from '../../assets/composer/js/model/netlist.js';
 import { resolve } from '../../assets/composer/js/model/resolver.js';
-import { connect, loadCatalog } from './helpers.mjs';
+import { fromText, toDocument } from '../../assets/composer/js/model/serialize.js';
+import { connect, loadCatalog, ROOT } from './helpers.mjs';
 
 const cat = loadCatalog();
 
@@ -45,7 +47,7 @@ test('the adapter is the source of the lane clock domain and takes the lanes of 
   assert.equal(cat.block('openfibre/ofb_pa_gty').vendor, 'AMD Versal GTY');
   d = node();
   d = setGeneric(d, cat, 'ofb0', 'NumLanes_g', 4).design;
-  // the input VC buffer of the reference design (256 x NumLanes_g): one flow control unit has a known defect
+  // the input VC buffer of the reference design (256 x NumLanes_g); with several lanes at least two flow control units
   d = setGeneric(d, cat, 'ofb0', 'VcInDepth_g', 1024).design;
   const r = resolve(cat, d);
   assert.equal(r.byId.get('pa0')?.generics.NumLanes_g, 4);
@@ -138,12 +140,58 @@ test('the clock crossings of the core get a maximum delay between every pair of 
   assert.ok(!r.constraints.some((c) => c.kind === 'async_clock_groups'), 'no clock groups that would override them');
 });
 
-test('a SpaceFibre port with the GTY adapter warns that the core leaves reset before the transceivers are ready', () => {
-  let d = addInstance(createDesign('t'), cat, 'openfibre/ofb_core', { x: 0, y: 0 }).design;
-  assert.ok(!resolve(cat, d).checks.some((c) => c.rule === 'with_block'), 'no warning without the adapter');
-  d = addInstance(d, cat, 'openfibre/ofb_pa_gty', { x: 300, y: 0 }).design;
-  const w = resolve(cat, d).checks.filter((c) => c.rule === 'with_block');
-  assert.equal(w.length, 1);
-  assert.equal(w[0].severity, 'warning');
-  assert.match(w[0].message, /^ofb0 with pa0: ofb_core leaves reset before the transceivers are ready/);
+test('the core takes the TX ready of the adapter through the Phy interface; the adapter synchronises its reset', () => {
+  const d = node();
+  const r = resolve(cat, d);
+  assert.ok(!r.checks.some((c) => c.rule === 'with_block'), 'no coupling of the reset of the core to the transceivers');
+  const n = netlist(cat, d, r);
+  const port = (/** @type {string} */ inst, /** @type {string} */ name) => n.instances.find((i) => i.id === inst)?.ports.find((p) => p.name === name);
+  assert.ok(n.nets.some((x) => x.from === port('pa0', 'Stat_TxReady')?.actual && x.to === port('ofb0', 'Phy_TxReady')?.actual && x.signal === 'tx_ready'));
+  // an asynchronous level: in no clock domain, unlike the other signals of the interface
+  assert.equal(port('ofb0', 'Phy_TxReady')?.domain, undefined);
+  assert.equal(port('pa0', 'Stat_TxReady')?.domain, undefined);
+  assert.equal(port('ofb0', 'Phy_NoSignal')?.domain, 'pa0_laneclk');
+  // the raw system reset: a reset generator of the adapter releases it
+  assert.equal(port('pa0', 'Rst')?.actual, 'Rst');
+  assert.equal(/** @type {any} */ (port('pa0', 'Rst'))?.reset?.kind, 'async');
+  assert.ok(!cat.block('openfibre/ofb_pa_gty').interfaces.find((i) => i.name === 'Stat')?.signals.tx_ready);
+});
+
+test('an external Phy interface of the core has the TX ready as a top-level input without a clock domain', () => {
+  const d = setExternal(addInstance(createDesign('t'), cat, 'openfibre/ofb_core', { x: 0, y: 0 }).design, 'ofb0.Phy', 'phy_');
+  const n = netlist(cat, d, resolve(cat, d));
+  const tx = n.ports.find((p) => p.name === 'phy_Phy_TxReady');
+  assert.deepEqual(tx && { dir: tx.dir, type: tx.type, domain: tx.domain }, { dir: 'in', type: 'std_logic', domain: undefined });
+  assert.ok(n.ports.find((p) => p.name === 'phy_PhyRx_Valid')?.domain, 'the other signals are in the lane clock domain');
+});
+
+test('the lane start generics of the core take their defaults: LaneStart_g false, AutoStart_g true, as before them', () => {
+  const b = cat.block('openfibre/ofb_core');
+  const def = (/** @type {string} */ n) => b.generics.find((g) => g.name === n)?.default;
+  assert.deepEqual([def('LaneStart_g'), def('AutoStart_g')], [false, true]);
+  const d = addInstance(createDesign('t'), cat, 'openfibre/ofb_core', { x: 0, y: 0 }).design;
+  const g = resolve(cat, d).byId.get('ofb0')?.generics;
+  assert.deepEqual([g?.LaneStart_g, g?.AutoStart_g], [false, true]);
+  // the system of a user keeps its values: its port takes the defaults
+  const r = fromText(readFileSync(`${ROOT}tests/fixtures/spfi_encrypt.composer.json`, 'utf-8'), cat);
+  const u = resolve(cat, r.design).byId.get('ofb0')?.generics;
+  assert.deepEqual([u?.LaneStart_g, u?.AutoStart_g], [false, true]);
+});
+
+test('the brief names exactly one way to start the link for every value of the lane start generics', () => {
+  /** @type {[boolean, boolean, RegExp][]} */
+  const cases = [
+    [false, true, /write LANE_CTRL .* = 0x63 .*; the reset value 0x62 \(AutoStart, AutoStart_g\) starts when the far end sends\./],
+    [true, true, /The lanes start after the reset without software \(LaneStart_g/],
+    [true, false, /The lanes start after the reset without software \(LaneStart_g/],
+    [false, false, /write LANE_CTRL .* = 0x63 .*, or 0x62 \(AutoStart, TxEn, RxEn\) to wait for the far end\./],
+  ];
+  for (const [laneStart, autoStart, step] of cases) {
+    let d = addInstance(createDesign('t'), cat, 'openfibre/ofb_core', { x: 0, y: 0 }).design;
+    d = setGeneric(setGeneric(d, cat, 'ofb0', 'LaneStart_g', laneStart).design, cat, 'ofb0', 'AutoStart_g', autoStart).design;
+    const brief = /** @type {any} */ (toDocument(d, cat)).agent.brief;
+    const starts = brief.split('\n').filter((/** @type {string} */ l) => /^\d+\. (Start the link|The lanes start)/.test(l));
+    assert.equal(starts.length, 1, `LaneStart_g ${laneStart}, AutoStart_g ${autoStart}: ${starts.join(' | ')}`);
+    assert.match(starts[0], step);
+  }
 });

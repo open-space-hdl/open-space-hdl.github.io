@@ -206,7 +206,9 @@ class Netlist {
     for (const itf of b.interfaces) {
       const dom = itf.clock ? rec.clocks[itf.clock] : undefined;
       if (!dom) continue;
-      for (const pname of Object.values(itf.signals)) if (!m.has(pname)) m.set(pname, dom);
+      // an asynchronous level belongs to no clock domain
+      const levels = new Set((itf.asyncSignals ?? []).map((s) => itf.signals[s]));
+      for (const pname of Object.values(itf.signals)) if (!m.has(pname) && !levels.has(pname)) m.set(pname, dom);
     }
     return m;
   }

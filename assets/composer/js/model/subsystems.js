@@ -201,7 +201,7 @@ function deriveBlock(cat, name, def, res, resolved) {
       widths: Object.fromEntries(Object.entries(pv.widths).map(([k, v]) => [k, String(v)])),
     };
     if (dom) itf.clock = `Clk_${dom.id}`;
-    for (const key of /** @type {const} */ (['mustServe', 'externalOnly', 'sideband', 'userFields', 'carry', 'needsLast', 'clockSignals', 'tieOff'])) {
+    for (const key of /** @type {const} */ (['mustServe', 'externalOnly', 'sideband', 'userFields', 'carry', 'needsLast', 'clockSignals', 'asyncSignals', 'tieOff'])) {
       if (pv.itf[key] !== undefined) itf[key] = pv.itf[key];
     }
     // a condition on the generics inside (an AXI4 master with single transfers) is decided here: the block of the

@@ -105,6 +105,22 @@ openfibre:
       - { block: openfibre/ofb_core, kind: generic_range, generic: VcInDepth_g, text: "VcInDepth_g must be at least 128 x NumLanes_g with several lanes (DL-VI-05); this replaces the known defect of a buffer of one flow control unit. The default 256 is too small for three or four lanes; reference value 256 x NumLanes_g." }
       - { block: openfibre/ofb_core, kind: generic_range, generic: VcOutDepth_g, text: "VcOutDepth_g x NumLanes_g must be at least 64 (DL-VO-05)." }
       - { block: openfibre/ofb_core, kind: generic_range, generic: ErbRows_g, text: "ErbRows_g must be at least 64 (DL-ER-08)." }
+  - previous: 0c0a647c25d559b4ace1c2bf461d25832c71cae5
+    pin: bed4a43bc45c4c6e843e3db591864f277c967a1d
+    evidence: "PR #10 of the core: ofb_core: new input Phy_TxReady, asynchronous level, default '1'; it must come from a register (any clock domain) or a constant. ofb_pa_gty: Stat_TxReady is a register of FreeRunClk (connect it to Phy_TxReady); new generic RstPulseCycles_g (default 1000); Rst may be a pulse of any width; LaneRst is asserted while the transmitters are not ready, also while LaneClk stands still. MIB: register map version 8 (ID 0x0FB10008); DL_STATUS bit 9 TX_READY (RO); DL_ERRORS bit 12 TX_LOST (W1C); IRQ_MASK bits 12:0 (was 11:0)."
+    changes:
+      - { block: openfibre/ofb_core, kind: behaviour, text: "New input Phy_TxReady in the Phy interface: while the transmitters of the adapter are not ready, the link stays in Near-End Reset (CORE-PL-04, DL-LR-06). A connected ofb_pa_gty drives it; an external Phy interface has it as a top-level input that must come from a register or a constant." }
+      - { block: openfibre/ofb_core, kind: registers, text: "Register map version 8 (ID 0x0FB10008): DL_STATUS bit 9 TX_READY, DL_ERRORS bit 12 TX_LOST, IRQ_MASK bits 12:0." }
+      - { block: openfibre/ofb_core, kind: behaviour, text: "The reset of the core no longer waits for the transceivers: the coupling of the reset to LaneRst of the adapter is replaced by the TX ready input." }
+      - { block: openfibre/ofb_pa_gty, kind: behaviour, text: "Stat_TxReady moves from the Stat interface to the Phy interface (tx_ready), a register of FreeRunClk; a system that exported it with Stat gets it through the connection to the core instead." }
+      - { block: openfibre/ofb_pa_gty, kind: behaviour, text: "Rst is asynchronous again and may be a pulse of any width: a reset generator of the adapter releases it synchronously to FreeRunClk. LaneRst stays asserted while the transmitters are not ready, also while LaneClk stands still." }
+      - { block: openfibre/ofb_pa_gty, kind: generic_added, generic: RstPulseCycles_g, text: "New generic RstPulseCycles_g (default 1000): minimum reset of the transceivers in cycles of FreeRunClk." }
+  - previous: bed4a43bc45c4c6e843e3db591864f277c967a1d
+    pin: 9fc03fb8b0d954501240b28fbeded14c5b5c70c6
+    evidence: "PR #11 of the core: new generics LaneStart_g (default false) and AutoStart_g (default true) of ofb_core, the reset values of LaneStart and AutoStart of every lane; the defaults keep the current behaviour. No change of ports, streams, other generics, the register map or the Open Logic pin."
+    changes:
+      - { block: openfibre/ofb_core, kind: generic_added, generic: LaneStart_g, text: "New generic LaneStart_g (default false): reset value of LaneStart in LANE_CTRL of every lane; true starts the link after the reset without software." }
+      - { block: openfibre/ofb_core, kind: generic_added, generic: AutoStart_g, text: "New generic AutoStart_g (default true): reset value of AutoStart in LANE_CTRL of every lane, as before." }
 
 opencrypto:
   - previous: e03bc8cda75a660cc3e28bdc14d7f9409ddb0497

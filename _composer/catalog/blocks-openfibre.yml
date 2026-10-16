@@ -28,6 +28,8 @@ blocks:
     generics:
       - { name: NumVc_g, label: Virtual channels, description: "Number of virtual channels (1 to 32); the VC ports are vectors in ascending order." }
       - { name: NumLanes_g, label: Lanes, description: "Number of lanes (1 to 4); the VC ports carry 4 x NumLanes_g bytes per beat. The physical adapter takes the same value." }
+      - { name: LaneStart_g, label: Lane start after reset, description: "Reset value of LaneStart (LANE_CTRL bit 0 of every lane); the port starts the link without software. Set it at one end when the MIB of that end is reachable only over this link." }
+      - { name: AutoStart_g, label: Auto start after reset, description: "Reset value of AutoStart (LANE_CTRL bit 1 of every lane); the port starts the link when the far end does." }
       - { name: LaneClkFreq_g, label: Lane clock frequency, unit: Hz, fromClock: LaneClk, description: "Frequency of LaneClk (lane timers, alignment timeout)." }
       - { name: CoreClkFreq_g, label: Core clock frequency, unit: Hz, fromClock: CoreClk, description: "Frequency of CoreClk (scrubber of the error recovery buffer)." }
       - { name: VcOutDepth_g, label: Output VC buffer, unit: beats, description: "Output VC buffer of every VC; a power of two, at least 64 words (VcOutDepth_g x NumLanes_g)." }
@@ -112,7 +114,11 @@ blocks:
         role: master
         clock: LaneClk
         mustServe: true
-        description: Symbol streams, control and status of every lane; connect the physical adapter or make the ports external.
+        description: >-
+          Symbol streams, control and status of every lane; connect the physical adapter or make the ports external.
+          tx_ready (Phy_TxReady) is an asynchronous level from a register or a constant: while it is 0 the link stays in
+          Near-End Reset.
+        asyncSignals: [tx_ready]
         signals:
           tx_data: { port: PhyTx_Data, dir: out }
           tx_k: { port: PhyTx_K, dir: out }
@@ -126,6 +132,7 @@ blocks:
           cdr_enable: { port: Phy_CdrEnable, dir: out }
           rx_invert: { port: Phy_RxInvert, dir: out }
           no_signal: { port: Phy_NoSignal, dir: in }
+          tx_ready: { port: Phy_TxReady, dir: in }
           bit_sync: { port: Phy_BitSync, dir: in }
           near_loopback: { port: Phy_SerialNearLoopback, dir: out }
           far_loopback: { port: Phy_SerialFarLoopback, dir: out }
@@ -149,16 +156,16 @@ blocks:
       # ofb_dl_vc_in.vhd: with several lanes at least two flow control units (DL-VI-05); one unit could stop the traffic
       # for good, because a beat holds back up to NumLanes_g - 1 words until the next words arrive
       - { kind: generic_range, generic: VcInDepth_g, min: 128 * NumLanes_g, when: { generic: NumLanes_g, not: 1 }, message: "with several lanes the input VC buffer holds two flow control units (DL-VI-05); reference value 256 x NumLanes_g" }
-      # until ofb_core has an input for the TX ready of the adapter: the adapter notes require holding the core in reset
-      - { kind: with_block, block: openfibre/ofb_pa_gty, severity: warning, message: "ofb_core leaves reset before the transceivers are ready: the lane initialisation can start against a transmitter that is still in reset, and the Composer cannot couple LaneRst of the adapter to the reset of the core yet." }
-    idRegister: { address: "0x000", value: "0x0FB10007" }
+    idRegister: { address: "0x000", value: "0x0FB10008" }
     registers: { map: hdl/ofb_mib/regs/ofb_regs.yml, header: sw/ofb_regs.h, doc: hdl/ofb_mib/docs/register_map.md, prefix: OFB }
     # the ECC of the memories inside the core: double-error flags per channel, counters, error injection
     protection:
       evidence: "user guide section 8 (protection scope) and the register map"
       ecc: { status: ECC_STATUS, select: ECC_SELECT, count: ECC_COUNT, inject: ECC_INJECT }
     init:
-      - { text: "Start the link at one end: write LANE_CTRL (0x100 + 0x20 i) of every lane i = 0x63 (LaneStart, AutoStart, TxEn, RxEn); the reset value 0x62 (AutoStart) starts when the far end sends." }
+      - { text: "Start the link at one end: write LANE_CTRL (0x100 + 0x20 i) of every lane i = 0x63 (LaneStart, AutoStart, TxEn, RxEn), or 0x62 (AutoStart, TxEn, RxEn) to wait for the far end.", unless: [LaneStart_g, AutoStart_g] }
+      - { text: "Start the link at one end: write LANE_CTRL (0x100 + 0x20 i) of every lane i = 0x63 (LaneStart, AutoStart, TxEn, RxEn); the reset value 0x62 (AutoStart, AutoStart_g) starts when the far end sends.", when: [AutoStart_g], unless: [LaneStart_g] }
+      - { text: "The lanes start after the reset without software (LaneStart_g, LANE_CTRL reset value 0x61 or 0x63).", when: [LaneStart_g] }
       - { text: "Wait for LANE_STATUS (0x104 + 0x20 i) bits 3:0 = 7 (Active) of the lanes and DL_STATUS (0x010) bits 1:0 = 3 (link initialised); VC_HAS_CREDIT (0x030) shows the VCs that may send." }
     endToEnd: "Connect two nodes (in a simulation without the transceiver models: two cores joined by tb/ofb_tb_pa_model.vhd of OpenFibre), start the link at one end and send a packet on a virtual channel; it arrives on the same virtual channel at the other end."
     constraints:
@@ -167,7 +174,7 @@ blocks:
       - "The VC ports have the link format of OpenSPP: spp_core with DataWidth_g = 32 x NumLanes_g connects to a VC port directly (M_Link_User(0) to S_Vc_TUser); the further user bits of OpenSPP (destination index) do not reach the SpaceFibre port."
       - Every VC carries any packets; which VC carries which traffic is a convention of the system that both ends of the link follow.
       - Enable the safe implementation of state machines in the synthesis tool (Vivado FSM_SAFE_STATE = default_state on the state registers, Synplify syn_encoding = safe).
-      - Read ID (0x0FB10007) and GENERICS after the reset; start the link with LANE_CTRL = 0x63 at one end (LaneStart, AutoStart, TxEn, RxEn) and wait for DL_STATUS bits 1:0 = 3 (programming sequence of the user guide).
+      - Read ID (0x0FB10008) and GENERICS after the reset; start the link with LANE_CTRL = 0x63 at one end (LaneStart, AutoStart, TxEn, RxEn), or with LaneStart_g = true at that end, and wait for DL_STATUS bits 1:0 = 3 (programming sequence of the user guide).
       - All four clocks must run for the reset to complete; CoreClk may be the lane clock (as in the VCK190 reference design).
     rates:
       evidence: "user guide section 7; TC-NI-07 (virtual channel ports), TC-CORE-16 (link efficiency), TC-CORE-15 (CoreClk); rowEff derived from the link efficiency of TC-CORE-16 (words of 4 bytes, packets of 1 to 1024 B) and the row model of TC-NI-07"
@@ -212,11 +219,11 @@ blocks:
       - { port: FreeRunClk, primary: true, label: Free-running, description: "Free-running clock of the transceiver reset controller; it runs before the transceivers, for example the management clock." }
       - { port: LaneClk, output: true, frequency: 156.25e6, label: Lane clock, description: "Transmit user clock of the quad (6.25 Gbit/s / 40 bits); the lane clock of the core." }
     resets:
-      # at this pin the adapter resets FreeRunClk registers with Rst directly: it gets the reset generator of that domain
-      - { port: Rst, active: high, sync: sync, clock: FreeRunClk, description: "Reset of the transceivers, their reset controller and the logic of FreeRunClk, which uses it synchronously: the Composer connects the reset generator of the clock domain of FreeRunClk." }
+      - { port: Rst, active: high, sync: async, description: "Asynchronous reset of the transceivers, their reset controller and the logic of FreeRunClk, of any pulse width; a reset generator of the adapter releases it synchronously to FreeRunClk after RstPulseCycles_g cycles." }
     generics:
       - { name: NumLanes_g, label: Lanes, description: "Lanes of the quad in use (1 to 4); follows the core.", follow: { interfaces: [Phy], measure: generic, generic: NumLanes_g } }
       - { name: SimDevice_g, label: Device family, advanced: true, description: "SIM_DEVICE of the BUFG_GT (device family)." }
+      - { name: RstPulseCycles_g, label: Reset length, advanced: true, description: "Minimum reset of the transceivers and their reset controller, in cycles of FreeRunClk (3 or more)." }
     interfaces:
       - name: Phy
         label: Core
@@ -224,7 +231,8 @@ blocks:
         role: slave
         clock: LaneClk
         mustServe: true
-        description: The physical adapter ports of the core, one to one.
+        description: The physical adapter ports of the core, one to one; tx_ready is Stat_TxReady, a register of FreeRunClk.
+        asyncSignals: [tx_ready]
         signals:
           tx_data: { port: PhyTx_Data, dir: out }
           tx_k: { port: PhyTx_K, dir: out }
@@ -238,6 +246,7 @@ blocks:
           cdr_enable: { port: Phy_CdrEnable, dir: out }
           rx_invert: { port: Phy_RxInvert, dir: out }
           no_signal: { port: Phy_NoSignal, dir: in }
+          tx_ready: { port: Stat_TxReady, dir: in }
           bit_sync: { port: Stat_Aligned, dir: in }
           near_loopback: { port: Phy_SerialNearLoopback, dir: out }
           far_loopback: { port: Phy_SerialFarLoopback, dir: out }
@@ -266,7 +275,7 @@ blocks:
         role: event_out
         clock: LaneClk
         tieOff: open
-        description: High while the transmitters are not ready; hold the reset of the core while it is high.
+        description: High while the transmitters are not ready, also while LaneClk stands still; released synchronously to LaneClk. A reset for further logic of the lane clock; the core gets the TX ready through its Phy interface.
         signals: { rst: LaneRst }
       - name: Stat
         label: Status
@@ -274,11 +283,11 @@ blocks:
         role: event_out
         clock: LaneClk
         tieOff: open
-        description: Transmitters and receivers ready, receive buffer errors and clock corrections per lane.
-        signals: { tx_ready: Stat_TxReady, rx_ready: Stat_RxReady, rx_buf_err: Stat_RxBufErr, clk_cor: Stat_ClkCor }
+        description: Receivers ready, receive buffer errors and clock corrections per lane.
+        signals: { rx_ready: Stat_RxReady, rx_buf_err: Stat_RxBufErr, clk_cor: Stat_ClkCor }
     notes:
       - "Vendor-specific (AMD Versal GTY). hdl/ofb_pa_gty/src/ofb_pa_gty.vhd is not in component_list.txt: add it to the library openfibre, and create the transceiver wizard instance ofb_gtw in the Vivado project with hdl/ofb_pa_gty/tcl/ofb_gtw.tcl (source the file, then ofb_gtw_create ofb_gtw 156.25 for a 156.25 MHz reference clock)."
       - RefClk is the output O of the IBUFDS_GTE5 of the reference clock pins of the quad; place the buffer in the chip-level top, as hdl/ofb_vck190/src/ofb_vck190_top.vhd does.
-      - Hold the reset of the core while LaneRst is high; the VCK190 reference design synchronises LaneRst to MgmtClk and ORs it with the power-on reset into Rst of the core.
+      - Stat_TxReady reaches Phy_TxReady of the core through the Phy interface; the core holds the link in Near-End Reset while the transmitters are not ready, so its reset needs no status of the adapter. The VCK190 reference design resets the core and the adapter with the power-on reset.
       - The line rate is 6.25 Gbit/s with a 156.25 MHz reference clock, so LaneClk runs at 156.25 MHz.
       - Simulation needs the AMD transceiver models (unisim and the simulation files of the wizard); OpenFibre simulates the adapter with tools/run_xsim.py. Without them, the test bench model tb/ofb_tb_pa_model.vhd of OpenFibre (two adapters joined by a lane, one clock) stands in for the adapters of both ends of a link.

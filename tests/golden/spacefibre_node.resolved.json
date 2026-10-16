@@ -1,5 +1,5 @@
 {
-  "catalog": "739484138962",
+  "catalog": "ed519fc26674",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -2187,6 +2187,18 @@
           "value": 64,
           "vhdl": "64",
           "default": true
+        },
+        {
+          "name": "LaneStart_g",
+          "value": false,
+          "vhdl": "false",
+          "default": true
+        },
+        {
+          "name": "AutoStart_g",
+          "value": true,
+          "vhdl": "true",
+          "default": true
         }
       ],
       "ports": [
@@ -2597,6 +2609,12 @@
           "actual": "ofb0_Phy_NoSignal_s"
         },
         {
+          "name": "Phy_TxReady",
+          "dir": "in",
+          "type": "std_logic",
+          "actual": "ofb0_Phy_TxReady_s"
+        },
+        {
           "name": "Phy_BitSync",
           "dir": "in",
           "type": "std_logic_vector(0 downto 0)",
@@ -2680,6 +2698,12 @@
           "value": "VERSAL_AI_CORE",
           "vhdl": "\"VERSAL_AI_CORE\"",
           "default": true
+        },
+        {
+          "name": "RstPulseCycles_g",
+          "value": 1000,
+          "vhdl": "1000",
+          "default": true
         }
       ],
       "ports": [
@@ -2694,12 +2718,11 @@
           "name": "Rst",
           "dir": "in",
           "type": "std_logic",
-          "domain": "sys",
           "reset": {
-            "kind": "sync",
-            "note": "Synchronous reset in the clock domain System clock (clock FreeRunClk): the output of the reset generator auto_rst_sys."
+            "kind": "async",
+            "note": "Asynchronous reset of the transceivers, their reset controller and the logic of FreeRunClk, of any pulse width; a reset generator of the adapter releases it synchronously to FreeRunClk after RstPulseCycles_g cycles."
           },
-          "actual": "auto_rst_sys_RstOut_s"
+          "actual": "Rst"
         },
         {
           "name": "RefClk",
@@ -2889,8 +2912,7 @@
           "name": "Stat_TxReady",
           "dir": "out",
           "type": "std_logic",
-          "domain": "lane",
-          "actual": "open"
+          "actual": "pa0_Stat_TxReady_s"
         },
         {
           "name": "Stat_RxReady",
@@ -3621,6 +3643,10 @@
       "type": "std_logic_vector(0 downto 0)"
     },
     {
+      "name": "ofb0_Phy_TxReady_s",
+      "type": "std_logic"
+    },
+    {
       "name": "ofb0_PhyRx_CodeErr_s",
       "type": "std_logic_vector(3 downto 0)"
     },
@@ -3855,6 +3881,10 @@
     {
       "name": "pa0_Stat_Aligned_s",
       "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Stat_TxReady_s",
+      "type": "std_logic"
     },
     {
       "name": "rmap0_M_Axi_ArAddr_s",
@@ -4626,6 +4656,13 @@
       "signal": "tx_k"
     },
     {
+      "to": "ofb0_Phy_TxReady_s",
+      "from": "pa0_Stat_TxReady_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "tx_ready"
+    },
+    {
       "to": "rmap0_S_AxiLite_AwAddr_s",
       "from": "rmap_reg_S_AxiLite_AwAddr",
       "kind": "top",
@@ -5317,7 +5354,7 @@
       "library": "openfibre",
       "source": "openfibre",
       "url": "https://github.com/open-space-hdl/openfibre",
-      "commit": "0c0a647c25d559b4ace1c2bf461d25832c71cae5",
+      "commit": "9fc03fb8b0d954501240b28fbeded14c5b5c70c6",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.6",
@@ -5354,11 +5391,11 @@
           "addrWidth": 12,
           "window": 4096,
           "via": [],
-          "id": "0x0FB10007",
+          "id": "0x0FB10008",
           "registers": {
             "source": "openfibre",
             "url": "https://github.com/open-space-hdl/openfibre",
-            "commit": "0c0a647c25d559b4ace1c2bf461d25832c71cae5",
+            "commit": "9fc03fb8b0d954501240b28fbeded14c5b5c70c6",
             "header": "sw/ofb_regs.h",
             "doc": "hdl/ofb_mib/docs/register_map.md",
             "prefix": "OFB"
