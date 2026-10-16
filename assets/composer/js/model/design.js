@@ -661,7 +661,10 @@ export function setGeneric(d, cat, id, name, value) {
   if (!g) throw new DesignError(`${b.entity} has no generic ${name}.`);
   const res = validateValue(g, value);
   if (!res.ok) throw new DesignError(`${name}: ${res.message}`);
-  const base = cat.genericValues(b, {}, inst.preset);
+  // the value without this override: from the catalog, the preset, or the generic a preset links it to
+  const others = { ...inst.generics };
+  delete others[name];
+  const base = cat.genericValues(b, others, inst.preset);
   const generics = { ...inst.generics };
   // a width that follows a connection stays fixed once set, even to the default value
   if (sameValue(res.value, base[name]) && !g.follow) delete generics[name];

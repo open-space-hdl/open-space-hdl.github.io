@@ -6,6 +6,7 @@
  * are open, and how to verify the result. Pure and deterministic.
  */
 
+import { presetLinks } from './catalog.js';
 import { formatHz } from './rules.js';
 import { subsystemsOf, withSubsystems } from './subsystems.js';
 import { addressMapSections, hex } from './addressmap.js';
@@ -424,7 +425,12 @@ export function agentBrief(cat, d, res, resolved, checks) {
   L.push('Generics that differ from the VHDL default:', '');
   for (const i of resolved.instances) {
     const g = i.generics.filter((/** @type {any} */ x) => !x.default);
-    L.push(`- \`${i.id}\`: ${g.length ? g.map((/** @type {any} */ x) => `\`${x.name} => ${x.vhdl}\``).join(', ') : 'none'}`);
+    // generics that follow another one by the preset of the instance, while the user has not set them
+    const inst = d.instances.find((x) => x.id === i.id);
+    const b = inst && cat.blocks.get(inst.block);
+    const follows = inst && b ? [...presetLinks(b, inst.preset)].filter(([k]) => !(k in inst.generics))
+      .map(([k, link]) => `\`${k}\` follows \`${link.sameAs}\`${link.why ? ` (${link.why})` : ''}`) : [];
+    L.push(`- \`${i.id}\`: ${g.length ? g.map((/** @type {any} */ x) => `\`${x.name} => ${x.vhdl}\``).join(', ') : 'none'}${follows.length ? `; ${follows.join(', ')}` : ''}`);
   }
   L.push('');
   if (resolved.packing.length > 0) {

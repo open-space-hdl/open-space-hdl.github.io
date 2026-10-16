@@ -10,6 +10,7 @@ categories:
       - { id: openspp, name: OpenSPP }
       - { id: openfibre, name: OpenFibre }
       - { id: opencrypto, name: OpenCrypto }
+      - { id: opencompact, name: OpenCompact }
 
   - id: olo
     name: Open Logic

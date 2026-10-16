@@ -6,14 +6,17 @@
  *   clock_relation       clock faster runs at least as fast as clock slower (optionally an integer multiple)
  *   generic_any_true     at least one of the boolean generics is true
  *   generic_multiple     a generic is a multiple of an expression (optionally by a power of two)
- *   generic_range        a generic lies between expressions (min, max; length(<bit-string generic>) is its width)
- *                        generic_multiple and generic_range apply only when their condition "when" holds (a boolean
- *                        generic, or { generic, is | not: value }); unlessZero skips a value of 0 or less
+ *   generic_range        a generic lies between expressions (min, max; length(<bit-string generic>) is its width); on an
+ *                        integer_vector generic its first `elements` elements (an expression; the last one repeats)
+ *                        generic_multiple, generic_range, generic_requires and flag_dropped apply only when their
+ *                        condition "when" holds (a boolean generic, or { generic, is | not: value }); unlessZero skips
+ *                        a value of 0 or less
  *   generic_requires     generic = value requires another generic = value
  *   mutual_initiator     reminder for nodes that are initiator and target of each other
  *   same_domain          the interfaces should share the clock domain of their partner (no crossing inserted)
  *   partner_requires     an interface that feeds one of the given types needs generic = value
- *   flag_dropped         a flag bit of user is not passed on (unless a generic or an interface of the block catches it)
+ *   flag_dropped         a flag bit of a signal (user, error) is not passed on (unless a generic or an interface of
+ *                        the block catches it)
  *   run_rate             the transmit rate (clock / divider) exceeds what a receiver with the same clock samples
  *   with_block           the system also contains an instance of another block (a coupling the catalog cannot express yet)
  *   known_defect         a known defect of the block applies (condition when, and generic below a value), until it is
@@ -54,13 +57,29 @@ function isPow2(n) {
 }
 
 /**
+ * The elements of an integer_vector generic: "(0 => 4)", "(2, 3, 4)", or a number; [] for anything else.
+ * @param {unknown} v
+ * @returns {number[]}
+ */
+export function vectorElements(v) {
+  if (typeof v === 'number') return [v];
+  if (typeof v !== 'string') return [];
+  const text = v.trim().replace(/^\(/, '').replace(/\)$/, '');
+  const parts = text.includes('=>') ? [text.slice(text.indexOf('=>') + 2)] : text.split(',');
+  const out = parts.map((x) => Number(x.trim()));
+  return out.every((x) => Number.isInteger(x)) ? out : [];
+}
+
+/**
  * Whether a rule applies with the generic values of an instance: when names a boolean generic that must be true, or
- * a generic that must (is) or must not (not) have a value.
- * @param {string | { generic: string, is?: unknown, not?: unknown } | undefined} when
+ * a generic that must (is) or must not (not) have a value; a list of conditions must all hold.
+ * @param {string | { generic: string, is?: unknown, not?: unknown } | (string | { generic: string, is?: unknown, not?: unknown })[] | undefined} when
  * @param {Record<string, unknown>} values
+ * @returns {boolean}
  */
 export function ruleApplies(when, values) {
   if (when === undefined) return true;
+  if (Array.isArray(when)) return when.every((w) => ruleApplies(w, values));
   if (typeof when === 'string') return values[when] === true;
   if ('is' in when) return values[when.generic] === when.is;
   return values[when.generic] !== when.not;
@@ -187,9 +206,25 @@ export function runRules(res) {
         }
         case 'generic_range': {
           if (!ruleApplies(rule.when, rec.generics)) break;
-          const v = rec.generics[rule.generic];
+          const raw = rec.generics[rule.generic];
+          // an integer_vector generic: its first elements (elements, an expression), the last one repeating
+          /** @type {{ v: number, at: string }[]} */
+          let values;
+          if (rule.elements !== undefined) {
+            const list = vectorElements(raw);
+            let count;
+            try {
+              count = evaluate(String(rule.elements), env());
+            } catch (e) {
+              if (!(e instanceof ExprError)) throw e;
+              break;
+            }
+            if (!list.length) break;
+            values = Array.from({ length: Math.max(0, count) }, (_, i) => ({ v: list[Math.min(i, list.length - 1)], at: `element ${i} of ` }));
+          } else values = typeof raw === 'number' ? [{ v: raw, at: '' }] : [];
           // unlessZero: 0 (or less) selects a default of the block or switches the function off
-          if (typeof v !== 'number' || (rule.unlessZero && v <= 0)) break;
+          values = values.filter((x) => !(rule.unlessZero && x.v <= 0));
+          if (!values.length) break;
           /** @type {number | undefined} */
           let lo;
           /** @type {number | undefined} */
@@ -201,21 +236,26 @@ export function runRules(res) {
             if (!(e instanceof ExprError)) throw e;
             break;
           }
-          if ((lo === undefined || v >= lo) && (hi === undefined || v <= hi)) break;
+          const bad = values.find((x) => !((lo === undefined || x.v >= lo) && (hi === undefined || x.v <= hi)));
+          if (!bad) break;
           const show = (/** @type {string | number} */ expr, /** @type {number} */ val) => (typeof expr === 'number' || String(val) === String(expr) ? String(val) : `${expr} = ${val}`);
           const range = lo !== undefined && hi !== undefined
             ? `from ${show(rule.min, lo)} to ${show(rule.max, hi)}`
             : lo !== undefined ? `at least ${show(rule.min, lo)}` : `at most ${show(rule.max, /** @type {number} */ (hi))}`;
           res.check(rule.severity ?? 'error', rule.kind,
-            `${inst.id}: ${rule.generic} = ${v} must be ${range}${rule.unlessZero ? ', or 0' : ''}${rule.message ? ` (${rule.message})` : ''}.`,
+            `${inst.id}: ${bad.at}${rule.generic} = ${bad.v} must be ${range}${rule.unlessZero ? ', or 0' : ''}${rule.message ? ` (${rule.message})` : ''}.`,
             where);
           break;
         }
         case 'generic_requires':
-          if (rec.generics[rule.generic] === rule.value) {
+          if (rec.generics[rule.generic] === rule.value && ruleApplies(rule.when, rec.generics)) {
+            // the conditions, where the rule has them, with the values that make them hold
+            const list = rule.when === undefined ? [] : Array.isArray(rule.when) ? rule.when : [rule.when];
+            const names = list.map((/** @type {any} */ w) => (typeof w === 'string' ? w : w.generic));
+            const cond = names.length ? ` with ${names.map((/** @type {string} */ n) => `${n} = ${String(rec.generics[n])}`).join(' and ')}` : '';
             for (const [g, want] of Object.entries(rule.requires)) {
               if (rec.generics[g] !== want) {
-                res.check('error', rule.kind, `${inst.id}: ${rule.generic} = ${String(rule.value)} requires ${g} = ${String(want)}.`, where);
+                res.check('error', rule.kind, `${inst.id}: ${rule.generic} = ${String(rule.value)}${cond} requires ${g} = ${String(want)}.`, where);
               }
             }
           }
@@ -265,6 +305,7 @@ export function runRules(res) {
           }
           break;
         case 'flag_dropped': {
+          if (!ruleApplies(rule.when, rec.generics)) break;
           if (rule.unlessGeneric && rec.generics[rule.unlessGeneric] === true) break;
           const caught = rule.unlessInterface && res.portsOf(inst.id).some((p) => p.itf.name === rule.unlessInterface
             && (res.d.connections.some((c) => c.from === `${inst.id}.${p.ref}`) || res.externals.some((e) => e.interface === `${inst.id}.${p.ref}`)));
