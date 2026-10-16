@@ -63,7 +63,7 @@ sources:
     repo: opencrypto
     url: https://github.com/open-space-hdl/opencrypto
     doc: https://openspacehdl.org/opencrypto/
-    commit: 16167541808130231fa2a955bfb17bec88044813
+    commit: b835a4901c330e7e49ccc3dea13350e66e758ceb
     library: opencrypto
     file_list: compile_order.txt
     file_list_format: files

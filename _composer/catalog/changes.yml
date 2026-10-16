@@ -125,6 +125,10 @@ opencrypto:
     changes:
       - { block: opencrypto/ocr_core, kind: generic_range, generic: ReleaseBytes_g, text: "ReleaseBytes_g is at most 65536 bytes with ReleaseBuffer_g (checked at elaboration)." }
       - { block: opencrypto/ocr_framer, kind: generic_range, generic: ChunkBytes_g, text: "ChunkBytes_g is at most 65536 (checked at elaboration)." }
+  - previous: 16167541808130231fa2a955bfb17bec88044813
+    pin: b835a4901c330e7e49ccc3dea13350e66e758ceb
+    evidence: "PR #8 of the core: None. The GHASH multiplier writes every product coefficient once, with identical logic; Vivado elaborates ocr_core with its default stack."
+    changes: []
 
 olo:
   - previous: 1bc4fb90888cf24ac29bc54527c2982d2dec307c

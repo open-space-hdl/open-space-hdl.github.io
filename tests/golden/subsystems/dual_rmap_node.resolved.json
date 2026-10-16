@@ -1,5 +1,5 @@
 {
-  "catalog": "e167ae45d430",
+  "catalog": "739484138962",
   "entity": "dual_rmap_node",
   "ports": [
     {
@@ -4308,7 +4308,7 @@
     {
       "name": "spw_port",
       "netlist": {
-        "catalog": "e167ae45d430",
+        "catalog": "739484138962",
         "entity": "spw_port",
         "ports": [
           {
@@ -5495,7 +5495,7 @@
     {
       "name": "rmap_node",
       "netlist": {
-        "catalog": "e167ae45d430",
+        "catalog": "739484138962",
         "entity": "rmap_node",
         "ports": [
           {

@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "e167ae45d430",
+ "id": "739484138962",
  "sources": [
   {
    "id": "openwire",
@@ -366,7 +366,7 @@
    "repo": "opencrypto",
    "url": "https://github.com/open-space-hdl/opencrypto",
    "doc": "https://openspacehdl.org/opencrypto/",
-   "commit": "16167541808130231fa2a955bfb17bec88044813",
+   "commit": "b835a4901c330e7e49ccc3dea13350e66e758ceb",
    "library": "opencrypto",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
@@ -430,6 +430,12 @@
        "text": "ChunkBytes_g is at most 65536 (checked at elaboration)."
       }
      ]
+    },
+    {
+     "previous": "16167541808130231fa2a955bfb17bec88044813",
+     "pin": "b835a4901c330e7e49ccc3dea13350e66e758ceb",
+     "evidence": "PR #8 of the core: None. The GHASH multiplier writes every product coefficient once, with identical logic; Vivado elaborates ocr_core with its default stack.",
+     "changes": []
     }
    ]
   },

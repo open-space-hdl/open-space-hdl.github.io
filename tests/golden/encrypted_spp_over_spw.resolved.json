@@ -1,5 +1,5 @@
 {
-  "catalog": "e167ae45d430",
+  "catalog": "739484138962",
   "entity": "encrypted_spp_over_spw",
   "ports": [
     {
@@ -4501,7 +4501,7 @@
       "library": "opencrypto",
       "source": "opencrypto",
       "url": "https://github.com/open-space-hdl/opencrypto",
-      "commit": "16167541808130231fa2a955bfb17bec88044813",
+      "commit": "b835a4901c330e7e49ccc3dea13350e66e758ceb",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.6",
@@ -4564,7 +4564,7 @@
           "registers": {
             "source": "opencrypto",
             "url": "https://github.com/open-space-hdl/opencrypto",
-            "commit": "16167541808130231fa2a955bfb17bec88044813",
+            "commit": "b835a4901c330e7e49ccc3dea13350e66e758ceb",
             "header": "sw/ocr_regs.h",
             "doc": "hdl/ocr_mib/docs/register_map.md",
             "prefix": "OCR"
