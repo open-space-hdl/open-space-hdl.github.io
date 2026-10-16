@@ -27,7 +27,7 @@ permalink: /roadmap/
       <ol>
         <li><a href="#hardware"><span class="toc-state">In progress</span> Hardware tests for TRL 4</a></li>
         <li><a href="#space-link"><span class="toc-state">Next</span> CCSDS space link core</a></li>
-        <li><a href="#building-blocks"><span class="toc-state">Planned</span> New Open Logic building blocks</a></li>
+        <li><a href="#building-blocks"><span class="toc-state">Next</span> New Open Logic building blocks</a></li>
         <li><a href="#cores"><span class="toc-state">Planned</span> Further cores</a></li>
         <li><a href="#systems"><span class="toc-state">Planned</span> Reference systems and evaluation boards</a></li>
         <li><a href="#composer"><span class="toc-state">Planned</span> Composer</a></li>
@@ -114,24 +114,26 @@ permalink: /roadmap/
     </section>
 
     <section class="roadmap-section" id="building-blocks" aria-labelledby="building-blocks-title">
-      <p class="eyebrow">Planned</p>
+      <p class="eyebrow">Next</p>
       <h2 id="building-blocks-title">New Open Logic building blocks</h2>
       <p>
         The space link core and later cores need general-purpose functions that belong in a VHDL library rather than in
-        one core. They are developed in Open Logic FT first and then proposed to Open Logic.
+        one core. They are developed in Open Logic FT first and then proposed to Open Logic. The first three are
+        prerequisites of phase 1 of the space link core and come with it; the others follow with the cores that use
+        them.
       </p>
       <div class="table-frame">
-        <table class="trl-table roadmap-table">
+        <table class="trl-table roadmap-table blocks-table">
           <thead>
-            <tr><th scope="col">Building block</th><th scope="col">Purpose</th></tr>
+            <tr><th scope="col">Building block</th><th scope="col">Purpose</th><th scope="col">State</th></tr>
           </thead>
           <tbody>
-            <tr><td data-label="Building block">Galois field package</td><td data-label="Purpose">Arithmetic in GF(2<sup>m</sup>) for any field polynomial: the common base of Reed-Solomon and BCH codes</td></tr>
-            <tr><td data-label="Building block">Reed-Solomon encoder and decoder</td><td data-label="Purpose">Streaming codecs for configurable codes, shortened codes and interleaving; the decoder reports the corrected symbols and uncorrectable codewords</td></tr>
-            <tr><td data-label="Building block">Convolutional encoder</td><td data-label="Purpose">Configurable constraint length, polynomials and puncturing</td></tr>
-            <tr><td data-label="Building block">Sync word detector</td><td data-label="Purpose">Finds a sync word in a bit stream despite a configurable number of bit errors</td></tr>
-            <tr><td data-label="Building block">Symbol ECC for external memories</td><td data-label="Purpose">A single-symbol-correcting, double-symbol-detecting option of the ECC codecs, for external memories such as DDR and Flash</td></tr>
-            <tr><td data-label="Building block">CAN 2.0 controller</td><td data-label="Purpose">The CAN data link layer with messages in and out as streams (<code>olo_intf_can</code>), the base of the CAN core below</td></tr>
+            <tr><td data-label="Building block">Galois field package</td><td data-label="Purpose">Arithmetic in GF(2<sup>m</sup>) for any field polynomial: the common base of Reed-Solomon and BCH codes</td><td data-label="State"><span class="state-tag is-next">Next</span></td></tr>
+            <tr><td data-label="Building block">Reed-Solomon encoder and decoder</td><td data-label="Purpose">Streaming codecs for configurable codes, shortened codes and interleaving; the decoder reports the corrected symbols and uncorrectable codewords</td><td data-label="State"><span class="state-tag is-next">Next</span></td></tr>
+            <tr><td data-label="Building block">Convolutional encoder</td><td data-label="Purpose">Configurable constraint length, polynomials and puncturing</td><td data-label="State"><span class="state-tag is-next">Next</span></td></tr>
+            <tr><td data-label="Building block">Sync word detector</td><td data-label="Purpose">Finds a sync word in a bit stream despite a configurable number of bit errors</td><td data-label="State"><span class="state-tag">Planned</span></td></tr>
+            <tr><td data-label="Building block">Symbol ECC for external memories</td><td data-label="Purpose">A single-symbol-correcting, double-symbol-detecting option of the ECC codecs, for external memories such as DDR and Flash</td><td data-label="State"><span class="state-tag">Planned</span></td></tr>
+            <tr><td data-label="Building block">CAN 2.0 controller</td><td data-label="Purpose">The CAN data link layer with messages in and out as streams (<code>olo_intf_can</code>), the base of the CAN core below</td><td data-label="State"><span class="state-tag">Planned</span></td></tr>
           </tbody>
         </table>
       </div>
