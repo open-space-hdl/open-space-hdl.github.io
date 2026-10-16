@@ -107,7 +107,7 @@ test('the roadmap page is in the header of every page and on the TRL page, and l
   // the overview states the state of every section; the building blocks of phase 1 of the space link core come next
   await expect(page.locator('.roadmap-toc .toc-state')).toHaveText(['In progress', 'Next', 'Next', 'Planned', 'Planned', 'Planned']);
   await expect(page.locator('.roadmap-section .eyebrow')).toHaveText(['In progress', 'Next', 'Next', 'Planned', 'Planned', 'Planned']);
-  await expect(page.locator('.blocks-table .state-tag')).toHaveText(['Next', 'Next', 'Next', 'Planned', 'Planned', 'Planned']);
+  await expect(page.locator('.blocks-table .state-tag')).toHaveText(['Next', 'Next', 'Next', 'Planned', 'Planned', 'Planned', 'Planned']);
   // the on-board chain ends with the transfer frames of the new core before the transmitter
   await expect(page.locator('.chain .chain-step.is-new')).toContainText('Transfer frames');
   expect(await page.locator('main').textContent()).not.toContain(String.fromCharCode(0x2014));
