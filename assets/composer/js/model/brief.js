@@ -148,6 +148,17 @@ function throughputSection(t) {
     for (const s of t.shared) L.push(`- \`${s.label}\`: paths ${s.paths.map((k) => k + 1).join(', ')}.`);
     L.push('');
   }
+  for (const r of t.inOrder) {
+    const outputs = r.outputs.map((o) => `\`${o.slice(o.lastIndexOf('.') + 1)}\``);
+    const list = outputs.length < 2 ? outputs.join('') : `${outputs.slice(0, -1).join(', ')} and ${outputs[outputs.length - 1]}`;
+    L.push(`\`${r.label}\` delivers the packets of ${r.source.label} to its outputs ${list} one at a time, in the order of arrival (paths ${r.paths.map((k) => k + 1).join(', ')}): a packet holds the delivery until its output has taken it. The outputs together, with the packets spread evenly over them:`, '');
+    const points = r.references.map((b) => r.at(b));
+    L.push(table(['', ...r.references.map((b) => `${b} B`)], [
+      ['In order', ...points.map((pt) => (pt ? formatRate(pt.inOrder) : ''))],
+      ['With a store of two packets behind every output', ...points.map((pt) => (pt ? formatRate(pt.decoupled) : ''))],
+    ]), '');
+    if (r.paths.some((k) => t.paths[k].assumptions.length > 0)) L.push('- The numbers use the assumptions of the paths above.', '');
+  }
   if (t.problems.length > 0) {
     L.push('Rate data that cannot be evaluated with the generics of the system:', '');
     for (const text of t.problems) L.push(`- ${text}`);
