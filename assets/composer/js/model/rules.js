@@ -25,6 +25,7 @@
 
 import { typedEndpoint } from './compat.js';
 import { evaluate, ExprError } from './expr.js';
+import { genericWidth, vectorAtWidth } from './generics.js';
 
 /** @typedef {import('./resolver.js').Resolution} Resolution */
 
@@ -151,6 +152,16 @@ export function runRules(res) {
     const where = { instance: inst.id };
     const freq = (/** @type {string} */ port) => res.domainMap.get(rec.clocks[port])?.frequencyHz;
     const env = () => res.cat.envFor(b, rec.generics);
+    // a vector value that needs more bits than the range of its generic gives (the export writes the others at that
+    // width)
+    for (const g of b.generics) {
+      const v = rec.generics[g.name];
+      const width = typeof v === 'string' ? genericWidth(g, env()) : undefined;
+      const at = width === undefined ? null : vectorAtWidth(v, width);
+      if (at && 'tooWide' in at) {
+        res.check('error', 'vector_width', `${inst.id}: ${g.name} = ${v} needs ${at.tooWide} bits; ${g.vhdlType} has ${width}.`, where);
+      }
+    }
     for (const rule of /** @type {any[]} */ (b.rules ?? [])) {
       switch (rule.kind) {
         case 'clock_freq_multiple': {

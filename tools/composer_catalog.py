@@ -927,16 +927,24 @@ def generic_kind(vtype: str, env: dict[str, Num]) -> tuple[str, int | float | No
 
 
 def slv_value(text: str) -> tuple[str, int, int | None] | None:
-    """Normalize a std_logic_vector literal: ('bits', value, length) or ('others', bit, None)."""
+    """Normalize a std_logic_vector literal: ('bits', value, length) or ('others', bit, None). A sized literal
+    (VHDL-2008, 22x"3FC000") has its size as length; the bits it drops on the left must be zero."""
     t = text.strip()
-    m = re.fullmatch(r'[xX]"([0-9a-fA-F_]*)"', t)
+    m = re.fullmatch(r'(\d*)[xX]"([0-9a-fA-F_]*)"', t)
     if m:
-        digits = m.group(1).replace("_", "")
-        return ("bits", int(digits or "0", 16), 4 * len(digits))
-    m = re.fullmatch(r'[bB]?"([01_]*)"', t)
+        digits = m.group(2).replace("_", "")
+        value, length = int(digits or "0", 16), 4 * len(digits)
+    else:
+        m = re.fullmatch(r'(?:(\d*)[bB]|())"([01_]*)"', t)
+        if m:
+            digits = m.group(3).replace("_", "")
+            value, length = int(digits or "0", 2), len(digits)
     if m:
-        digits = m.group(1).replace("_", "")
-        return ("bits", int(digits or "0", 2), len(digits))
+        if m.group(1):
+            length = int(m.group(1))
+            if value >= 2 ** length:
+                return None
+        return ("bits", value, length)
     m = re.fullmatch(r"\(\s*others\s*=>\s*'([01])'\s*\)", t, re.IGNORECASE)
     if m:
         return ("others", int(m.group(1)), None)

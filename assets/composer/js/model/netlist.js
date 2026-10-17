@@ -26,7 +26,7 @@
  */
 
 import { absentValue } from './catalog.js';
-import { formatReal, sameValue } from './generics.js';
+import { formatReal, genericWidth, sameValue, vectorAtWidth } from './generics.js';
 import { tryEvaluate } from './expr.js';
 import { packFields, RESET_PORT, vhdlType } from './resolver.js';
 import { subsystemName, usedDefinitions, withSubsystems } from './subsystems.js';
@@ -100,13 +100,18 @@ function portOf(ref) {
 }
 
 /**
- * VHDL literal of a generic value.
+ * VHDL literal of a generic value; a vector at the width of its generic where the instance gives the width.
  * @param {import('./generics.js').GenericDef} g
  * @param {unknown} v
+ * @param {number} [width]   width of a std_logic_vector generic
  */
-export function vhdlLiteral(g, v) {
+export function vhdlLiteral(g, v, width) {
   if (v === undefined || v === null) return g.defaultVhdl ?? g.defaultText ?? '';
   switch (g.kind) {
+    case 'std_logic_vector': {
+      const at = width === undefined ? null : vectorAtWidth(v, width);
+      return at && 'vhdl' in at ? at.vhdl : String(v);
+    }
     case 'boolean':
       return v ? 'true' : 'false';
     case 'real':
@@ -461,10 +466,11 @@ class Netlist {
         }
         return o;
       });
+      const env = this.cat.envFor(b, rec.generics);
       const generics = b.generics.map((g) => {
         const v = rec.generics[g.name];
         /** @type {Record<string, unknown>} */
-        const o = { name: g.name, value: v === undefined ? null : v, vhdl: vhdlLiteral(g, v) };
+        const o = { name: g.name, value: v === undefined ? null : v, vhdl: vhdlLiteral(g, v, genericWidth(g, env)) };
         o.default = g.kind === 'opaque' || (g.default !== undefined && v !== undefined && sameValue(v, g.default));
         return o;
       });

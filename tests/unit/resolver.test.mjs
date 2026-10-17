@@ -94,6 +94,31 @@ test('a sink of the receive port of OpenSPP follows its data and user widths', (
     ['spp0.M_Rx[0] has 22 user bits, rx_adapter0.S_In 14: bits 13 to 0 are connected, bits 21 to 14 are not used.']);
 });
 
+test('a mask on the user bits is written at the width that follows the receive port; a wider value is an error', () => {
+  const adapter = streamBlock('test/rx_adapter', { name: 'S_In', type: 'spp.rx', role: 'sink', widths: { data: 'DataWidth_g', keep: 'DataWidth_g / 8', last: 1, user: 'UserWidth_g' }, ready: true, generics: { DataWidth_g: 32, UserWidth_g: 1 } });
+  adapter.generics[0].follow = { interfaces: ['S_In'], measure: 'data' };
+  adapter.generics[1].follow = { interfaces: ['S_In'], measure: 'user' };
+  adapter.generics.push({ name: 'LastMask_g', vhdlType: 'std_logic_vector(UserWidth_g - 1 downto 0)', kind: 'std_logic_vector', default: "(others => '0')", defaultText: "(others => '0')" });
+  const c = catalogWith([adapter]);
+  let d = addInstance(createDesign('t'), c, 'openspp/spp_core', { x: 0, y: 0 }).design;
+  d = addInstance(d, c, 'test/rx_adapter', { x: 0, y: 0 }).design;
+  d = link(c, d, 'spp0.M_Rx[0]', 'rx_adapter0.S_In');
+  const mask = (/** @type {string} */ v) => {
+    const e = setGeneric(d, c, 'rx_adapter0', 'LastMask_g', v).design;
+    const r = resolve(c, e);
+    const inst = netlist(c, e, r).instances.find((/** @type {any} */ i) => i.id === 'rx_adapter0');
+    return { vhdl: inst?.generics.find((/** @type {any} */ g) => g.name === 'LastMask_g')?.vhdl, errors: r.checks.filter((x) => x.rule === 'vector_width').map((x) => x.message) };
+  };
+  // the User Application value of the CPTP layer, bits 21 to 14 of the 22 user bits of the receive port
+  assert.deepEqual(mask('22x"3FC000"'), { vhdl: '"1111111100000000000000"', errors: [] });
+  assert.deepEqual(mask('x"3FC000"'), { vhdl: '"1111111100000000000000"', errors: [] });
+  assert.deepEqual(mask("(others => '1')"), { vhdl: "(others => '1')", errors: [] });
+  assert.deepEqual(mask('x"7FC000"'), { vhdl: 'x"7FC000"', errors: ['rx_adapter0: LastMask_g = x"7FC000" needs 23 bits; std_logic_vector(UserWidth_g - 1 downto 0) has 22.'] });
+  // the default of the block stays as the catalog gives it
+  const inst = netlist(c, d, resolve(c, d)).instances.find((/** @type {any} */ i) => i.id === 'rx_adapter0');
+  assert.equal(inst?.generics.find((/** @type {any} */ g) => g.name === 'LastMask_g')?.vhdl, "(others => '0')");
+});
+
 test('the Space Packet node follows the width of a packet link that does not follow back; ranks decide between two followers', () => {
   const c = catalogWith([
     streamBlock('test/vc_src', { name: 'Out', type: 'pkt.link', role: 'source', widths: { data: 'W_g', keep: 'W_g / 8', last: 1, user: 1 }, ready: true, generics: { W_g: 64 } }),

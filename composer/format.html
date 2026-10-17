@@ -93,7 +93,10 @@ permalink: /composer/format/
         <code>assumed ratio 2.5</code>: it is an assumption about the data, not a property of the block. The key is
         written only when it is set; a Composer older than 0.9.0-beta does not read a file that has it.</li>
       <li>Values of generics: booleans and numbers as JSON, <code>std_logic</code> as <code>"0"</code> or
-        <code>"1"</code>, vectors as VHDL literals (<code>"x\"FE\""</code>), strings without quotes.</li>
+        <code>"1"</code>, vectors as VHDL literals (<code>"x\"FE\""</code>, since 0.9.2-beta also with a size,
+        <code>"22x\"3FC000\""</code>), strings without quotes. Where the generics of the instance give the range of a
+        vector generic, the top level writes the value at that width: as written when it has that length, else as a
+        string of binary digits; a value that needs more bits is an error.</li>
     </ul>
 
     <h2 id="subsystems">Subsystems</h2>
