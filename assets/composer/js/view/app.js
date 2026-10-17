@@ -10,7 +10,7 @@ import { checkConnection, resolveEndpoint } from '../model/compat.js';
 import {
   addConnection, addDomain, addInstance, adoptAdapter, assignClock, clearGeneric, DesignError, getInstance,
   moveInstances, moveToDomain, removeConnections, removeDomain, removeInstances, renameDomain, renameInstance,
-  setAdapterGeneric, setConstant, setDomainBox, setExternal, setGeneric, setSideband, setSystem, setTraffic,
+  setAdapterGeneric, setConstant, setDomainBox, setExternal, setGeneric, setInstanceTraffic, setSideband, setSystem, setTraffic,
   setViewport, sidebandDefaults, updateDomain,
 } from '../model/design.js';
 import { designComments, exportHdl, netlistDiff } from '../model/hdl.js';
@@ -669,6 +669,16 @@ export class App {
    */
   setTraffic(ref, traffic) {
     return this.tryApply(traffic ? 'traffic' : 'no traffic', (d) => setTraffic(d, ref, traffic));
+  }
+
+  /**
+   * Sets or removes the values the user assumes for an instance (an assumed compression ratio).
+   * @param {string} id
+   * @param {import('../model/design.js').InstanceTraffic | null} traffic
+   * @returns {string | null}
+   */
+  setInstanceTraffic(id, traffic) {
+    return this.tryApply(traffic ? 'assumed ratio' : 'no assumed ratio', (d) => setInstanceTraffic(d, this.catalog, id, traffic));
   }
 
   /**

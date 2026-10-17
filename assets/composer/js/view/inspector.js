@@ -221,6 +221,42 @@ export class InspectorView {
   }
 
   /**
+   * A value about the data that the rate data of the block names and the user assumes for the instance (the
+   * compression ratio of a compressor); empty: none, the analysis uses the worst case where the block publishes one.
+   * @param {string} id
+   * @param {import('../model/catalog.js').BlockDef} b
+   */
+  assumedField(id, b) {
+    const a = b.rates?.assumed;
+    if (!a) return null;
+    const ratio = getInstance(this.app.design, id)?.traffic?.ratio;
+    const fid = 'cmp-inst-assumed';
+    const input = h('input', {
+      id: fid,
+      class: 'cmp-input',
+      type: 'number',
+      min: '0',
+      step: 'any',
+      value: ratio === undefined ? '' : String(ratio),
+      placeholder: 'worst case',
+      'aria-describedby': `${fid}-help ${fid}-err`,
+    });
+    const err = this.errorLine(`${fid}-err`, input);
+    input.addEventListener('change', () => {
+      const text = input.value.trim();
+      const v = Number(text);
+      if (text && !(Number.isFinite(v) && v > 0)) {
+        err.show('Give a ratio above zero, or leave the field empty.');
+        return;
+      }
+      err.show(this.app.setInstanceTraffic(id, text ? { ratio: v } : null));
+    });
+    return h('div', { class: 'cmp-field' },
+      h('label', { for: fid }, a.label), input, err.el,
+      h('p', { class: 'cmp-help', id: `${fid}-help` }, a.description));
+  }
+
+  /**
    * The changes of the catalog since the pins of the opened file, by instance, until the system is saved; a click
    * selects the instance (the subsystem for an instance inside a definition).
    */
@@ -404,6 +440,7 @@ export class InspectorView {
             adv.map((g) => this.genericField(inst.id, g, values[g.name], inst.generics, rec)))
           : null),
       this.monitorField(inst.id, b),
+      this.assumedField(inst.id, b),
       this.clocksSection(inst.id, b, rec),
       h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-itf' },
         h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-itf' }, 'Interfaces'),
@@ -730,7 +767,8 @@ export class InspectorView {
       const { bytes, point } = pathAt(t, p);
       if (!point) continue;
       const other = p.source.key === ref ? `to ${p.sink.label}` : `from ${p.source.label}`;
-      lines.push(h('li', {}, `${other}: ${formatRate(point.bitsPerSecond)} at ${bytes} B packets, limited by ${p.elements[point.bottleneck].label}${p.split ? ' (assuming every packet takes this path)' : ''}`));
+      const assumed = p.assumptions.filter((x) => x.mark).map((x) => ` (${x.text} of ${x.label})`).join('');
+      lines.push(h('li', {}, `${other}: ${formatRate(point.bitsPerSecond)} at ${bytes} B packets, limited by ${p.elements[point.bottleneck].label}${p.split ? ' (assuming every packet takes this path)' : ''}${assumed}`));
     }
     const pair = h('div', { class: 'cmp-traffic-row' },
       h('label', { for: `${fid}-len` }, 'Packet length (B)'), len,

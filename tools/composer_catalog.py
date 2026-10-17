@@ -86,7 +86,11 @@ INIT_CONDITIONS = ("when", "unless", "unlessAll")
 GENERIC_CHECKS = {"pow2", "multiple8", "multiple16"}
 # constraints of the blocks (translated to the top level by the resolver) with their required keys
 # Throughput data of a block (rates): keys and the names an expression may use besides the generics
-RATE_INTERFACE_KEYS = {"bytesPerBeat", "beatsPerCycle", "extraBeats", "overheadCycles", "cycles", "maxBytes"}
+RATE_INTERFACE_KEYS = {"bytesPerBeat", "beatsPerCycle", "extraBeats", "overheadCycles", "cycles", "maxBytes", "reference"}
+# named models of the Composer for numbers no expression can give (assets/composer/js/model/throughput.js), with the
+# variables they set; the variable an assumption of the user sets (rates.assumed) beside them
+RATE_MODELS = {"ocp": {"ocp_cycles_per_image", "ocp_header_bytes", "ocp_image_bytes"}}
+RATE_ASSUMED_KEYS = {"name", "label", "description"}
 RATE_ROUTE_KEYS = {"from", "to", "addBytes", "chunk", "paced"}
 RATE_LINK_KEYS = {"interface", "from", "to", "capacity", "capacityBoth", "efficiency", "note"}
 RATE_CHAIN_KEYS = {"from", "to", "cycles", "evidence"}
@@ -99,13 +103,22 @@ def check_rates(ctx: "Context", where: str, rates: object, gen_names: set, itf_n
     if not isinstance(rates, dict):
         ctx.err(where, "rates must be a mapping")
         return
-    unknown = set(rates) - {"evidence", "packet", "vars", "interfaces", "routes", "links", "chains"}
+    unknown = set(rates) - {"evidence", "packet", "vars", "interfaces", "routes", "links", "chains", "model", "assumed"}
     if unknown:
         ctx.err(where, f"rates: unknown keys {', '.join(sorted(unknown))}")
     if not isinstance(rates.get("evidence"), str) or not rates["evidence"].strip():
         ctx.err(where, "rates needs evidence (the test case or measurement behind the numbers)")
     names = {g.lower() for g in gen_names} | {"n"} | {f"freq_{c}".lower() for c in clock_ports}
     names |= {k.lower() for k in (rates.get("vars") or {})}
+    model = rates.get("model")
+    if model is not None and model not in RATE_MODELS:
+        ctx.err(where, f"rates: unknown model {model} (known: {', '.join(sorted(RATE_MODELS))})")
+    names |= RATE_MODELS.get(model, set())
+    assumed = rates.get("assumed")
+    if assumed is not None:
+        # the instance states the value (traffic.<name> of the file); only the ratio of a compressor so far
+        if not isinstance(assumed, dict) or set(assumed) != RATE_ASSUMED_KEYS or assumed.get("name") != "ratio" or model is None:
+            ctx.err(where, "rates: assumed needs name (ratio), label and description, and a model that uses it")
     funcs = {f.lower() for f in FUNCTIONS} | EXPR_WORDS
 
     def expr(what: str, value: object, extra: set = frozenset()) -> None:

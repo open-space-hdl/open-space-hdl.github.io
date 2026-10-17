@@ -19,7 +19,7 @@
  * connected. Every suggested value passes all rules of its generic (suggest.js).
  */
 
-import { evaluate } from './expr.js';
+import { evaluate, ExprError } from './expr.js';
 import { smallestValid } from './suggest.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
@@ -35,6 +35,7 @@ import { smallestValid } from './suggest.js';
  * @property {string} via          the last instance the packets leave before the interface
  * @property {string | null} source   where an unbounded packet comes from: an external input, a link, or the output of
  *                                    a block without rate data (its routes are not known); else null
+ * @property {string} [assumed]    the length depends on a value the user assumes ("assumed ratio 2")
  */
 
 /**
@@ -100,6 +101,14 @@ export function bytesText(l, bytes = l.bytes) {
   if (!l.base) return String(bytes);
   const off = bytes - l.baseValue;
   return `${l.base}${off > 0 ? ` + ${off}` : off < 0 ? ` - ${-off}` : ''} = ${bytes}`;
+}
+
+/**
+ * The mark of a length that depends on a value the user assumes, after its unit: " (assumed ratio 2)", or ''.
+ * @param {Largest} l
+ */
+export function assumedMark(l) {
+  return l.assumed ? ` (${l.assumed})` : '';
 }
 
 /**
@@ -188,11 +197,20 @@ export function analyseSizes(cat, g) {
       return l;
     }
     const env = edge.env;
-    if (edge.route.chunk !== undefined) {
-      const c = value(edge.route.chunk, env);
-      if (l.bytes > c) l = { ...l, bytes: c, base: genericName(edge.route.chunk), baseValue: c, origin: instanceLabel(node), source: null };
+    try {
+      if (edge.route.chunk !== undefined) {
+        const c = value(edge.route.chunk, env);
+        if (l.bytes > c) l = { ...l, bytes: c, base: genericName(edge.route.chunk), baseValue: c, origin: instanceLabel(node), source: null, assumed: undefined };
+      }
+      if (edge.route.addBytes !== undefined && Number.isFinite(l.bytes)) {
+        l = { ...l, bytes: l.bytes + value(edge.route.addBytes, env, l.bytes), ...(edge.assumed ? { assumed: edge.assumed.text } : {}) };
+      }
+    } catch (e) {
+      if (!(e instanceof ExprError)) throw e;
+      // the length behind the route is not known (a model without the value for this configuration): not bounded
+      const label = instanceLabel(node);
+      return { bytes: Infinity, base: null, baseValue: 0, origin: label, via: label, source: `${label} (${e.message})` };
     }
-    if (edge.route.addBytes !== undefined && Number.isFinite(l.bytes)) l = { ...l, bytes: l.bytes + value(edge.route.addBytes, env, l.bytes) };
     return l;
   };
 
@@ -266,7 +284,7 @@ export function analyseSizes(cat, g) {
       if (l.bytes <= v) continue;
       // the messages of a block (an instance, also inside a subsystem), or of a source that states its largest packet
       const lead = /^[a-z]\w*(\/[a-z]\w*)*$/.test(l.origin)
-        ? `${l.origin}: every message of ${l.origin} leaves ${l.via} with ${bytesText(l)} bytes`
+        ? `${l.origin}: every message of ${l.origin} leaves ${l.via} with ${bytesText(l)} bytes${assumedMark(l)}`
         : `Every message of ${l.origin} has up to ${bytesText(l)} bytes (its stated largest packet)`;
       if (lim.soft) {
         const s = lim.soft;
@@ -316,7 +334,7 @@ export function analyseSizes(cat, g) {
       if (!Number.isFinite(l.bytes)) continue;
       const bytes = value(s.bytes, node.env, l.bytes);
       const own = node.rec.generics[s.farEnd];
-      const text = `${label} sends ${s.what} of up to ${bytesText(l, bytes)} bytes`;
+      const text = `${label} sends ${s.what} of up to ${bytesText(l, bytes)} bytes${assumedMark(l)}`;
       sends.push({ ref: refOf(node), what: s.what, bytes, text });
       checks.push({
         severity: 'info',

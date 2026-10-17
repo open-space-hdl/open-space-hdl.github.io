@@ -8,7 +8,7 @@
 
 import { agentBrief } from './brief.js';
 import { checkConnection } from './compat.js';
-import { createDesign, DEFAULT_DOMAIN, identifierProblem, trafficProblem } from './design.js';
+import { createDesign, DEFAULT_DOMAIN, identifierProblem, instanceTrafficProblem, trafficProblem } from './design.js';
 import { validateValue } from './generics.js';
 import { migrate } from './migration.js';
 import { netlist } from './netlist.js';
@@ -25,7 +25,7 @@ export const FORMAT = 'open-space-composer-system';
 export const FORMAT_VERSION = 2;
 export const SCHEMA_URL = 'https://openspacehdl.org/composer/schema/system-1.json';
 export const SCHEMA_URL_2 = 'https://openspacehdl.org/composer/schema/system-2.json';
-export const GENERATOR = { name: 'Open Space Composer', version: '0.8.3-beta' };
+export const GENERATOR = { name: 'Open Space Composer', version: '0.9.0-beta' };
 
 export class FormatError extends Error {
   /** @param {string[]} problems */
@@ -321,6 +321,13 @@ function readParts(d, o, cat, errors, warnings) {
         }
       }
       if (Object.keys(constants).length) rec.constants = constants;
+    }
+    // values about the data that the rate data of the block names (an assumed compression ratio)
+    if (inst.traffic !== undefined) {
+      const problem = instanceTrafficProblem(inst.traffic);
+      if (problem) errors.push(`${inst.id}.traffic: ${problem}`);
+      else if (inst.traffic.ratio !== undefined && b.rates?.assumed?.name !== 'ratio') warnings.push(`${inst.id}: ${b.entity} takes no assumed ratio; the value is ignored.`);
+      else if (inst.traffic.ratio !== undefined) rec.traffic = { ratio: inst.traffic.ratio };
     }
     d.instances.push(rec);
   }

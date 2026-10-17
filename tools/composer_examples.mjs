@@ -13,7 +13,7 @@ import { arrange } from '../assets/composer/js/model/arrange.js';
 import { Catalog } from '../assets/composer/js/model/catalog.js';
 import { checkConnection } from '../assets/composer/js/model/compat.js';
 import {
-  addConnection, addDomain, addInstance, assignClock, createDesign, moveToDomain, renameDomain, setExternal, setGeneric,
+  addConnection, addDomain, addInstance, assignClock, createDesign, moveToDomain, renameDomain, setExternal, setGeneric, setInstanceTraffic,
   setSystem, sidebandDefaults, updateDomain,
 } from '../assets/composer/js/model/design.js';
 import { designComments, exportHdl } from '../assets/composer/js/model/hdl.js';
@@ -186,7 +186,7 @@ function linkDomain(d, spw, hz) {
 {
   let d = base(
     'compressed_images_over_spw',
-    'Compressed and encrypted images over SpaceWire: OpenCompact compresses multispectral images of 128 x 128 samples in 16 bands of 12 bits losslessly (CCSDS 123.0-B-2, BIP order), the OpenCrypto framer cuts every compressed image into chunks, the AES-GCM core encrypts every chunk, and OpenSPP sends every encrypted chunk as one Space Packet through an N-Char adapter and an OpenWire port. An ECC monitor reports the corrected and detected errors of the memories of the compressor and of the buffers of the framer.',
+    'Compressed and encrypted images over SpaceWire: OpenCompact compresses multispectral images of 128 x 128 samples in 16 bands of 12 bits losslessly (CCSDS 123.0-B-2, BIP order), the OpenCrypto framer cuts every compressed image into chunks, the AES-GCM core encrypts every chunk, and OpenSPP sends every encrypted chunk as one Space Packet through an N-Char adapter and an OpenWire port. An ECC monitor reports the corrected and detected errors of the memories of the compressor and of the buffers of the framer. The throughput budget assumes a compression ratio of 2: an assumption about the images, not a property of the core; the brief marks every number that depends on it.',
     [
       ['opencompact/ocp_core', 'lossless_bip'],
       ['opencrypto/ocr_framer', undefined],
@@ -224,6 +224,9 @@ function linkDomain(d, spw, hz) {
     'ocp0.In': 'smp_', 'spp0.M_Rx[0]': 'rx0_',
     'ocr0.S_AxiLite': 'ocr_reg_', 'spp0.S_AxiLite': 'spp_reg_', 'spw0.S_AxiLite': 'spw_reg_', 'edac0.S_AxiLite': 'edac_reg_',
   });
+  // an assumption about the images, not a property of the core: the budget behind the compressor uses it and the brief
+  // marks every number that depends on it
+  d = setInstanceTraffic(d, cat, 'ocp0', { ratio: 2 });
   examples.push(['compressed_images_over_spw', 'Compressed and encrypted images over SpaceWire', d]);
 }
 

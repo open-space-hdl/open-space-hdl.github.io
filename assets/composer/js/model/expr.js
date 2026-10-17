@@ -7,7 +7,11 @@
  * Names are case-insensitive. There is no eval or Function constructor.
  */
 
-/** @typedef {{ value: number, real: boolean }} Num */
+/**
+ * A value of the environment; unknown: a variable that a model cannot give for this configuration, with the reason,
+ * which an expression that uses it reports.
+ * @typedef {{ value: number, real: boolean, unknown?: string }} Num
+ */
 
 export class ExprError extends Error {
   /** @param {string} message */
@@ -223,6 +227,7 @@ class Parser {
       }
       const v = this.env.get(name);
       if (v === undefined) throw new ExprError(`Unknown name "${t.text}" in "${this.text}"`);
+      if (v.unknown) throw new ExprError(v.unknown);
       return v;
     }
     throw new ExprError(`Unexpected "${t.text}" in "${this.text}"`);
