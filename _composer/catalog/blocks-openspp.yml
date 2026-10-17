@@ -146,7 +146,7 @@ blocks:
       - A last beat without valid bytes (Keep all zero) ends an SDU or packet at the inputs; an SDU without any byte is rejected (0x02). The outputs never carry a beat without valid bytes.
       - The user supplies the packet secondary header at the start of the Octet String and keeps the secondary header flag of an APID static.
     rates:
-      evidence: "user guide section 7; TC-CO-12 (throughput at 32, 64 and 128 bit), TC-CO-08, TC-SE-10"
+      evidence: "user guide section 7 (7.3: all receive ports share one buffer and get their packets in the order of arrival); TC-CO-12 (throughput at 32, 64 and 128 bit), TC-CO-08, TC-SE-10"
       packet: SDU
       # H: bytes a send port adds to an SDU: the Space Packet header of the Octet String Service (assumed at every
       # port, the longer case) and the CPTP header with the longest target address
@@ -158,7 +158,8 @@ blocks:
         M_Rx: { cycles: "max(cdiv(n + 6, B) + 1, 5)" }                       # all receive ports together
       routes:
         - { from: S_Tx, to: M_Link, addBytes: H }
-        - { from: S_Link, to: M_Rx, addBytes: "-H" }
+        # one receive buffer for all receive ports: a packet holds the delivery until its port has taken it
+        - { from: S_Link, to: M_Rx, addBytes: "-H", inOrder: true }
     sizes:
       evidence: "user guide section 7.1 and the integration table (the send buffer holds the longest SDU of a port, the receive buffer the longest Space Packet), requirements SPP-6 and SPP-23"
       interfaces:

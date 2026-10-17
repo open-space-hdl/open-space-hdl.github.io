@@ -14,15 +14,18 @@ import { formatRate } from '../../assets/composer/js/model/throughput.js';
 import { connect, loadCatalogJson } from './helpers.mjs';
 
 /**
- * The catalog with the route of the receive ports of OpenSPP in order and the FIFO storing Depth_g beats.
+ * The catalog, which states the route of the receive ports of OpenSPP in order and the FIFO storing Depth_g beats;
+ * without either key on request.
  * @param {{ inOrder?: boolean, holds?: boolean }} [o]
  */
 function inOrderCatalog(o = {}) {
   const json = loadCatalogJson();
-  for (const b of json.blocks) {
-    if (b.id === 'openspp/spp_core' && o.inOrder !== false) for (const r of b.rates.routes) if (r.to === 'M_Rx') r.inOrder = true;
-    if (b.id === 'olo/olo_ft_fifo_sync' && o.holds !== false) b.rates.routes[0].holds = 'Depth_g';
-  }
+  const spp = json.blocks.find((/** @type {any} */ b) => b.id === 'openspp/spp_core');
+  const fifo = json.blocks.find((/** @type {any} */ b) => b.id === 'olo/olo_ft_fifo_sync');
+  assert.equal(spp.rates.routes.find((/** @type {any} */ r) => r.to === 'M_Rx').inOrder, true);
+  assert.equal(fifo.rates.routes[0].holds, 'Depth_g');
+  if (o.inOrder === false) for (const r of spp.rates.routes) delete r.inOrder;
+  if (o.holds === false) delete fifo.rates.routes[0].holds;
   return new Catalog(json);
 }
 

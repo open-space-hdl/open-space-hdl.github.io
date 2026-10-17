@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "61d39e451622",
+ "id": "d24e0d8d8eda",
  "sources": [
   {
    "id": "openwire",
@@ -1744,7 +1744,8 @@
      {
       "from": "In",
       "to": "Out",
-      "addBytes": "0"
+      "addBytes": "0",
+      "holds": "Depth_g"
      }
     ]
    },
@@ -2100,7 +2101,8 @@
      {
       "from": "In",
       "to": "Out",
-      "addBytes": "0"
+      "addBytes": "0",
+      "holds": "Depth_g"
      }
     ]
    },
@@ -2581,7 +2583,8 @@
      {
       "from": "In",
       "to": "Out",
-      "addBytes": "0"
+      "addBytes": "0",
+      "holds": "Depth_g"
      }
     ]
    },
@@ -2975,7 +2978,8 @@
      {
       "from": "In",
       "to": "Out",
-      "addBytes": "0"
+      "addBytes": "0",
+      "holds": "Depth_g"
      }
     ]
    },
@@ -13986,7 +13990,7 @@
    ],
    "endToEnd": "Send one SDU on a send port (APID 0x123, for example) and expect it on receive port 0 with the same APID in user bits 10:0, once the APID tables are ready.",
    "rates": {
-    "evidence": "user guide section 7; TC-CO-12 (throughput at 32, 64 and 128 bit), TC-CO-08, TC-SE-10",
+    "evidence": "user guide section 7 (7.3: all receive ports share one buffer and get their packets in the order of arrival); TC-CO-12 (throughput at 32, 64 and 128 bit), TC-CO-08, TC-SE-10",
     "packet": "SDU",
     "vars": {
      "B": "DataWidth_g / 8",
@@ -14016,7 +14020,8 @@
      {
       "from": "S_Link",
       "to": "M_Rx",
-      "addBytes": "-H"
+      "addBytes": "-H",
+      "inOrder": true
      }
     ]
    },
