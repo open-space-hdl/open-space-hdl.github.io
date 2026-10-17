@@ -62,6 +62,7 @@ RULE_KINDS = {
     "generic_multiple": ("generic", "of"),
     "generic_range": ("generic",),
     "generic_requires": ("generic", "value", "requires"),
+    "vector_within": ("generic", "mask"),
     "mutual_initiator": ("generic",),
     "same_domain": ("interfaces",),
     "partner_requires": ("interface", "types", "generic", "value", "message"),
@@ -91,7 +92,7 @@ RATE_INTERFACE_KEYS = {"bytesPerBeat", "beatsPerCycle", "extraBeats", "overheadC
 # variables they set; the variable an assumption of the user sets (rates.assumed) beside them
 RATE_MODELS = {"ocp": {"ocp_cycles_per_image", "ocp_header_bytes", "ocp_image_bytes"}}
 RATE_ASSUMED_KEYS = {"name", "label", "description"}
-RATE_ROUTE_KEYS = {"from", "to", "addBytes", "chunk", "paced"}
+RATE_ROUTE_KEYS = {"from", "to", "addBytes", "chunk", "gather", "paced"}
 RATE_LINK_KEYS = {"interface", "from", "to", "capacity", "capacityBoth", "efficiency", "note"}
 RATE_CHAIN_KEYS = {"from", "to", "cycles", "evidence"}
 EXPR_WORDS = {"mod", "rem", "abs"}
@@ -149,12 +150,14 @@ def check_rates(ctx: "Context", where: str, rates: object, gen_names: set, itf_n
                 expr(f"{iname}.{key}", entry[key])
     for r in rates.get("routes") or []:
         if set(r) - RATE_ROUTE_KEYS or "from" not in r or "to" not in r:
-            ctx.err(where, "rates: a route needs from and to and knows addBytes, chunk and paced")
+            ctx.err(where, "rates: a route needs from and to and knows addBytes, chunk, gather and paced")
             continue
+        if "chunk" in r and "gather" in r:
+            ctx.err(where, f"rates: route {r['from']} to {r['to']}: chunk and gather exclude each other")
         for end in ("from", "to"):
             if r[end] not in itfs and not (end == "to" and r.get("paced") and r[end] in itf_names):
                 ctx.err(where, f"rates: route {r['from']} to {r['to']}: {r[end]} has no rate entry")
-        for key in ("addBytes", "chunk"):
+        for key in ("addBytes", "chunk", "gather"):
             if key in r:
                 expr(f"route {r['from']} to {r['to']}: {key}", r[key])
     for lk in rates.get("links") or []:
@@ -1640,6 +1643,13 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             flagged = next((i for i in interfaces if i["name"] == r.get("interface")), None)
             if flagged is not None and r.get("signal") not in flagged["signals"]:
                 ctx.err(where, f"rule {kind}: {r.get('signal')} is not a signal of {r.get('interface')}")
+        if kind == "vector_within":
+            for key in ("generic", "mask"):
+                kind_of = next((g["kind"] for g in generics if g["name"] == r.get(key)), None)
+                if r.get(key) in gen_names and kind_of != "std_logic_vector":
+                    ctx.err(where, f"rule {kind}: {r.get(key)} is not a std_logic_vector generic")
+            if r.get("mask") not in gen_names:
+                ctx.err(where, f"rule {kind}: unknown generic {r.get('mask')}")
         if kind == "run_rate" and r.get("divider") not in gen_names:
             ctx.err(where, f"rule {kind}: unknown generic {r.get('divider')}")
         if kind == "partner_requires":

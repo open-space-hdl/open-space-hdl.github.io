@@ -119,6 +119,34 @@ test('a mask on the user bits is written at the width that follows the receive p
   assert.equal(inst?.generics.find((/** @type {any} */ g) => g.name === 'LastMask_g')?.vhdl, "(others => '0')");
 });
 
+test('the end mark value lies within its mask: a bit outside is an error of the system', () => {
+  const adapter = streamBlock('test/rx_adapter', { name: 'S_In', type: 'spp.rx', role: 'sink', widths: { data: 'DataWidth_g', keep: 'DataWidth_g / 8', last: 1, user: 'UserWidth_g' }, ready: true, generics: { DataWidth_g: 32, UserWidth_g: 1 } });
+  adapter.generics[0].follow = { interfaces: ['S_In'], measure: 'data' };
+  adapter.generics[1].follow = { interfaces: ['S_In'], measure: 'user' };
+  for (const name of ['LastMask_g', 'LastValue_g']) {
+    adapter.generics.push({ name, vhdlType: 'std_logic_vector(UserWidth_g - 1 downto 0)', kind: 'std_logic_vector', default: "(others => '0')", defaultText: "(others => '0')" });
+  }
+  Object.assign(adapter, { rules: [{ kind: 'vector_within', generic: 'LastValue_g', mask: 'LastMask_g', message: 'the end mark' }] });
+  const c = catalogWith([adapter]);
+  let d = addInstance(createDesign('t'), c, 'openspp/spp_core', { x: 0, y: 0 }).design;
+  d = addInstance(d, c, 'test/rx_adapter', { x: 0, y: 0 }).design;
+  d = link(c, d, 'spp0.M_Rx[0]', 'rx_adapter0.S_In');
+  const errors = (/** @type {string} */ mask, /** @type {string} */ value) => {
+    let e = setGeneric(d, c, 'rx_adapter0', 'LastMask_g', mask).design;
+    e = setGeneric(e, c, 'rx_adapter0', 'LastValue_g', value).design;
+    return checksOf(resolve(c, e), 'vector_within').map((x) => `${x.severity} ${x.message}`);
+  };
+  // the User Application value 1 in bits 21 to 14 of the 22 user bits of the receive port
+  assert.deepEqual(errors('22x"3FC000"', '22x"004000"'), []);
+  assert.deepEqual(errors('22x"3FC000"', 'x"004000"'), []);
+  assert.deepEqual(errors("(others => '1')", '22x"004001"'), []);
+  assert.deepEqual(errors("(others => '0')", "(others => '0')"), []);
+  assert.deepEqual(errors('22x"3FC000"', '22x"004001"'), ['error rx_adapter0: LastValue_g = 22x"004001" sets bit 0, outside LastMask_g = 22x"3FC000" (the end mark).']);
+  assert.deepEqual(errors("(others => '0')", '22x"004001"'), ['error rx_adapter0: LastValue_g = 22x"004001" sets bits 14 and 0, outside LastMask_g = (others => \'0\') (the end mark).']);
+  // a value wider than the generic is the error vector_width, not this one
+  assert.deepEqual(errors('22x"3FC000"', 'x"7FC000"'), []);
+});
+
 test('the Space Packet node follows the width of a packet link that does not follow back; ranks decide between two followers', () => {
   const c = catalogWith([
     streamBlock('test/vc_src', { name: 'Out', type: 'pkt.link', role: 'source', widths: { data: 'W_g', keep: 'W_g / 8', last: 1, user: 1 }, ready: true, generics: { W_g: 64 } }),

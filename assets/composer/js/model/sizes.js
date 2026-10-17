@@ -7,7 +7,8 @@
  * link, and measured message layouts of a pair of blocks. From them:
  *
  *   largest packet   at every interface: from the largest packet of its source (stated, or unbounded), through the
- *                    routes (a chunking route caps it at the chunk, header and tag bytes are added), capped by the
+ *                    routes (a chunking route caps it at the chunk, a gathering route sets it to the gathered
+ *                    packet, header and tag bytes are added), capped by the
  *                    hard limits of an interface (longer packets do not pass it)
  *   findings         a bounded largest packet above a limit (error, a warning for a reset value only), an unbounded
  *                    source that meets a limit (info), a buffer that cannot hold the longest message (error) or not as
@@ -198,6 +199,11 @@ export function analyseSizes(cat, g) {
     }
     const env = edge.env;
     try {
+      if (edge.route.gather !== undefined) {
+        // the packets of the input are gathered into one packet of this length, whatever their own length
+        const c = value(edge.route.gather, env);
+        l = { ...l, bytes: c, base: genericName(edge.route.gather), baseValue: c, origin: instanceLabel(node), source: null, assumed: undefined };
+      }
       if (edge.route.chunk !== undefined) {
         const c = value(edge.route.chunk, env);
         if (l.bytes > c) l = { ...l, bytes: c, base: genericName(edge.route.chunk), baseValue: c, origin: instanceLabel(node), source: null, assumed: undefined };

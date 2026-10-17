@@ -11,7 +11,9 @@
  *                blocks and the inside of subsystems
  *   path rate    the minimum over its elements, each at its own packet length; the element of the minimum is the
  *                bottleneck. A route can change the length (headers, tags) and cut a packet into chunks: every packet
- *                of the source then crosses an element as several fragments.
+ *                of the source then crosses an element as several fragments. A route can also gather the packets of
+ *                its input into one packet (the SDUs of an image into one compressed image): an element behind it
+ *                takes its time for the gathered packet once per that many packets of the source.
  *
  * Only stated rates are checked (traffic of an external interface): a source that is merely faster than its path is
  * slowed by back pressure. The brief shows the capacity of every path at reference lengths. A block without rate data
@@ -109,7 +111,9 @@ export const REFERENCE_BYTES = [64, 1024];
  * @property {number} packetsPerSecond
  * @property {number} bitsPerSecond   payload at the source
  * @property {number} bottleneck   index of the element
- * @property {{ seconds: number, cycles?: number, fragments: number[], out: number[], capacity?: number }[]} elements
+ * @property {{ seconds: number, cycles?: number, fragments: number[], out: number[], capacity?: number, share: number }[]} elements
+ *           seconds per packet of the source; share: the part of the packets at the element that one packet of the
+ *           source makes up (1, or less behind a route that gathers packets)
  */
 
 /**
@@ -429,13 +433,24 @@ function addLevel(g, cat, d, res, prefix, top) {
 }
 
 /**
- * The fragments of a packet after a route: cut into chunks, then the length change of each.
+ * The fragments of a packet after a route: gathered into one packet, or cut into chunks, then the length change of
+ * each. share: the part of a packet behind the route that the fragments make up (gather: their bytes per gathered
+ * packet; 1 otherwise).
  * @param {number[]} frags
  * @param {any} route
  * @param {Map<string, Num>} env
+ * @returns {{ frags: number[], share: number }}
  */
 function afterRoute(frags, route, env) {
   let out = frags;
+  let share = 1;
+  if (route.gather !== undefined) {
+    const total = frags.reduce((s, f) => s + f, 0);
+    const c = value(route.gather, env);
+    if (!(c > 0)) throw new RateError(`route ${route.from} to ${route.to}: gathers ${c} bytes`);
+    share = total / c;
+    out = [c];
+  }
   if (route.chunk !== undefined) {
     const c = value(route.chunk, env);
     out = out.flatMap((f) => {
@@ -445,7 +460,7 @@ function afterRoute(frags, route, env) {
     });
   }
   if (route.addBytes !== undefined) out = out.map((f) => f + value(route.addBytes, env, f));
-  return out;
+  return { frags: out, share };
 }
 
 /**
@@ -568,14 +583,18 @@ function makePath(g, keys, edges) {
     let current = 0;
     let where = '';
     try {
-      // the fragments of one packet of the source at every node of the path
+      // the fragments of one packet of the source at every node of the path, and the part of the packets there that
+      // one packet of the source makes up
       /** @type {number[][]} */
       const frags = [[bytes]];
+      const shares = [1];
       for (let i = 0; i < edges.length; i += 1) {
         const e = edges[i];
         current = i;
         where = e.route ? `route ${e.route.from} to ${e.route.to}` : '';
-        frags.push(e.route ? afterRoute(frags[i], e.route, /** @type {Map<string, Num>} */ (e.env)) : frags[i]);
+        const next = e.route ? afterRoute(frags[i], e.route, /** @type {Map<string, Num>} */ (e.env)) : { frags: frags[i], share: 1 };
+        frags.push(next.frags);
+        shares.push(shares[i] * next.share);
       }
       /** @type {Point['elements']} */
       const times = [];
@@ -587,7 +606,8 @@ function makePath(g, keys, edges) {
         const t = elementTime(el, frags[el.first], carried);
         if (t.bytesPerBeat !== undefined) carried = t.bytesPerBeat;
         else if (el.node.dataBytes !== undefined) carried = el.node.dataBytes;
-        times.push({ seconds: t.seconds, cycles: t.cycles, capacity: t.capacity, fragments: frags[el.first], out: frags[el.last] });
+        const share = shares[el.first];
+        times.push({ seconds: t.seconds * share, cycles: t.cycles, capacity: t.capacity, fragments: frags[el.first], out: frags[el.last], share });
       }
       let worst = 0;
       for (let k = 1; k < times.length; k += 1) if (times[k].seconds > times[worst].seconds) worst = k;
@@ -671,7 +691,9 @@ export function elementText(p, pt, k) {
     return `${n.domainName}, ${formatHz(n.freq ?? 0)}: ${per}, chain formula`;
   }
   const per = frags.length === 1 ? `${formatNumber(t.cycles ?? 0)} cycles per ${word} ${lengths}` : `${formatNumber(t.cycles ?? 0)} cycles per packet ${lengths}`;
-  return `${n.domainName}, ${formatHz(n.freq ?? 0)}: ${per}`;
+  // behind a route that gathers packets: how many packets of the source make up one packet here
+  const gathered = t.share < 1 ? `, one ${word} per ${formatNumber(1 / t.share)} packets of the source` : '';
+  return `${n.domainName}, ${formatHz(n.freq ?? 0)}: ${per}${gathered}`;
 }
 
 /**

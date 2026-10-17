@@ -8,8 +8,8 @@ import { addInstance, createDesign, DesignError, setExternal, setGeneric, setIns
 import { imagePeriod, latencies, maxImageBytes, strideParams } from '../../assets/composer/js/model/ocp.js';
 import { resolve } from '../../assets/composer/js/model/resolver.js';
 import { fromText, toDocument, toText } from '../../assets/composer/js/model/serialize.js';
-import { formatRate } from '../../assets/composer/js/model/throughput.js';
-import { loadCatalog } from './helpers.mjs';
+import { elementText, formatRate } from '../../assets/composer/js/model/throughput.js';
+import { catalogWith, loadCatalog, loadCatalogJson, streamBlock } from './helpers.mjs';
 
 const cat = loadCatalog();
 
@@ -103,6 +103,64 @@ test('in stride order the image period of the model gives the cycles of an image
   assert.equal(pt.elements[0].cycles, imagePeriod(g));
   assert.deepEqual(t.problems, []);
   assert.equal(t.sizes.largest.get('ocp0.Out')?.assumed, 'assumed ratio 4');
+});
+
+/**
+ * The compressor behind an input of SDUs, as a compression channel has it: SDUs of n bytes of 2-byte sample
+ * containers, gathered into one image of S containers, one cycle per SDU besides the cycles of the core.
+ */
+function sduCatalog() {
+  const core = loadCatalogJson().blocks.find((/** @type {any} */ b) => b.id === 'opencompact/ocp_core');
+  const b = structuredClone(core);
+  Object.assign(b, { id: 'test/ocp_sdu', group: 'test', idPrefix: 'sdu' });
+  b.rates.vars = { ...b.rates.vars, C: 'cdiv(DynamicRange_g, 8)' };
+  b.rates.interfaces.In = { cycles: 'n * 1.0 * ocp_cycles_per_image / (S * C) + 1', reference: 'S * C' };
+  b.rates.routes = [{ from: 'In', to: 'Out', gather: 'S * C', addBytes: 'ocp_image_bytes - n' }];
+  return catalogWith([b]);
+}
+
+test('a route that gathers SDUs into images: the path runs at the rate of the core at any SDU length', () => {
+  const c = sduCatalog();
+  let d = addInstance(createDesign('t'), c, 'test/ocp_sdu', { x: 0, y: 0 }, 'lossless_bip').design;
+  for (const [k, v] of Object.entries({ XSize_g: 32, YSize_g: 12, ZSize_g: 16 })) d = setGeneric(d, c, 'sdu0', k, v).design;
+  d = setExternal(setExternal(d, 'sdu0.In', 'sdu_'), 'sdu0.Out', 'img_');
+  // configuration c01 at 100 MHz, assumed ratio 2: SDUs of 768 bytes, 16 per image of 12288 bytes
+  d = setInstanceTraffic(setTraffic(d, 'sdu0.In', { packetBytes: 768 }), c, 'sdu0', { ratio: 2 });
+  const t = /** @type {import('../../assets/composer/js/model/throughput.js').Throughput} */ (resolve(c, d).throughput);
+  const p = t.paths[0];
+  const pt = p.at(768);
+  assert.ok(pt);
+  // the core takes the 384 samples of an SDU in 384 cycles, plus one; the compressed image of 6144 bytes leaves in
+  // 6144 cycles once per 16 SDUs (before: once per SDU, 100 Mbit/s)
+  assert.equal(pt.elements[0].cycles, 385);
+  assert.deepEqual([pt.elements[1].fragments, pt.elements[1].cycles, pt.elements[1].share], [[6144], 6144, 1 / 16]);
+  assert.equal(formatRate(pt.bitsPerSecond), '1.60 Gbit/s');
+  assert.equal(pt.bottleneck, 0);
+  assert.match(elementText(p, pt, 1), /: 6144 cycles per image of 6144 B, one image per 16 packets of the source$/);
+  // at the length of one image the same rate; the packets behind the block are whole images
+  assert.equal(formatRate(/** @type {number} */ (p.at(12288)?.bitsPerSecond)), '1.60 Gbit/s');
+  assert.deepEqual(p.references, [768, 12288]);
+  assert.deepEqual(t.problems, []);
+  assert.equal(t.sizes.largest.get('sdu0.Out')?.bytes, 6144);
+});
+
+test('behind a route that gathers packets the largest packet is the gathered one, whatever arrives', () => {
+  // a block that collects G_g bytes of its input into one packet of its output
+  const b = streamBlock('test/gatherer', { name: 'In', type: 'byte.stream', role: 'sink', widths: { data: 32, keep: 4, last: 1 }, ready: true, generics: { G_g: 4096 } });
+  const out = streamBlock('test/x', { name: 'Out', type: 'byte.stream', role: 'source', widths: { data: 32, keep: 4, last: 1 }, ready: true });
+  b.interfaces.push(...out.interfaces);
+  b.ports.push(...out.ports.filter((/** @type {any} */ q) => q.name.startsWith('Out_')));
+  Object.assign(b, { rates: { evidence: 'test', interfaces: { In: { bytesPerBeat: 4 }, Out: { bytesPerBeat: 4 } }, routes: [{ from: 'In', to: 'Out', gather: 'G_g' }] } });
+  const c = catalogWith([b]);
+  let d = addInstance(createDesign('t'), c, 'test/gatherer', { x: 0, y: 0 }).design;
+  d = setExternal(setExternal(d, 'gatherer0.In', 'in_'), 'gatherer0.Out', 'out_');
+  d = setTraffic(d, 'gatherer0.In', { packetBytes: 100, maxPacketBytes: 100 });
+  const t = /** @type {import('../../assets/composer/js/model/throughput.js').Throughput} */ (resolve(c, d).throughput);
+  assert.equal(t.sizes.largest.get('gatherer0.Out')?.bytes, 4096);
+  // 25 cycles per packet in, 1024 cycles per gathered packet out, once per 40.96 packets: 25 cycles each
+  const pt = t.paths[0].at(100);
+  assert.deepEqual(pt?.elements.map((e) => e.cycles), [25, 1024]);
+  assert.ok(Math.abs(/** @type {number} */ (pt?.elements[1].seconds) - /** @type {number} */ (pt?.elements[0].seconds)) < 1e-12);
 });
 
 test('the assumed ratio is a key of the instance in the file; a block without a model takes none', () => {
