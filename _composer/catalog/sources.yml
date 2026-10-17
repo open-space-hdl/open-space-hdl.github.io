@@ -27,7 +27,7 @@ sources:
     repo: openrmap
     url: https://github.com/open-space-hdl/openrmap
     doc: https://openspacehdl.org/openrmap/
-    commit: e1e13d3ed369c06f3093c745d6b2f8da38d0eba0
+    commit: 77868aab0bad0e372ce629a0b2e0a52e1b99bbac
     library: openrmap
     file_list: compile_order.txt
     file_list_format: files
