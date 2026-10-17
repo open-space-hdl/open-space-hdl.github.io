@@ -494,7 +494,7 @@ CONSTRAINT_KINDS = {
     "io_register": ("ports",),
     "vendor_scoped": ("file",),
 }
-FOLLOW_MEASURES = {"data", "packed", "generic"}
+FOLLOW_MEASURES = {"data", "user", "packed", "generic"}
 CDC_MODES = {"level", "pulse", "valid", "none"}
 INT_MAX = 2**31 - 1
 
@@ -1291,7 +1291,7 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             fol = m["follow"]
             if kind != "integer" or not isinstance(fol, dict) or fol.get("measure") not in FOLLOW_MEASURES \
                     or not isinstance(fol.get("interfaces"), list) or not fol["interfaces"]:
-                ctx.err(where, f"generic {g.name}: follow needs an integer generic, interfaces and measure data, packed or generic")
+                ctx.err(where, f"generic {g.name}: follow needs an integer generic, interfaces and measure data, user, packed or generic")
             elif fol.get("measure") == "generic" and not isinstance(fol.get("generic"), str):
                 ctx.err(where, f"generic {g.name}: follow with measure generic names the generic of the partner")
             elif not isinstance(fol.get("rank", 0), int) or isinstance(fol.get("rank", 0), bool):

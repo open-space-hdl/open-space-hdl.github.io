@@ -24,7 +24,7 @@
  * @property {string} [unit]
  * @property {string} [fromClock]
  * @property {boolean} [advanced]
- * @property {{ interfaces: string[], measure: 'data' | 'packed' | 'generic', generic?: string, rank?: number }} [follow]
+ * @property {{ interfaces: string[], measure: 'data' | 'user' | 'packed' | 'generic', generic?: string, rank?: number }} [follow]
  *           value that follows a connected interface: its data width, its width packed into a data word, or a generic
  *           of the block behind it; when both ends follow each other, the lower rank follows the higher one
  * @property {string} [enabledBy]   boolean generic without which this generic has no effect
