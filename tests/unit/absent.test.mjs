@@ -162,3 +162,20 @@ test('a sink with back-pressure behind a source without valid is an error', () =
   d = connect(d, chk);
   assert.deepEqual(packetErrors(c, d), ['error: fifo0.In applies back-pressure; novalid0.Out has no valid and does not wait.']);
 });
+
+test('the packet FIFO behind a source without a drop flag keeps In_Drop at its default and packs keep and user', () => {
+  const d = build([['openspp/spp_core', undefined], ['olo/olo_ft_fifo_packet', undefined, { Depth_g: 1024 }], ['opencompact/ocp_channel', 'lossless_bip']],
+    [['spp0.M_Rx[0]', 'pfifo0.In'], ['pfifo0.Out', 'och0.In']]);
+  const r = resolve(cat, d);
+  const n = netlist(cat, d, r);
+  assert.deepEqual(n.problems, []);
+  assert.ok(!r.checks.some((x) => /drop/.test(x.message)), 'no finding about the drop flag');
+  assert.deepEqual(r.tieOffs.filter((t) => t.port === 'pfifo0.In_Drop').map((t) => t.value), ['default']);
+  assert.ok(!n.nets.some((x) => /pfifo0_In_Drop/.test(x.to)), 'In_Drop is not driven by a net');
+  // 32 data bits, 4 keep bits and the 22 user bits in the data word; last has its own port
+  assert.equal(r.byId.get('pfifo0')?.generics.Width_g, 58);
+  assert.equal(driverOf(d, 'pfifo0_In_Data_s(57 downto 36)').from, 'spp0_M_Rx_User_s');
+  assert.equal(driverOf(d, 'pfifo0_In_Data_s(35 downto 32)').from, 'spp0_M_Rx_Keep_s');
+  assert.equal(driverOf(d, 'pfifo0_In_Last_s').from, 'spp0_M_Rx_Last_s(0)');
+  assert.equal(driverOf(d, 'och0_In_User_s').from, 'pfifo0_Out_Data_s(57 downto 36)');
+});

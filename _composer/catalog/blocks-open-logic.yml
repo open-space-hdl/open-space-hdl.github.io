@@ -39,6 +39,18 @@ blocks:
         signals: { in_level: In_Level, out_level: Out_Level, full: Full, alm_full: AlmFull, empty: Empty, alm_empty: AlmEmpty }
       - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, memory: FIFO memory, signals: { sec: Out_EccSec, ded: Out_EccDed } }
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, signals: { bitflip: In_ErrInj_BitFlip, valid: In_ErrInj_Valid } }
+    rates:
+      evidence: "Open Logic test WriteFullFifo of olo_base_fifo_sync_tb (Depth_g words written and read in consecutive cycles); olo_ft_fifo_sync wraps olo_base_fifo_sync with the ECC encoder and decoder without pipeline stages (Pipeline_g 0)"
+      interfaces:
+        In: { bytesPerBeat: carried }
+        Out: { bytesPerBeat: carried }
+      routes:
+        - { from: In, to: Out, addBytes: "0" }
+    sizes:
+      evidence: "Open Logic documentation of olo_base_fifo_sync: a stream of words, no packet length"
+      interfaces:
+        In: { noLimit: true }
+        Out: { noLimit: true }
 
   - id: olo/olo_ft_fifo_async
     kind: olo
@@ -138,7 +150,7 @@ blocks:
         role: sink
         clock: Clk
         needsLast: true
-        signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last, drop: In_Drop }
+        signals: { data: In_Data, valid: In_Valid, ready: In_Ready, last: In_Last }
       - { name: InDropped, label: Drop status, type: sig.status, role: event_out, clock: Clk, tieOff: open, signals: { is_dropped: In_IsDropped } }
       - name: Out
         label: Output
@@ -150,8 +162,20 @@ blocks:
       - { name: Status, label: Fill status, type: sig.status, role: event_out, clock: Clk, tieOff: open, signals: { packet_level: PacketLevel, free_words: FreeWords } }
       - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, memory: FIFO memory, signals: { sec: Out_EccSec, ded: Out_EccDed } }
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, signals: { bitflip: In_ErrInj_BitFlip, valid: In_ErrInj_Valid } }
+    # In_Drop (on any beat: the packet is discarded) serves a source that marks a bad packet while it writes it; no stream
+    # source of the catalog has such a flag, so the input keeps its default '0'
+    tieOffs:
+      - { port: In_Drop, value: default }
+    rates:
+      evidence: "Open Logic documentation of olo_base_fifo_packet (store and forward; Optimization_g SPEED, which olo_ft_fifo_packet uses: one stall cycle per packet on the read side; packets of more than Depth_g words are discarded); olo_ft_fifo_packet wraps olo_base_fifo_packet with the ECC encoder and decoder without pipeline stages (Pipeline_g 0)"
+      interfaces:
+        In: { bytesPerBeat: carried }
+        Out: { bytesPerBeat: carried, overheadCycles: "1" }
+      routes:
+        - { from: In, to: Out, addBytes: "0" }
     notes:
-      - In_Drop on any beat of a packet discards the packet (for example the error end of packet flag of a link on the last beat).
+      - In_Drop keeps its default '0', so the FIFO discards no packet itself; a packet of more than Depth_g words is discarded.
+      - "The rates hold for packets of up to Depth_g / 2 words: the FIFO writes one packet while it reads the one before. A longer packet stalls the input while the FIFO is full (Open Logic issue 284)."
 
   - id: olo/olo_base_fifo_async
     kind: olo
