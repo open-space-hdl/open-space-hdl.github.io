@@ -98,6 +98,21 @@ export function vectorAtWidth(text, width) {
   if (needed > width) return { tooWide: needed };
   return { vhdl: `"${bits.slice(Math.max(0, bits.length - width)).padStart(width, '0')}"` };
 }
+/**
+ * The bits of a vector value at the width of its generic, the most significant first: a bit-string literal or an
+ * aggregate (others => '0' or '1'); null for another aggregate and for a literal wider than the generic (the rule
+ * vector_width reports it).
+ * @param {unknown} text
+ * @param {number} width
+ * @returns {string | null}
+ */
+export function vectorBits(text, width) {
+  const all = /^\(\s*others\s*=>\s*'([01])'\s*\)$/.exec(String(text).trim());
+  if (all) return all[1].repeat(width);
+  const at = vectorAtWidth(text, width);
+  return at && 'vhdl' in at ? literalDigits(at.vhdl) : null;
+}
+
 const INTVEC_RE = /^\(\s*(?:\d+\s*=>\s*)?-?\d+(?:\s*,\s*(?:\d+\s*=>\s*)?-?\d+)*\s*(?:,\s*others\s*=>\s*-?\d+\s*)?\)$/i;
 
 /**

@@ -12,6 +12,7 @@
  *                        condition "when" holds (a boolean generic, or { generic, is | not: value }); unlessZero skips
  *                        a value of 0 or less
  *   generic_requires     generic = value requires another generic = value
+ *   vector_within        the ones of a vector generic lie within those of another (a value within its mask)
  *   mutual_initiator     reminder for nodes that are initiator and target of each other
  *   same_domain          the interfaces should share the clock domain of their partner (no crossing inserted)
  *   partner_requires     an interface that feeds one of the given types needs generic = value
@@ -25,7 +26,7 @@
 
 import { typedEndpoint } from './compat.js';
 import { evaluate, ExprError } from './expr.js';
-import { genericWidth, vectorAtWidth } from './generics.js';
+import { genericWidth, vectorAtWidth, vectorBits } from './generics.js';
 
 /** @typedef {import('./resolver.js').Resolution} Resolution */
 
@@ -271,6 +272,30 @@ export function runRules(res) {
             }
           }
           break;
+        case 'vector_within': {
+          if (!ruleApplies(rule.when, rec.generics)) break;
+          // both at the width of their generics, aligned at bit 0; a value whose bits are not known is not checked
+          const bitsOf = (/** @type {string} */ name) => {
+            const g = b.generics.find((x) => x.name === name);
+            const width = g ? genericWidth(g, env()) : undefined;
+            return width === undefined ? null : vectorBits(rec.generics[name], width);
+          };
+          const v = bitsOf(rule.generic);
+          const m = bitsOf(rule.mask);
+          if (v === null || m === null) break;
+          /** @type {number[]} */
+          const outside = [];
+          for (let i = v.length - 1; i >= 0; i -= 1) {
+            const pos = v.length - 1 - i;
+            if (v[i] === '1' && m[m.length - 1 - pos] !== '1') outside.unshift(pos);
+          }
+          if (!outside.length) break;
+          const list = outside.length === 1 ? `bit ${outside[0]}` : `bits ${outside.slice(0, -1).join(', ')} and ${outside[outside.length - 1]}`;
+          res.check(rule.severity ?? 'error', rule.kind,
+            `${inst.id}: ${rule.generic} = ${String(rec.generics[rule.generic])} sets ${list}, outside ${rule.mask} = ${String(rec.generics[rule.mask])}${rule.message ? ` (${rule.message})` : ''}.`,
+            where);
+          break;
+        }
         case 'mutual_initiator': {
           const v = rec.generics[rule.generic];
           const both = Object.entries(rec.generics).filter(([k]) => /^(Target_g|Initiator_g)$/.test(k)).every(([, x]) => x === true);

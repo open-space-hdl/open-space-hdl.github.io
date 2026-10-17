@@ -96,7 +96,8 @@ permalink: /composer/format/
         <code>"1"</code>, vectors as VHDL literals (<code>"x\"FE\""</code>, since 0.9.2-beta also with a size,
         <code>"22x\"3FC000\""</code>), strings without quotes. Where the generics of the instance give the range of a
         vector generic, the top level writes the value at that width: as written when it has that length, else as a
-        string of binary digits; a value that needs more bits is an error.</li>
+        string of binary digits; a value that needs more bits is an error. Where a block requires the ones of a value
+        to lie within a mask (the end mark of an SDU within its field, since 0.9.3-beta), a bit outside is an error.</li>
     </ul>
 
     <h2 id="subsystems">Subsystems</h2>
@@ -179,7 +180,10 @@ permalink: /composer/format/
       <li>The capacity of an element is <code>f / cycles(n)</code> packets per second at the frequency <code>f</code>
         of its clock domain and its packet length <code>n</code>; a link has a payload capacity of its own. The path
         runs at its slowest element, the bottleneck. A packet that a route cuts into chunks crosses the elements behind
-        it as several chunks.</li>
+        it as several chunks. A route can also gather the packets of its input into one packet (since 0.9.3-beta: the
+        SDUs of an image into one compressed image); an element behind it takes its time for the gathered packet once
+        for every so many packets of the source, so that a path runs at the right rate at any packet length of its
+        source.</li>
       <li>A link uses its figures for traffic in both directions as soon as its inbound side is connected or external,
         and those for one direction otherwise.</li>
       <li>Where a route has several outputs whose choice the system makes at run time (receive ports by APID, virtual
@@ -219,8 +223,8 @@ permalink: /composer/format/
         <code>packetBytes</code> never bounds a source.</li>
       <li>It runs over the connections, the inserted adapters and the routes inside the blocks, through the whole
         graph of the system and not only through complete paths, so that an unfinished system is checked as well. A
-        route that cuts packets into chunks bounds them by the chunk length; a route that adds headers or tags adds
-        their bytes.</li>
+        route that cuts packets into chunks bounds them by the chunk length, a route that gathers packets sets the
+        length of the gathered packet; a route that adds headers or tags adds their bytes.</li>
       <li>A fixed limit (a buffer given by a generic, or a length the protocol cannot carry) gives an error when the
         largest packet exceeds it. Where a generic sets the limit, the message names the smallest value of that
         generic that holds the packet and satisfies every rule of the generic.</li>
