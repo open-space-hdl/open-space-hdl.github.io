@@ -45,7 +45,8 @@ blocks:
         In: { bytesPerBeat: carried }
         Out: { bytesPerBeat: carried }
       routes:
-        - { from: In, to: Out, addBytes: "0" }
+        # the FIFO stores Depth_g words between its input and its output
+        - { from: In, to: Out, addBytes: "0", holds: Depth_g }
     sizes:
       evidence: "Open Logic documentation of olo_base_fifo_sync: a stream of words, no packet length"
       interfaces:
@@ -110,7 +111,8 @@ blocks:
         In: { bytesPerBeat: carried }
         Out: { bytesPerBeat: carried }
       routes:
-        - { from: In, to: Out, addBytes: "0" }
+        # the FIFO stores Depth_g words between its input and its output
+        - { from: In, to: Out, addBytes: "0", holds: Depth_g }
     sizes:
       evidence: "Open Logic documentation of olo_ft_fifo_async: a stream of words, no packet length"
       interfaces:
@@ -172,7 +174,8 @@ blocks:
         In: { bytesPerBeat: carried }
         Out: { bytesPerBeat: carried, overheadCycles: "1" }
       routes:
-        - { from: In, to: Out, addBytes: "0" }
+        # the FIFO stores Depth_g words between its input and its output
+        - { from: In, to: Out, addBytes: "0", holds: Depth_g }
     notes:
       - In_Drop keeps its default '0', so the FIFO discards no packet itself; a packet of more than Depth_g words is discarded.
       - "The rates hold for packets of up to Depth_g / 2 words: the FIFO writes one packet while it reads the one before. A longer packet stalls the input while the FIFO is full (Open Logic issue 284)."
@@ -233,7 +236,8 @@ blocks:
         In: { bytesPerBeat: carried }
         Out: { bytesPerBeat: carried }
       routes:
-        - { from: In, to: Out, addBytes: "0" }
+        # the FIFO stores Depth_g words between its input and its output
+        - { from: In, to: Out, addBytes: "0", holds: Depth_g }
     sizes:
       evidence: "Open Logic documentation of olo_base_fifo_async: a stream of words, no packet length"
       interfaces:
