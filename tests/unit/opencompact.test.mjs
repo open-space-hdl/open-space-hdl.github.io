@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
-import { addInstance, clearGeneric, createDesign, setExternal, setGeneric } from '../../assets/composer/js/model/design.js';
+import { addDomain, addInstance, assignClock, clearGeneric, createDesign, setExternal, setGeneric } from '../../assets/composer/js/model/design.js';
 import { netlist } from '../../assets/composer/js/model/netlist.js';
 import { resolve } from '../../assets/composer/js/model/resolver.js';
 import { fromText, toDocument, toText } from '../../assets/composer/js/model/serialize.js';
@@ -173,4 +173,74 @@ test('every preset resolves without an error of the core at the default image si
     const errors = resolve(cat, d).checks.filter((c) => c.severity === 'error' && c.instance === 'ocp0' && c.rule !== 'must_serve');
     assert.deepEqual(errors, [], p.id);
   }
+});
+
+/**
+ * The compressor at 32 bits in front of the framer of a 128-bit AES-GCM core, optionally in another clock domain.
+ * @param {boolean} framing UseInLast_g
+ * @param {boolean} [crossing] the framer and the AES-GCM core in a second clock domain
+ */
+function widened(framing, crossing = false) {
+  let d = createDesign('t');
+  for (const b of ['opencompact/ocp_core', 'opencrypto/ocr_framer', 'opencrypto/ocr_core']) d = addInstance(d, cat, b, { x: 0, y: 0 }).design;
+  d = setGeneric(d, cat, 'ocp0', 'OutWidth_g', 32).design;
+  d = setGeneric(d, cat, 'ocp0', 'UseInLast_g', framing).design;
+  d = setGeneric(d, cat, 'ocr0', 'DataWidth_g', 128).design;
+  if (crossing) {
+    const dom = addDomain(d, { name: 'Crypto', frequencyHz: 150e6 });
+    d = assignClock(dom.design, cat, 'frm0', 'Clk', dom.id);
+    d = assignClock(d, cat, 'ocr0', 'Clk', dom.id);
+  }
+  d = link(d, 'ocp0.Out', 'frm0.S_In');
+  return link(d, 'frm0.M_Out', 'ocr0.S_In');
+}
+
+test('a narrower compressor feeds the framer through a width converter with byte enables; its error flag ends there', () => {
+  for (const framing of [false, true]) {
+    const d = widened(framing);
+    const r = resolve(cat, d);
+    assert.equal(r.byId.get('frm0')?.generics.DataWidth_g, 128);
+    assert.deepEqual(checksOf(r, 'width_conversion'), []);
+    const adapters = r.chainOf.get('c1')?.adapters ?? [];
+    assert.equal(adapters.length, 1);
+    const conv = r.byId.get(adapters[0]);
+    assert.equal(conv?.block, 'olo/olo_base_wconv_n2m');
+    assert.deepEqual([conv?.generics.InWidth_g, conv?.generics.OutWidth_g, conv?.generics.UseBe_g], [32, 128, true]);
+    // the dropped flag is reported by the rule of the compressor where it matters, not as a remark of the connection
+    assert.equal(checksOf(r, 'flag_dropped').length, framing ? 1 : 0);
+    assert.deepEqual(checksOf(r, 'signals').map((c) => c.message), []);
+    const n = netlist(cat, d, r);
+    assert.deepEqual(n.problems, []);
+    assert.equal(n.nets.find((x) => x.to === `${adapters[0]}_In_Be_s`)?.from, 'ocp0_Out_Keep_s');
+    assert.equal(n.nets.find((x) => x.to === 'frm0_S_In_Keep_s')?.from, `${adapters[0]}_Out_Be_s`);
+    assert.ok(!n.nets.some((x) => x.from === 'ocp0_Out_Error_s'), 'Out_Error stays open');
+  }
+});
+
+test('behind the width converter the clock crossing carries data, keep and last only', () => {
+  const d = widened(true, true);
+  const r = resolve(cat, d);
+  const adapters = r.chainOf.get('c1')?.adapters ?? [];
+  assert.deepEqual(adapters.map((a) => r.byId.get(a)?.role), ['wconv', 'cdc']);
+  assert.deepEqual(r.checks.filter((c) => c.severity === 'error' && c.rule !== 'must_serve'), []);
+  const n = netlist(cat, d, r);
+  assert.deepEqual(n.problems, []);
+  assert.ok(!n.nets.some((x) => x.from === 'ocp0_Out_Error_s'), 'Out_Error stays open');
+  // the asynchronous FIFO holds 128 data bits, 16 byte enables and last
+  assert.equal(r.byId.get(adapters[1])?.generics.Width_g, 128 + 16 + 1);
+});
+
+test('a narrower compressor feeds a wider send port of OpenSPP; the side band constants replace user behind the converter', () => {
+  let d = createDesign('t');
+  for (const b of ['opencompact/ocp_core', 'openspp/spp_core']) d = addInstance(d, cat, b, { x: 0, y: 0 }).design;
+  d = setGeneric(d, cat, 'ocp0', 'OutWidth_g', 32).design;
+  d = setGeneric(d, cat, 'spp0', 'DataWidth_g', 128).design;
+  d = link(d, 'ocp0.Out', 'spp0.S_Tx[0]');
+  const r = resolve(cat, d);
+  assert.deepEqual(checksOf(r, 'width_conversion'), []);
+  assert.equal(r.chainOf.get('c1')?.adapters.length, 1);
+  assert.equal(r.chainOf.get('c1')?.constants?.user, 'sideband');
+  const n = netlist(cat, d, r);
+  assert.deepEqual(n.problems, []);
+  assert.equal(n.nets.find((x) => x.to === 'spp0_S_Tx_User_s')?.kind, 'constant');
 });

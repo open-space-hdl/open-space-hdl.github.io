@@ -321,8 +321,10 @@ permalink: /composer/format/
     <p>
       <code>resolved</code> describes the top level completely. It contains the placed blocks and the blocks the
       Composer inserts: width converters, clock crossings (asynchronous FIFOs with the side band packed into the data
-      word) and a reset generator for every clock domain with a synchronous reset. Writing the top level takes four
-      steps:
+      word) and a reset generator for every clock domain with a synchronous reset. A width converter carries data,
+      keep and last (byte enables, partial only on the last beat); a signal that only the driving interface has, for
+      example an error flag the receiver does not take, ends at the converter, and one that both interfaces carry
+      makes the connection an error. Writing the top level takes four steps:
     </p>
     <ol>
       <li>Write the context clause of <code>context</code>: <code>library ieee;</code> with

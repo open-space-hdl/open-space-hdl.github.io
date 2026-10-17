@@ -100,6 +100,8 @@ import {
 
 const HANDSHAKE = new Set(['valid', 'ready', 'rsp_valid', 'rsp_accept']);
 const SIGNAL_ORDER = ['data', 'keep', 'last', 'user'];
+// the signals that an inserted width converter carries
+const CONVERTED = ['data', 'keep', 'last'];
 const MAX_ROUNDS = 8;
 export const RESET_PORT = 'Rst';
 export const DEFAULT_FIFO_DEPTH = 32;
@@ -144,6 +146,18 @@ function portOf(ref) {
  */
 function interfaceNeedsLast(itf, generics) {
   return typeof itf.needsLast === 'string' ? generics[itf.needsLast] === true : Boolean(itf.needsLast);
+}
+
+/**
+ * The signal of a receiver that takes the side band constants of the connection instead of the signal of the driver
+ * (a type it accepts with sideband: required), or null.
+ * @param {{ type: any }} fd
+ * @param {{ type: any }} fr
+ * @param {import('./catalog.js').InterfaceDef} itf   interface of the receiver
+ */
+function replacedSignal(fd, fr, itf) {
+  const acc = fd.type.id !== fr.type.id ? (fr.type.accepts ?? []).find((/** @type {any} */ a) => a.type === fd.type.id) : undefined;
+  return acc?.sideband === 'required' && itf.sideband ? itf.sideband.signal : null;
 }
 
 /**
@@ -722,11 +736,16 @@ export class Resolution {
     const wd = fd.sigs.find((s) => s.name === 'data')?.width;
     const wr = fr.sigs.find((s) => s.name === 'data')?.width;
     if (typedBoth && wd && wr && wd !== wr) {
-      const conv = this.widthConverter(c, fd, fr, wd, wr, srcDom);
+      const conv = this.widthConverter(c, fd, fr, wd, wr, srcDom, replacedSignal(fd, fr, rcv.port.itf));
       if (conv) {
         chain.adapters.push(conv.id);
         path.push(`${conv.id}.In`, `${conv.id}.Out`);
-        carried = { ...fd, sigs: fd.sigs.map((s) => (s.name === 'data' ? { ...s, width: wr } : s.name === 'keep' ? { ...s, width: wr / 8 } : s)) };
+        // the converter carries data, keep and last; a signal that only the driver has ends at it
+        carried = {
+          ...fd,
+          sigs: fd.sigs.filter((s) => CONVERTED.includes(s.name))
+            .map((s) => (s.name === 'data' ? { ...s, width: wr } : s.name === 'keep' ? { ...s, width: wr / 8 } : s)),
+        };
         if (!carried.sigs.some((s) => s.name === 'keep') && fr.sigs.some((s) => s.name === 'keep')) {
           carried = { ...carried, sigs: [...carried.sigs, { name: 'keep', width: wr / 8 }] };
         }
@@ -765,12 +784,16 @@ export class Resolution {
    * @param {number} wd
    * @param {number} wr
    * @param {string | undefined} domain
+   * @param {string | null} replaced   signal of the receiver that takes the side band constants instead
    */
-  widthConverter(c, fd, fr, wd, wr, domain) {
-    const extra = [...fd.sigs, ...fr.sigs].map((s) => s.name).filter((n) => !['data', 'keep', 'last'].includes(n));
+  widthConverter(c, fd, fr, wd, wr, domain, replaced) {
+    // a signal that only one end has needs no conversion: the driver's ends at the converter (signalMismatch reports
+    // it), the receiver's gets its constant; one that both ends carry would have to pass the converter
+    const theirs = new Set(fr.sigs.map((s) => s.name));
+    const extra = fd.sigs.map((s) => s.name).filter((n) => !CONVERTED.includes(n) && n !== replaced && theirs.has(n));
     if (extra.length > 0) {
       this.check('error', 'width_conversion',
-        `${c.from} has ${wd} bit and ${c.to} ${wr} bit. ${fd.type.name} carries ${[...new Set(extra)].join(', ')} as well and is not converted automatically: give both interfaces the same width.`,
+        `${c.from} has ${wd} bit and ${c.to} ${wr} bit. Both carry ${[...new Set(extra)].join(', ')}, which is not converted automatically: give both interfaces the same width.`,
         { connection: c.id });
       return null;
     }
@@ -898,8 +921,7 @@ export class Resolution {
   signalMismatch(c, drv, rcv, fd, fr, chain) {
     if (rcv.port.type.generic) return;
     const sb = rcv.port.itf.sideband;
-    const acc = fd.type.id !== fr.type.id ? (fr.type.accepts ?? []).find((a) => a.type === fd.type.id) : undefined;
-    const replaced = acc?.sideband === 'required' && sb ? sb.signal : null;
+    const replaced = replacedSignal(fd, fr, rcv.port.itf);
     const provided = new Set(fd.sigs.map((s) => s.name).filter((n) => n !== replaced));
     const needed = new Set(fr.sigs.map((s) => s.name).filter((n) => n !== replaced));
     /** @type {Record<string, 'zero' | 'ones' | 'sideband'>} */
