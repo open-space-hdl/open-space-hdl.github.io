@@ -92,7 +92,7 @@ RATE_INTERFACE_KEYS = {"bytesPerBeat", "beatsPerCycle", "extraBeats", "overheadC
 # variables they set; the variable an assumption of the user sets (rates.assumed) beside them
 RATE_MODELS = {"ocp": {"ocp_cycles_per_image", "ocp_header_bytes", "ocp_image_bytes"}}
 RATE_ASSUMED_KEYS = {"name", "label", "description"}
-RATE_ROUTE_KEYS = {"from", "to", "addBytes", "chunk", "gather", "paced"}
+RATE_ROUTE_KEYS = {"from", "to", "addBytes", "chunk", "gather", "paced", "inOrder", "holds"}
 RATE_LINK_KEYS = {"interface", "from", "to", "capacity", "capacityBoth", "efficiency", "note"}
 RATE_CHAIN_KEYS = {"from", "to", "cycles", "evidence"}
 EXPR_WORDS = {"mod", "rem", "abs"}
@@ -150,14 +150,16 @@ def check_rates(ctx: "Context", where: str, rates: object, gen_names: set, itf_n
                 expr(f"{iname}.{key}", entry[key])
     for r in rates.get("routes") or []:
         if set(r) - RATE_ROUTE_KEYS or "from" not in r or "to" not in r:
-            ctx.err(where, "rates: a route needs from and to and knows addBytes, chunk, gather and paced")
+            ctx.err(where, "rates: a route needs from and to and knows addBytes, chunk, gather, paced, inOrder and holds")
             continue
         if "chunk" in r and "gather" in r:
             ctx.err(where, f"rates: route {r['from']} to {r['to']}: chunk and gather exclude each other")
+        if "inOrder" in r and not isinstance(r["inOrder"], bool):
+            ctx.err(where, f"rates: route {r['from']} to {r['to']}: inOrder is true or false")
         for end in ("from", "to"):
             if r[end] not in itfs and not (end == "to" and r.get("paced") and r[end] in itf_names):
                 ctx.err(where, f"rates: route {r['from']} to {r['to']}: {r[end]} has no rate entry")
-        for key in ("addBytes", "chunk", "gather"):
+        for key in ("addBytes", "chunk", "gather", "holds"):
             if key in r:
                 expr(f"route {r['from']} to {r['to']}: {key}", r[key])
     for lk in rates.get("links") or []:

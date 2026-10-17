@@ -14,6 +14,11 @@
  *                of the source then crosses an element as several fragments. A route can also gather the packets of
  *                its input into one packet (the SDUs of an image into one compressed image): an element behind it
  *                takes its time for the gathered packet once per that many packets of the source.
+ *   in order     a route whose outputs get one packet at a time in the order of arrival (one receive buffer for all
+ *                receive ports): a packet holds the route until its output has taken it, so the outputs together
+ *                deliver at the mean of their hold times. The hold time of an output is its slowest element up to a
+ *                block that stores two of its packets (a FIFO); with such a store behind every output they deliver
+ *                at the rate of the route itself. The packets are assumed to be spread evenly over the outputs.
  *
  * Only stated rates are checked (traffic of an external interface): a source that is merely faster than its path is
  * slowed by back pressure. The brief shows the capacity of every path at reference lengths. A block without rate data
@@ -111,9 +116,9 @@ export const REFERENCE_BYTES = [64, 1024];
  * @property {number} packetsPerSecond
  * @property {number} bitsPerSecond   payload at the source
  * @property {number} bottleneck   index of the element
- * @property {{ seconds: number, cycles?: number, fragments: number[], out: number[], capacity?: number, share: number }[]} elements
+ * @property {{ seconds: number, cycles?: number, fragments: number[], out: number[], capacity?: number, share: number, beat?: number }[]} elements
  *           seconds per packet of the source; share: the part of the packets at the element that one packet of the
- *           source makes up (1, or less behind a route that gathers packets)
+ *           source makes up (1, or less behind a route that gathers packets); beat: bytes per beat of the stream there
  */
 
 /**
@@ -134,6 +139,7 @@ export const REFERENCE_BYTES = [64, 1024];
  * @typedef {object} Throughput
  * @property {Path[]} paths
  * @property {{ label: string, paths: number[] }[]} shared   elements on paths of more than one source
+ * @property {InOrder[]} inOrder   routes of one source that deliver to several outputs in the order of arrival
  * @property {Map<string, { entity: string, labels: string[] }>} missing   blocks without rate data on a path
  * @property {number} stopped   number of paths when the limit stopped the analysis, 0 otherwise
  * @property {Check[]} checks
@@ -144,6 +150,40 @@ export const REFERENCE_BYTES = [64, 1024];
  * @property {Map<string, string>} bottlenecks   instance of the system (a subsystem for an element inside it) that
  *           limits a path below its stated traffic -> the finding
  * @property {import('./sizes.js').Sizes} sizes   packet sizes and buffers along the chain, on the same graph
+ */
+
+/**
+ * @typedef {object} InOrderOutput
+ * @property {string} key        the output, an interface of the block
+ * @property {string} label
+ * @property {number} hold       seconds that a packet of the source holds the route there: the slowest element of the
+ *                               paths of the output up to a store of two of its packets
+ * @property {string} holdBy     that element
+ * @property {number} delivery   seconds of the output itself
+ * @property {number} own        seconds of the slowest element of the paths of the output, behind a store or not
+ * @property {string} ownBy      that element
+ * @property {number} packet     the longest fragment of a packet of the source at the output, in bytes
+ * @property {number} [beat]     bytes per beat at the output
+ */
+
+/**
+ * @typedef {object} InOrderPoint
+ * @property {number} bytes       packet length at the source
+ * @property {number} inOrder     bit/s at the source through all outputs together, one packet at a time
+ * @property {number} decoupled   bit/s with a store of two packets behind every output
+ * @property {string} limit       the element that limits the decoupled rate
+ * @property {InOrderOutput[]} outputs
+ */
+
+/**
+ * @typedef {object} InOrder
+ * @property {string} label       the block whose route delivers in order
+ * @property {any} route
+ * @property {Node} source
+ * @property {string[]} outputs   node keys of the outputs on the paths of the source
+ * @property {number[]} paths     indices of those paths
+ * @property {number[]} references
+ * @property {(bytes: number) => InOrderPoint | null} at
  */
 
 /**
@@ -183,6 +223,17 @@ export function formatRate(bps) {
 export function formatNumber(x) {
   if (Number.isInteger(x) && Math.abs(x) < 1e6) return String(x);
   return Number(x.toPrecision(3)).toString();
+}
+
+/**
+ * A time in seconds with three significant digits and an SI prefix.
+ * @param {number} s
+ */
+export function formatSeconds(s) {
+  /** @type {[number, string][]} */
+  const units = [[1, 's'], [1e-3, 'ms'], [1e-6, 'µs'], [1e-9, 'ns']];
+  const [f, unit] = units.find(([u]) => Math.abs(s) >= u) ?? units[units.length - 1];
+  return `${Number((s / f).toPrecision(3))} ${unit}`;
 }
 
 /**
@@ -607,7 +658,7 @@ function makePath(g, keys, edges) {
         if (t.bytesPerBeat !== undefined) carried = t.bytesPerBeat;
         else if (el.node.dataBytes !== undefined) carried = el.node.dataBytes;
         const share = shares[el.first];
-        times.push({ seconds: t.seconds * share, cycles: t.cycles, capacity: t.capacity, fragments: frags[el.first], out: frags[el.last], share });
+        times.push({ seconds: t.seconds * share, cycles: t.cycles, capacity: t.capacity, fragments: frags[el.first], out: frags[el.last], share, beat: carried });
       }
       let worst = 0;
       for (let k = 1; k < times.length; k += 1) if (times[k].seconds > times[worst].seconds) worst = k;
@@ -716,6 +767,184 @@ function instanceOf(el) {
 }
 
 /**
+ * Key of an element for comparisons between paths.
+ * @param {Element} el
+ */
+function elementKey(el) {
+  return el.model === 'link' ? el.node.key : `${el.node.key}#${el.model}`;
+}
+
+/**
+ * Whether the block of an element stores two of the packets that arrive there (a FIFO of that depth): the route out of
+ * the element holds at least twice the beats of its longest fragment.
+ * @param {Path} p
+ * @param {Element} el
+ * @param {Point['elements'][number]} t
+ */
+function storesTwo(p, el, t) {
+  const e = p.edges[el.last];
+  if (e?.route?.holds === undefined || !t.beat) return false;
+  try {
+    return value(e.route.holds, /** @type {Map<string, Num>} */ (e.env)) >= 2 * Math.ceil(Math.max(...t.fragments) / t.beat);
+  } catch (err) {
+    if (!rateProblem(err)) throw err;
+    return false;
+  }
+}
+
+/**
+ * The routes that deliver to several outputs in the order of arrival, per source, with their rates.
+ * @param {Path[]} paths
+ * @returns {InOrder[]}
+ */
+function inOrderRoutes(paths) {
+  /** @type {Map<string, { source: Node, from: Node | undefined, route: any, members: { k: number, i: number }[] }>} */
+  const groups = new Map();
+  paths.forEach((p, k) => {
+    p.edges.forEach((e, i) => {
+      if (!e.route?.inOrder) return;
+      const key = `${p.source.key}|${p.nodes[i]}|${e.route.from}|${e.route.to}`;
+      const grp = groups.get(key) ?? { source: p.source, from: p.elements.find((el) => el.first <= i && i <= el.last)?.node, route: e.route, members: [] };
+      grp.members.push({ k, i });
+      groups.set(key, grp);
+    });
+  });
+  /** @type {InOrder[]} */
+  const out = [];
+  for (const grp of groups.values()) {
+    const from = grp.from;
+    const outputs = [...new Set(grp.members.map((m) => paths[m.k].nodes[m.i + 1]))];
+    if (outputs.length < 2 || !from) continue;
+    const K = outputs.length;
+    // elements behind the route that the paths of several outputs share again (the send side of the same block)
+    /** @type {Map<string, Set<string>>} */
+    const users = new Map();
+    for (const m of grp.members) {
+      const p = paths[m.k];
+      for (const el of p.elements) {
+        if (el.first <= m.i) continue;
+        const id = elementKey(el);
+        users.set(id, (users.get(id) ?? new Set()).add(p.nodes[m.i + 1]));
+      }
+    }
+    /** @type {Map<number, InOrderPoint | null>} */
+    const cache = new Map();
+    const at = (/** @type {number} */ bytes) => {
+      if (cache.has(bytes)) return /** @type {InOrderPoint | null} */ (cache.get(bytes));
+      let pre = 0;
+      let preBy = '';
+      /** @type {Map<string, { label: string, by: Map<string, number> }>} */
+      const shared = new Map();
+      /** @type {Map<string, InOrderOutput>} */
+      const per = new Map();
+      for (const m of grp.members) {
+        const p = paths[m.k];
+        const pt = p.at(bytes);
+        if (!pt) {
+          cache.set(bytes, null);
+          return null;
+        }
+        const o = p.nodes[m.i + 1];
+        const rec = per.get(o) ?? { key: o, label: o, hold: 0, holdBy: '', delivery: 0, own: 0, ownBy: '', packet: 0 };
+        let stored = false;
+        p.elements.forEach((el, x) => {
+          const t = pt.elements[x];
+          if (el.first <= m.i) {
+            if (t.seconds > pre) [pre, preBy] = [t.seconds, el.label];
+            return;
+          }
+          const id = elementKey(el);
+          if ((users.get(id)?.size ?? 0) > 1) {
+            const s = shared.get(id) ?? { label: el.label, by: new Map() };
+            s.by.set(o, Math.max(s.by.get(o) ?? 0, t.seconds));
+            shared.set(id, s);
+            return;
+          }
+          if (el.first === m.i + 1) {
+            rec.label = el.label;
+            rec.delivery = Math.max(rec.delivery, t.seconds);
+            rec.packet = Math.max(rec.packet, ...t.fragments);
+            rec.beat = t.beat;
+          }
+          if (t.seconds > rec.own) [rec.own, rec.ownBy] = [t.seconds, el.label];
+          if (!stored && t.seconds > rec.hold) [rec.hold, rec.holdBy] = [t.seconds, el.label];
+          if (!stored && storesTwo(p, el, t)) stored = true;
+        });
+        per.set(o, rec);
+      }
+      const outs = outputs.map((o) => /** @type {InOrderOutput} */ (per.get(o)));
+      // the time per packet of the source of every part, with the packets spread evenly over the outputs
+      /** @type {[number, string][]} */
+      const common = [[pre, preBy]];
+      for (const s of shared.values()) common.push([[...s.by.values()].reduce((a, b) => a + b, 0) / K, s.label]);
+      const mean = (/** @type {(o: InOrderOutput) => number} */ f) => outs.reduce((a, o) => a + f(o), 0) / K;
+      const worst = (/** @type {[number, string][]} */ parts) => parts.reduce((a, b) => (b[0] > a[0] ? b : a));
+      // every output also takes a K-th of the packets at the rate of its own slowest element
+      const own = outs.reduce((a, o) => (o.own > a.own ? o : a));
+      /** @type {[number, string]} */
+      const parallel = [own.own / K, own.ownBy];
+      const inOrder = worst([...common, parallel, [mean((o) => o.hold), from.label]]);
+      const decoupled = worst([...common, parallel, [mean((o) => o.delivery), from.label]]);
+      /** @type {InOrderPoint} */
+      const point = { bytes, inOrder: (8 * bytes) / inOrder[0], decoupled: (8 * bytes) / decoupled[0], limit: decoupled[1], outputs: outs };
+      cache.set(bytes, point);
+      return point;
+    };
+    const members = [...new Set(grp.members.map((m) => m.k))];
+    out.push({
+      label: from.key.slice(0, from.key.lastIndexOf('.')),
+      route: grp.route,
+      source: grp.source,
+      outputs,
+      paths: members,
+      references: [...new Set(members.flatMap((k) => paths[k].references))].sort((a, b) => a - b),
+      at,
+    });
+  }
+  return out;
+}
+
+/**
+ * The finding of a route that delivers in order where its outputs together lose rate against a store behind each.
+ * @param {InOrder} r
+ * @param {Graph} g
+ * @param {import('./sizes.js').Sizes} sizes
+ * @returns {Check | null}
+ */
+function inOrderCheck(r, g, sizes) {
+  const stated = g.traffic.get(r.source.key);
+  // the stated length, else the longest reference length at which the outputs lose rate
+  const lengths = stated ? [stated.packetBytes] : r.references;
+  /** @type {InOrderPoint | null} */
+  let pt = null;
+  for (const b of lengths) {
+    const x = r.at(b);
+    if (x && x.inOrder < x.decoupled * (1 - 1e-6)) pt = x;
+  }
+  if (!pt) return null;
+  const name = (/** @type {string} */ key) => key.slice(key.lastIndexOf('.') + 1);
+  const list = (/** @type {string[]} */ xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+  const slow = pt.outputs.filter((o) => o.hold > o.delivery * (1 + 1e-6));
+  const top = slow.reduce((a, o) => (o.hold > a.hold ? o : a));
+  // the longest packet at a slower output: from the size analysis where it is bounded, else the packet of this point
+  const largest = Math.max(...slow.map((o) => {
+    const l = sizes.largest.get(o.key)?.bytes;
+    return l !== undefined && Number.isFinite(l) ? l : o.packet;
+  }));
+  const beat = top.beat ?? 1;
+  const fifo = `olo_ft_fifo_sync with Depth_g of at least ${2 * Math.ceil(largest / beat)} beats of ${beat} bytes for packets of ${largest} bytes`;
+  const need = stated?.bitsPerSecond ? ` ${r.source.label} states ${formatRate(stated.bitsPerSecond)}.` : '';
+  /** @type {Check} */
+  const c = {
+    severity: 'warning',
+    rule: 'throughput',
+    message: `${r.label} delivers the packets of its outputs ${list(pt.outputs.map((o) => name(o.key)))} one after another in the order of arrival: a packet holds the delivery until its output has taken it. At ${pt.bytes} B, spread evenly over the outputs, they deliver together ${formatRate(pt.inOrder)} instead of ${formatRate(pt.decoupled)}: ${top.holdBy} takes ${formatSeconds(top.hold)} per packet, the delivery ${formatSeconds(top.delivery)}.${need} Place a FIFO that holds two of the longest packets of the output behind every slower output (${list(slow.map((o) => name(o.key)))}): ${fifo}.`,
+  };
+  if (!r.label.includes('/')) c.instance = r.label;
+  return c;
+}
+
+/**
  * The length at which the editor shows a path: the stated length of its source or sink, else 1024 bytes (a reference
  * point), or the natural packet of the path where it replaces the reference points (one image of a compressor), and
  * the path at that length.
@@ -803,6 +1032,7 @@ export function analyseThroughput(cat, d, res, opts = {}) {
     }
   });
   const shared = [...byElement.values()].filter((e) => e.sources.size > 1).map((e) => ({ label: e.label, paths: e.paths }));
+  const inOrder = inOrderRoutes(paths);
 
   /** @type {Check[]} */
   const checks = [];
@@ -911,6 +1141,10 @@ export function analyseThroughput(cat, d, res, opts = {}) {
   }
   // packet sizes and buffers on the same graph
   const sizes = analyseSizes(cat, g);
+  for (const r of inOrder) {
+    const c = inOrderCheck(r, g, sizes);
+    if (c) checks.push(c);
+  }
   checks.push(...sizes.checks);
-  return { paths, shared, missing, stopped, checks, traffic: g.traffic, problems: [...g.problems.values()], limits, bottlenecks, sizes };
+  return { paths, shared, inOrder, missing, stopped, checks, traffic: g.traffic, problems: [...g.problems.values()], limits, bottlenecks, sizes };
 }

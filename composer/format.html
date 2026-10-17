@@ -188,6 +188,12 @@ permalink: /composer/format/
         and those for one direction otherwise.</li>
       <li>Where a route has several outputs whose choice the system makes at run time (receive ports by APID, virtual
         channels), the path to each output assumes that every packet of the source reaches it.</li>
+      <li>A route can deliver to its outputs one packet at a time, in the order of arrival (since 0.9.4-beta: the
+        receive ports of OpenSPP share one receive buffer). A packet then holds the route until its output has taken
+        it, up to a block that stores two of its packets (a FIFO whose route states the beats it holds). The brief
+        shows the rate of the outputs together, with the packets spread evenly over them, in order and with such a
+        store behind every output; where the outputs lose rate in order, a warning names the slower outputs and the
+        depth of the FIFO they need.</li>
       <li>Where no expression can state the rate, the Composer computes it with a port of the published model of the
         core, checked against that model for every configuration of its regression: the cycles of an image in the
         predictor of OpenCompact (<code>tools/ocp_throughput.py</code>) and the length of its header. A compressor
