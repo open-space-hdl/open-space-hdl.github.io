@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "5ca4b3820e30",
+ "id": "61d39e451622",
  "sources": [
   {
    "id": "openwire",
@@ -1730,6 +1730,35 @@
    "summary": "Synchronous FIFO whose memory is protected by a SECDED code.",
    "idPrefix": "fifo",
    "doc": "https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_fifo_sync.html",
+   "rates": {
+    "evidence": "Open Logic test WriteFullFifo of olo_base_fifo_sync_tb (Depth_g words written and read in consecutive cycles); olo_ft_fifo_sync wraps olo_base_fifo_sync with the ECC encoder and decoder without pipeline stages (Pipeline_g 0)",
+    "interfaces": {
+     "In": {
+      "bytesPerBeat": "carried"
+     },
+     "Out": {
+      "bytesPerBeat": "carried"
+     }
+    },
+    "routes": [
+     {
+      "from": "In",
+      "to": "Out",
+      "addBytes": "0"
+     }
+    ]
+   },
+   "sizes": {
+    "evidence": "Open Logic documentation of olo_base_fifo_sync: a stream of words, no packet length",
+    "interfaces": {
+     "In": {
+      "noLimit": true
+     },
+     "Out": {
+      "noLimit": true
+     }
+    }
+   },
    "generics": [
     {
      "name": "Width_g",
@@ -2526,7 +2555,8 @@
    "idPrefix": "pfifo",
    "doc": "https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_fifo_packet.html",
    "notes": [
-    "In_Drop on any beat of a packet discards the packet (for example the error end of packet flag of a link on the last beat)."
+    "In_Drop keeps its default '0', so the FIFO discards no packet itself; a packet of more than Depth_g words is discarded.",
+    "The rates hold for packets of up to Depth_g / 2 words: the FIFO writes one packet while it reads the one before. A longer packet stalls the input while the FIFO is full (Open Logic issue 284)."
    ],
    "rules": [
     {
@@ -2536,6 +2566,25 @@
      "pow2Ratio": true
     }
    ],
+   "rates": {
+    "evidence": "Open Logic documentation of olo_base_fifo_packet (store and forward; Optimization_g SPEED, which olo_ft_fifo_packet uses: one stall cycle per packet on the read side; packets of more than Depth_g words are discarded); olo_ft_fifo_packet wraps olo_base_fifo_packet with the ECC encoder and decoder without pipeline stages (Pipeline_g 0)",
+    "interfaces": {
+     "In": {
+      "bytesPerBeat": "carried"
+     },
+     "Out": {
+      "bytesPerBeat": "carried",
+      "overheadCycles": "1"
+     }
+    },
+    "routes": [
+     {
+      "from": "In",
+      "to": "Out",
+      "addBytes": "0"
+     }
+    ]
+   },
    "generics": [
     {
      "name": "Width_g",
@@ -2666,8 +2715,7 @@
       "data": "In_Data",
       "valid": "In_Valid",
       "ready": "In_Ready",
-      "last": "In_Last",
-      "drop": "In_Drop"
+      "last": "In_Last"
      },
      "widths": {
       "data": "Width_g"
@@ -2885,6 +2933,12 @@
      "vhdlType": "std_logic",
      "width": "1",
      "default": "'0'"
+    }
+   ],
+   "tieOffs": [
+    {
+     "port": "In_Drop",
+     "value": "default"
     }
    ]
   },

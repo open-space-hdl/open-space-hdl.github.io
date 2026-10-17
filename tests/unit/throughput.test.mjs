@@ -312,3 +312,23 @@ test('the limits of stated traffic give the checks and the bottleneck marker fro
   assert.deepEqual([pathAt(t, q).bytes, pathAt(t, q).stated], [1024, false]);
   assert.equal(pathAt(t, q).point, q.at(1024));
 });
+
+test('a FIFO passes one word per cycle and the packet FIFO one stall cycle per packet on its output', () => {
+  let d = addInstance(createDesign('fifo'), cat, 'openspp/spp_core', { x: 0, y: 0 }).design;
+  d = setGeneric(d, cat, 'spp0', 'SpwAddrBytes_g', 0).design;
+  for (const b of ['olo/olo_ft_fifo_sync', 'olo/olo_ft_fifo_packet']) d = addInstance(d, cat, b, { x: 0, y: 0 }).design;
+  d = setExternal(d, 'spp0.S_Link', 'link_');
+  d = link(d, 'spp0.M_Rx[0]', 'fifo0.In');
+  d = link(d, 'fifo0.Out', 'pfifo0.In');
+  d = setExternal(d, 'pfifo0.Out', 'out_');
+  const t = analyse(d);
+  assert.deepEqual(t.paths.map((p) => `${p.source.label} > ${p.sink.label}`), ['link_ (spp0.S_Link) > out_ (pfifo0.Out)']);
+  assert.deepEqual([...t.missing.values()], []);
+  const p = t.paths[0];
+  // a link packet of 1034 bytes holds an SDU of 1024 bytes (CPTP header of 4 bytes, Space Packet header of 6): 256
+  // beats of 32 bits through both FIFOs, one cycle more per packet at the output of the packet FIFO
+  const pt = p.at(1034);
+  assert.ok(pt);
+  const cycles = (/** @type {string} */ key) => pt.elements[p.elements.findIndex((el) => el.node.key === key)].cycles;
+  assert.deepEqual(['fifo0.In', 'fifo0.Out', 'pfifo0.In', 'pfifo0.Out'].map(cycles), [256, 256, 256, 257]);
+});
