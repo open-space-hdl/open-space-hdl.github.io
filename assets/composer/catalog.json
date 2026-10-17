@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "0b808376887d",
+ "id": "35481be4f0b3",
  "sources": [
   {
    "id": "openwire",
@@ -97,7 +97,7 @@
    "repo": "openrmap",
    "url": "https://github.com/open-space-hdl/openrmap",
    "doc": "https://openspacehdl.org/openrmap/",
-   "commit": "e1e13d3ed369c06f3093c745d6b2f8da38d0eba0",
+   "commit": "77868aab0bad0e372ce629a0b2e0a52e1b99bbac",
    "library": "openrmap",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
@@ -147,6 +147,37 @@
        "text": "Accesses longer than one command of the memory master are split, so AxiAddrWidth_g no longer needs 25 + log2(AxiDataWidth_g/8) bits; AxiAddrWidth_g 12 to 26 at 32-bit data and AxiDataWidth_g 8 build; single-address writes no longer hang at wide data widths."
       }
      ]
+    },
+    {
+     "previous": "e1e13d3ed369c06f3093c745d6b2f8da38d0eba0",
+     "pin": "cf7a18652b1da3c3deb161282e6eab9c92753f3d",
+     "evidence": "PR #11 of the core: new elaboration check of omap_core: AxiMaxBeats_g * AxiDataWidth_g/8 must not exceed 4096 bytes nor 2^(AxiAddrWidth_g - 2) bytes (2^(AxiAddrWidth_g - 1) at 8-bit data); no change of ports, register map, streams or the Open Logic pin.",
+     "changes": [
+      {
+       "block": "openrmap/omap_core",
+       "kind": "generic_range",
+       "generic": "AxiMaxBeats_g",
+       "text": "AxiMaxBeats_g * AxiDataWidth_g/8 must not exceed 4096 bytes nor 2^(AxiAddrWidth_g - 2) bytes; omap_core checks it at elaboration in every configuration, also without the target."
+      }
+     ]
+    },
+    {
+     "previous": "cf7a18652b1da3c3deb161282e6eab9c92753f3d",
+     "pin": "be4ae97a19c984cf0c1d5bf947980032ea1780e5",
+     "evidence": "PR #12 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "be4ae97a19c984cf0c1d5bf947980032ea1780e5",
+     "pin": "04c21e5f4024fa236f3066f69218492d8662fbe7",
+     "evidence": "PR #13 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "04c21e5f4024fa236f3066f69218492d8662fbe7",
+     "pin": "77868aab0bad0e372ce629a0b2e0a52e1b99bbac",
+     "evidence": "PR #14 of the core: None.",
+     "changes": []
     }
    ]
   },
@@ -11001,7 +11032,6 @@
      "kind": "generic_range",
      "generic": "AxiMaxBeats_g",
      "max": "min(4096, 2 ** (AxiAddrWidth_g - 2)) / (AxiDataWidth_g / 8)",
-     "when": "Target_g",
      "message": "a burst never exceeds 4 KB nor the largest memory command; larger values fail elaboration"
     },
     {

@@ -207,11 +207,11 @@ blocks:
       # check, min and max
       - { kind: generic_range, generic: ChunkBytes_g, max: BufferBytes_g, message: "a chunk of a non-verified write fits the write buffer" }
       - { kind: generic_multiple, generic: ChunkBytes_g, of: AxiDataWidth_g / 8, message: "a single-address write moves whole memory words" }
-      # The memory master of the target (Open Logic olo_axi_master_full and simple) fails elaboration when a burst
-      # exceeds 4 KB or the largest command, 2^(AxiAddrWidth_g - 2) bytes (2^(AxiAddrWidth_g - 1) at 8-bit data,
-      # which no value of the ranges reaches: AxiAddrWidth_g >= 12 and AxiMaxBeats_g <= 256); a burst never crosses
-      # 4 KB, so the bound costs no burst length
-      - { kind: generic_range, generic: AxiMaxBeats_g, max: "min(4096, 2 ** (AxiAddrWidth_g - 2)) / (AxiDataWidth_g / 8)", when: Target_g, message: "a burst never exceeds 4 KB nor the largest memory command; larger values fail elaboration" }
+      # coreConfigError also bounds a burst of the memory master of the target in every configuration, with or
+      # without the target: at most 4 KB and at most the largest command, 2^(AxiAddrWidth_g - 2) bytes
+      # (2^(AxiAddrWidth_g - 1) at 8-bit data, which no value of the ranges reaches: AxiAddrWidth_g >= 12 and
+      # AxiMaxBeats_g <= 256); a burst never crosses 4 KB, so the bound costs no burst length
+      - { kind: generic_range, generic: AxiMaxBeats_g, max: "min(4096, 2 ** (AxiAddrWidth_g - 2)) / (AxiDataWidth_g / 8)", message: "a burst never exceeds 4 KB nor the largest memory command; larger values fail elaboration" }
       - { kind: generic_any_true, generics: [Target_g, Initiator_g], message: At least one of Target_g and Initiator_g must be true. }
       - { kind: mutual_initiator, generic: Transactions_g, message: Two nodes that are initiator and target of each other on one link need Transactions_g = 1. }
       - { kind: same_domain, interfaces: [S_Pkt, M_Pkt], message: "The RMAP node normally runs on the user clock of its SpaceWire port; an asynchronous FIFO was inserted instead." }
