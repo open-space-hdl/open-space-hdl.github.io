@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatReal, formatValue, initialValue, parseInput, validateValue } from '../../assets/composer/js/model/generics.js';
+import { formatReal, formatValue, genericWidth, initialValue, literalDigits, parseInput, validateValue, vectorAtWidth } from '../../assets/composer/js/model/generics.js';
+import { makeEnv } from '../../assets/composer/js/model/expr.js';
 
 /** @type {import('../../assets/composer/js/model/generics.js').GenericDef} */
 const depth = { name: 'Depth_g', vhdlType: 'positive', kind: 'integer', default: 64, min: 1, max: 1024, check: 'pow2' };
@@ -54,4 +55,30 @@ test('initial values and formatting', () => {
   assert.equal(formatReal(1.5), '1.5');
   assert.equal(formatValue(bit, '1'), "'1'");
   assert.equal(formatValue(freq, 200e6), '200.0e6');
+});
+
+test('bit-string literals with a size (VHDL-2008) are vector values; their bits at their length', () => {
+  for (const ok of ['22x"3FC000"', '6b"0101"', '8X"fe"']) assert.equal(validateValue(vec, ok).ok, true, ok);
+  assert.equal(literalDigits('22x"3FC000"'), '1111111100000000000000');
+  assert.equal(literalDigits('x"3_F"'), '00111111');
+  assert.equal(literalDigits('6b"0101"'), '000101');
+  // a size that drops a one is no valid literal
+  assert.equal(literalDigits('4x"1F"'), null);
+  assert.equal(literalDigits("(others => '0')"), null);
+});
+
+test('a vector value at the width of its generic: as written at that length, else binary digits of the width', () => {
+  const user = { name: 'Mask_g', vhdlType: 'std_logic_vector(UserWidth_g - 1 downto 0)', kind: 'std_logic_vector' };
+  assert.equal(genericWidth(user, makeEnv({ UserWidth_g: 22 })), 22);
+  assert.equal(genericWidth(vec, makeEnv({})), 8);
+  // unconstrained, or a range with a package constant: no width
+  assert.equal(genericWidth({ name: 'T_g', vhdlType: 'std_logic_vector', kind: 'std_logic_vector' }, makeEnv({})), undefined);
+  assert.equal(genericWidth({ name: 'P_g', vhdlType: 'std_logic_vector(MaxPorts_c - 1 downto 0)', kind: 'std_logic_vector' }, makeEnv({})), undefined);
+  assert.deepEqual(vectorAtWidth('x"FE"', 8), { vhdl: 'x"FE"' });
+  assert.deepEqual(vectorAtWidth('"0101"', 4), { vhdl: '"0101"' });
+  assert.deepEqual(vectorAtWidth('22x"3FC000"', 22), { vhdl: '"1111111100000000000000"' });
+  assert.deepEqual(vectorAtWidth('x"3FC000"', 22), { vhdl: '"1111111100000000000000"' });
+  assert.deepEqual(vectorAtWidth('x"1"', 8), { vhdl: '"00000001"' });
+  assert.deepEqual(vectorAtWidth('x"7FC000"', 22), { tooWide: 23 });
+  assert.equal(vectorAtWidth("(others => '1')", 22), null);
 });

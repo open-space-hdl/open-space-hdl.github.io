@@ -5,6 +5,8 @@
  * literals, string generics without quotes).
  */
 
+import { tryEvaluate } from './expr.js';
+
 /**
  * @typedef {object} GenericDef
  * @property {string} name
@@ -32,7 +34,70 @@
 
 /** @typedef {{ ok: true, value: unknown } | { ok: false, message: string }} Validation */
 
-const SLV_RE = /^(?:[xX]"[0-9a-fA-F_]*"|[bB]?"[01_]*"|\(\s*others\s*=>\s*'[01]'\s*\))$/;
+// bit-string literals with an optional size (VHDL-2008 15.8: 22x"3FC000"), and the aggregates (others => '0' or '1')
+const SLV_RE = /^(?:\d*[xX]"[0-9a-fA-F_]*"|(?:\d*[bB])?"[01_]*"|\(\s*others\s*=>\s*'[01]'\s*\))$/;
+const LITERAL_RE = /^\s*(\d*)([bBxX]?)"([0-9a-fA-F_]*)"\s*$/;
+const RANGE_RE = /^\s*std_u?logic_vector\s*\((.+)\s+downto\s+(.+)\)\s*$/i;
+
+/**
+ * The bits of a bit-string literal, most significant first, at its length: a sized literal at its size (the bits it
+ * drops on the left are zero, else null), an unsized one at 1 or 4 bits per digit; null for anything else, for
+ * example an aggregate (others => '0').
+ * @param {unknown} text
+ * @returns {string | null}
+ */
+export function literalDigits(text) {
+  if (typeof text !== 'string') return null;
+  const m = LITERAL_RE.exec(text);
+  if (!m) return null;
+  const hex = m[2].toLowerCase() === 'x';
+  const digits = m[3].replace(/_/g, '');
+  if (!hex && /[^01]/.test(digits)) return null;
+  let bits = hex ? [...digits].map((c) => parseInt(c, 16).toString(2).padStart(4, '0')).join('') : digits;
+  if (m[1]) {
+    const size = Number(m[1]);
+    if (size < bits.length) {
+      if (/1/.test(bits.slice(0, bits.length - size))) return null;
+      bits = bits.slice(bits.length - size);
+    } else bits = bits.padStart(size, '0');
+  }
+  return bits;
+}
+
+/**
+ * Width of a std_logic_vector generic whose range the generics of the instance give, else undefined (an unconstrained
+ * type, or a range with package constants).
+ * @param {GenericDef} g
+ * @param {Map<string, any>} env   expression environment of the instance (Catalog.envFor)
+ * @returns {number | undefined}
+ */
+export function genericWidth(g, env) {
+  if (g.kind !== 'std_logic_vector') return undefined;
+  const m = RANGE_RE.exec(g.vhdlType ?? '');
+  if (!m) return undefined;
+  const hi = tryEvaluate(m[1], env);
+  const lo = tryEvaluate(m[2], env);
+  return typeof hi === 'number' && typeof lo === 'number' && hi >= lo ? hi - lo + 1 : undefined;
+}
+
+/**
+ * A vector literal at the width of its generic. The literal stays as written when it has that length; otherwise, also
+ * for a sized literal, it becomes a string of that many binary digits, which every synthesis tool reads. tooWide: the
+ * number of bits the value needs, more than the width.
+ * @param {unknown} text
+ * @param {number} width
+ * @returns {{ vhdl: string } | { tooWide: number } | null}   null: not a bit-string literal (an aggregate)
+ */
+export function vectorAtWidth(text, width) {
+  const bits = literalDigits(text);
+  if (bits === null) return null;
+  const sized = /^\s*\d/.test(String(text));
+  if (bits.length === width && !sized) return { vhdl: String(text).trim() };
+  const first = bits.indexOf('1');
+  const needed = first < 0 ? 0 : bits.length - first;
+  if (needed > width) return { tooWide: needed };
+  return { vhdl: `"${bits.slice(Math.max(0, bits.length - width)).padStart(width, '0')}"` };
+}
 const INTVEC_RE = /^\(\s*(?:\d+\s*=>\s*)?-?\d+(?:\s*,\s*(?:\d+\s*=>\s*)?-?\d+)*\s*(?:,\s*others\s*=>\s*-?\d+\s*)?\)$/i;
 
 /**
