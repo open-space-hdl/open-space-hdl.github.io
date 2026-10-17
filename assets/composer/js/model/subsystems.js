@@ -208,6 +208,8 @@ function deriveBlock(cat, name, def, res, resolved) {
     // subsystem has no generics
     const lite = /** @type {{generic: string, value: unknown}[] | undefined} */ (pv.itf.params?.liteWhen);
     if (lite && lite.length) itf.params = { liteWhen: lite.every((x) => rec.generics[x.generic] === x.value) };
+    // so is a sink that needs packet boundaries by a generic inside (image framing of a compressor)
+    if (typeof pv.itf.needsLast === 'string') itf.needsLast = rec.generics[pv.itf.needsLast] === true;
     interfaces.push(itf);
   }
   // the constraints of the blocks inside in terms of the ports of the subsystem, so that the parent states them for

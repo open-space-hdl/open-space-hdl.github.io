@@ -62,7 +62,8 @@ export const CATALOG_VERSION = 1;
  * @property {{signal: string, description?: string, fields: SidebandField[]}} [sideband]
  * @property {'native' | 'packed'} [carry]
  * @property {{name: string, label: string, lsb: number, bits: number}[]} [userFields]   meaning of the bits of user
- * @property {boolean} [needsLast]   a generic sink that needs packet boundaries
+ * @property {boolean | string} [needsLast]   a sink that needs packet boundaries: always (a generic sink), or while
+ *           the boolean generic it names is true (image framing of a compressor)
  * @property {string[]} [clockSignals]   signals of pins that are clocks: the block port takes the top-level port as its
  *           actual, without a signal and an assignment between them
  * @property {string[]} [asyncSignals]   signals that are asynchronous levels, not in the clock domain of the interface
@@ -107,8 +108,26 @@ export const CATALOG_VERSION = 1;
  * @property {{name: string, dir: string, vhdlType: string, width: string|null, default?: string}[]} ports
  * @property {{port: string, value: string}[]} [tieOffs]
  * @property {any} [rates]   throughput data: evidence, interfaces, routes, links, chains (model/throughput.js)
- * @property {{id: string, name: string, summary: string, generics?: Record<string, unknown>}[]} [presets]
+ * @property {{id: string, name: string, summary: string, generics?: Record<string, unknown>}[]} [presets]   a value
+ *           of a preset is a literal, or { sameAs, why? }: the generic follows another generic of the instance until the
+ *           user sets it (Sub-frame depth M = number of bands NZ for BIP order)
  */
+
+/**
+ * The generics of a preset that follow another generic of the instance, by name.
+ * @param {BlockDef} b
+ * @param {string} [presetId]
+ * @returns {Map<string, {sameAs: string, why?: string}>}
+ */
+export function presetLinks(b, presetId) {
+  const preset = presetId ? (b.presets ?? []).find((p) => p.id === presetId) : undefined;
+  /** @type {Map<string, {sameAs: string, why?: string}>} */
+  const out = new Map();
+  for (const [k, v] of Object.entries(preset?.generics ?? {})) {
+    if (v && typeof v === 'object' && 'sameAs' in v) out.set(k, /** @type {{sameAs: string, why?: string}} */ (v));
+  }
+  return out;
+}
 
 /**
  * @typedef {object} PortView
@@ -209,7 +228,8 @@ export class Catalog {
   }
 
   /**
-   * Generic values of an instance: initial values of the catalog, then the preset, then the overrides.
+   * Generic values of an instance: initial values of the catalog, then the preset, then the overrides; a generic that
+   * the preset links to another one takes its final value unless it is overridden itself.
    * @param {BlockDef} b
    * @param {Record<string, unknown>} [overrides]
    * @param {string} [presetId]
@@ -223,19 +243,28 @@ export class Catalog {
       if (v !== undefined) out[g.name] = v;
     }
     const preset = presetId ? (b.presets ?? []).find((p) => p.id === presetId) : undefined;
-    Object.assign(out, preset?.generics ?? {});
-    for (const [k, v] of Object.entries(overrides)) if (b.generics.some((g) => g.name === k)) out[k] = v;
+    const links = presetLinks(b, presetId);
+    for (const [k, v] of Object.entries(preset?.generics ?? {})) if (!links.has(k)) out[k] = v;
+    const own = new Set();
+    for (const [k, v] of Object.entries(overrides)) {
+      if (!b.generics.some((g) => g.name === k)) continue;
+      out[k] = v;
+      own.add(k);
+    }
+    for (const [k, link] of links) if (!own.has(k) && link.sameAs in out) out[k] = out[link.sameAs];
     return out;
   }
 
   /**
-   * Values a design stores for an instance: those that differ from the catalog and preset.
+   * Values a design stores for an instance: those that differ from the catalog and preset (a linked generic: from the
+   * generic it follows).
    * @param {BlockDef} b
    * @param {Record<string, unknown>} values
    * @param {string} [presetId]
    */
   overridesOf(b, values, presetId) {
     const base = this.genericValues(b, {}, presetId);
+    for (const [k, link] of presetLinks(b, presetId)) if (link.sameAs in values) base[k] = values[link.sameAs];
     /** @type {Record<string, unknown>} */
     const out = {};
     for (const g of b.generics) {

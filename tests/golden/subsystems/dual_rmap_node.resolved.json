@@ -1,5 +1,5 @@
 {
-  "catalog": "d012c32ccfc8",
+  "catalog": "d1ab84361e49",
   "entity": "dual_rmap_node",
   "ports": [
     {
@@ -4308,7 +4308,7 @@
     {
       "name": "spw_port",
       "netlist": {
-        "catalog": "d012c32ccfc8",
+        "catalog": "d1ab84361e49",
         "entity": "spw_port",
         "ports": [
           {
@@ -5495,7 +5495,7 @@
     {
       "name": "rmap_node",
       "netlist": {
-        "catalog": "d012c32ccfc8",
+        "catalog": "d1ab84361e49",
         "entity": "rmap_node",
         "ports": [
           {

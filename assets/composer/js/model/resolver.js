@@ -138,6 +138,15 @@ function portOf(ref) {
 }
 
 /**
+ * Whether an interface needs packet boundaries by itself: always, or while the boolean generic it names is true.
+ * @param {import('./catalog.js').InterfaceDef} itf
+ * @param {Record<string, unknown>} generics
+ */
+function interfaceNeedsLast(itf, generics) {
+  return typeof itf.needsLast === 'string' ? generics[itf.needsLast] === true : Boolean(itf.needsLast);
+}
+
+/**
  * VHDL type of a port of the given width.
  * @param {number} width
  * @param {string} vhdlType declared type (std_logic stays std_logic)
@@ -670,7 +679,7 @@ export class Resolution {
     const typeId = !fd.type.generic ? fd.type.id : fr.type.id;
     // a sink that needs packet boundaries or applies back-pressure cannot work with a source that has no last or no
     // valid: an error, not a constant (a packet would never end, data would be lost)
-    const needsLast = Boolean(rcv.port.itf.needsLast || (!rcv.port.type.generic && rcv.port.type.needsLast));
+    const needsLast = interfaceNeedsLast(rcv.port.itf, rcv.rec.generics) || Boolean(!rcv.port.type.generic && rcv.port.type.needsLast);
     if (needsLast && !fd.sigs.some((s) => s.name === 'last')) {
       this.check('error', 'packets', `${c.to} needs packet boundaries; ${c.from} has no last.`, { connection: c.id });
     }
@@ -903,7 +912,12 @@ export class Resolution {
         continue;
       }
       // reported as an error of the connection (connectionsPass); the netlist still gets a complete constant
-      if (s.name === 'last' && (rcv.port.itf.needsLast || rcv.port.type.needsLast)) {
+      if (s.name === 'last' && (interfaceNeedsLast(rcv.port.itf, rcv.rec.generics) || rcv.port.type.needsLast)) {
+        constants.last = 'zero';
+        continue;
+      }
+      // a sink that uses last only while a generic is true ignores it otherwise: nothing to report
+      if (s.name === 'last' && typeof rcv.port.itf.needsLast === 'string') {
         constants.last = 'zero';
         continue;
       }
@@ -938,6 +952,10 @@ export class Resolution {
         }
         continue;
       }
+      // a flag that a rule of the driving block reports where it matters (flag_dropped)
+      const ruled = (this.cat.blocks.get(drv.rec.block)?.rules ?? []).some((r) => r.kind === 'flag_dropped'
+        && r.interface === drv.port.itf.name && r.signal === s.name);
+      if (ruled) continue;
       const sev = s.name === 'last' || s.name === 'keep' ? 'warning' : 'info';
       this.check(sev, 'signals', `${c.from} has ${s.name}, ${c.to} does not: it is not passed on.`, { connection: c.id });
     }

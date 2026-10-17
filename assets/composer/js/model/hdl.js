@@ -67,7 +67,8 @@ export function wrap(text, width) {
   /** @type {string[]} */
   const lines = [];
   let line = '';
-  for (const word of text.split(/\s+/).filter(Boolean)) {
+  // a no-break space (NBSP) keeps a command on one line, where it is printed as a space
+  for (const word of text.split(/[ \t\r\n]+/).filter(Boolean).map((w) => w.replace(/\u00a0/g, ' '))) {
     if (line && line.length + 1 + word.length > width) {
       lines.push(line);
       line = word;
@@ -75,6 +76,14 @@ export function wrap(text, width) {
   }
   if (line) lines.push(line);
   return lines;
+}
+
+/**
+ * A command that a comment must not break: its words joined by no-break spaces (see wrap).
+ * @param {string} text
+ */
+function unbroken(text) {
+  return text.replace(/ /g, '\u00a0');
 }
 
 /**
@@ -369,7 +378,7 @@ function compileOrder(cat, resolved, info, problems) {
   }
   if (resolved.subsystems?.length) {
     const names = resolved.subsystems.map((s) => s.name);
-    blockNotes.push(`Subsystems: ${names.join(', ')}. Each has its timing exceptions in a file of its own, read scoped to its entity: ${names.map((n) => `read_xdc -ref ${n} ${n}.xdc`).join('; ')}.`);
+    blockNotes.push(`Subsystems: ${names.join(', ')}. Each has its timing exceptions in a file of its own, read scoped to its entity: ${names.map((n) => unbroken(`read_xdc -ref ${n} ${n}.xdc`)).join('; ')}.`);
   }
   notes.push(...blockNotes);
   if (notes.length) {
@@ -409,8 +418,8 @@ function exceptions(resolved, info, parent) {
   const out = [...headerLines(resolved, info).map((l) => `# ${l}`), '#'];
   out.push(
     ...comment('#', parent
-      ? `Timing exceptions of the subsystem ${entity} of ${parent}, in terms of its ports and instances. Read the file scoped to the entity: read_xdc -ref ${entity} ${entity}.xdc (in a project: set_property SCOPED_TO_REF ${entity} [get_files ${entity}.xdc]). The clocks come from ${parent}.`
-      : `Timing exceptions of ${entity}, in terms of its ports and instances. Read the file scoped to the entity, alone or with the system inside a larger design: read_xdc -ref ${entity} ${entity}.xdc (in a project: set_property SCOPED_TO_REF ${entity} [get_files ${entity}.xdc]). The clocks come from the design around the system, or from ${entity}_top.xdc when the system is the top level.`),
+      ? `Timing exceptions of the subsystem ${entity} of ${parent}, in terms of its ports and instances. Read the file scoped to the entity: ${unbroken(`read_xdc -ref ${entity} ${entity}.xdc`)} (in a project: ${unbroken(`set_property SCOPED_TO_REF ${entity} [get_files ${entity}.xdc]`)}). The clocks come from ${parent}.`
+      : `Timing exceptions of ${entity}, in terms of its ports and instances. Read the file scoped to the entity, alone or with the system inside a larger design: ${unbroken(`read_xdc -ref ${entity} ${entity}.xdc`)} (in a project: ${unbroken(`set_property SCOPED_TO_REF ${entity} [get_files ${entity}.xdc]`)}). The clocks come from the design around the system, or from ${entity}_top.xdc when the system is the top level.`),
   );
   if (!parent && resolved.subsystems?.length) {
     out.push('#', ...comment('#', `The subsystems have their own files, read scoped to their entities as well: ${resolved.subsystems.map((s) => `${s.name}.xdc`).join(', ')}.`));

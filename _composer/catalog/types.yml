@@ -120,13 +120,14 @@ types:
     color: "#0C8599"
     description: >-
       Byte stream with keep and last and no side band: byte 0 of a beat in data bits 7:0, keep contiguous from
-      byte 0 and partial only on the last beat of a packet.
+      byte 0 and partial only on the last beat of a packet; optionally an error flag of the packet on its last beat.
     signals:
       data: { dir: out }
       keep: { dir: out, optional: true, absent: '1', absentWhy: every byte of a beat is valid }
       last: { dir: out }
       valid: { dir: out }
       ready: { dir: in }
+      error: { dir: out, optional: true, absent: '0', absentWhy: packets without an error flag }
     accepts:
       - type: spp.rx
         note: The side band of the receive port (APID, flags) is not passed on.
@@ -344,11 +345,14 @@ types:
     family: Compression
     kind: stream
     color: "#0B7285"
-    description: Image samples in the input order of a CCSDS 123.0-B-2 compressor, one sample per beat.
+    description: >-
+      Image samples in the input order of a CCSDS 123.0-B-2 compressor, one sample per beat; last marks the last
+      sample of an image where the source frames its images.
     signals:
       data: { dir: out }
       valid: { dir: out }
       ready: { dir: in }
+      last: { dir: out, optional: true, absent: '0', absentWhy: the compressor counts the samples of an image itself }
 
   - id: c123.limits
     name: Error limits
@@ -480,6 +484,15 @@ types:
     cdc: level
     color: "#808891"
     description: Status outputs of a block (levels, flags), for monitoring.
+    fields: out
+
+  - id: sig.pulse
+    name: Event pulses
+    family: Events
+    kind: event
+    cdc: pulse
+    color: "#808891"
+    description: One-cycle pulses of a block, one per event, for a counter or an interrupt.
     fields: out
 
   - id: sig.control

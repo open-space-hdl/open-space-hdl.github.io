@@ -185,6 +185,50 @@ function linkDomain(d, spw, hz) {
 
 {
   let d = base(
+    'compressed_images_over_spw',
+    'Compressed and encrypted images over SpaceWire: OpenCompact compresses multispectral images of 128 x 128 samples in 16 bands of 12 bits losslessly (CCSDS 123.0-B-2, BIP order), the OpenCrypto framer cuts every compressed image into chunks, the AES-GCM core encrypts every chunk, and OpenSPP sends every encrypted chunk as one Space Packet through an N-Char adapter and an OpenWire port. An ECC monitor reports the corrected and detected errors of the memories of the compressor and of the buffers of the framer.',
+    [
+      ['opencompact/ocp_core', 'lossless_bip'],
+      ['opencrypto/ocr_framer', undefined],
+      ['opencrypto/ocr_core', undefined],
+      ['openspp/spp_core', undefined],
+      ['openspp/spp_nchar', undefined],
+      ['openwire/owr_core', undefined],
+      ['olo/olo_ft_ecc_monitor_axi', undefined],
+    ],
+  );
+  // the image of the sensor; in BIP order the sub-frame depth follows the number of bands (preset)
+  for (const [k, v] of Object.entries({ XSize_g: 128, YSize_g: 128, ZSize_g: 16, DynamicRange_g: 12, OutWidth_g: 32 })) {
+    d = setGeneric(d, cat, 'ocp0', k, v).design;
+  }
+  d = setGeneric(d, cat, 'ocr0', 'DenseOutput_g', true).design;
+  d = setGeneric(d, cat, 'ocr0', 'ReleaseBuffer_g', true).design;
+  d = setGeneric(d, cat, 'ocr0', 'ReleaseBytes_g', 16384).design;
+  d = setGeneric(d, cat, 'spp0', 'TxBufferBytes_g', 8192).design;
+  d = setGeneric(d, cat, 'spp0', 'RxBufferBytes_g', 8192).design;
+  d = link(d, 'ocp0.Out', 'frm0.S_In');
+  d = link(d, 'frm0.M_Ctx', 'ocr0.S_Ctx');
+  d = link(d, 'frm0.M_Out', 'ocr0.S_In');
+  d = link(d, 'ocr0.M_Out', 'spp0.S_Tx[0]', { apid: 0x123 });
+  d = link(d, 'spp0.M_Link', 'nchar0.S_Link');
+  d = link(d, 'nchar0.M_Link', 'spp0.S_Link');
+  d = link(d, 'nchar0.M_NChar', 'spw0.S_Pkt');
+  d = link(d, 'spw0.M_Pkt', 'nchar0.S_NChar');
+  // channel 0 the memories of the compressor, 1 and 2 the chunk buffer and the position FIFO of the framer
+  d = setGeneric(d, cat, 'edac0', 'Channels_g', 3).design;
+  d = link(d, 'ocp0.Ecc', 'edac0.In[0]');
+  d = link(d, 'frm0.Ecc[0]', 'edac0.In[1]');
+  d = link(d, 'frm0.Ecc[1]', 'edac0.In[2]');
+  d = linkDomain(d, 'spw0', 200e6);
+  d = external(d, {
+    'ocp0.In': 'smp_', 'spp0.M_Rx[0]': 'rx0_',
+    'ocr0.S_AxiLite': 'ocr_reg_', 'spp0.S_AxiLite': 'spp_reg_', 'spw0.S_AxiLite': 'spw_reg_', 'edac0.S_AxiLite': 'edac_reg_',
+  });
+  examples.push(['compressed_images_over_spw', 'Compressed and encrypted images over SpaceWire', d]);
+}
+
+{
+  let d = base(
     'spacefibre_node',
     'SpaceFibre node: an OpenFibre port with its AMD Versal GTY adapter carries RMAP on virtual channel 0 (an OpenRMAP target through an N-Char adapter) and Space Packets on virtual channel 1 (OpenSPP, directly on the channel). The assignment of the channels is a convention of this example, not of the cores: any channel carries any packets, and both ends of the link use the same assignment.',
     [

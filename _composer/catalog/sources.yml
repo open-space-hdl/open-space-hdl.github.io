@@ -70,6 +70,18 @@ sources:
     verified_with: 4.7.0-ft.6
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
+  - id: opencompact
+    name: OpenCompact
+    repo: opencompact
+    url: https://github.com/open-space-hdl/opencompact
+    doc: https://openspacehdl.org/opencompact/
+    commit: 591c5f37644bcc994946c17f35fc8841060299be
+    library: opencompact
+    file_list: compile_order.txt
+    file_list_format: files
+    verified_with: 4.7.0-ft.6
+    note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
+
   - id: olo
     name: Open Logic FT
     repo: open-logic-ft

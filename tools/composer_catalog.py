@@ -70,6 +70,15 @@ RULE_KINDS = {
     "with_block": ("block", "message"),
     "known_defect": ("message",),
 }
+# the optional keys of every rule kind, beside kind, message, severity and when (a key outside them is a mistake, for
+# example a flow mapping of YAML split at the comma of an unquoted expression)
+RULE_OPTIONAL = {
+    "clock_relation": ("integer",),
+    "generic_multiple": ("pow2Ratio",),
+    "generic_range": ("min", "max", "unlessZero", "elements"),
+    "flag_dropped": ("unlessGeneric", "unlessInterface"),
+    "known_defect": ("generic", "below"),
+}
 # keys of a field of a side band or of a user signal
 FIELD_KEYS = {"name", "label", "lsb", "bits", "kind", "default", "enabledBy", "below", "description"}
 # conditions of a software initialisation step (names of boolean generics)
@@ -1455,6 +1464,11 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 ctx.err(iwhere, f"asyncSignals: {an} is not a signal of the interface")
         if itf.get("needsLast") and (role != "sink" or "last" not in signals):
             ctx.err(iwhere, "needsLast is for a sink with a last signal")
+        # needsLast: always (true), or while the boolean generic it names is true
+        needs_last = itf.get("needsLast")
+        if needs_last is not None and needs_last is not True and \
+                next((g["kind"] for g in generics if g["name"] == needs_last), None) != "boolean":
+            ctx.err(iwhere, "needsLast is true or names a boolean generic of the block")
         for uf in itf.get("userFields") or []:
             if "user" not in signals:
                 ctx.err(iwhere, "userFields need a user signal")
@@ -1564,20 +1578,29 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         for key in RULE_KINDS[kind]:
             if key not in r:
                 ctx.err(where, f"rule {kind} needs '{key}'")
+        extra = set(r) - {"kind", "message", "severity", "when"} - set(RULE_KINDS[kind]) - set(RULE_OPTIONAL.get(kind, ()))
+        if extra:
+            ctx.err(where, f"rule {kind}: unknown keys {', '.join(sorted(map(str, extra)))}")
         refs = [r.get(k) for k in ("clock", "faster", "slower") if r.get(k)]
         for c in refs:
             if c not in clock_ports:
                 ctx.err(where, f"rule {kind}: unknown clock {c}")
-        # when: a boolean generic, or {generic, is | not: value}
-        when = r.get("when")
-        if isinstance(when, str) and next((g["kind"] for g in generics if g["name"] == when), None) != "boolean":
-            ctx.err(where, f"rule {kind}: when names {when}, not a boolean generic")
-        elif isinstance(when, dict) and (when.get("generic") not in {g["name"] for g in generics} or len({"is", "not"} & set(when)) != 1):
-            ctx.err(where, f"rule {kind}: when needs a generic of the block and one of is or not")
-        elif when is not None and not isinstance(when, (str, dict)):
-            ctx.err(where, f"rule {kind}: when must be a boolean generic or {{generic, is | not}}")
+        # when: a boolean generic, or {generic, is | not: value}, or a list of them that must all hold
+        conditions = r.get("when")
+        if isinstance(conditions, list) and not conditions:
+            ctx.err(where, f"rule {kind}: when is an empty list")
+        for when in conditions if isinstance(conditions, list) else [conditions]:
+            if isinstance(when, str) and next((g["kind"] for g in generics if g["name"] == when), None) != "boolean":
+                ctx.err(where, f"rule {kind}: when names {when}, not a boolean generic")
+            elif isinstance(when, dict) and (when.get("generic") not in {g["name"] for g in generics} or len({"is", "not"} & set(when)) != 1):
+                ctx.err(where, f"rule {kind}: when needs a generic of the block and one of is or not")
+            elif when is not None and not isinstance(when, (str, dict)):
+                ctx.err(where, f"rule {kind}: when must be a boolean generic, {{generic, is | not}} or a list of them")
         if kind == "generic_range" and "min" not in r and "max" not in r:
             ctx.err(where, "rule generic_range needs min or max")
+        # elements: the elements of an integer_vector generic that the range applies to
+        if kind == "generic_range" and ("elements" in r) != (next((g["kind"] for g in generics if g["name"] == r.get("generic")), None) == "integer_vector"):
+            ctx.err(where, "rule generic_range: elements goes with an integer_vector generic, and such a generic needs it")
         if kind == "known_defect" and ("generic" in r) != isinstance(r.get("below"), (int, float, str)):
             ctx.err(where, "rule known_defect: generic and below (a number or an expression) go together")
         for gname in [r.get("generic")] + list(r.get("generics") or []):
@@ -1593,6 +1616,9 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
                 ctx.err(where, f"rule {kind}: unknown generic {r['unlessGeneric']}")
             if r.get("unlessInterface") and r["unlessInterface"] not in itf_names:
                 ctx.err(where, f"rule {kind}: unknown interface {r['unlessInterface']}")
+            flagged = next((i for i in interfaces if i["name"] == r.get("interface")), None)
+            if flagged is not None and r.get("signal") not in flagged["signals"]:
+                ctx.err(where, f"rule {kind}: {r.get('signal')} is not a signal of {r.get('interface')}")
         if kind == "run_rate" and r.get("divider") not in gen_names:
             ctx.err(where, f"rule {kind}: unknown generic {r.get('divider')}")
         if kind == "partner_requires":
@@ -1629,9 +1655,19 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
     for pr in b.get("presets") or []:
         for key in ("id", "name", "summary"):
             require(pr, key, f"{where} preset")
-        for gname in (pr.get("generics") or {}):
+        kinds = {g["name"]: g["kind"] for g in generics}
+        for gname, val in (pr.get("generics") or {}).items():
             if gname not in gen_names:
                 ctx.err(where, f"preset {pr['id']}: unknown generic {gname}")
+            elif isinstance(val, dict):
+                # {sameAs, why}: the generic follows another generic of the same kind until the user sets it
+                target = val.get("sameAs")
+                if set(val) - {"sameAs", "why"} or not isinstance(target, str):
+                    ctx.err(where, f"preset {pr['id']}: {gname} is a literal or {{sameAs, why}}")
+                elif target == gname or kinds.get(target) != kinds[gname]:
+                    ctx.err(where, f"preset {pr['id']}: {gname} can follow only another generic of its kind, not {target}")
+                elif isinstance((pr.get("generics") or {}).get(target), dict):
+                    ctx.err(where, f"preset {pr['id']}: {gname} follows {target}, which follows another generic itself")
         presets.append(dict(pr))
 
     block = {

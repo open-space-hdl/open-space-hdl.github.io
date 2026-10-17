@@ -8,7 +8,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Catalog } from '../../assets/composer/js/model/catalog.js';
-import { COMPILE_ORDER_FORMAT, exportHdl, LINE_LENGTH, netlistDiff } from '../../assets/composer/js/model/hdl.js';
+import { COMPILE_ORDER_FORMAT, exportHdl, LINE_LENGTH, netlistDiff, wrap } from '../../assets/composer/js/model/hdl.js';
 import { netlist } from '../../assets/composer/js/model/netlist.js';
 import { resolve } from '../../assets/composer/js/model/resolver.js';
 import { fromText } from '../../assets/composer/js/model/serialize.js';
@@ -246,4 +246,12 @@ test('the VHDL export of every example with the published catalog matches its go
       assert.equal(stable(got), stable(want), `${name} differs from its golden file (run node tools/composer_examples.mjs)`);
     }
   }
+});
+
+test('a comment never breaks a command joined by no-break spaces, and prints them as spaces', () => {
+  const nbsp = String.fromCharCode(0xa0);
+  const command = ['read_xdc', '-ref', 'compressed_images_over_spw', 'compressed_images_over_spw.xdc'].join(nbsp);
+  const lines = wrap(`Read the file scoped to the entity: ${command} (in a project).`, 40);
+  assert.ok(lines.includes('read_xdc -ref compressed_images_over_spw compressed_images_over_spw.xdc'), lines.join('\n'));
+  assert.ok(!lines.some((l) => l.includes(nbsp)));
 });
