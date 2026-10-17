@@ -180,3 +180,20 @@ test('the assumed ratio is a key of the instance in the file; a block without a 
   assert.equal(r.design.instances[0].traffic, undefined);
   assert.ok(r.warnings.some((w) => w === 'spw0: owr_core takes no assumed ratio; the value is ignored.'), r.warnings.join('\n'));
 });
+
+test('the channel gathers the SDUs of an image: c01 with SDUs of 768 bytes runs at the rate of the core', () => {
+  let d = addInstance(createDesign('t'), cat, 'opencompact/ocp_channel', { x: 0, y: 0 }, 'lossless_bip').design;
+  for (const [k, v] of Object.entries({ XSize_g: 32, YSize_g: 12, ZSize_g: 16 })) d = setGeneric(d, cat, 'och0', k, v).design;
+  d = setExternal(setExternal(d, 'och0.In', 'sdu_'), 'och0.Out', 'img_');
+  d = setInstanceTraffic(setTraffic(d, 'och0.In', { packetBytes: 768 }), cat, 'och0', { ratio: 2 });
+  const t = throughput(d);
+  const pt = t.paths[0].at(768);
+  assert.ok(pt);
+  // the 384 samples of an SDU in 384 cycles and one per SDU; the compressed image of 6144 bytes in 6144 cycles and
+  // one per image, once per 16 SDUs
+  assert.deepEqual(pt.elements.map((e) => e.cycles), [385, 6145]);
+  assert.equal(formatRate(pt.bitsPerSecond), '1.60 Gbit/s');
+  assert.deepEqual(t.paths[0].references, [768, 12288]);
+  assert.deepEqual(t.problems, []);
+  assert.equal(t.sizes.largest.get('och0.Out')?.bytes, 6144);
+});

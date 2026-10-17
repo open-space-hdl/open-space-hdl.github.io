@@ -1,5 +1,5 @@
 {
-  "catalog": "35481be4f0b3",
+  "catalog": "5ca4b3820e30",
   "entity": "compressed_images_over_spw",
   "ports": [
     {
@@ -1239,6 +1239,14 @@
           "type": "std_logic",
           "domain": "sys",
           "actual": "ocp0_In_Last_s"
+        },
+        {
+          "name": "In_Error",
+          "dir": "in",
+          "type": "std_logic",
+          "actual": null,
+          "useDefault": true,
+          "default": "'0'"
         },
         {
           "name": "Lim_Valid",
@@ -5122,7 +5130,7 @@
       "library": "opencompact",
       "source": "opencompact",
       "url": "https://github.com/open-space-hdl/opencompact",
-      "commit": "591c5f37644bcc994946c17f35fc8841060299be",
+      "commit": "1c0a73a1831c32550e441d0348a52857ff455ce5",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.6",

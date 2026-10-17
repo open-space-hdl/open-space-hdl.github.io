@@ -244,3 +244,40 @@ test('a narrower compressor feeds a wider send port of OpenSPP; the side band co
   assert.deepEqual(n.problems, []);
   assert.equal(n.nets.find((x) => x.to === 'spp0_S_Tx_User_s')?.kind, 'constant');
 });
+
+/** The receive port of OpenSPP in front of the compression channel, the framer of OpenCrypto behind it. */
+function channel() {
+  let d = createDesign('t');
+  for (const b of ['openspp/spp_core', 'opencompact/ocp_channel', 'opencrypto/ocr_framer']) d = addInstance(d, cat, b, { x: 0, y: 0 }).design;
+  d = setGeneric(d, cat, 'spp0', 'DataWidth_g', 64).design;
+  d = setGeneric(d, cat, 'frm0', 'DataWidth_g', 128).design;
+  d = link(d, 'spp0.M_Rx[0]', 'och0.In');
+  d = link(d, 'och0.Out', 'frm0.S_In');
+  for (const [g, v] of [['UserLastMask_g', '22x"3FC000"'], ['UserLastValue_g', '22x"004000"'], ['UserErrorMask_g', '22x"003000"']]) d = setGeneric(d, cat, 'och0', g, v).design;
+  return d;
+}
+
+test('the channel follows the receive port of OpenSPP and the framer, and takes the masks at the 22 user bits', () => {
+  const d = channel();
+  const r = resolve(cat, d);
+  const g = /** @type {Record<string, any>} */ (r.byId.get('och0')?.generics);
+  assert.deepEqual([g.InStreamWidth_g, g.UserWidth_g, g.OutStreamWidth_g], [64, 22, 128]);
+  // no converter: the channel adapts both stream widths itself
+  assert.deepEqual([r.chainOf.get('c1')?.adapters, r.chainOf.get('c2')?.adapters], [[], []]);
+  assert.deepEqual(r.checks.filter((c) => c.severity === 'error' && c.rule !== 'must_serve'), []);
+  // the framer has no error flag: the images that ended with an error are counted in the status registers
+  assert.deepEqual(checksOf(r, 'flag_dropped').map((c) => c.message), [
+    'och0.Out feeds frm0.S_In. The error flag of the compressed images (Out_Error on the last beat) is not passed on, so an image that ended with an error (aborted, completed by a faulty SDU, or without its end mark) is sent like a good one. Mark or discard such images by Out_Error, or take them from the counter IMAGES_ABORTED of the status registers.',
+  ]);
+  const n = netlist(cat, d, r);
+  assert.deepEqual(n.problems, []);
+  const map = Object.fromEntries((n.instances.find((/** @type {any} */ i) => i.id === 'och0')?.generics ?? []).map((/** @type {any} */ x) => [x.name, x.vhdl]));
+  assert.deepEqual([map.UserLastMask_g, map.UserLastValue_g, map.UserErrorMask_g], ['"1111111100000000000000"', '"0000000100000000000000"', '"0000000011000000000000"']);
+});
+
+test('the end mark value of the channel lies within its mask', () => {
+  const d = setGeneric(channel(), cat, 'och0', 'UserLastValue_g', '22x"004001"').design;
+  assert.deepEqual(checksOf(resolve(cat, d), 'vector_within').map((c) => `${c.severity} ${c.message}`), [
+    'error och0: UserLastValue_g = 22x"004001" sets bit 0, outside UserLastMask_g = 22x"3FC000" (the end mark compares only the bits of the mask (IA-CF-01)).',
+  ]);
+});

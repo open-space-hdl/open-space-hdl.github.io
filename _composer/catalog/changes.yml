@@ -163,6 +163,21 @@ opencrypto:
     evidence: "PR #8 of the core: None. The GHASH multiplier writes every product coefficient once, with identical logic; Vivado elaborates ocr_core with its default stack."
     changes: []
 
+opencompact:
+  - previous: 591c5f37644bcc994946c17f35fc8841060299be
+    pin: d23d4e8f5f549d06b1bedd08e1a879f0c969a461
+    evidence: "PR #8 of the core: None."
+    changes: []
+  - previous: d23d4e8f5f549d06b1bedd08e1a879f0c969a461
+    pin: 07a1efe2398e5afb5f52c0a1b440647a62e613ac
+    evidence: "PR #9 of the core: ocp_core: new input In_Error : std_logic := '0', valid with In_Last and only with UseInLast_g true; existing instances that leave it open behave as before. No change of generics, stream formats or the Open Logic pin."
+    # the Composer keeps In_Error at its default (a tie-off of the block): a system behaves as before
+    changes: []
+  - previous: 07a1efe2398e5afb5f52c0a1b440647a62e613ac
+    pin: 1c0a73a1831c32550e441d0348a52857ff455ce5
+    evidence: "PR #10 of the core: new entities ocp_input_adapter, ocp_mib and ocp_channel with a new register map (ID 0x4F435001, version 1); ocp_core, its generics, the stream formats of the core and the Open Logic pin (4.7.0-ft.6) are unchanged."
+    changes: []
+
 olo:
   - previous: 1bc4fb90888cf24ac29bc54527c2982d2dec307c
     pin: 5d8ae56dcd6362f77e5cffc1cf718e605323c1e7

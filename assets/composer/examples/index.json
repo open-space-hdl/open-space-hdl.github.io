@@ -31,6 +31,12 @@
       "description": "Compressed and encrypted images over SpaceWire: OpenCompact compresses multispectral images of 128 x 128 samples in 16 bands of 12 bits losslessly (CCSDS 123.0-B-2, BIP order), the OpenCrypto framer cuts every compressed image into chunks, the AES-GCM core encrypts every chunk, and OpenSPP sends every encrypted chunk as one Space Packet through an N-Char adapter and an OpenWire port. An ECC monitor reports the corrected and detected errors of the memories of the compressor and of the buffers of the framer. The throughput budget assumes a compression ratio of 2: an assumption about the images, not a property of the core; the brief marks every number that depends on it."
     },
     {
+      "file": "spw_compression_node.composer.json",
+      "name": "spw_compression_node",
+      "title": "SpaceWire compression node",
+      "description": "SpaceWire compression node: the images arrive as Space Packets over SpaceWire, the samples of an image in several SDUs of the Octet String Service, the last one marked by the CPTP User Application value 1. The OpenCompact channel compresses every image of 32 x 32 samples in 8 bands of 12 bits losslessly (CCSDS 123.0-B-2, BIP order) and counts the images and the faulty SDUs in its status registers, the OpenCrypto framer cuts every compressed image into chunks, the AES-GCM core encrypts every chunk, and OpenSPP sends every encrypted chunk as one Space Packet back over the same OpenWire port. An ECC monitor reports the corrected and detected errors of the memories of the compressor and of the buffers of the framer. The throughput budget assumes a compression ratio of 2: an assumption about the images, not a property of the channel; the brief marks every number that depends on it."
+    },
+    {
       "file": "spacefibre_node.composer.json",
       "name": "spacefibre_node",
       "title": "SpaceFibre node",
