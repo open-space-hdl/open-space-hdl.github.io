@@ -71,6 +71,29 @@ test('the width of the N-Char adapter follows the connected link', () => {
   assert.deepEqual(fixed.chainOf.get('c1')?.adapters, []);
 });
 
+test('a sink of the receive port of OpenSPP follows its data and user widths', () => {
+  // an adapter behind a receive port that reads the user bits (for example a mark on the last SDU of an image)
+  const adapter = streamBlock('test/rx_adapter', { name: 'S_In', type: 'spp.rx', role: 'sink', widths: { data: 'DataWidth_g', keep: 'DataWidth_g / 8', last: 1, user: 'UserWidth_g' }, ready: true, generics: { DataWidth_g: 32, UserWidth_g: 8 } });
+  adapter.generics[0].follow = { interfaces: ['S_In'], measure: 'data' };
+  adapter.generics[1].follow = { interfaces: ['S_In'], measure: 'user' };
+  const c = catalogWith([adapter]);
+  let d = addInstance(createDesign('t'), c, 'openspp/spp_core', { x: 0, y: 0 }).design;
+  d = addInstance(d, c, 'test/rx_adapter', { x: 0, y: 0 }).design;
+  d = setGeneric(d, c, 'spp0', 'DataWidth_g', 128).design;
+  d = link(c, d, 'spp0.M_Rx[0]', 'rx_adapter0.S_In');
+  let r = resolve(c, d);
+  const rec = r.byId.get('rx_adapter0');
+  assert.deepEqual([rec?.generics.DataWidth_g, rec?.generics.UserWidth_g], [128, 22]);
+  assert.ok(rec?.auto.includes('UserWidth_g'));
+  assert.deepEqual(r.checks.filter((x) => x.rule === 'signals' || x.rule === 'width_conversion'), []);
+  assert.deepEqual(netlist(c, d, r).problems, []);
+  // a width set by hand stays, and the bits that do not meet are named
+  r = resolve(c, setGeneric(d, c, 'rx_adapter0', 'UserWidth_g', 14).design);
+  assert.equal(r.byId.get('rx_adapter0')?.generics.UserWidth_g, 14);
+  assert.deepEqual(r.checks.filter((x) => x.rule === 'signals').map((x) => x.message),
+    ['spp0.M_Rx[0] has 22 user bits, rx_adapter0.S_In 14: bits 13 to 0 are connected, bits 21 to 14 are not used.']);
+});
+
 test('the Space Packet node follows the width of a packet link that does not follow back; ranks decide between two followers', () => {
   const c = catalogWith([
     streamBlock('test/vc_src', { name: 'Out', type: 'pkt.link', role: 'source', widths: { data: 'W_g', keep: 'W_g / 8', last: 1, user: 1 }, ready: true, generics: { W_g: 64 } }),

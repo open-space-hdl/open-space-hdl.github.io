@@ -496,11 +496,12 @@ export class Resolution {
   }
 
   /**
-   * Value of a generic that follows a connected interface: the width of the typed interface at the other end
-   * (looking through untyped Open Logic blocks), or a generic of the block behind it. When that interface follows
+   * Value of a generic that follows a connected interface: the width of the data or of the user signal of the typed
+   * interface at the other end (looking through untyped Open Logic blocks), the width of its packed side band, or a
+   * generic of the block behind it. When that interface follows
    * back, the lower rank follows the higher one; with equal ranks neither follows.
    * @param {ResolvedInstance} rec
-   * @param {{ interfaces: string[], measure: 'data' | 'packed' | 'generic', generic?: string, rank?: number }} follow
+   * @param {{ interfaces: string[], measure: 'data' | 'user' | 'packed' | 'generic', generic?: string, rank?: number }} follow
    * @returns {number | undefined}
    */
   followValue(rec, follow) {
@@ -520,8 +521,8 @@ export class Resolution {
         }
         const f = this.formatOf(te.ref);
         if (!f) continue;
-        if (follow.measure === 'data') {
-          const w = f.sigs.find((s) => s.name === 'data')?.width;
+        if (follow.measure === 'data' || follow.measure === 'user') {
+          const w = f.sigs.find((s) => s.name === follow.measure)?.width;
           if (w) return w;
         } else {
           const w = packing(f, p.itf).width;
@@ -897,7 +898,8 @@ export class Resolution {
       const b = side.block;
       const g = b.generics.find((x) => x.follow?.interfaces.includes(side.port.itf.name));
       if (!g || side.rec.auto.includes(g.name)) continue;
-      const need = g.follow?.measure === 'data' ? f.sigs.find((s) => s.name === 'data')?.width : packing(f, side.port.itf).width;
+      const m = g.follow?.measure;
+      const need = m === 'data' || m === 'user' ? f.sigs.find((s) => s.name === m)?.width : packing(f, side.port.itf).width;
       const have = side.rec.generics[g.name];
       if (need !== undefined && have !== need) {
         this.check('error', 'carrier_width',
