@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "d24e0d8d8eda",
+ "id": "7d85bbc3070d",
  "sources": [
   {
    "id": "openwire",
@@ -585,12 +585,13 @@
    "repo": "open-logic-ft",
    "url": "https://github.com/open-space-hdl/open-logic-ft",
    "doc": "https://openspacehdl.org/open-logic-ft/",
-   "tag": "4.7.0-ft.6",
+   "tag": "4.7.0-ft.8",
    "library": "olo",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). Every core of the catalog is verified with 4.7.0-ft.6.",
+   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). The cores of the catalog are verified with 4.7.0-ft.6; the ports added since have a default (inputs) or may stay open (outputs), so they compile with 4.7.0-ft.8 unchanged.",
    "files": [
+    "src/intf/vhdl/olo_intf_pkg_can.vhd",
     "src/base/vhdl/olo_base_pkg_crc.vhd",
     "src/base/vhdl/olo_base_pkg_attribute.vhd",
     "src/intf/vhdl/olo_intf_sync.vhd",
@@ -608,6 +609,8 @@
     "src/base/vhdl/olo_base_strobe_gen.vhd",
     "src/intf/vhdl/olo_intf_debounce.vhd",
     "src/ft/vhdl/olo_ft_private_scrubber.vhd",
+    "src/base/vhdl/olo_base_stream_split.vhd",
+    "src/base/vhdl/olo_base_stream_join.vhd",
     "src/base/vhdl/olo_base_sample_hold.vhd",
     "src/base/vhdl/olo_base_ram_tdp.vhd",
     "src/ft/vhdl/olo_ft_ram_tdp.vhd",
@@ -622,11 +625,15 @@
     "src/intf/vhdl/olo_intf_spi_slave.vhd",
     "src/intf/vhdl/olo_intf_spi_master.vhd",
     "src/intf/vhdl/olo_intf_i2c_master.vhd",
+    "src/intf/vhdl/olo_intf_can.vhd",
     "src/base/vhdl/olo_base_wconv_xn2n.vhd",
     "src/base/vhdl/olo_base_wconv_n2xn.vhd",
     "src/base/vhdl/olo_base_wconv_n2m.vhd",
     "src/base/vhdl/olo_base_rate_limit.vhd",
     "src/base/vhdl/olo_base_prbs.vhd",
+    "src/base/vhdl/olo_base_pkg_gf.vhd",
+    "src/base/vhdl/olo_base_rs_encode.vhd",
+    "src/base/vhdl/olo_base_rs_decode.vhd",
     "src/base/vhdl/olo_base_fifo_sync.vhd",
     "src/ft/vhdl/olo_ft_fifo_sync.vhd",
     "src/base/vhdl/olo_base_flowctrl_handler.vhd",
@@ -726,9 +733,27 @@
      "pin": "5d8ae56dcd6362f77e5cffc1cf718e605323c1e7",
      "evidence": "Tag 4.7.0-ft.6 of Open Logic FT: olo_axi_master_full with 8-bit data and narrow addresses (used inside OpenRMAP); no change of the blocks of the catalog.",
      "changes": []
+    },
+    {
+     "previous": "5d8ae56dcd6362f77e5cffc1cf718e605323c1e7",
+     "pin": "42eb7cf3c7bd6a48c74ad58e39c467cba43bae4d",
+     "evidence": "Tag 4.7.0-ft.7 of Open Logic FT: the AXI masters report the response code of a failed command (new outputs Wr_ErrorResp and Rd_ErrorResp, used by no block of the catalog), new entities olo_intf_can, olo_base_rs_encode and olo_base_rs_decode; no change of the blocks of the catalog.",
+     "changes": []
+    },
+    {
+     "previous": "42eb7cf3c7bd6a48c74ad58e39c467cba43bae4d",
+     "pin": "f9e7f596e5e4c547e17087d89e3ce1289514d42d",
+     "evidence": "Tag 4.7.0-ft.8 of Open Logic FT: FIXED bursts of the AXI masters (new inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), new entities olo_base_stream_join and olo_base_stream_split, olo_base_wconv_n2m drives Out_Be with equal widths and checks its byte enables at the clock edge, olo_intf_i2c_master checks its commands at the clock edge; no port or generic change of the blocks of the catalog.",
+     "changes": [
+      {
+       "block": "olo/olo_base_wconv_n2m",
+       "kind": "behaviour",
+       "text": "With InWidth_g = OutWidth_g, Out_Be follows In_Be (UseBe_g) or is all '1'; it was not driven before. The check that only the last beat of a packet has partial byte enables runs on the accepted beats at the clock edge, so a source whose In_Valid settles one delta cycle after In_Be no longer stops the simulation."
+      }
+     ]
     }
    ],
-   "commit": "5d8ae56dcd6362f77e5cffc1cf718e605323c1e7"
+   "commit": "f9e7f596e5e4c547e17087d89e3ce1289514d42d"
   }
  ],
  "categories": [

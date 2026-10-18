@@ -183,3 +183,12 @@ olo:
     pin: 5d8ae56dcd6362f77e5cffc1cf718e605323c1e7
     evidence: "Tag 4.7.0-ft.6 of Open Logic FT: olo_axi_master_full with 8-bit data and narrow addresses (used inside OpenRMAP); no change of the blocks of the catalog."
     changes: []
+  - previous: 5d8ae56dcd6362f77e5cffc1cf718e605323c1e7
+    pin: 42eb7cf3c7bd6a48c74ad58e39c467cba43bae4d
+    evidence: "Tag 4.7.0-ft.7 of Open Logic FT: the AXI masters report the response code of a failed command (new outputs Wr_ErrorResp and Rd_ErrorResp, used by no block of the catalog), new entities olo_intf_can, olo_base_rs_encode and olo_base_rs_decode; no change of the blocks of the catalog."
+    changes: []
+  - previous: 42eb7cf3c7bd6a48c74ad58e39c467cba43bae4d
+    pin: f9e7f596e5e4c547e17087d89e3ce1289514d42d
+    evidence: "Tag 4.7.0-ft.8 of Open Logic FT: FIXED bursts of the AXI masters (new inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), new entities olo_base_stream_join and olo_base_stream_split, olo_base_wconv_n2m drives Out_Be with equal widths and checks its byte enables at the clock edge, olo_intf_i2c_master checks its commands at the clock edge; no port or generic change of the blocks of the catalog."
+    changes:
+      - { block: olo/olo_base_wconv_n2m, kind: behaviour, text: "With InWidth_g = OutWidth_g, Out_Be follows In_Be (UseBe_g) or is all '1'; it was not driven before. The check that only the last beat of a packet has partial byte enables runs on the accepted beats at the clock edge, so a source whose In_Valid settles one delta cycle after In_Be no longer stops the simulation." }
