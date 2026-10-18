@@ -1,5 +1,5 @@
 {
-  "catalog": "d24e0d8d8eda",
+  "catalog": "7d85bbc3070d",
   "entity": "encrypted_spp_over_spw",
   "ports": [
     {
@@ -4460,11 +4460,11 @@
       "library": "olo",
       "source": "olo",
       "url": "https://github.com/open-space-hdl/open-logic-ft",
-      "tag": "4.7.0-ft.6",
-      "commit": "5d8ae56dcd6362f77e5cffc1cf718e605323c1e7",
+      "tag": "4.7.0-ft.8",
+      "commit": "f9e7f596e5e4c547e17087d89e3ce1289514d42d",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). Every core of the catalog is verified with 4.7.0-ft.6.",
+      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). The cores of the catalog are verified with 4.7.0-ft.6; the ports added since have a default (inputs) or may stay open (outputs), so they compile with 4.7.0-ft.8 unchanged.",
       "entities": [
         "olo_base_reset_gen",
         "olo_ft_ecc_monitor_axi"
