@@ -123,6 +123,31 @@ test('the compile order names every source at its commit and lists the files lib
   assert.match(order, /olo_base_constraints_amd\.tcl/);
 });
 
+test('a vendor-specific block outside the file list of its repository follows with its further files', () => {
+  const path = 'file openfibre openfibre/hdl/ofb_pa_gty/src/ofb_pa_gty.vhd';
+  /** @param {string[] | undefined} files */
+  const orderWith = (files) => {
+    const json = catalogJsonWithFiles();
+    const pa = json.blocks.find((/** @type {any} */ b) => b.id === 'openfibre/ofb_pa_gty');
+    if (files) pa.files = files;
+    else delete pa.files;
+    const c = new Catalog(json);
+    const { design } = fromText(readFileSync(`${EXAMPLES}spacefibre_node.composer.json`, 'utf-8'), c);
+    const out = exportHdl(c, /** @type {any} */ (netlist(c, design, resolve(c, design))), INFO);
+    const lines = (out.files.find((f) => f.name === 'spacefibre_node_compile_order.txt')?.text ?? '').split('\n');
+    return lines.slice(lines.indexOf(path)).filter((l) => l.startsWith('file '));
+  };
+  // the further files right after the file of the block, in the order of the catalog and in its library
+  const two = ['hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd', 'hdl/ofb_pa_gty/src/ofb_pa_gty_extra.vhd'];
+  const order = orderWith(two);
+  assert.deepEqual(order.slice(0, 3), [path, ...two.map((f) => `file openfibre openfibre/${f}`)]);
+  assert.match(order[3], /^file spacefibre_node /);
+  // a block without further files has its one file, as before
+  const one = orderWith(undefined);
+  assert.equal(one[0], path);
+  assert.match(one[1], /^file spacefibre_node /);
+});
+
 test('the constraints of the system of a user match their golden files: false paths through ports, none on Rst', () => {
   const text = readFileSync(`${ROOT}tests/fixtures/spfi_encrypt.composer.json`, 'utf-8');
   const { design } = fromText(text, cat);

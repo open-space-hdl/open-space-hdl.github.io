@@ -449,8 +449,10 @@ file &lt;library&gt; &lt;path&gt;</code></pre>
       file and its library, in compile order; the sources relative to the sources root, the top level relative to the
       compile order file. The subsystems follow the sources in the library of the top level, leaves first, and the top
       level comes last. The file lists come from <code>compile_order.txt</code> of every repository at its pinned
-      commit; the notes at the end name what a build needs beyond the files, for example the transceiver wizard of a
-      vendor-specific block and the scoped constraint script of Open Logic.
+      commit. A block outside the file list of its repository, a vendor-specific adapter, follows the files of its
+      library with its own file and (since 0.9.5-beta) the further files that the catalog names for it, for example its
+      architecture in a file of its own. The notes at the end name what a build needs beyond the files, for example the
+      transceiver wizard of a vendor-specific block and the scoped constraint script of Open Logic.
     </p>
     <p>
       The command line tool of the website repository writes the same files:
@@ -474,8 +476,10 @@ file &lt;library&gt; &lt;path&gt;</code></pre>
       <code>tools/composer_hdl_check.py</code> analyses an export with GHDL file by file in the order of its compile
       order, elaborates the top level and runs it to 0 ns, so that the assertions of the cores on their generics fire.
       Open Logic is analysed with <code>-frelaxed</code> (the shared variable of its RAMs), the cores and the top level
-      strictly; a vendor-specific block is replaced by a stub of its entity. The continuous integration of the website
-      runs it for every example and for a system with two levels of subsystems.
+      strictly; a vendor-specific block is replaced by a stub of its entity, and its further files are not analysed.
+      Before that, the check stops when the compile order does not list every further file of the block right after
+      it, or when a file is missing from the sources: the stub would hide a missing architecture. The continuous
+      integration of the website runs it for every example and for a system with two levels of subsystems.
     </p>
 
     <h2 id="versions">Versions and the catalog</h2>
