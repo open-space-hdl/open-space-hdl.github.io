@@ -59,11 +59,11 @@ jobs:
       # replaced by a stub of their entity (tools/composer_hdl_check.py).
       - name: VHDL export of the examples, a user's system and subsystems, run to 0 ns with GHDL
         run: |
-          set -e
+          set -eo pipefail
           for f in site/assets/composer/examples/*.composer.json site/tests/fixtures/spfi_encrypt.composer.json site/tests/fixtures/subsystems/*.composer.json; do
             n=$(basename "$f" .composer.json)
             node site/tools/composer_hdl.mjs "$f" "export/$n"
-            python site/tools/composer_hdl_check.py "export/$n" --sources sources --checkout-from .
+            python site/tools/composer_hdl_check.py "export/$n" --sources sources --checkout-from . 2>&1 | tee -a export.log
           done
       # Negative test: a top level whose generics violate an assertion of a core (ReleaseBytes_g = 4128, not a power of
       # two) must stop at 0 ns. The command line tool refuses this system, so a test-only script writes the export.
@@ -99,18 +99,20 @@ jobs:
           fi
           grep "ofb_pa_gty_absent.vhd, a file of the vendor-specific block ofb_pa_gty, is not in sources" vf_absent.log || { cat vf_absent.log; echo "The GHDL check stopped for another reason."; exit 1; }
       # A vendor-specific block with a behavioural model in the catalog (model: a file list of its repository and an
-      # architecture in plain VHDL) is simulated with that model instead of a stub. A test-only edit of the catalog
-      # sources gives ofb_pa_gty its model (compile_order_sim.txt of OpenFibre, architecture mdl), the catalog is built
-      # again, and spacefibre_node must elaborate and run to 0 ns with it. The last step of the job: it changes the
-      # catalog of this checkout.
-      - name: The GHDL check simulates a vendor-specific block with its behavioural model
+      # architecture in plain VHDL) is simulated with that model, ofb_pa_gty in the step above. Without a model it is
+      # replaced by a stub: a test-only edit of the catalog sources removes the model of ofb_pa_gty, the catalog is
+      # built again, and spacefibre_node must elaborate and run to 0 ns with the stub. The last step of the job: it
+      # changes the catalog of this checkout.
+      - name: The GHDL check replaces a vendor-specific block without a model by a stub
         run: |
-          node site/tests/vendor_model_yaml.mjs
+          grep "spacefibre_node: .* (1 vendor model (mdl), 1 vendor file not analysed)" export.log || { echo "The GHDL check did not simulate ofb_pa_gty with its model."; exit 1; }
+          grep "spfi_encrypt: .* (1 vendor model (mdl), 1 vendor file not analysed)" export.log || { echo "The GHDL check did not simulate ofb_pa_gty with its model."; exit 1; }
+          node site/tests/vendor_stub_yaml.mjs
           python site/tools/composer_catalog.py build
-          node site/tools/composer_hdl.mjs site/assets/composer/examples/spacefibre_node.composer.json export/vm
-          python site/tools/composer_hdl_check.py export/vm --sources sources --checkout-from . > vm.log 2>&1 || { cat vm.log; exit 1; }
-          cat vm.log
-          grep "spacefibre_node: .* (1 vendor model (mdl), 1 vendor file not analysed), top level elaborated and run to 0 ns" vm.log || { echo "The GHDL check did not simulate ofb_pa_gty with its model."; exit 1; }
+          node site/tools/composer_hdl.mjs site/assets/composer/examples/spacefibre_node.composer.json export/vs
+          python site/tools/composer_hdl_check.py export/vs --sources sources --checkout-from . > vs.log 2>&1 || { cat vs.log; exit 1; }
+          cat vs.log
+          grep "spacefibre_node: .* (1 vendor stub, 1 vendor file not analysed), top level elaborated and run to 0 ns" vs.log || { echo "The GHDL check did not replace ofb_pa_gty by a stub."; exit 1; }
 
   browser:
     name: Browser tests (${{ matrix.browser }})

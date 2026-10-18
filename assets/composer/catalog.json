@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "43e25daad142",
+ "id": "323baf3004d2",
  "sources": [
   {
    "id": "openwire",
@@ -11371,7 +11371,7 @@
      "text": "Wait for LANE_STATUS (0x104 + 0x20 i) bits 3:0 = 7 (Active) of the lanes and DL_STATUS (0x010) bits 1:0 = 3 (link initialised); VC_HAS_CREDIT (0x030) shows the VCs that may send."
     }
    ],
-   "endToEnd": "Connect two nodes (in a simulation without the transceiver models: two cores joined by tb/ofb_tb_pa_model.vhd of OpenFibre), start the link at one end and send a packet on a virtual channel; it arrives on the same virtual channel at the other end.",
+   "endToEnd": "Connect two nodes (in a simulation without the transceiver models: the ofb_pa_gty of both ends in the architecture mdl, hdl/ofb_pa_gty/compile_order_sim.txt of OpenFibre, with the serial pins of the two ends crossed), start the link at one end and send a packet on a virtual channel; it arrives on the same virtual channel at the other end.",
    "rates": {
     "evidence": "user guide section 7; TC-NI-07 (virtual channel ports), TC-CORE-16 (link efficiency), TC-CORE-15 (CoreClk); rowEff derived from the link efficiency of TC-CORE-16 (words of 4 bytes, packets of 1 to 1024 B) and the row model of TC-NI-07",
     "packet": "packet",
@@ -12664,7 +12664,17 @@
      "vhdlType": "std_logic_vector(NumLanes_g-1 downto 0)",
      "width": "NumLanes_g"
     }
-   ]
+   ],
+   "model": {
+    "fileList": "hdl/ofb_pa_gty/compile_order_sim.txt",
+    "architecture": "mdl",
+    "files": [
+     "tb/ofb_tb_8b10b_pkg.vhd",
+     "hdl/ofb_pa_gty/sim/ofb_pa_model_pkg.vhd",
+     "hdl/ofb_pa_gty/sim/ofb_pa_gty_model.vhd"
+    ],
+    "before": 2
+   }
   },
   {
    "id": "openrmap/omap_core",
