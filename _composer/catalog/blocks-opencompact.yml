@@ -109,7 +109,7 @@ blocks:
         role: source
         clock: Clk
         mustServe: true
-        description: "One packet per compressed image (header and body, a multiple of B bytes); error on the last beat of an image with a framing error (with UseInLast_g)."
+        description: "One packet per compressed image (header and body, a multiple of B bytes); error on the last beat of an image with a framing error (with UseInLast_g). An aborted image is the compressed image of the samples taken."
         signals: { data: Out_Data, keep: Out_Keep, last: Out_Last, valid: Out_Valid, ready: Out_Ready, error: Out_Error }
       - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, description: "One pair for every memory of the core: corrected single error, detected double error.", memory: "memories of the predictor and the entropy coder (channels 0 to 13 of the error injection)", signals: { sec: Ecc_Sec, ded: Ecc_Ded } }
       - { name: ImageError, label: Image framing errors, type: sig.pulse, role: event_out, clock: Clk, tieOff: open, enabledBy: UseInLast_g, description: "One pulse for every image with a framing error, when it is detected at the input.", signals: { image_error: Ev_ImageError } }
@@ -202,7 +202,10 @@ blocks:
       - The hybrid coder is decoded from the end of the compressed image; keep Out_Last (the end of the packet) up to the decompressor.
       - After a detected double error (Ecc_Ded) the compressed image in progress may be wrong; discard it and reset the core before the next image.
       - With UseInLast_g, In_Last accompanies the last sample of every image; otherwise every image is flagged and the samples up to the next In_Last are discarded.
+      - "With UseInLast_g, an In_Last before the last sample aborts the image with that sample (sample L of the image in its input order, counted from 0): an aborted image is the compressed image of the samples taken; a decoder that is given the number of samples taken (L + 1) decodes it; the header announces the complete image. Its bytes do not depend on the timing of the input or the output."
+      - "With PeriodicUpdate_g the core takes no error limit value for three clock cycles after an early In_Last; a source that delivers the values ahead drops the remaining values of the aborted image within two clock cycles of Ev_ImageError and continues with the next image."
       - Enable the TMR of the synthesis tool for the core; it protects its memories itself and relies on TMR for all other logic (user guide section 6).
+      - "The AMD Vivado simulator stops at time 0 in ocp_predictor (index of a record field with a range starting at 1); GHDL and QuestaSim are not affected; a fix is in preparation."
 
   - id: opencompact/ocp_channel
     kind: core
@@ -317,7 +320,7 @@ blocks:
         role: source
         clock: Clk
         mustServe: true
-        description: "One packet per compressed image (header and body, a multiple of B bytes); error on the last beat of an image that ended with an error (aborted, with a faulty SDU, or with a missing end mark)."
+        description: "One packet per compressed image (header and body, a multiple of B bytes); error on the last beat of an image that ended with an error (aborted, with a faulty SDU, or with a missing end mark). An aborted image is the compressed image of the samples taken."
         signals: { data: Out_Data, keep: Out_Keep, last: Out_Last, valid: Out_Valid, ready: Out_Ready, error: Out_Error }
       - name: S_AxiLite
         label: Status registers
@@ -416,8 +419,11 @@ blocks:
       - "The sender marks the last SDU of every image by the user signal (with OpenSPP: the CPTP User Application value, UserLastMask_g 22x\"3FC000\", UserLastValue_g 22x\"004000\" for the value 1); a faulty SDU (UserErrorMask_g, with OpenSPP 22x\"003000\") ends its image with an error and the SDUs after it up to the next end mark are discarded."
       - "The status registers count the images (IMAGES_DONE, IMAGES_ABORTED), the faulty and the discarded SDUs (SDU_ERRORS, SDUS_DISCARDED) and the memory errors (ECC_CORRECTED, ECC_UNCORRECTABLE); every counter saturates and a write clears it. IMAGES_DONE + IMAGES_ABORTED is the number of compressed images output."
       - An image that ended with a faulty last SDU is complete and has the bytes of a good image; a receiver that must know the faulty images uses Out_Error or the counters.
+      - "An end mark or a faulty SDU before the last sample aborts the image with the last sample taken (sample L of the image in its input order, counted from 0; the samples of a faulty SDU are taken, an incomplete last container as one sample): an aborted image is the compressed image of the samples taken; a decoder that is given the number of samples taken (L + 1) decodes it; the header announces the complete image. Its bytes do not depend on the timing of the input or the output."
+      - "With PeriodicUpdate_g the channel takes no error limit value for three clock cycles after the last sample taken of an aborted image; a source that delivers the values ahead drops the remaining values of the aborted image within two clock cycles of Ev_ImageError and continues with the next image."
       - The source starts after the reset of the channel with the first SDU of an image; an image in progress at the end of the reset is aborted at its end mark.
       - The decompressor must know the tables that are not in the header (table generics false) and the initial accumulators of the hybrid coder.
       - The hybrid coder is decoded from the end of the compressed image; keep the end of the packet (Out_Last) up to the decompressor.
       - After a detected double error (Ecc_Ded) the compressed image in progress may be wrong; discard it and reset the channel before the next image.
       - Enable the TMR of the synthesis tool for the channel; ocp_core protects its memories itself, the adapters and the status registers rely on TMR like all other logic (user guide section 6).
+      - "The AMD Vivado simulator stops at time 0 in ocp_predictor (index of a record field with a range starting at 1); GHDL and QuestaSim are not affected; a fix is in preparation."
