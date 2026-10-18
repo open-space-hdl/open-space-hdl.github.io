@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "711b5baf7c07",
+ "id": "c5325e75f13e",
  "sources": [
   {
    "id": "openwire",
@@ -285,7 +285,7 @@
    "repo": "openfibre",
    "url": "https://github.com/open-space-hdl/openfibre",
    "doc": "https://openspacehdl.org/openfibre/",
-   "commit": "b6242a22b48ef5ede51dc20d21609aa7c70a9ebc",
+   "commit": "7726422f8bc85250ab0c82e332614eaf68a90f4b",
    "library": "openfibre",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
@@ -487,6 +487,18 @@
        "text": "Register map version 9 (ID 0x0FB10009): new register ML_ALIGN_TIMEOUTS at 0x078 counts the expiries of the alignment watchdog."
       }
      ]
+    },
+    {
+     "previous": "b6242a22b48ef5ede51dc20d21609aa7c70a9ebc",
+     "pin": "77f4eeac995bdb52095a3baaf82eba3143bc2e16",
+     "evidence": "PR #19 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "77f4eeac995bdb52095a3baaf82eba3143bc2e16",
+     "pin": "7726422f8bc85250ab0c82e332614eaf68a90f4b",
+     "evidence": "PR #20 of the core: None. The merge commit is the release v0.1.0 of the core.",
+     "changes": []
     }
    ]
   },
@@ -12254,7 +12266,7 @@
     "RefClk is the output O of the IBUFDS_GTE5 of the reference clock pins of the quad; place the buffer in the chip-level top, as hdl/ofb_vck190/src/ofb_vck190_top.vhd does.",
     "Stat_TxReady reaches Phy_TxReady of the core through the Phy interface; the core holds the link in Near-End Reset while the transmitters are not ready, so its reset needs no status of the adapter. The VCK190 reference design resets the core and the adapter with the power-on reset.",
     "The line rate is 6.25 Gbit/s with a 156.25 MHz reference clock, so LaneClk runs at 156.25 MHz.",
-    "The architecture struct needs the AMD transceiver models in a simulation (unisim and the simulation files of the wizard; OpenFibre runs them with tools/run_xsim.py). GHDL and QuestaSim simulate the adapter with its behavioural model, the architecture mdl in plain VHDL: hdl/ofb_pa_gty/compile_order_sim.txt lists it instead of struct, with the 8B/10B package and ofb_pa_model_pkg (ModelIdx_g selects the control record of an instance)."
+    "The architecture struct needs the AMD transceiver models in a simulation (unisim and the simulation files of the wizard; OpenFibre runs them with tools/run_xsim.py). GHDL and QuestaSim simulate the adapter with its behavioural model, the architecture mdl in plain VHDL: hdl/ofb_pa_gty/compile_order_sim.txt lists it instead of struct, with the 8B/10B package and ofb_pa_model_pkg (ModelIdx_g selects the control record of an instance). QuestaSim needs a time resolution of 1 fs (vsim -t fs) when the reference clocks of the ends differ by fractions of a picosecond, for example a few hundred ppm."
    ],
    "files": [
     "hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd"

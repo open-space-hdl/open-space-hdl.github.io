@@ -154,6 +154,14 @@ openfibre:
     changes:
       - { block: openfibre/ofb_core, kind: generic_added, generic: AlignTimeoutWords_g, text: "New generic AlignTimeoutWords_g (default 10000, on): the alignment watchdog of the Multi-Lane layer resets the active lanes when the alignment stays in Not Ready for that many lane clock cycles (ML-AL-11); 0 switches it off, otherwise 1024 to 1000000." }
       - { block: openfibre/ofb_core, kind: registers, text: "Register map version 9 (ID 0x0FB10009): new register ML_ALIGN_TIMEOUTS at 0x078 counts the expiries of the alignment watchdog." }
+  - previous: b6242a22b48ef5ede51dc20d21609aa7c70a9ebc
+    pin: 77f4eeac995bdb52095a3baaf82eba3143bc2e16
+    evidence: "PR #19 of the core: None."
+    changes: []
+  - previous: 77f4eeac995bdb52095a3baaf82eba3143bc2e16
+    pin: 7726422f8bc85250ab0c82e332614eaf68a90f4b
+    evidence: "PR #20 of the core: None. The merge commit is the release v0.1.0 of the core."
+    changes: []
 
 opencrypto:
   - previous: e03bc8cda75a660cc3e28bdc14d7f9409ddb0497

@@ -1,5 +1,5 @@
 {
-  "catalog": "711b5baf7c07",
+  "catalog": "c5325e75f13e",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -5366,7 +5366,7 @@
       "library": "openfibre",
       "source": "openfibre",
       "url": "https://github.com/open-space-hdl/openfibre",
-      "commit": "b6242a22b48ef5ede51dc20d21609aa7c70a9ebc",
+      "commit": "7726422f8bc85250ab0c82e332614eaf68a90f4b",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.6",
@@ -5407,7 +5407,7 @@
           "registers": {
             "source": "openfibre",
             "url": "https://github.com/open-space-hdl/openfibre",
-            "commit": "b6242a22b48ef5ede51dc20d21609aa7c70a9ebc",
+            "commit": "7726422f8bc85250ab0c82e332614eaf68a90f4b",
             "header": "sw/ofb_regs.h",
             "doc": "hdl/ofb_mib/docs/register_map.md",
             "prefix": "OFB"
