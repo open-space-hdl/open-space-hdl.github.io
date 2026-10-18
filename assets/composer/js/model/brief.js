@@ -600,7 +600,25 @@ export function agentBrief(cat, d, res, resolved, checks) {
     '4. Run for at least 100 us (the blocks initialise their tables after the reset) and stop the simulation: it must end without failed assertions, and the handshake outputs of the top level (valid, ready) and the line outputs must not be \'U\' or \'X\' after the reset. Data outputs may stay undefined while their valid is \'0\'.',
     '5. Where an AXI4-Lite port is external, read the ID register of the block (section 12) and compare it with the documented value.',
     '',
-    `With GHDL: analyse the libraries of section 1, then \`ghdl -i --std=08 -frelaxed ${d.name}.vhd ${d.name}_tb.vhd\`, \`ghdl -m --std=08 -frelaxed ${d.name}_tb\` and \`ghdl -r --std=08 -frelaxed ${d.name}_tb --stop-time=100us --assert-level=error --ieee-asserts=disable\` (\`--ieee-asserts=disable\` silences the warnings of the numeric package about metavalues before the reset).`,
+  );
+  // vendor-specific blocks: with their behavioural model, or with the simulation libraries of the vendor
+  const vendor = placed.map((x) => ({ name: x.name, b: cat.blocks.get(x.block) })).filter((x) => x.b?.vendor);
+  const modelled = vendor.filter((x) => x.b?.model);
+  if (modelled.length > 0) {
+    L.push('In a simulation these vendor-specific blocks need no library of their vendor: compile the files of their behavioural model, in plain VHDL, into the library of the block in this order, in place of its files for synthesis and after the other files of the library. The top level names no architecture, so it binds the one of the model.', '');
+    for (const b of /** @type {BlockDef[]} */ (blocks.map((id) => cat.blocks.get(id)).filter((x) => x?.vendor && x.model))) {
+      const m = /** @type {NonNullable<BlockDef['model']>} */ (b.model);
+      const files = [...m.files.slice(0, m.before), b.path, ...m.files.slice(m.before)];
+      const users = modelled.filter((x) => x.b === b).map((x) => `\`${x.name}\``).join(', ');
+      L.push(`- \`${b.entity}\` (${users}), library \`${b.library}\`, architecture \`${m.architecture}\` (file list \`${m.fileList}\` of \`${b.source}\`): ${files.map((f) => `\`${f}\``).join(', ')}; in place of ${[b.path, ...(b.files ?? [])].map((f) => `\`${f}\``).join(' and ')}.`);
+    }
+    L.push('');
+  }
+  const withModels = modelled.length > 0 ? ', with the models above' : '';
+  L.push(
+    `With GHDL: analyse the libraries of section 1${withModels}, then \`ghdl -i --std=08 -frelaxed --work=${d.name} ${d.name}.vhd ${d.name}_tb.vhd\`, \`ghdl -m --std=08 -frelaxed --work=${d.name} ${d.name}_tb\` and \`ghdl -r --std=08 -frelaxed --work=${d.name} ${d.name}_tb --stop-time=100us --assert-level=error --ieee-asserts=disable\` (\`--ieee-asserts=disable\` silences the warnings of the numeric package about metavalues before the reset).`,
+    '',
+    `With QuestaSim: create and map every library of section 1 (\`vlib <library>\`, \`vmap <library> <library>\`) and compile its files in the order of the table${withModels} (\`vcom -2008 -work <library> <files>\`), then \`vlib ${d.name}\`, \`vmap ${d.name} ${d.name}\`, \`vcom -2008 -work ${d.name} ${d.name}.vhd ${d.name}_tb.vhd\` and \`vsim -c -t fs ${d.name}.${d.name}_tb -do "set NumericStdNoWarnings 1; run 100 us; quit -f"\`. \`-t fs\` sets the time resolution of GHDL, 1 fs: a coarser one (without \`-t\`, the \`Resolution\` of \`modelsim.ini\`) cuts clock periods and offsets below it. QuestaSim stops only at an assertion of severity failure, so check its transcript for errors.`,
     '',
   );
   // the optional end-to-end test: what every block contributes
@@ -610,10 +628,11 @@ export function agentBrief(cat, d, res, resolved, checks) {
     for (const b of e2e) L.push(`- ${b?.name} (\`${b?.entity}\`): ${b?.endToEnd}`);
     L.push('');
   }
-  // vendor-specific blocks need the simulation libraries of the vendor
-  const vendor = d.instances.map((i) => ({ id: i.id, b: cat.blocks.get(i.block) })).filter((x) => x.b?.vendor);
+  // in their architecture for synthesis the vendor-specific blocks need the simulation libraries of the vendor
   if (vendor.length > 0) {
-    L.push(`Vendor-specific blocks need the simulation libraries of their vendor: ${vendor.map((x) => `\`${x.id}\` (${x.b?.entity}, ${x.b?.vendor})`).join(', ')}; see their notes in section 8.`, '');
+    const list = vendor.map((x) => `\`${x.name}\` (${x.b?.entity}, ${x.b?.vendor})`).join(', ');
+    if (modelled.length === vendor.length) L.push(`In their architecture for synthesis the vendor-specific blocks need the simulation libraries of their vendor: ${list}; see their notes in section 8.`, '');
+    else L.push(`Vendor-specific blocks${modelled.length > 0 ? ' without a model' : ''} need the simulation libraries of their vendor: ${vendor.filter((x) => !x.b?.model).map((x) => `\`${x.name}\` (${x.b?.entity}, ${x.b?.vendor})`).join(', ')}; see their notes in section 8.`, '');
   }
 
   // 15. readiness of the parts

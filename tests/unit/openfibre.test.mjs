@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { Catalog } from '../../assets/composer/js/model/catalog.js';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
 import { addInstance, assignClock, createDesign, setExternal, setGeneric, updateDomain } from '../../assets/composer/js/model/design.js';
 import { netlist } from '../../assets/composer/js/model/netlist.js';
@@ -194,4 +195,24 @@ test('the brief names exactly one way to start the link for every value of the l
     assert.equal(starts.length, 1, `LaneStart_g ${laneStart}, AutoStart_g ${autoStart}: ${starts.join(' | ')}`);
     assert.match(starts[0], step);
   }
+});
+
+test('the smoke test of the brief compiles the behavioural model of the adapter, without it the vendor libraries', () => {
+  const d = node();
+  const brief = /** @type {any} */ (toDocument(d, cat)).agent.brief;
+  // the files of the model in their compile order: its packages, the entity, the architecture mdl
+  assert.ok(brief.includes('- `ofb_pa_gty` (`pa0`), library `openfibre`, architecture `mdl` (file list `hdl/ofb_pa_gty/compile_order_sim.txt` of `openfibre`): '
+    + '`tb/ofb_tb_8b10b_pkg.vhd`, `hdl/ofb_pa_gty/sim/ofb_pa_model_pkg.vhd`, `hdl/ofb_pa_gty/src/ofb_pa_gty.vhd`, `hdl/ofb_pa_gty/sim/ofb_pa_gty_model.vhd`; '
+    + 'in place of `hdl/ofb_pa_gty/src/ofb_pa_gty.vhd` and `hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd`.'));
+  assert.match(brief, /With GHDL: analyse the libraries of section 1, with the models above, then/);
+  assert.match(brief, /With QuestaSim: .* in the order of the table, with the models above \(`vcom -2008 -work <library> <files>`\)/);
+  assert.match(brief, /`vsim -c -t fs t\.t_tb -do "set NumericStdNoWarnings 1; run 100 us; quit -f"`/);
+  assert.match(brief, /In their architecture for synthesis the vendor-specific blocks need the simulation libraries of their vendor: `pa0` \(ofb_pa_gty, AMD Versal GTY\)/);
+  // a vendor-specific block without a model: the libraries of its vendor, no model paragraph
+  const json = JSON.parse(readFileSync(`${ROOT}assets/composer/catalog.json`, 'utf-8'));
+  delete json.blocks.find((/** @type {any} */ b) => b.id === 'openfibre/ofb_pa_gty').model;
+  const plain = /** @type {any} */ (toDocument(d, new Catalog(json))).agent.brief;
+  assert.doesNotMatch(plain, /compile the files of their behavioural model|with the models above/);
+  assert.match(plain, /Vendor-specific blocks need the simulation libraries of their vendor: `pa0` \(ofb_pa_gty, AMD Versal GTY\); see their notes in section 8\./);
+  assert.match(plain, /`vsim -c -t fs t\.t_tb/);
 });

@@ -97,7 +97,7 @@ test('the brief names the file on disk, compiles with -frelaxed and initialises 
   const brief = example('spw_rmap_node').agent.brief;
   assert.match(brief, /from the system file `spw_rmap_node\.composer\.json`/);
   assert.match(brief, /ghdl -a --std=08 -frelaxed --work=olo <file>/);
-  assert.match(brief, /ghdl -r --std=08 -frelaxed spw_rmap_node_tb --stop-time=100us --assert-level=error --ieee-asserts=disable/);
+  assert.match(brief, /ghdl -r --std=08 -frelaxed --work=spw_rmap_node spw_rmap_node_tb --stop-time=100us --assert-level=error --ieee-asserts=disable/);
   // every repository of the system names its synthesis sources in compile_order.txt
   assert.match(brief, /\| `openwire` \| https:\/\/github\.com\/open-space-hdl\/openwire \| commit `[0-9a-f]{40}` \| every file listed in `compile_order\.txt`, in its order \|/);
   assert.match(brief, /## 12\. Initialisation by software/);
