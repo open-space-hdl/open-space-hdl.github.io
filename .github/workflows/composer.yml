@@ -55,7 +55,8 @@ jobs:
       # file in the order of their compile order file, then their top level is elaborated and run to 0 ns. Open Logic is
       # analysed with -frelaxed: its RAMs use a shared variable without a protected type (the RAM inference pattern of
       # Open Logic, upstream code that stays as it is). The cores, the generated subsystems and top levels are analysed
-      # strictly. Vendor-specific blocks are replaced by a stub of their entity (tools/composer_hdl_check.py).
+      # strictly. Vendor-specific blocks are simulated with their behavioural model where the catalog names one, else
+      # replaced by a stub of their entity (tools/composer_hdl_check.py).
       - name: VHDL export of the examples, a user's system and subsystems, run to 0 ns with GHDL
         run: |
           set -e
@@ -97,6 +98,19 @@ jobs:
             exit 1
           fi
           grep "ofb_pa_gty_absent.vhd, a file of the vendor-specific block ofb_pa_gty, is not in sources" vf_absent.log || { cat vf_absent.log; echo "The GHDL check stopped for another reason."; exit 1; }
+      # A vendor-specific block with a behavioural model in the catalog (model: a file list of its repository and an
+      # architecture in plain VHDL) is simulated with that model instead of a stub. A test-only edit of the catalog
+      # sources gives ofb_pa_gty its model (compile_order_sim.txt of OpenFibre, architecture mdl), the catalog is built
+      # again, and spacefibre_node must elaborate and run to 0 ns with it. The last step of the job: it changes the
+      # catalog of this checkout.
+      - name: The GHDL check simulates a vendor-specific block with its behavioural model
+        run: |
+          node site/tests/vendor_model_yaml.mjs
+          python site/tools/composer_catalog.py build
+          node site/tools/composer_hdl.mjs site/assets/composer/examples/spacefibre_node.composer.json export/vm
+          python site/tools/composer_hdl_check.py export/vm --sources sources --checkout-from . > vm.log 2>&1 || { cat vm.log; exit 1; }
+          cat vm.log
+          grep "spacefibre_node: .* (1 vendor model (mdl), 1 vendor file not analysed), top level elaborated and run to 0 ns" vm.log || { echo "The GHDL check did not simulate ofb_pa_gty with its model."; exit 1; }
 
   browser:
     name: Browser tests (${{ matrix.browser }})

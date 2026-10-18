@@ -86,6 +86,9 @@ export const CATALOG_VERSION = 1;
  * @property {string} path
  * @property {string[]} [files]   further sources of a block outside the file list of its repository (the architecture
  *           of a vendor-specific adapter in a file of its own), compiled after path in this order
+ * @property {{fileList: string, architecture: string, files: string[], before: number}} [model]   behavioural model
+ *           of a vendor-specific block for a simulation without the vendor libraries: the file list of its repository,
+ *           the architecture, its files without path in order, the first `before` of them ahead of path
  * @property {string} summary
  * @property {string} idPrefix
  * @property {string} [doc]

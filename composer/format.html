@@ -476,9 +476,13 @@ file &lt;library&gt; &lt;path&gt;</code></pre>
       <code>tools/composer_hdl_check.py</code> analyses an export with GHDL file by file in the order of its compile
       order, elaborates the top level and runs it to 0 ns, so that the assertions of the cores on their generics fire.
       Open Logic is analysed with <code>-frelaxed</code> (the shared variable of its RAMs), the cores and the top level
-      strictly; a vendor-specific block is replaced by a stub of its entity, and its further files are not analysed.
-      Before that, the check stops when the compile order does not list every further file of the block right after
-      it, or when a file is missing from the sources: the stub would hide a missing architecture. The continuous
+      strictly. A vendor-specific block with a behavioural model in the catalog (a file list of its repository, for
+      example <code>compile_order_sim.txt</code>, and an architecture in plain VHDL) is simulated with that model: the
+      files of the model ahead of the entity, the entity and the rest of the model are analysed into its library. Any
+      other vendor-specific block is replaced by a stub of its entity that drives its outputs with zeros. The further
+      files of a vendor-specific block are not analysed. Before that, the check stops when the compile order does not
+      list every further file of the block right after it, or when a file is missing from the sources: the model or
+      the stub would hide a missing architecture. The continuous
       integration of the website runs it for every example and for a system with two levels of subsystems.
     </p>
 

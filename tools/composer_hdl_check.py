@@ -13,11 +13,15 @@ its library in the listed order, so a wrong order or a missing file fails here.
     upstream code, it is not changed.
   - The cores and the generated top level are analysed strictly (--std=08 without -frelaxed).
   - A vendor-specific block (vendor in the catalog, for example ofb_pa_gty) needs the simulation libraries of its
-    vendor; it is replaced by a stub: its own context clause and entity declaration, without the vendor libraries, and
-    an architecture that drives every output with zeros. The top level is checked against the real entity that way.
+    vendor. With a behavioural model in the catalog (model: a file list of its repository and an architecture in plain
+    VHDL), the files of the model ahead of the entity, the real entity and the rest of the model are analysed into the
+    library of the block instead, so the top level elaborates and runs with that architecture. Without one, the block is
+    replaced by a stub: its own context clause and entity declaration, without the vendor libraries, and an
+    architecture that drives every output with zeros. Either way the top level is checked against the real entity.
     The further files of the block (files in the catalog, for example its architecture) are not analysed. Before
     that, the check asserts that the compile order lists them right after the file of the block, in the order of the
-    catalog and in its library, and that each exists in the sources: the stub would hide a missing architecture.
+    catalog and in its library, and that each exists in the sources: the model or the stub would hide a missing
+    architecture.
 
 --checkout-from creates the missing checkouts of the sources root as worktrees of the clones in <clones> (the clones of
 tools/composer_catalog.py clone), at the commits of the compile order.
@@ -100,7 +104,7 @@ def vendor_files(order: str, files: list[tuple[str, str]], vendors: dict[str, di
                  sources: Path) -> set[str]:
     """The further files of every vendor-specific block in the compile order, as <repository>/<file>. Each must follow
     the file of its block in the order of the catalog and in its library, and exist in the sources; otherwise the check
-    stops, since the stub of the block would hide a missing file. These files are not analysed."""
+    stops, since the model or the stub of the block would hide a missing file. These files are not analysed."""
     repo = {s["id"]: s["repo"] for s in catalog["sources"]}
     rels = [rel for _, rel in files]
     skip = set()
@@ -115,7 +119,7 @@ def vendor_files(order: str, files: list[tuple[str, str]], vendors: dict[str, di
             skip.add(rel)
             if rel not in rels:
                 errors.append(f"{order}: {rel}, a file of the vendor-specific block {b['entity']}, is not listed; "
-                              "the stub of the block would hide its absence")
+                              "the model or the stub of the block would hide its absence")
                 continue
             if rels.index(rel) != at + k or files[at + k][0] != lib:
                 errors.append(f"{order}: {rel} must follow {path} as file {k} of {b['entity']} in the library {lib}")
@@ -186,27 +190,53 @@ def main() -> int:
     for lib in libraries:
         (work / lib).mkdir()
     paths = [f"-P{work / lib}" for lib in libraries]
+    repo = {s["id"]: s["repo"] for s in catalog["sources"]}
+
+    def analyse(lib: str, rel: str, src: Path) -> None:
+        flags = ["--std=08"] + (["-frelaxed"] if lib in RELAXED_LIBRARIES or lib in a.relaxed else [])
+        ghdl(["-a", *flags, f"--work={lib}", f"--workdir={work / lib}", *paths, str(src)], f"{lib} {rel}")
+
     stubs = 0
+    models = []
+    analysed = 0
     for lib, rel in files:
         if rel in skip:
             continue
         src = a.export / rel if lib == entity else a.sources / rel
         if not src.is_file():
             sys.exit(f"{order.name}: {rel} not found in {a.export if lib == entity else a.sources}")
+        model = vendors[rel].get("model") if rel in vendors else None
+        if model:
+            # the behavioural model in place of the stub: its packages, the real entity, its architecture
+            block = vendors[rel]
+            parts = [f"{repo[block['source']]}/{f}" for f in model["files"]]
+            for m in parts[: model["before"]] + [rel] + parts[model["before"]:]:
+                if not (a.sources / m).is_file():
+                    sys.exit(f"{order.name}: {m}, a file of the model of the vendor-specific block {block['entity']}, "
+                             f"is not in {a.sources}")
+                analyse(lib, m, a.sources / m)
+                analysed += 1
+            models.append(model["architecture"])
+            continue
         if rel in vendors:
             src = stub(vendors[rel], src, work)
             stubs += 1
-        flags = ["--std=08"] + (["-frelaxed"] if lib in RELAXED_LIBRARIES or lib in a.relaxed else [])
-        ghdl(["-a", *flags, f"--work={lib}", f"--workdir={work / lib}", *paths, str(src)], f"{lib} {rel}")
+        analyse(lib, rel, src)
+        analysed += 1
     # the mcode backend analyses every unit again in memory when it elaborates, Open Logic included: -frelaxed here,
     # the strict analysis of the cores and the top level is the step above
     # run to 0 ns: the assertions of the cores on their generics fire at the start of the simulation, not at the
     # elaboration; an assertion of severity error or failure stops it
     ghdl(["--elab-run", "--std=08", "-frelaxed", f"--work={entity}", f"--workdir={work / entity}", *paths, entity,
           "--stop-time=0ns", "--assert-level=error", "--ieee-asserts=disable"], f"elaboration and simulation to 0 ns of {entity}")
-    skipped = f", {len(skip)} vendor file{'s' if len(skip) != 1 else ''} not analysed" if skip else ""
-    print(f"{entity}: {len(files) - len(skip)} files analysed ({stubs} vendor stub{'s' if stubs != 1 else ''}{skipped}), "
-          "top level elaborated and run to 0 ns")
+    notes = []
+    if stubs or not models:
+        notes.append(f"{stubs} vendor stub{'s' if stubs != 1 else ''}")
+    if models:
+        notes.append(f"{len(models)} vendor model{'s' if len(models) != 1 else ''} ({', '.join(models)})")
+    if skip:
+        notes.append(f"{len(skip)} vendor file{'s' if len(skip) != 1 else ''} not analysed")
+    print(f"{entity}: {analysed} files analysed ({', '.join(notes)}), top level elaborated and run to 0 ns")
     return 0
 
 

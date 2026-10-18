@@ -1718,6 +1718,13 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
     for key in ("doc", "project", "vendor", "notes", "rules", "constraints", "idRegister", "init", "endToEnd", "rates", "sizes"):
         if key in b:
             block[key] = b[key]
+    # texts that the Composer and the brief print as they are: an unquoted YAML note with ": " is a mapping
+    notes = b.get("notes", [])
+    if not isinstance(notes, list) or not all(isinstance(n, str) and n.strip() for n in notes):
+        ctx.err(where, "notes must be a list of texts; quote a note that contains ': '")
+    for key in ("vendor", "endToEnd"):
+        if key in b and (not isinstance(b[key], str) or not b[key].strip()):
+            ctx.err(where, f"{key} must be a text; quote it if it contains ': '")
     # further sources of a block outside the file list of its repository (the architecture of a vendor-specific adapter
     # in a file of its own), compiled after path in the listed order; checked against the file list in check_block_files
     if "files" in b:
@@ -1726,6 +1733,17 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             ctx.err(where, "files must be a list of paths")
         else:
             block["files"] = extra
+    # the behavioural model of a vendor-specific block: a file list of its repository for a simulation without the
+    # vendor libraries and the architecture it holds; resolved and checked at the pin in check_block_model
+    if "model" in b:
+        model = b["model"]
+        if not b.get("vendor"):
+            ctx.err(where, "model is only for a vendor-specific block")
+        elif (not isinstance(model, dict) or set(model) != {"fileList", "architecture"}
+              or not all(isinstance(v, str) and v for v in model.values())):
+            ctx.err(where, "model needs fileList and architecture")
+        else:
+            block["model"] = dict(model)
     # software initialisation: steps with optional conditions on boolean generics
     reg = b.get("idRegister")
     if reg is not None and (not isinstance(reg, dict) or set(reg) != {"address", "value"}):
@@ -1833,6 +1851,57 @@ def check_block_files(ctx: Context, blocks: list[dict], sources: dict) -> None:
                 ctx.err(where, f"files: {f} is not in the repository at {s['sha'][:10]}")
 
 
+def check_block_model(ctx: Context, blocks: list[dict], sources: dict) -> None:
+    """The behavioural model of a vendor-specific block (model): its file list at the pin names the path of the block
+    once and further VHDL files of the repository outside its file list and outside files; one of them holds the named
+    architecture of the entity. catalog.json gets the files without the path, in their order, and how many of them come
+    before the path (packages of the model)."""
+    for blk in blocks:
+        model = blk.get("model")
+        if not model:
+            continue
+        where = f"block {blk['id']}: model"
+        s = sources[blk["source"]]
+        repo = ctx.repos / s["repo"]
+        blk.pop("model")
+        if not git_ok_output(repo, "ls-tree", s["sha"], "--", model["fileList"]).strip():
+            ctx.err(where, f"{model['fileList']} is not in the repository at {s['sha'][:10]}")
+            continue
+        text = git(repo, "show", f"{s['sha']}:{model['fileList']}")
+        files = [ln.strip() for ln in text.splitlines() if ln.strip() and not ln.strip().startswith("#")]
+        if files.count(blk["path"]) != 1:
+            ctx.err(where, f"{model['fileList']} must name {blk['path']} once")
+            continue
+        if len(set(files)) != len(files):
+            ctx.err(where, f"{model['fileList']} names a file twice")
+            continue
+        listed = set(s.get("files") or [])
+        others = [f for f in files if f != blk["path"]]
+        ok = True
+        for f in others:
+            problem = None
+            if f in listed:
+                problem = f"is listed in {s['file_list']} already"
+            elif f in (blk.get("files") or []):
+                problem = "is a further file of the block (files), which needs the vendor libraries"
+            elif not re.search(r"\.vhdl?$", f):
+                problem = "is not a VHDL file"
+            elif not git_ok_output(repo, "ls-tree", s["sha"], "--", f).strip():
+                problem = f"is not in the repository at {s['sha'][:10]}"
+            if problem:
+                ctx.err(where, f"{model['fileList']} names {f}, which {problem}")
+                ok = False
+        if not ok:
+            continue
+        arch = re.compile(rf"^\s*architecture\s+{re.escape(model['architecture'])}\s+of\s+{re.escape(blk['entity'])}\s+is\b",
+                          re.I | re.M)
+        if not any(arch.search(git(repo, "show", f"{s['sha']}:{f}")) for f in others):
+            ctx.err(where, f"no file of {model['fileList']} holds the architecture {model['architecture']} of {blk['entity']}")
+            continue
+        blk["model"] = {"fileList": model["fileList"], "architecture": model["architecture"], "files": others,
+                        "before": files.index(blk["path"])}
+
+
 def raw_reset_uses(text: str, port: str) -> list[tuple[int, str]]:
     """The uses of a reset input in the architecture of a block other than as RstIn of olo_base_reset_gen: (line, how).
     Allowed are the port declaration, the port as the formal of an instance (Rst => LinkRst) and RstIn => <port> in an
@@ -1919,6 +1988,7 @@ def build_catalog(ctx: Context) -> dict:
     for s in sources.values():
         source_files(ctx, s)
     check_block_files(ctx, blocks, sources)
+    check_block_model(ctx, blocks, sources)
     # the technology readiness level of every source, from the projects of the website (the only place it is decided)
     projects = {pr.get("repo"): pr for pr in load_yaml(ROOT / "_data" / "projects.yml") or []}
     for s in sources.values():
