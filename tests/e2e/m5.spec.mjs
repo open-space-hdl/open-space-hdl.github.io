@@ -32,7 +32,8 @@ test('the SpaceFibre node opens without errors and saves the netlist of its gold
   const noCatalogText = (/** @type {string} */ t) => t.replace(/\(catalog `[0-9a-f]+`\)/, '(catalog `*`)').trimEnd();
   expect({ ...doc.resolved, catalog: '*' }).toEqual({ ...JSON.parse(golden('spacefibre_node.resolved.json')), catalog: '*' });
   expect(noCatalogText(doc.agent.brief)).toBe(noCatalogText(golden('spacefibre_node.brief.md')));
-  expect(doc.agent.brief).toContain('Vendor-specific blocks need the simulation libraries of their vendor: `pa0` (ofb_pa_gty, AMD Versal GTY)');
+  expect(doc.agent.brief).toContain('In their architecture for synthesis the vendor-specific blocks need the simulation libraries of their vendor: `pa0` (ofb_pa_gty, AMD Versal GTY)');
+  expect(doc.agent.brief).toContain('architecture `mdl` (file list `hdl/ofb_pa_gty/compile_order_sim.txt` of `openfibre`)');
   // the lane clock domain has the adapter as its source
   expect(doc.clockDomains.find((/** @type {any} */ c) => c.id === 'lane').source).toEqual({ kind: 'block', instance: 'pa0', port: 'LaneClk' });
 });

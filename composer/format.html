@@ -407,8 +407,10 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
       to write the architecture from <code>resolved</code>, the clock domains and resets, the constraints, the
       throughput of every path, the packet sizes and buffers, the address map, the interrupts, the protection
       scope, the readiness of the parts, the notes of the user guides of the blocks, the initialisation by software (identification registers and the register writes
-      that start the blocks), the open checks, a smoke test bench to verify the result with GHDL and an optional
-      end-to-end test.
+      that start the blocks), the open checks, a smoke test bench to verify the result with GHDL or QuestaSim and an
+      optional end-to-end test. Since 0.9.6-beta the smoke test names the files of the behavioural model of a
+      vendor-specific block in their compile order, so that it runs without the libraries of the vendor, and its
+      QuestaSim command line sets the time resolution of GHDL, 1 fs (<code>vsim -t fs</code>).
     </p>
 
     <h2 id="export">VHDL export</h2>
