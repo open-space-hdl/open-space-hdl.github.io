@@ -1,5 +1,5 @@
 {
-  "catalog": "7d85bbc3070d",
+  "catalog": "711b5baf7c07",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -2199,6 +2199,12 @@
           "value": true,
           "vhdl": "true",
           "default": true
+        },
+        {
+          "name": "AlignTimeoutWords_g",
+          "value": 10000,
+          "vhdl": "10000",
+          "default": true
         }
       ],
       "ports": [
@@ -2703,6 +2709,12 @@
           "name": "RstPulseCycles_g",
           "value": 1000,
           "vhdl": "1000",
+          "default": true
+        },
+        {
+          "name": "ModelIdx_g",
+          "value": 0,
+          "vhdl": "0",
           "default": true
         }
       ],
@@ -5354,7 +5366,7 @@
       "library": "openfibre",
       "source": "openfibre",
       "url": "https://github.com/open-space-hdl/openfibre",
-      "commit": "9fc03fb8b0d954501240b28fbeded14c5b5c70c6",
+      "commit": "b6242a22b48ef5ede51dc20d21609aa7c70a9ebc",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.6",
@@ -5391,11 +5403,11 @@
           "addrWidth": 12,
           "window": 4096,
           "via": [],
-          "id": "0x0FB10008",
+          "id": "0x0FB10009",
           "registers": {
             "source": "openfibre",
             "url": "https://github.com/open-space-hdl/openfibre",
-            "commit": "9fc03fb8b0d954501240b28fbeded14c5b5c70c6",
+            "commit": "b6242a22b48ef5ede51dc20d21609aa7c70a9ebc",
             "header": "sw/ofb_regs.h",
             "doc": "hdl/ofb_mib/docs/register_map.md",
             "prefix": "OFB"

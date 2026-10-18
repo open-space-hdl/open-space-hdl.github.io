@@ -138,6 +138,22 @@ openfibre:
     changes:
       - { block: openfibre/ofb_core, kind: generic_added, generic: LaneStart_g, text: "New generic LaneStart_g (default false): reset value of LaneStart in LANE_CTRL of every lane; true starts the link after the reset without software." }
       - { block: openfibre/ofb_core, kind: generic_added, generic: AutoStart_g, text: "New generic AutoStart_g (default true): reset value of AutoStart in LANE_CTRL of every lane, as before." }
+  - previous: 9fc03fb8b0d954501240b28fbeded14c5b5c70c6
+    pin: aff51e9ef33ef41aea8f15bb84618368e4022ae9
+    evidence: "PR #12 of the core: None."
+    changes: []
+  - previous: aff51e9ef33ef41aea8f15bb84618368e4022ae9
+    pin: 782ddaaae76495592adb6148ecb35b42a9d03948
+    evidence: "PR #13 of the core: ofb_pa_gty: new generic ModelIdx_g : natural := 0 (index of the control record of the model; the architecture struct ignores it); ports and the other generics unchanged. The entity is in src/ofb_pa_gty.vhd, the architecture struct in src/ofb_pa_gty_struct.vhd, the model in sim/ofb_pa_gty_model.vhd with the package sim/ofb_pa_model_pkg.vhd; a flow takes hdl/ofb_pa_gty/compile_order.txt (synthesis, AMD simulator) or hdl/ofb_pa_gty/compile_order_sim.txt (GHDL, QuestaSim). No change of the core, its streams, register map or the Open Logic pin."
+    changes:
+      - { block: openfibre/ofb_pa_gty, kind: generic_added, generic: ModelIdx_g, text: "New generic ModelIdx_g (default 0): the index of the control record of the behavioural model (architecture mdl); the architecture struct ignores it." }
+      - { block: openfibre/ofb_pa_gty, kind: behaviour, text: "The architecture struct is in a file of its own, hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd, which the export lists after the entity. GHDL and QuestaSim simulate the adapter with its behavioural model (hdl/ofb_pa_gty/compile_order_sim.txt)." }
+  - previous: 782ddaaae76495592adb6148ecb35b42a9d03948
+    pin: b6242a22b48ef5ede51dc20d21609aa7c70a9ebc
+    evidence: "PR #16 of the core: ofb_core, ofb_multilane: new generic AlignTimeoutWords_g : natural range 0 to 1000000 := 10000 (0 or at least 1024). ofb_multilane: new output Ev_AlignTimeout; ofb_mib: new input Ml_EvAlignTimeout (default '0'). Register map version 9: ID 0x0FB10009, new register ML_ALIGN_TIMEOUTS at 0x078 (COUNT, bits 15:0). No change of streams or the Open Logic pin."
+    changes:
+      - { block: openfibre/ofb_core, kind: generic_added, generic: AlignTimeoutWords_g, text: "New generic AlignTimeoutWords_g (default 10000, on): the alignment watchdog of the Multi-Lane layer resets the active lanes when the alignment stays in Not Ready for that many lane clock cycles (ML-AL-11); 0 switches it off, otherwise 1024 to 1000000." }
+      - { block: openfibre/ofb_core, kind: registers, text: "Register map version 9 (ID 0x0FB10009): new register ML_ALIGN_TIMEOUTS at 0x078 counts the expiries of the alignment watchdog." }
 
 opencrypto:
   - previous: e03bc8cda75a660cc3e28bdc14d7f9409ddb0497

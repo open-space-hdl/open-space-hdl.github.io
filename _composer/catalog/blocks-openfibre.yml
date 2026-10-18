@@ -29,6 +29,7 @@ blocks:
       - { name: NumVc_g, label: Virtual channels, description: "Number of virtual channels (1 to 32); the VC ports are vectors in ascending order." }
       - { name: NumLanes_g, label: Lanes, description: "Number of lanes (1 to 4); the VC ports carry 4 x NumLanes_g bytes per beat. The physical adapter takes the same value." }
       - { name: LaneStart_g, label: Lane start after reset, description: "Reset value of LaneStart (LANE_CTRL bit 0 of every lane); the port starts the link without software. Set it at one end when the MIB of that end is reachable only over this link." }
+      - { name: AlignTimeoutWords_g, label: Alignment watchdog, unit: cycles, advanced: true, description: "Alignment watchdog of the Multi-Lane layer (ML-AL-11), in lane clock cycles: after this many cycles in Not Ready, or twice as many outside Both-Ends Ready, since the last stable Both-Ends Ready, it resets the active lanes; the error recovery buffer is kept and ML_ALIGN_TIMEOUTS counts the resets. 0 switches it off, otherwise 1024 to 1000000; the default 10000 is 64 us at 156.25 MHz." }
       - { name: AutoStart_g, label: Auto start after reset, description: "Reset value of AutoStart (LANE_CTRL bit 1 of every lane); the port starts the link when the far end does." }
       - { name: LaneClkFreq_g, label: Lane clock frequency, unit: Hz, fromClock: LaneClk, description: "Frequency of LaneClk (lane timers, alignment timeout)." }
       - { name: CoreClkFreq_g, label: Core clock frequency, unit: Hz, fromClock: CoreClk, description: "Frequency of CoreClk (scrubber of the error recovery buffer)." }
@@ -155,8 +156,11 @@ blocks:
       - { kind: generic_multiple, generic: VcInDepth_g, of: 64 * NumLanes_g, pow2Ratio: true }
       # ofb_dl_vc_in.vhd: with several lanes at least two flow control units (DL-VI-05); one unit could stop the traffic
       # for good, because a beat holds back up to NumLanes_g - 1 words until the next words arrive
+      # hdl/ofb_multilane/src/ofb_multilane.vhd: the watchdog is off or its stable time (an eighth) spans 16 ALIGN
+      # periods of 8 words (ML-AL-11)
+      - { kind: generic_range, generic: AlignTimeoutWords_g, min: 1024, when: { generic: AlignTimeoutWords_g, not: 0 }, message: "the alignment watchdog is 0 (off) or at least 1024 lane clock cycles (ML-AL-11)" }
       - { kind: generic_range, generic: VcInDepth_g, min: 128 * NumLanes_g, when: { generic: NumLanes_g, not: 1 }, message: "with several lanes the input VC buffer holds two flow control units (DL-VI-05); reference value 256 x NumLanes_g" }
-    idRegister: { address: "0x000", value: "0x0FB10008" }
+    idRegister: { address: "0x000", value: "0x0FB10009" }
     registers: { map: hdl/ofb_mib/regs/ofb_regs.yml, header: sw/ofb_regs.h, doc: hdl/ofb_mib/docs/register_map.md, prefix: OFB }
     # the ECC of the memories inside the core: double-error flags per channel, counters, error injection
     protection:
@@ -174,7 +178,7 @@ blocks:
       - "The VC ports have the link format of OpenSPP: spp_core with DataWidth_g = 32 x NumLanes_g connects to a VC port directly (M_Link_User(0) to S_Vc_TUser); the further user bits of OpenSPP (destination index) do not reach the SpaceFibre port."
       - Every VC carries any packets; which VC carries which traffic is a convention of the system that both ends of the link follow.
       - Enable the safe implementation of state machines in the synthesis tool (Vivado FSM_SAFE_STATE = default_state on the state registers, Synplify syn_encoding = safe).
-      - Read ID (0x0FB10008) and GENERICS after the reset; start the link with LANE_CTRL = 0x63 at one end (LaneStart, AutoStart, TxEn, RxEn), or with LaneStart_g = true at that end, and wait for DL_STATUS bits 1:0 = 3 (programming sequence of the user guide).
+      - Read ID and GENERICS after the reset; start the link with LANE_CTRL = 0x63 at one end (LaneStart, AutoStart, TxEn, RxEn), or with LaneStart_g = true at that end, and wait for DL_STATUS bits 1:0 = 3 (programming sequence of the user guide).
       - All four clocks must run for the reset to complete; CoreClk may be the lane clock (as in the VCK190 reference design).
     rates:
       evidence: "user guide section 7; TC-NI-07 (virtual channel ports), TC-CORE-16 (link efficiency), TC-CORE-15 (CoreClk); rowEff derived from the link efficiency of TC-CORE-16 (words of 4 bytes, packets of 1 to 1024 B) and the row model of TC-NI-07"
@@ -210,6 +214,8 @@ blocks:
     source: openfibre
     entity: ofb_pa_gty
     path: hdl/ofb_pa_gty/src/ofb_pa_gty.vhd
+    # the architecture struct (hdl/ofb_pa_gty/compile_order.txt of OpenFibre)
+    files: [hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd]
     idPrefix: pa
     doc: https://openspacehdl.org/openfibre/docs/user_guide.html
     summary: >-
@@ -224,6 +230,7 @@ blocks:
       - { name: NumLanes_g, label: Lanes, description: "Lanes of the quad in use (1 to 4); follows the core.", follow: { interfaces: [Phy], measure: generic, generic: NumLanes_g } }
       - { name: SimDevice_g, label: Device family, advanced: true, description: "SIM_DEVICE of the BUFG_GT (device family)." }
       - { name: RstPulseCycles_g, label: Reset length, advanced: true, description: "Minimum reset of the transceivers and their reset controller, in cycles of FreeRunClk (3 or more)." }
+      - { name: ModelIdx_g, label: Model index, advanced: true, description: "Behavioural model only (architecture mdl): the index of the control record of the instance; ignored by the transceiver architecture struct." }
     interfaces:
       - name: Phy
         label: Core
@@ -286,8 +293,8 @@ blocks:
         description: Receivers ready, receive buffer errors and clock corrections per lane.
         signals: { rx_ready: Stat_RxReady, rx_buf_err: Stat_RxBufErr, clk_cor: Stat_ClkCor }
     notes:
-      - "Vendor-specific (AMD Versal GTY). hdl/ofb_pa_gty/src/ofb_pa_gty.vhd is not in component_list.txt: add it to the library openfibre, and create the transceiver wizard instance ofb_gtw in the Vivado project with hdl/ofb_pa_gty/tcl/ofb_gtw.tcl (source the file, then ofb_gtw_create ofb_gtw 156.25 for a 156.25 MHz reference clock)."
+      - "Vendor-specific (AMD Versal GTY). Its entity (hdl/ofb_pa_gty/src/ofb_pa_gty.vhd) and its architecture struct (hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd) are not in compile_order.txt of the repository but in hdl/ofb_pa_gty/compile_order.txt: add them to the library openfibre after the core, and create the transceiver wizard instance ofb_gtw in the Vivado project with hdl/ofb_pa_gty/tcl/ofb_gtw.tcl (source the file, then ofb_gtw_create ofb_gtw 156.25 for a 156.25 MHz reference clock)."
       - RefClk is the output O of the IBUFDS_GTE5 of the reference clock pins of the quad; place the buffer in the chip-level top, as hdl/ofb_vck190/src/ofb_vck190_top.vhd does.
       - Stat_TxReady reaches Phy_TxReady of the core through the Phy interface; the core holds the link in Near-End Reset while the transmitters are not ready, so its reset needs no status of the adapter. The VCK190 reference design resets the core and the adapter with the power-on reset.
       - The line rate is 6.25 Gbit/s with a 156.25 MHz reference clock, so LaneClk runs at 156.25 MHz.
-      - Simulation needs the AMD transceiver models (unisim and the simulation files of the wizard); OpenFibre simulates the adapter with tools/run_xsim.py. Without them, the test bench model tb/ofb_tb_pa_model.vhd of OpenFibre (two adapters joined by a lane, one clock) stands in for the adapters of both ends of a link.
+      - "The architecture struct needs the AMD transceiver models in a simulation (unisim and the simulation files of the wizard; OpenFibre runs them with tools/run_xsim.py). GHDL and QuestaSim simulate the adapter with its behavioural model, the architecture mdl in plain VHDL: hdl/ofb_pa_gty/compile_order_sim.txt lists it instead of struct, with the 8B/10B package and ofb_pa_model_pkg (ModelIdx_g selects the control record of an instance)."

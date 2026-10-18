@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "7d85bbc3070d",
+ "id": "711b5baf7c07",
  "sources": [
   {
    "id": "openwire",
@@ -285,7 +285,7 @@
    "repo": "openfibre",
    "url": "https://github.com/open-space-hdl/openfibre",
    "doc": "https://openspacehdl.org/openfibre/",
-   "commit": "9fc03fb8b0d954501240b28fbeded14c5b5c70c6",
+   "commit": "b6242a22b48ef5ede51dc20d21609aa7c70a9ebc",
    "library": "openfibre",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
@@ -443,6 +443,48 @@
        "kind": "generic_added",
        "generic": "AutoStart_g",
        "text": "New generic AutoStart_g (default true): reset value of AutoStart in LANE_CTRL of every lane, as before."
+      }
+     ]
+    },
+    {
+     "previous": "9fc03fb8b0d954501240b28fbeded14c5b5c70c6",
+     "pin": "aff51e9ef33ef41aea8f15bb84618368e4022ae9",
+     "evidence": "PR #12 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "aff51e9ef33ef41aea8f15bb84618368e4022ae9",
+     "pin": "782ddaaae76495592adb6148ecb35b42a9d03948",
+     "evidence": "PR #13 of the core: ofb_pa_gty: new generic ModelIdx_g : natural := 0 (index of the control record of the model; the architecture struct ignores it); ports and the other generics unchanged. The entity is in src/ofb_pa_gty.vhd, the architecture struct in src/ofb_pa_gty_struct.vhd, the model in sim/ofb_pa_gty_model.vhd with the package sim/ofb_pa_model_pkg.vhd; a flow takes hdl/ofb_pa_gty/compile_order.txt (synthesis, AMD simulator) or hdl/ofb_pa_gty/compile_order_sim.txt (GHDL, QuestaSim). No change of the core, its streams, register map or the Open Logic pin.",
+     "changes": [
+      {
+       "block": "openfibre/ofb_pa_gty",
+       "kind": "generic_added",
+       "generic": "ModelIdx_g",
+       "text": "New generic ModelIdx_g (default 0): the index of the control record of the behavioural model (architecture mdl); the architecture struct ignores it."
+      },
+      {
+       "block": "openfibre/ofb_pa_gty",
+       "kind": "behaviour",
+       "text": "The architecture struct is in a file of its own, hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd, which the export lists after the entity. GHDL and QuestaSim simulate the adapter with its behavioural model (hdl/ofb_pa_gty/compile_order_sim.txt)."
+      }
+     ]
+    },
+    {
+     "previous": "782ddaaae76495592adb6148ecb35b42a9d03948",
+     "pin": "b6242a22b48ef5ede51dc20d21609aa7c70a9ebc",
+     "evidence": "PR #16 of the core: ofb_core, ofb_multilane: new generic AlignTimeoutWords_g : natural range 0 to 1000000 := 10000 (0 or at least 1024). ofb_multilane: new output Ev_AlignTimeout; ofb_mib: new input Ml_EvAlignTimeout (default '0'). Register map version 9: ID 0x0FB10009, new register ML_ALIGN_TIMEOUTS at 0x078 (COUNT, bits 15:0). No change of streams or the Open Logic pin.",
+     "changes": [
+      {
+       "block": "openfibre/ofb_core",
+       "kind": "generic_added",
+       "generic": "AlignTimeoutWords_g",
+       "text": "New generic AlignTimeoutWords_g (default 10000, on): the alignment watchdog of the Multi-Lane layer resets the active lanes when the alignment stays in Not Ready for that many lane clock cycles (ML-AL-11); 0 switches it off, otherwise 1024 to 1000000."
+      },
+      {
+       "block": "openfibre/ofb_core",
+       "kind": "registers",
+       "text": "Register map version 9 (ID 0x0FB10009): new register ML_ALIGN_TIMEOUTS at 0x078 counts the expiries of the alignment watchdog."
       }
      ]
     }
@@ -11183,7 +11225,7 @@
     "The VC ports have the link format of OpenSPP: spp_core with DataWidth_g = 32 x NumLanes_g connects to a VC port directly (M_Link_User(0) to S_Vc_TUser); the further user bits of OpenSPP (destination index) do not reach the SpaceFibre port.",
     "Every VC carries any packets; which VC carries which traffic is a convention of the system that both ends of the link follow.",
     "Enable the safe implementation of state machines in the synthesis tool (Vivado FSM_SAFE_STATE = default_state on the state registers, Synplify syn_encoding = safe).",
-    "Read ID (0x0FB10008) and GENERICS after the reset; start the link with LANE_CTRL = 0x63 at one end (LaneStart, AutoStart, TxEn, RxEn), or with LaneStart_g = true at that end, and wait for DL_STATUS bits 1:0 = 3 (programming sequence of the user guide).",
+    "Read ID and GENERICS after the reset; start the link with LANE_CTRL = 0x63 at one end (LaneStart, AutoStart, TxEn, RxEn), or with LaneStart_g = true at that end, and wait for DL_STATUS bits 1:0 = 3 (programming sequence of the user guide).",
     "All four clocks must run for the reset to complete; CoreClk may be the lane clock (as in the VCK190 reference design)."
    ],
    "rules": [
@@ -11232,6 +11274,16 @@
     },
     {
      "kind": "generic_range",
+     "generic": "AlignTimeoutWords_g",
+     "min": 1024,
+     "when": {
+      "generic": "AlignTimeoutWords_g",
+      "not": 0
+     },
+     "message": "the alignment watchdog is 0 (off) or at least 1024 lane clock cycles (ML-AL-11)"
+    },
+    {
+     "kind": "generic_range",
      "generic": "VcInDepth_g",
      "min": "128 * NumLanes_g",
      "when": {
@@ -11255,7 +11307,7 @@
    ],
    "idRegister": {
     "address": "0x000",
-    "value": "0x0FB10008"
+    "value": "0x0FB10009"
    },
    "init": [
     {
@@ -11478,6 +11530,19 @@
      "default": true,
      "label": "Auto start after reset",
      "description": "Reset value of AutoStart (LANE_CTRL bit 1 of every lane); the port starts the link when the far end does."
+    },
+    {
+     "name": "AlignTimeoutWords_g",
+     "vhdlType": "natural range 0 to 1000000",
+     "kind": "integer",
+     "min": 0,
+     "max": 1000000,
+     "defaultText": "10000",
+     "default": 10000,
+     "label": "Alignment watchdog",
+     "description": "Alignment watchdog of the Multi-Lane layer (ML-AL-11), in lane clock cycles: after this many cycles in Not Ready, or twice as many outside Both-Ends Ready, since the last stable Both-Ends Ready, it resets the active lanes; the error recovery buffer is kept and ML_ALIGN_TIMEOUTS counts the resets. 0 switches it off, otherwise 1024 to 1000000; the default 10000 is 64 us at 156.25 MHz.",
+     "advanced": true,
+     "unit": "cycles"
     }
    ],
    "clocks": [
@@ -12185,11 +12250,14 @@
    "project": "OpenFibre",
    "vendor": "AMD Versal GTY",
    "notes": [
-    "Vendor-specific (AMD Versal GTY). hdl/ofb_pa_gty/src/ofb_pa_gty.vhd is not in component_list.txt: add it to the library openfibre, and create the transceiver wizard instance ofb_gtw in the Vivado project with hdl/ofb_pa_gty/tcl/ofb_gtw.tcl (source the file, then ofb_gtw_create ofb_gtw 156.25 for a 156.25 MHz reference clock).",
+    "Vendor-specific (AMD Versal GTY). Its entity (hdl/ofb_pa_gty/src/ofb_pa_gty.vhd) and its architecture struct (hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd) are not in compile_order.txt of the repository but in hdl/ofb_pa_gty/compile_order.txt: add them to the library openfibre after the core, and create the transceiver wizard instance ofb_gtw in the Vivado project with hdl/ofb_pa_gty/tcl/ofb_gtw.tcl (source the file, then ofb_gtw_create ofb_gtw 156.25 for a 156.25 MHz reference clock).",
     "RefClk is the output O of the IBUFDS_GTE5 of the reference clock pins of the quad; place the buffer in the chip-level top, as hdl/ofb_vck190/src/ofb_vck190_top.vhd does.",
     "Stat_TxReady reaches Phy_TxReady of the core through the Phy interface; the core holds the link in Near-End Reset while the transmitters are not ready, so its reset needs no status of the adapter. The VCK190 reference design resets the core and the adapter with the power-on reset.",
     "The line rate is 6.25 Gbit/s with a 156.25 MHz reference clock, so LaneClk runs at 156.25 MHz.",
-    "Simulation needs the AMD transceiver models (unisim and the simulation files of the wizard); OpenFibre simulates the adapter with tools/run_xsim.py. Without them, the test bench model tb/ofb_tb_pa_model.vhd of OpenFibre (two adapters joined by a lane, one clock) stands in for the adapters of both ends of a link."
+    "The architecture struct needs the AMD transceiver models in a simulation (unisim and the simulation files of the wizard; OpenFibre runs them with tools/run_xsim.py). GHDL and QuestaSim simulate the adapter with its behavioural model, the architecture mdl in plain VHDL: hdl/ofb_pa_gty/compile_order_sim.txt lists it instead of struct, with the 8B/10B package and ofb_pa_model_pkg (ModelIdx_g selects the control record of an instance)."
+   ],
+   "files": [
+    "hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd"
    ],
    "generics": [
     {
@@ -12230,6 +12298,18 @@
      "default": 1000,
      "label": "Reset length",
      "description": "Minimum reset of the transceivers and their reset controller, in cycles of FreeRunClk (3 or more).",
+     "advanced": true
+    },
+    {
+     "name": "ModelIdx_g",
+     "vhdlType": "natural",
+     "kind": "integer",
+     "min": 0,
+     "max": 2147483647,
+     "defaultText": "0",
+     "default": 0,
+     "label": "Model index",
+     "description": "Behavioural model only (architecture mdl): the index of the control record of the instance; ignored by the transceiver architecture struct.",
      "advanced": true
     }
    ],

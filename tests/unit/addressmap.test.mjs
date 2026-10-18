@@ -13,6 +13,8 @@ import { fromText, toDocument } from '../../assets/composer/js/model/serialize.j
 import { loadCatalog, ROOT } from './helpers.mjs';
 
 const cat = loadCatalog();
+// the ID of OpenFibre from the catalog, so that a new version of its register map needs no edit here
+const OFB_ID = /** @type {string} */ (cat.blocks.get('openfibre/ofb_core')?.idRegister?.value);
 const USER = `${ROOT}tests/fixtures/spfi_encrypt.composer.json`;
 
 /**
@@ -64,7 +66,7 @@ test('the user\'s system: eight register banks behind the decoder, in the space 
     ['ocr2', 0x40000, 256, 65536, '0x4F435201'],
     ['ocr3', 0x50000, 256, 65536, '0x4F435201'],
     ['rmap0', 0x60000, 1024, 65536, '0x4F4D4101'],
-    ['ofb0', 0x70000, 4096, 65536, '0x0FB10008'],
+    ['ofb0', 0x70000, 4096, 65536, OFB_ID],
   ]);
   assert.deepEqual(s.unused, []);
   // the windows of the target and their state after the reset (WinInit_g = WinInitOpen_c, the default)
@@ -132,7 +134,8 @@ test('nested decoders: windows add up, unused windows answer DECERR, a top-level
   const md = exportHdl(cat, /** @type {any} */ (netlist(cat, d, resolve(cat, d))), { generator: 'x', input: 'regs.composer.json', sha256: '0'.repeat(64) })
     .files.find((f) => f.name === 'regs_address_map.md')?.text ?? '';
   assert.match(md, /\| 0x00011000 \| 0x00011FFF \| 4 KiB \| none: DECERR \| {2}\| {2}\| `dec1\.M_AxiLite\[1\]` \| {2}\|/);
-  assert.match(md, /\| 0x00012000 \| 0x00012FFF \| 4 KiB \| `ofb0` \| `ofb_core` \| 0x0FB10008 \| `dec1\.M_AxiLite\[2\]`, 4 KiB \|/);
+  const ofbRow = `| 0x00012000 | 0x00012FFF | 4 KiB | \`ofb0\` | \`ofb_core\` | ${OFB_ID} | \`dec1.M_AxiLite[2]\`, 4 KiB |`;
+  assert.ok(md.includes(ofbRow), ofbRow);
 });
 
 test('a register bank larger than its window is an error; the suggested widths pass every rule of the decoder', () => {
