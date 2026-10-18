@@ -205,7 +205,8 @@ blocks:
       - "With UseInLast_g, an In_Last before the last sample aborts the image with that sample (sample L of the image in its input order, counted from 0): an aborted image is the compressed image of the samples taken; a decoder that is given the number of samples taken (L + 1) decodes it; the header announces the complete image. Its bytes do not depend on the timing of the input or the output."
       - "With PeriodicUpdate_g the core takes no error limit value for three clock cycles after an early In_Last; a source that delivers the values ahead drops the remaining values of the aborted image within two clock cycles of Ev_ImageError and continues with the next image."
       - Enable the TMR of the synthesis tool for the core; it protects its memories itself and relies on TMR for all other logic (user guide section 6).
-      - "The AMD Vivado simulator stops at time 0 in ocp_predictor (index of a record field with a range starting at 1); GHDL and QuestaSim are not affected; a fix is in preparation."
+      # the known issue of v0.1.0 (release notes of opencompact v0.1.0, section Known issue)
+      - "The AMD Vivado simulator 2025.2 stops at time 0 in ocp_predictor (a defect of that simulator with record fields accessed through an alias of an array element); GHDL and QuestaSim are not affected; a workaround is in preparation."
 
   - id: opencompact/ocp_channel
     kind: core
@@ -426,4 +427,5 @@ blocks:
       - The hybrid coder is decoded from the end of the compressed image; keep the end of the packet (Out_Last) up to the decompressor.
       - After a detected double error (Ecc_Ded) the compressed image in progress may be wrong; discard it and reset the channel before the next image.
       - Enable the TMR of the synthesis tool for the channel; ocp_core protects its memories itself, the adapters and the status registers rely on TMR like all other logic (user guide section 6).
-      - "The AMD Vivado simulator stops at time 0 in ocp_predictor (index of a record field with a range starting at 1); GHDL and QuestaSim are not affected; a fix is in preparation."
+      # the known issue of v0.1.0 (release notes of opencompact v0.1.0, section Known issue)
+      - "The AMD Vivado simulator 2025.2 stops at time 0 in ocp_predictor (a defect of that simulator with record fields accessed through an alias of an array element); GHDL and QuestaSim are not affected; a workaround is in preparation."
