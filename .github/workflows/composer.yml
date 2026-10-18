@@ -75,6 +75,28 @@ jobs:
             exit 1
           fi
           grep "ReleaseBytes_g must be a power of two" invalid.log || { cat invalid.log; echo "The GHDL check stopped the top level for another reason."; exit 1; }
+      # Negative test: the GHDL check replaces a vendor-specific block by a stub and does not analyse its further files
+      # (files in the catalog, for example its architecture), so it must stop when the compile order does not list such
+      # a file or the sources do not have it. A test catalog names a file that no repository has.
+      - name: The GHDL check stops when a further file of a vendor-specific block is missing
+        run: |
+          node site/tests/vendor_files_catalog.mjs vendor_files.json
+          # the export with the published catalog does not list the file
+          node site/tools/composer_hdl.mjs site/assets/composer/examples/spacefibre_node.composer.json export/vf_unlisted
+          if python site/tools/composer_hdl_check.py export/vf_unlisted --sources sources --checkout-from . --catalog vendor_files.json > vf_unlisted.log 2>&1; then
+            cat vf_unlisted.log
+            echo "The GHDL check passed a compile order without a further file of a vendor-specific block."
+            exit 1
+          fi
+          grep "ofb_pa_gty_absent.vhd, a file of the vendor-specific block ofb_pa_gty, is not listed" vf_unlisted.log || { cat vf_unlisted.log; echo "The GHDL check stopped for another reason."; exit 1; }
+          # the export with the test catalog lists the file, which the sources do not have
+          node site/tools/composer_hdl.mjs site/assets/composer/examples/spacefibre_node.composer.json export/vf_absent --catalog vendor_files.json
+          if python site/tools/composer_hdl_check.py export/vf_absent --sources sources --checkout-from . --catalog vendor_files.json > vf_absent.log 2>&1; then
+            cat vf_absent.log
+            echo "The GHDL check passed a further file of a vendor-specific block that the sources do not have."
+            exit 1
+          fi
+          grep "ofb_pa_gty_absent.vhd, a file of the vendor-specific block ofb_pa_gty, is not in sources" vf_absent.log || { cat vf_absent.log; echo "The GHDL check stopped for another reason."; exit 1; }
 
   browser:
     name: Browser tests (${{ matrix.browser }})

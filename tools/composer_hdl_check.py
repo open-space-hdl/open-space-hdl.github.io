@@ -15,6 +15,9 @@ its library in the listed order, so a wrong order or a missing file fails here.
   - A vendor-specific block (vendor in the catalog, for example ofb_pa_gty) needs the simulation libraries of its
     vendor; it is replaced by a stub: its own context clause and entity declaration, without the vendor libraries, and
     an architecture that drives every output with zeros. The top level is checked against the real entity that way.
+    The further files of the block (files in the catalog, for example its architecture) are not analysed. Before
+    that, the check asserts that the compile order lists them right after the file of the block, in the order of the
+    catalog and in its library, and that each exists in the sources: the stub would hide a missing architecture.
 
 --checkout-from creates the missing checkouts of the sources root as worktrees of the clones in <clones> (the clones of
 tools/composer_catalog.py clone), at the commits of the compile order.
@@ -93,6 +96,36 @@ def vendor_blocks(catalog: dict) -> dict[str, dict]:
     return {f"{repo[b['source']]}/{b['path']}": b for b in catalog["blocks"] if b.get("vendor")}
 
 
+def vendor_files(order: str, files: list[tuple[str, str]], vendors: dict[str, dict], catalog: dict,
+                 sources: Path) -> set[str]:
+    """The further files of every vendor-specific block in the compile order, as <repository>/<file>. Each must follow
+    the file of its block in the order of the catalog and in its library, and exist in the sources; otherwise the check
+    stops, since the stub of the block would hide a missing file. These files are not analysed."""
+    repo = {s["id"]: s["repo"] for s in catalog["sources"]}
+    rels = [rel for _, rel in files]
+    skip = set()
+    errors = []
+    for path, b in vendors.items():
+        if path not in rels:
+            continue
+        at = rels.index(path)
+        lib = files[at][0]
+        for k, f in enumerate(b.get("files") or [], 1):
+            rel = f"{repo[b['source']]}/{f}"
+            skip.add(rel)
+            if rel not in rels:
+                errors.append(f"{order}: {rel}, a file of the vendor-specific block {b['entity']}, is not listed; "
+                              "the stub of the block would hide its absence")
+                continue
+            if rels.index(rel) != at + k or files[at + k][0] != lib:
+                errors.append(f"{order}: {rel} must follow {path} as file {k} of {b['entity']} in the library {lib}")
+            if not (sources / rel).is_file():
+                errors.append(f"{order}: {rel}, a file of the vendor-specific block {b['entity']}, is not in {sources}")
+    if errors:
+        sys.exit("\n".join(errors))
+    return skip
+
+
 def stub(block: dict, source: Path, out: Path) -> Path:
     """The real context clause and entity declaration of a vendor-specific block with an architecture that drives its
     outputs with zeros."""
@@ -141,6 +174,7 @@ def main() -> int:
         checkout_sources(order, a.sources, a.checkout_from)
     catalog = json.loads(a.catalog.read_text(encoding="utf-8"))
     vendors = vendor_blocks(catalog)
+    skip = vendor_files(order.name, files, vendors, catalog, a.sources)
     work = a.workdir or (a.export / "ghdl")
     if work.exists():
         shutil.rmtree(work)
@@ -154,6 +188,8 @@ def main() -> int:
     paths = [f"-P{work / lib}" for lib in libraries]
     stubs = 0
     for lib, rel in files:
+        if rel in skip:
+            continue
         src = a.export / rel if lib == entity else a.sources / rel
         if not src.is_file():
             sys.exit(f"{order.name}: {rel} not found in {a.export if lib == entity else a.sources}")
@@ -168,8 +204,9 @@ def main() -> int:
     # elaboration; an assertion of severity error or failure stops it
     ghdl(["--elab-run", "--std=08", "-frelaxed", f"--work={entity}", f"--workdir={work / entity}", *paths, entity,
           "--stop-time=0ns", "--assert-level=error", "--ieee-asserts=disable"], f"elaboration and simulation to 0 ns of {entity}")
-    print(f"{entity}: {len(files)} files analysed ({stubs} vendor stub{'s' if stubs != 1 else ''}), top level elaborated "
-          "and run to 0 ns")
+    skipped = f", {len(skip)} vendor file{'s' if len(skip) != 1 else ''} not analysed" if skip else ""
+    print(f"{entity}: {len(files) - len(skip)} files analysed ({stubs} vendor stub{'s' if stubs != 1 else ''}{skipped}), "
+          "top level elaborated and run to 0 ns")
     return 0
 
 

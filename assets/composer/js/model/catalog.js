@@ -84,6 +84,8 @@ export const CATALOG_VERSION = 1;
  * @property {string} library
  * @property {string} entity
  * @property {string} path
+ * @property {string[]} [files]   further sources of a block outside the file list of its repository (the architecture
+ *           of a vendor-specific adapter in a file of its own), compiled after path in this order
  * @property {string} summary
  * @property {string} idPrefix
  * @property {string} [doc]

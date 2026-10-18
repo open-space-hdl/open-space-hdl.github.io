@@ -1718,6 +1718,14 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
     for key in ("doc", "project", "vendor", "notes", "rules", "constraints", "idRegister", "init", "endToEnd", "rates", "sizes"):
         if key in b:
             block[key] = b[key]
+    # further sources of a block outside the file list of its repository (the architecture of a vendor-specific adapter
+    # in a file of its own), compiled after path in the listed order; checked against the file list in check_block_files
+    if "files" in b:
+        extra = b["files"]
+        if not isinstance(extra, list) or not extra or not all(isinstance(f, str) and f for f in extra):
+            ctx.err(where, "files must be a list of paths")
+        else:
+            block["files"] = extra
     # software initialisation: steps with optional conditions on boolean generics
     reg = b.get("idRegister")
     if reg is not None and (not isinstance(reg, dict) or set(reg) != {"address", "value"}):
@@ -1797,6 +1805,32 @@ def source_files(ctx: Context, s: dict) -> None:
     s["files"] = files
     if in_module:
         s["submodules"] = True
+
+
+def check_block_files(ctx: Context, blocks: list[dict], sources: dict) -> None:
+    """The further sources of a block (files): VHDL files of its repository at the pin, outside its file list like the
+    path of the block, each named once."""
+    for blk in blocks:
+        extra = blk.get("files")
+        if not extra:
+            continue
+        where = f"block {blk['id']}"
+        s = sources[blk["source"]]
+        if s.get("file_list_format") != "files":
+            ctx.err(where, f"files needs a source with file_list_format files, not {s.get('file_list_format')}")
+            continue
+        listed = set(s.get("files") or [])
+        if blk["path"] in listed:
+            ctx.err(where, f"files: {blk['path']} is listed in {s['file_list']}, so the block has no further sources")
+        if len(set(extra)) != len(extra) or blk["path"] in extra:
+            ctx.err(where, "files names a file twice")
+        for f in extra:
+            if f in listed:
+                ctx.err(where, f"files: {f} is listed in {s['file_list']} already")
+            elif not re.search(r"\.vhdl?$", f):
+                ctx.err(where, f"files: {f} is not a VHDL file")
+            elif not git_ok_output(ctx.repos / s["repo"], "ls-tree", s["sha"], "--", f).strip():
+                ctx.err(where, f"files: {f} is not in the repository at {s['sha'][:10]}")
 
 
 def raw_reset_uses(text: str, port: str) -> list[tuple[int, str]]:
@@ -1884,6 +1918,7 @@ def build_catalog(ctx: Context) -> dict:
         t.pop("_", None)
     for s in sources.values():
         source_files(ctx, s)
+    check_block_files(ctx, blocks, sources)
     # the technology readiness level of every source, from the projects of the website (the only place it is decided)
     projects = {pr.get("repo"): pr for pr in load_yaml(ROOT / "_data" / "projects.yml") or []}
     for s in sources.values():
