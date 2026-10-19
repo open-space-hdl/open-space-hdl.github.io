@@ -207,6 +207,10 @@ opencompact:
     changes:
       - { block: opencompact/ocp_core, kind: behaviour, text: "An aborted image is now the compressed image of the samples taken (CO-FR-03, CO-FR-09); after an early In_Last the core takes no error limit value for three clock cycles (CO-FR-07)." }
       - { block: opencompact/ocp_channel, kind: behaviour, text: "An aborted image is now the compressed image of the samples taken (CO-FR-03, CO-FR-09); after an early In_Last the core takes no error limit value for three clock cycles (CO-FR-07)." }
+  - previous: 072a5a8cd628868003f5489a883ddd4921d8b1f0
+    pin: 652153833a22407ec69aec66f77c722a29002d30
+    evidence: "PR #14 of the core: None. No change of ports, generics, stream formats, the register map (ID 0x4F435001, version 1) or the Open Logic pin (4.7.0-ft.6). The merge commit is the release v0.1.1 of the core; it fixes the stop of the AMD Vivado simulator at time 0 in ocp_predictor, the known issue of v0.1.0, with fully constrained array types, and the behaviour is unchanged in every simulator (release notes, https://github.com/open-space-hdl/opencompact/releases/tag/v0.1.1)."
+    changes: []
 
 olo:
   - previous: 1bc4fb90888cf24ac29bc54527c2982d2dec307c

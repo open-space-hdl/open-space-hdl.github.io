@@ -1,5 +1,5 @@
 {
-  "catalog": "323baf3004d2",
+  "catalog": "ccc8b011da59",
   "entity": "compressed_images_over_spw",
   "ports": [
     {
@@ -5130,7 +5130,7 @@
       "library": "opencompact",
       "source": "opencompact",
       "url": "https://github.com/open-space-hdl/opencompact",
-      "commit": "072a5a8cd628868003f5489a883ddd4921d8b1f0",
+      "commit": "652153833a22407ec69aec66f77c722a29002d30",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.6",

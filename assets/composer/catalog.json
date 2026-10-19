@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "323baf3004d2",
+ "id": "ccc8b011da59",
  "sources": [
   {
    "id": "openwire",
@@ -587,7 +587,7 @@
    "repo": "opencompact",
    "url": "https://github.com/open-space-hdl/opencompact",
    "doc": "https://openspacehdl.org/opencompact/",
-   "commit": "072a5a8cd628868003f5489a883ddd4921d8b1f0",
+   "commit": "652153833a22407ec69aec66f77c722a29002d30",
    "library": "opencompact",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
@@ -647,6 +647,12 @@
        "text": "An aborted image is now the compressed image of the samples taken (CO-FR-03, CO-FR-09); after an early In_Last the core takes no error limit value for three clock cycles (CO-FR-07)."
       }
      ]
+    },
+    {
+     "previous": "072a5a8cd628868003f5489a883ddd4921d8b1f0",
+     "pin": "652153833a22407ec69aec66f77c722a29002d30",
+     "evidence": "PR #14 of the core: None. No change of ports, generics, stream formats, the register map (ID 0x4F435001, version 1) or the Open Logic pin (4.7.0-ft.6). The merge commit is the release v0.1.1 of the core; it fixes the stop of the AMD Vivado simulator at time 0 in ocp_predictor, the known issue of v0.1.0, with fully constrained array types, and the behaviour is unchanged in every simulator (release notes, https://github.com/open-space-hdl/opencompact/releases/tag/v0.1.1).",
+     "changes": []
     }
    ]
   },
@@ -7341,8 +7347,7 @@
     "With UseInLast_g, In_Last accompanies the last sample of every image; otherwise every image is flagged and the samples up to the next In_Last are discarded.",
     "With UseInLast_g, an In_Last before the last sample aborts the image with that sample (sample L of the image in its input order, counted from 0): an aborted image is the compressed image of the samples taken; a decoder that is given the number of samples taken (L + 1) decodes it; the header announces the complete image. Its bytes do not depend on the timing of the input or the output.",
     "With PeriodicUpdate_g the core takes no error limit value for three clock cycles after an early In_Last; a source that delivers the values ahead drops the remaining values of the aborted image within two clock cycles of Ev_ImageError and continues with the next image.",
-    "Enable the TMR of the synthesis tool for the core; it protects its memories itself and relies on TMR for all other logic (user guide section 6).",
-    "The AMD Vivado simulator 2025.2 stops at time 0 in ocp_predictor (a defect of that simulator with record fields accessed through an alias of an array element); GHDL and QuestaSim are not affected; a workaround is in preparation."
+    "Enable the TMR of the synthesis tool for the core; it protects its memories itself and relies on TMR for all other logic (user guide section 6)."
    ],
    "rules": [
     {
@@ -8545,8 +8550,7 @@
     "The decompressor must know the tables that are not in the header (table generics false) and the initial accumulators of the hybrid coder.",
     "The hybrid coder is decoded from the end of the compressed image; keep the end of the packet (Out_Last) up to the decompressor.",
     "After a detected double error (Ecc_Ded) the compressed image in progress may be wrong; discard it and reset the channel before the next image.",
-    "Enable the TMR of the synthesis tool for the channel; ocp_core protects its memories itself, the adapters and the status registers rely on TMR like all other logic (user guide section 6).",
-    "The AMD Vivado simulator 2025.2 stops at time 0 in ocp_predictor (a defect of that simulator with record fields accessed through an alias of an array element); GHDL and QuestaSim are not affected; a workaround is in preparation."
+    "Enable the TMR of the synthesis tool for the channel; ocp_core protects its memories itself, the adapters and the status registers rely on TMR like all other logic (user guide section 6)."
    ],
    "rules": [
     {
