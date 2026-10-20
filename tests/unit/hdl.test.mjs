@@ -188,10 +188,17 @@ test('the scoped constraints hold the exceptions, the top-level file the clocks 
     const io = r.constraints.filter((/** @type {any} */ x) => x.kind === 'io_register');
     assert.equal((top.match(/^set_property IOB TRUE /gm) ?? []).length, io.length, f);
     for (const c of io) assert.ok(scoped.includes(c.ports.join(', ')), `${f}: the scoped file names the ports that need I/O registers`);
+    // the clocks of the exceptions: a clock port, or the net of the signal of a clock output; never the pin of an
+    // instance, which may no longer exist after synthesis (Vivado drops a constraint on a missing object)
+    for (const [name, text] of Object.entries(byName)) if (name.endsWith('.xdc')) assert.doesNotMatch(text, /get_pins/, `${f}: ${name}`);
+    for (const c of r.clocks.filter((/** @type {any} */ x) => x.source !== 'top' && maxDelays.some((/** @type {any} */ m) => m.from === x.source || m.to === x.source))) {
+      assert.ok(scoped.includes(`[get_clocks -of_objects [get_nets ${c.actual}]]`), `${f}: clock ${c.id} at the net ${c.actual}`);
+    }
   }
-  // a clock of a block is found at the pin of its instance
+  // a clock of a block is found at the net of its signal, not at the pin of its instance
   const { byName } = exported('spacefibre_node.composer.json');
-  assert.match(byName['spacefibre_node.xdc'], /^set clk_lane \[get_clocks -of_objects \[get_pins i_pa0\/LaneClk\]\]$/m);
+  assert.match(byName['spacefibre_node.xdc'], /^set clk_lane \[get_clocks -of_objects \[get_nets pa0_LaneClk_s\]\]$/m);
+  assert.doesNotMatch(byName['spacefibre_node.xdc'], /get_pins/);
 });
 
 test('a source without file list at the pinned commit makes the export incomplete', () => {
