@@ -576,7 +576,7 @@ a.project-name:hover { color: var(--orange-text); }
   color: var(--text-muted);
 }
 .state-tag.is-next { background: #FFF6F0; border-color: rgba(238, 90, 18, 0.45); color: var(--orange-text); }
-.state-tag.is-dev { background: var(--orange-text); border-color: var(--orange-text); color: #FFFFFF; }
+.state-tag.is-progress { background: var(--orange-text); border-color: var(--orange-text); color: #FFFFFF; }
 .state-tag.is-done { background: var(--navy); border-color: var(--navy); color: var(--light); }
 .board-list { margin: 12px 0; }
 .board-list li + li { margin-top: 4px; }

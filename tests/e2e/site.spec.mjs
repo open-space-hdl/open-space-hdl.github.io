@@ -118,12 +118,12 @@ test('the roadmap page is in the header of every page and on the TRL page, and l
   await expect(page.locator('.link-row a')).toHaveText(['OpenWire', 'OpenFibre', 'OpenRMAP', 'OpenSPP', 'OpenCompact', 'OpenCrypto', 'OpenDMA']);
   for (const a of await page.locator('.link-row a').all()) await expect(a).toHaveAttribute('href', /^\/[a-z-]+\/docs\/roadmap\.html$/);
   // the overview states the state of every section; the building blocks of phase 1 of the space link core come next
-  await expect(page.locator('.roadmap-toc .toc-state')).toHaveText(['In progress', 'Next', 'Next', 'Planned', 'Planned', 'Planned']);
-  await expect(page.locator('.roadmap-section .eyebrow')).toHaveText(['In progress', 'Next', 'Next', 'Planned', 'Planned', 'Planned']);
+  await expect(page.locator('.roadmap-toc .toc-state')).toHaveText(['In progress', 'Next', 'Next', 'In progress', 'Planned', 'Planned']);
+  await expect(page.locator('.roadmap-section .eyebrow')).toHaveText(['In progress', 'Next', 'Next', 'In progress', 'Planned', 'Planned']);
   await expect(page.locator('.blocks-table .state-tag')).toHaveText(['Next', 'Next', 'Next', 'Planned', 'Planned', 'Planned', 'Done']);
-  // the further cores: the ones in development first, then the planned ones in their order
+  // the further cores: the ones in progress first, then the planned ones in their order
   await expect(page.locator('.cores-table td[data-label="Core"]')).toHaveText(['MIL-STD-1553B bus interface', 'CAN bus', 'Routing switch', 'Lossless data compression', 'Time codes']);
-  await expect(page.locator('.cores-table .state-tag')).toHaveText(['In development', 'In development', 'Planned', 'Planned', 'Planned']);
+  await expect(page.locator('.cores-table .state-tag')).toHaveText(['In progress', 'In progress', 'Planned', 'Planned', 'Planned']);
   // the on-board chain ends with the transfer frames of the new core before the transmitter
   await expect(page.locator('.chain .chain-step.is-new')).toContainText('Transfer frames');
   expect(await page.locator('main').textContent()).not.toContain(String.fromCharCode(0x2014));
