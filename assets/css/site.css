@@ -560,6 +560,7 @@ a.project-name:hover { color: var(--orange-text); }
 .phase-table td:first-child { width: 72px; }
 .phase-table td:nth-child(3), .roadmap-table td[data-label="Standard or interface"] { width: 30%; }
 .blocks-table td:nth-child(3) { width: 112px; }
+.cores-table td:nth-child(4) { width: 176px; }
 .state-tag {
   display: inline-block;
   padding: 2px 9px;
@@ -571,9 +572,12 @@ a.project-name:hover { color: var(--orange-text); }
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--text-muted);
 }
 .state-tag.is-next { background: #FFF6F0; border-color: rgba(238, 90, 18, 0.45); color: var(--orange-text); }
+.state-tag.is-progress { background: var(--orange-text); border-color: var(--orange-text); color: #FFFFFF; }
+.state-tag.is-done { background: var(--navy); border-color: var(--navy); color: var(--light); }
 .board-list { margin: 12px 0; }
 .board-list li + li { margin-top: 4px; }
 
@@ -602,7 +606,7 @@ a.project-name:hover { color: var(--orange-text); }
   .roadmap-table td:first-child, .phase-table td:first-child, .phase-table td:nth-child(3),
   .roadmap-table td[data-label="Standard or interface"] { width: auto; }
   .toc-state { display: block; min-width: 0; margin: 0; }
-  .blocks-table td:nth-child(3) { width: auto; }
+  .blocks-table td:nth-child(3), .cores-table td:nth-child(4) { width: auto; }
 }
 
 /* Footer */

@@ -7,11 +7,15 @@
 
 - id: interfaces-protocols
   title: Interfaces & Protocols
-  summary: SpaceWire and SpaceFibre links and the protocols that run over them.
+  summary: SpaceWire and SpaceFibre links, CAN and 1553 buses, and the protocols that run over them.
 
 - id: processing-modules
   title: Processing Modules
   summary: Cores that process payload data on board, such as image compression and encryption.
+
+- id: system-infrastructure
+  title: System Infrastructure
+  summary: Cores that move data between the memories and the peripherals of an on-board system.
 
 - id: building-blocks
   title: Building Blocks
