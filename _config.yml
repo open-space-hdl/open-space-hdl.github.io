@@ -3,8 +3,8 @@ tagline: Open-source VHDL IP cores for spacecraft on-board data handling
 description: >-
   Open-source VHDL IP cores for spacecraft on-board data handling:
   SpaceWire and SpaceFibre links, their protocols, image compression and
-  encryption to ECSS and CCSDS standards, built on the Open Logic VHDL
-  library.
+  encryption to ECSS and CCSDS standards, and a DMA core, built on the Open
+  Logic VHDL library.
 url: https://openspacehdl.org
 baseurl: ""
 github_org: https://github.com/open-space-hdl

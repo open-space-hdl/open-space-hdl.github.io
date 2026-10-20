@@ -63,6 +63,20 @@
   trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
   roadmap: true
 
+- name: OpenCAN
+  repo: opencan
+  group: interfaces-protocols
+  tagline: [ECSS-E-ST-50-15C]
+  summary: CAN network core with nominal and redundant bus, bus redundancy management, CANopen services and time distribution.
+  public: false
+
+- name: Open1553
+  repo: open1553
+  group: interfaces-protocols
+  tagline: [ECSS-E-ST-50-13C]
+  summary: Bus controller, remote terminal and bus monitor for the dual-redundant 1553 data bus, with the Manchester II codec in the core.
+  public: false
+
 - name: OpenCompact
   repo: opencompact
   group: processing-modules
@@ -79,6 +93,17 @@
   group: processing-modules
   tagline: [CCSDS 352.0-B-2]
   summary: Authenticated encryption and decryption of real-time data streams with AES-GCM, key table and IV generation.
+  public: true
+  docs: true
+  trl: 3
+  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
+  roadmap: true
+
+- name: OpenDMA
+  repo: opendma
+  group: system-infrastructure
+  tagline: [AXI4, AXI4-Stream, Scatter/Gather]
+  summary: DMA core between AXI4 memory and AXI4-Stream peripherals, register-compatible with the AMD AXI DMA so that its drivers run unchanged.
   public: true
   docs: true
   trl: 3

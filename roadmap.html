@@ -119,8 +119,8 @@ permalink: /roadmap/
       <p>
         The space link core, later cores and the systems built from them need general-purpose functions that belong in
         a VHDL library rather than in one core. They are developed in Open Logic FT first and then proposed to Open
-        Logic. The first three are prerequisites of phase 1 of the space link core and come with it; the others follow
-        with the cores and systems that use them.
+        Logic. The first three are prerequisites of phase 1 of the space link core and come with it, the CAN controller
+        is done, and the others follow with the cores and systems that use them.
       </p>
       <div class="table-frame">
         <table class="trl-table roadmap-table blocks-table">
@@ -133,8 +133,8 @@ permalink: /roadmap/
             <tr><td data-label="Building block">Convolutional encoder</td><td data-label="Purpose">Configurable constraint length, polynomials and puncturing</td><td data-label="State"><span class="state-tag is-next">Next</span></td></tr>
             <tr><td data-label="Building block">Sync word detector</td><td data-label="Purpose">Finds a sync word in a bit stream despite a configurable number of bit errors</td><td data-label="State"><span class="state-tag">Planned</span></td></tr>
             <tr><td data-label="Building block">Symbol ECC for external memories</td><td data-label="Purpose">A single-symbol-correcting, double-symbol-detecting option of the ECC codecs, for external memories such as DDR and Flash</td><td data-label="State"><span class="state-tag">Planned</span></td></tr>
-            <tr><td data-label="Building block">CAN 2.0 controller</td><td data-label="Purpose">The CAN data link layer with messages in and out as streams (<code>olo_intf_can</code>), the base of the CAN core below</td><td data-label="State"><span class="state-tag">Planned</span></td></tr>
             <tr><td data-label="Building block">AXI4 decoder with burst access</td><td data-label="Purpose">AXI4 bursts in; per port passed through to AXI4 memories or split into single accesses for AXI4-Lite register banks, so that one decoder serves memories and registers. First an AXI4-to-AXI4-Lite converter in front of the existing AXI4-Lite decoder</td><td data-label="State"><span class="state-tag">Planned</span></td></tr>
+            <tr><td data-label="Building block">CAN 2.0 controller</td><td data-label="Purpose">The CAN data link layer with messages in and out as streams (<code>olo_intf_can</code>), the base of the CAN core below</td><td data-label="State"><span class="state-tag is-done">Done</span></td></tr>
           </tbody>
         </table>
       </div>
@@ -144,44 +144,44 @@ permalink: /roadmap/
       <p class="eyebrow">Planned</p>
       <h2 id="cores-title">Further cores</h2>
       <p>
-        After the space link core, the MIL-STD-1553B interface, the routing switch and the DMA follow in this order,
-        then three smaller cores.
+        The MIL-STD-1553B and CAN cores are in development. After the space link core, the routing switch follows,
+        then two smaller cores.
       </p>
       <div class="table-frame">
-        <table class="trl-table roadmap-table">
+        <table class="trl-table roadmap-table cores-table">
           <thead>
-            <tr><th scope="col">Core</th><th scope="col">Standard or interface</th><th scope="col">Scope</th></tr>
+            <tr><th scope="col">Core</th><th scope="col">Standard or interface</th><th scope="col">Scope</th><th scope="col">State</th></tr>
           </thead>
           <tbody>
             <tr>
               <td data-label="Core">MIL-STD-1553B bus interface</td>
               <td data-label="Standard or interface"><ul class="chips"><li>ECSS-E-ST-50-13C</li></ul></td>
               <td data-label="Scope">Bus controller, remote terminal and bus monitor</td>
-            </tr>
-            <tr>
-              <td data-label="Core">Routing switch</td>
-              <td data-label="Standard or interface"><ul class="chips"><li>ECSS-E-ST-50-12C</li><li>ECSS-E-ST-50-11C</li></ul></td>
-              <td data-label="Scope">One switch fabric for SpaceWire and SpaceFibre: SpaceWire ports first, then SpaceFibre ports</td>
-            </tr>
-            <tr>
-              <td data-label="Core">DMA</td>
-              <td data-label="Standard or interface"><ul class="chips"><li>AMD AXI DMA register interface (PG021)</li></ul></td>
-              <td data-label="Scope">Data movement between memory and AXI4-Stream, register-compatible with the AMD AXI DMA so that its drivers work, vendor-independent and fault-tolerant: direct register mode, then scatter/gather, then the control and status streams</td>
+              <td data-label="State"><span class="state-tag is-dev">In development</span></td>
             </tr>
             <tr>
               <td data-label="Core">CAN bus</td>
               <td data-label="Standard or interface"><ul class="chips"><li>ECSS-E-ST-50-15C</li></ul></td>
               <td data-label="Scope">CAN networks of the standard, with redundant buses, on the generic CAN controller of Open Logic</td>
+              <td data-label="State"><span class="state-tag is-dev">In development</span></td>
+            </tr>
+            <tr>
+              <td data-label="Core">Routing switch</td>
+              <td data-label="Standard or interface"><ul class="chips"><li>ECSS-E-ST-50-12C</li><li>ECSS-E-ST-50-11C</li></ul></td>
+              <td data-label="Scope">One switch fabric for SpaceWire and SpaceFibre: SpaceWire ports first, then SpaceFibre ports</td>
+              <td data-label="State"><span class="state-tag">Planned</span></td>
             </tr>
             <tr>
               <td data-label="Core">Lossless data compression</td>
               <td data-label="Standard or interface"><ul class="chips"><li>CCSDS 121.0-B</li></ul></td>
               <td data-label="Scope">Lossless compression of any data</td>
+              <td data-label="State"><span class="state-tag">Planned</span></td>
             </tr>
             <tr>
               <td data-label="Core">Time codes</td>
               <td data-label="Standard or interface"><ul class="chips"><li>CCSDS 301.0-B</li></ul></td>
               <td data-label="Scope">CCSDS time codes with on-board time</td>
+              <td data-label="State"><span class="state-tag">Planned</span></td>
             </tr>
           </tbody>
         </table>
