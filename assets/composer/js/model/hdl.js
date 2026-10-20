@@ -26,6 +26,7 @@
  */
 
 import { addressMapHeader, addressMapSections } from './addressmap.js';
+import { signalName } from './netlist.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./netlist.js').ResolvedNetlist} ResolvedNetlist */
@@ -41,7 +42,7 @@ const INNER_RULE = `    ${'-'.repeat(95)}`;
 
 /**
  * @typedef {object} ExportInfo
- * @property {string} generator    name and version of the generator, for example "Open Space Composer 0.9.6-beta"
+ * @property {string} generator    name and version of the generator, for example "Open Space Composer 0.9.7-beta"
  * @property {string} input        file name of the system file the export is made from
  * @property {string} sha256       SHA-256 of that file, hexadecimal
  * @property {string} [description]   description of the system
@@ -392,12 +393,16 @@ function compileOrder(cat, resolved, info, problems) {
 }
 
 /**
- * Tcl expression of a clock of the netlist (a top-level clock port or the clock output of an instance).
- * @param {string} ref   port name or "<instance>.<port>"
+ * Tcl expression of a clock of the netlist: a top-level clock port, or the net of the clock output of an instance
+ * (its actual, the signal <instance>_<port>_s). Not the pin of the instance: after synthesis that pin may no longer
+ * exist, and Vivado drops a constraint on a missing object with a critical warning; the net keeps the name of the
+ * signal.
+ * @param {string} ref       port name or "<instance>.<port>"
+ * @param {string} [actual]  the actual of the clock (the signal of a clock output)
  */
-function clockObject(ref) {
+function clockObject(ref, actual) {
   const dot = ref.indexOf('.');
-  return dot < 0 ? `[get_ports ${ref}]` : `[get_pins i_${ref.slice(0, dot)}/${ref.slice(dot + 1)}]`;
+  return dot < 0 ? `[get_ports ${ref}]` : `[get_nets ${actual ?? signalName(ref.slice(0, dot), ref.slice(dot + 1))}]`;
 }
 
 /**
@@ -439,9 +444,12 @@ function exceptions(resolved, info, parent) {
   // one variable per clock that a constraint refers to
   /** @type {Map<string, string>} */
   const vars = new Map();
+  /** @type {Map<string, string>} */
+  const actuals = new Map();
   const clockVar = (/** @type {string} */ ref) => {
     if (!vars.has(ref)) {
       const clk = resolved.clocks.find((c) => (c.source === 'top' ? c.actual === ref : c.source === ref));
+      if (clk && clk.source !== 'top') actuals.set(ref, clk.actual);
       const base = `clk_${(clk?.id ?? ref).replace(/\W/g, '_')}`;
       let name = base;
       for (let k = 2; [...vars.values()].includes(name); k += 1) name = `${base}_${k}`;
@@ -462,7 +470,7 @@ function exceptions(resolved, info, parent) {
     }
   }
   if (vars.size) {
-    out.push('', '# Clocks', ...align([...vars].map(([ref, v]) => [`set ${v}`, `[get_clocks -of_objects ${clockObject(ref)}]`]), ' '));
+    out.push('', '# Clocks', ...align([...vars].map(([ref, v]) => [`set ${v}`, `[get_clocks -of_objects ${clockObject(ref, actuals.get(ref))}]`]), ' '));
   }
   out.push(...body, '');
   return out.join('\n');
