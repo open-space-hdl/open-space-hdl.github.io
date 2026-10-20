@@ -144,6 +144,27 @@ test('behind a block without rate data the packets are not bounded, named by its
   assert.match(brief, /- Note: Packets from rmap0\.M_User reach spp0\.S_Link, which takes at most 4100 bytes: the receive buffer holds the longest Space Packet \(error code 0x17\); longer ones are discarded\./);
 });
 
+test('the chunker cuts every packet into chunks of ChunkBeats_g x Width_g / 8 bytes: they bound the packets behind it, and the paths run through it', () => {
+  // an unbounded stream into the chunker, its chunks to a send port of OpenSPP (Width_g follows S_Tx: 32 bits)
+  let d = createDesign('chunks');
+  for (const b of ['olo/olo_base_chunker', 'openspp/spp_core']) d = addInstance(d, cat, b, { x: 0, y: 0 }).design;
+  d = link(d, 'chunk0.Out', 'spp0.S_Tx[0]');
+  d = setExternal(d, 'chunk0.In', 'img_');
+  d = setTraffic(d, 'chunk0.In', { packetBytes: 100000, bitsPerSecond: 100e6 });
+  d = setExternal(d, 'spp0.M_Link', 'link_');
+  d = setGeneric(d, cat, 'chunk0', 'ChunkBeats_g', 256).design;
+  const r = resolve(cat, d);
+  const t = /** @type {any} */ (r.throughput);
+  assert.equal(t.sizes.largest.get('spp0.S_Tx[0]').bytes, 1024);
+  assert.deepEqual(t.paths.map((/** @type {any} */ p) => p.elements.map((/** @type {any} */ e) => e.node?.key ?? e.key)), [['chunk0.In', 'chunk0.Out', 'spp0.S_Tx[0]', 'spp0.M_Link']]);
+  assert.ok(!r.checks.some((c) => c.message.includes('olo_base_chunker')), 'the chunker publishes rate and size data');
+  // a chunk longer than the send buffer is an error of the design
+  d = setGeneric(d, cat, 'chunk0', 'ChunkBeats_g', 2048).design;
+  assert.deepEqual(sizes(d).filter((x) => x.startsWith('error')), [
+    'error [spp0] chunk0: every message of chunk0 leaves chunk0 with 8192 bytes; spp0.S_Tx[0] must hold one: set TxBufferBytes_g of spp0 to at least 8192 (now 4096).',
+  ]);
+});
+
 test('the largest packet is an optional key of the stated traffic, written only when set', () => {
   assert.deepEqual(trafficFromFields('1024', '', '4096'), { traffic: { packetBytes: 1024, maxPacketBytes: 4096 } });
   assert.deepEqual(trafficFields({ packetBytes: 1024, maxPacketBytes: 4096 }), { bytes: '1024', mbit: '', max: '4096' });

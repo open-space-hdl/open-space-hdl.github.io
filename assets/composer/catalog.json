@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "ccc8b011da59",
+ "id": "18ae640fc792",
  "sources": [
   {
    "id": "openwire",
@@ -6284,6 +6284,34 @@
    "summary": "Splits every packet into chunks of a fixed number of beats (no padding) and marks the end of the input packet.",
    "idPrefix": "chunk",
    "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_chunker.html",
+   "rates": {
+    "evidence": "Open Logic documentation of olo_base_chunker, section Timing: data and handshake pass through combinationally (In_Ready = Out_Ready, Out_Valid = In_Valid), without latency or buffering",
+    "packet": "chunk",
+    "interfaces": {
+     "In": {
+      "bytesPerBeat": "carried"
+     },
+     "Out": {
+      "bytesPerBeat": "carried"
+     }
+    },
+    "routes": [
+     {
+      "from": "In",
+      "to": "Out",
+      "chunk": "ChunkBeats_g * Width_g / 8",
+      "addBytes": "0"
+     }
+    ]
+   },
+   "sizes": {
+    "evidence": "Open Logic documentation of olo_base_chunker, section Description: packets of any length (also a stream without In_Last) are cut into chunks of ChunkBeats_g beats, ChunkBeats_g x Width_g/8 bytes for byte oriented data",
+    "interfaces": {
+     "In": {
+      "noLimit": true
+     }
+    }
+   },
    "generics": [
     {
      "name": "Width_g",
