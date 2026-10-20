@@ -699,6 +699,19 @@ blocks:
     interfaces:
       - { name: In, label: Input, type: axis.any, role: sink, carry: native, clock: Clk, needsLast: true, signals: { data: In_Data, keep: In_Be, valid: In_Valid, ready: In_Ready, last: In_Last } }
       - { name: Out, label: Chunks, type: axis.any, role: source, carry: native, clock: Clk, signals: { data: Out_Data, keep: Out_Be, valid: Out_Valid, ready: Out_Ready, last: Out_Last, in_last: Out_InLast } }
+    rates:
+      evidence: "Open Logic documentation of olo_base_chunker, section Timing: data and handshake pass through combinationally (In_Ready = Out_Ready, Out_Valid = In_Valid), without latency or buffering"
+      packet: chunk
+      interfaces:
+        In: { bytesPerBeat: carried }
+        Out: { bytesPerBeat: carried }
+      routes:
+        # every packet leaves as chunks of ChunkBeats_g beats; only the last beat of a packet may carry fewer bytes
+        - { from: In, to: Out, chunk: "ChunkBeats_g * Width_g / 8", addBytes: "0" }
+    sizes:
+      evidence: "Open Logic documentation of olo_base_chunker, section Description: packets of any length (also a stream without In_Last) are cut into chunks of ChunkBeats_g beats, ChunkBeats_g x Width_g/8 bytes for byte oriented data"
+      interfaces:
+        In: { noLimit: true }
 
   # EDAC --------------------------------------------------------------------------------------------------------------
   - id: olo/olo_ft_ecc_monitor
