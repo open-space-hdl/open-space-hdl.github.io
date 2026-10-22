@@ -4,7 +4,7 @@
   "formatVersion": 1,
   "generator": {
     "name": "Open Space Composer",
-    "version": "0.9.7-beta",
+    "version": "0.9.8-beta",
     "catalog": "81f761071a83"
   },
   "system": {
@@ -258,6 +258,7 @@
     }
   ],
   "resolved": {
+    "version": 1,
     "catalog": "81f761071a83",
     "entity": "spw_compression_node",
     "ports": [

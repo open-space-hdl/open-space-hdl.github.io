@@ -11,7 +11,7 @@ import { checkConnection } from './compat.js';
 import { createDesign, DEFAULT_DOMAIN, identifierProblem, instanceTrafficProblem, trafficProblem } from './design.js';
 import { validateValue } from './generics.js';
 import { migrate } from './migration.js';
-import { netlist } from './netlist.js';
+import { netlist, RESOLVED_VERSION, sameNetlist } from './netlist.js';
 import { resolve } from './resolver.js';
 import {
   definitionDocument, definitionHash, definitionOrder, directSubsystems, subsystemBlockId, subsystemsOf, withSubsystems,
@@ -25,7 +25,7 @@ export const FORMAT = 'open-space-composer-system';
 export const FORMAT_VERSION = 2;
 export const SCHEMA_URL = 'https://openspacehdl.org/composer/schema/system-1.json';
 export const SCHEMA_URL_2 = 'https://openspacehdl.org/composer/schema/system-2.json';
-export const GENERATOR = { name: 'Open Space Composer', version: '0.9.7-beta' };
+export const GENERATOR = { name: 'Open Space Composer', version: '0.9.8-beta' };
 
 export class FormatError extends Error {
   /** @param {string[]} problems */
@@ -120,7 +120,7 @@ export function toDocument(d, cat, opts = {}) {
     const resolved = netlist(cat, d, res);
     /** @type {import('./resolver.js').Check[]} */
     const checks = [...res.checks, ...resolved.problems.map((p) => ({ severity: /** @type {const} */ ('error'), rule: 'netlist', message: p }))];
-    out.resolved = resolved;
+    out.resolved = { version: RESOLVED_VERSION, ...resolved };
     out.checks = checks.map((c) => ({ ...c }));
     out.agent = { brief: agentBrief(cat, d, res, resolved, checks) };
     out.catalogSubset = catalogSubset(cat, [res, ...subsystemsOf(withSubsystems(cat, d), d).map((s) => s.res)]);
@@ -576,10 +576,7 @@ export function fromDocument(doc, cat) {
 
   // "resolved" is derived: the Composer resolves the system again. A file of another catalog version gets a remark
   // only when the system resolves differently now (a catalog that only gained other blocks changes nothing).
-  const same = () => {
-    const fresh = /** @type {Record<string, unknown>} */ (netlist(cat, d, resolve(cat, d)));
-    return JSON.stringify({ ...fresh, catalog: '' }) === JSON.stringify({ ...o.resolved, catalog: '' });
-  };
+  const same = () => sameNetlist(o.resolved, netlist(cat, d, resolve(cat, d)));
   if (otherCatalog) {
     if (!isObject(o.resolved) || !same()) {
       warnings.push('The file was saved with another version of the block catalog, which resolves the system differently; check the generics and connections.');

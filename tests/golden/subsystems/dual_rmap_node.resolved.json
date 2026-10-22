@@ -1,4 +1,5 @@
 {
+  "version": 1,
   "catalog": "81f761071a83",
   "entity": "dual_rmap_node",
   "ports": [

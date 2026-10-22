@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { checkConnection } from '../../assets/composer/js/model/compat.js';
 import { addDomain, addInstance, createDesign, moveToDomain, setAdapterGeneric, setConstant, setExternal, setGeneric, setSideband } from '../../assets/composer/js/model/design.js';
+import { netlist, RESOLVED_VERSION, sameNetlist } from '../../assets/composer/js/model/netlist.js';
+import { resolve } from '../../assets/composer/js/model/resolver.js';
 import { FormatError, fromDocument, fromText, toDocument, toText } from '../../assets/composer/js/model/serialize.js';
 import { loadSnapshot, saveSnapshot, Workspace } from '../../assets/composer/js/model/workspace.js';
 import { connect, designWith, loadCatalog } from './helpers.mjs';
@@ -23,6 +25,26 @@ test('save and load give the same design and the same text', () => {
   assert.deepEqual(warnings, []);
   assert.deepEqual(design, d);
   assert.equal(toText(design, cat), text);
+});
+
+test('the stored netlist starts with its layout version; one without it (a Composer before 0.9.8-beta) is the same netlist', () => {
+  const d = spwRmapNode();
+  const doc = /** @type {any} */ (toDocument(d, cat));
+  assert.equal(RESOLVED_VERSION, 1);
+  assert.equal(Object.keys(doc.resolved)[0], 'version');
+  assert.equal(doc.resolved.version, RESOLVED_VERSION);
+  // a file of an older Composer opens without a remark
+  const { version, ...older } = doc.resolved;
+  assert.equal(version, 1);
+  assert.deepEqual(fromText(JSON.stringify({ ...doc, resolved: older }), cat).warnings, []);
+  // the comparison ignores the catalog and the version, nothing else
+  const fresh = netlist(cat, d, resolve(cat, d));
+  assert.ok(sameNetlist(doc.resolved, fresh));
+  assert.ok(sameNetlist(older, fresh));
+  assert.ok(sameNetlist({ ...doc.resolved, catalog: 'other' }, fresh));
+  assert.equal(sameNetlist({ ...doc.resolved, entity: 'other' }, fresh), false);
+  assert.equal(sameNetlist(undefined, fresh), false);
+  assert.match(fromText(JSON.stringify({ ...doc, resolved: { ...older, signals: [] } }), cat).warnings.join(' '), /differs from the system it describes/);
 });
 
 test('the document names the sources, the catalog and keeps only changed generics', () => {
