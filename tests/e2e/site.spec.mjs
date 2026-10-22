@@ -21,6 +21,8 @@ test('header and footer of every page lead to the Composer, marked as beta', asy
     const nav = page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Composer Beta' });
     await expect(nav).toHaveAttribute('href', '/composer/');
     await expect(page.getByRole('navigation', { name: 'Footer' }).getByRole('link', { name: 'Composer Beta' })).toHaveAttribute('href', '/composer/');
+    // the licences of the site: code, texts and images, the logo (README, section Licences)
+    await expect(page.getByRole('contentinfo').getByRole('link', { name: 'Code MIT · Texts and images CC BY 4.0 · Logo all rights reserved' })).toHaveAttribute('href', 'https://github.com/open-space-hdl/open-space-hdl.github.io#licences');
   }
   // the current page is marked in the header
   await page.goto('/composer/');

@@ -625,5 +625,6 @@ a.project-name:hover { color: var(--orange-text); }
   padding-bottom: 24px;
 }
 .footer-bar nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.footer-licence { margin: -12px auto 0; padding-bottom: 24px; font-size: 0.85rem; }
 .site-footer a { color: var(--text-muted); }
 .site-footer a:hover { color: var(--navy); }

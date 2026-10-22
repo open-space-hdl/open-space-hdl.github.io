@@ -143,3 +143,22 @@ The frame-time bounds of the 100-block test are checked locally only; shared run
 BUNDLE_GEMFILE=tests/jekyll/Gemfile bundle install
 BUNDLE_GEMFILE=tests/jekyll/Gemfile bundle exec jekyll serve
 ```
+
+## Licences
+
+- **Code** under the MIT License ([LICENSE](LICENSE)): the Open Space Composer with its block catalog (`_composer/`,
+  `assets/composer/`), its JSON schemas (`composer/schema/`) and the example systems, the layouts, includes, styles and
+  scripts of the site, the tools (`tools/`) and the tests (`tests/`).
+- **Texts and images** under Creative Commons Attribution 4.0 International ([LICENSE-CONTENT](LICENSE-CONTENT)): the
+  texts of the pages, also the file format page `composer/format.html`, the texts in `_data/` and the images in
+  `assets/img/` apart from the logo files below. Attribution: "Julian Schneider, Open Space HDL (openspacehdl.org)".
+- **Logo, all rights reserved**: the Open Space HDL logo and its renderings are not licensed:
+  `assets/img/logo-horizontal-inverse.svg`, `assets/img/social-preview.png`, `favicon.svg`, `favicon.ico` and
+  `apple-touch-icon.png`. Copyright (c) 2026 by Julian Schneider.
+- **Third-party files** keep their own licences: the fonts Sora (`assets/fonts/sora-latin.woff2`, Copyright 2019 The
+  Sora Project Authors) and JetBrains Mono (`assets/fonts/jetbrains-mono-latin.woff2`, Copyright 2020 The JetBrains
+  Mono Project Authors), both under the SIL Open Font License 1.1 (`assets/fonts/Sora-OFL.txt`,
+  `assets/fonts/JetBrainsMono-OFL.txt`).
+- **Files generated from a user's system** belong to that user: the saved `.composer.json`, the exported VHDL,
+  constraints and compile order, and the build brief. The MIT and CC BY 4.0 licences of this website do not restrict
+  them. The cores that those files reference keep their own licences.
