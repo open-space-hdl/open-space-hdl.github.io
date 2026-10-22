@@ -144,6 +144,9 @@ jobs:
         run: npm ci
       - name: Browser
         working-directory: tests
+        # the browser and its system packages; a slow package mirror fails here within 10 minutes (on 2026-10-22 it
+        # took 25 minutes), and a rerun of the job is cheap
+        timeout-minutes: 10
         run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Browser tests
         working-directory: tests

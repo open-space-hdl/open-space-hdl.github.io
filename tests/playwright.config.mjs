@@ -19,6 +19,10 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: [['list']],
   timeout: 60_000,
+  // the whole run, below the 30 minutes of the job in continuous integration: a run that hangs outside a test
+  // (launch or close of a browser, the web server) ends with its report and the traces of the failed tests instead of
+  // a cancelled job without a log
+  globalTimeout: 20 * 60_000,
   use: {
     baseURL: `http://127.0.0.1:${port}`,
     viewport: { width: 1440, height: 900 },
