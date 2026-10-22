@@ -40,7 +40,7 @@ permalink: /composer/format/
           <tr><td data-label="Key"><code>connections</code></td><td data-label="Content">Connections from a driving to a receiving interface, side band constants, adapter settings</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>externals</code></td><td data-label="Content">Interfaces that become ports of the top level, with a name prefix and optionally their stated traffic</td><td data-label="Written by">User</td></tr>
           <tr><td data-label="Key"><code>subsystems</code></td><td data-label="Content">Version 2: the definitions of the subsystems the system uses, each with its hash</td><td data-label="Written by">User</td></tr>
-          <tr><td data-label="Key"><code>resolved</code></td><td data-label="Content">Netlist of the top level: ports, instances with generic and port maps, signals, assignments, packing, clocks, resets, constraints, compile order</td><td data-label="Written by">Derived</td></tr>
+          <tr><td data-label="Key"><code>resolved</code></td><td data-label="Content">Netlist of the top level: its layout version, ports, instances with generic and port maps, signals, assignments, packing, clocks, resets, constraints, compile order</td><td data-label="Written by">Derived</td></tr>
           <tr><td data-label="Key"><code>checks</code></td><td data-label="Content">Results of the structural checks and the design rules</td><td data-label="Written by">Derived</td></tr>
           <tr><td data-label="Key"><code>agent.brief</code></td><td data-label="Content">Build brief in Markdown</td><td data-label="Written by">Derived</td></tr>
           <tr><td data-label="Key"><code>catalogSubset</code></td><td data-label="Content">Catalog entries of the blocks of the system and of their interface types: ports, generics, clocks, resets, interfaces with signals, fields and directions, presets, rules, notes, initialisation by software</td><td data-label="Written by">Derived</td></tr>
@@ -52,6 +52,10 @@ permalink: /composer/format/
       The editor reads the edited parts and resolves the system again; the derived parts are written for readers of the
       file. When the stored netlist differs from the system it describes, the editor reports it and writes the new
       netlist on the next save. A file saved with another version of the catalog opens with a remark.
+      <code>resolved.version</code> is the layout version of the netlist, 1: it changes only with an incompatible
+      change of the layout (a key removed or renamed, or a value with another meaning), while new keys keep it, so that a
+      program that reads the derived parts can refuse a layout it does not know. Since 0.9.8-beta: a file of an older
+      Composer has no <code>version</code> and the layout of version 1.
     </p>
 
     <h2 id="system">The system as edited</h2>
