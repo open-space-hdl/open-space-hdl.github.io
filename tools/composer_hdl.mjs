@@ -20,7 +20,7 @@ import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Catalog } from '../assets/composer/js/model/catalog.js';
 import { designComments, exportHdl, netlistDiff } from '../assets/composer/js/model/hdl.js';
-import { netlist } from '../assets/composer/js/model/netlist.js';
+import { netlist, sameNetlist } from '../assets/composer/js/model/netlist.js';
 import { resolve } from '../assets/composer/js/model/resolver.js';
 import { fromText, GENERATOR } from '../assets/composer/js/model/serialize.js';
 import { sha256 as sha256Of } from '../assets/composer/js/model/sha256.js';
@@ -145,14 +145,13 @@ function main() {
   const res = resolve(cat, design);
   const fresh = netlist(cat, design, res);
   const stored = JSON.parse(text).resolved;
-  const strip = (/** @type {any} */ r) => JSON.stringify({ ...r, catalog: '' });
   if (!stored) {
     console.log(`${args.input}: the file holds no resolved netlist.`);
     if (!args.again) {
       console.log('Nothing exported; --resolve exports the system as it resolves with the current catalog.');
       return 1;
     }
-  } else if (strip(stored) !== strip(fresh)) {
+  } else if (!sameNetlist(stored, fresh)) {
     const diff = netlistDiff(stored, fresh);
     console.log(`${args.input}: the system resolves differently with catalog ${cat.id} than stored (catalog ${stored.catalog}):`);
     print(diff.length ? diff : ['details of the netlist that this tool does not list one by one']);

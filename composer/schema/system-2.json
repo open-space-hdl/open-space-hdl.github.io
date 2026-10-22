@@ -281,6 +281,11 @@
       ],
       "additionalProperties": false,
       "properties": {
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Layout version of resolved, 1. It changes only with an incompatible change of the layout (a key removed or renamed, or a value with another meaning); new keys keep it. A file of a Composer before 0.9.8-beta has no version and the layout of version 1."
+        },
         "catalog": {
           "type": "string",
           "description": "Content identifier of the block catalog the system was resolved with."

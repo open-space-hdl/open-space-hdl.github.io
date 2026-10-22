@@ -68,7 +68,15 @@ export function signalName(inst, port) {
 }
 
 /**
+ * Layout version of "resolved" in a saved file. It changes only with an incompatible change of the layout (a key
+ * removed or renamed, or a value with another meaning); new keys keep it. A file of a Composer before 0.9.8-beta has no
+ * version and the layout of version 1.
+ */
+export const RESOLVED_VERSION = 1;
+
+/**
  * @typedef {object} ResolvedNetlist
+ * @property {number} [version]   layout version (RESOLVED_VERSION), in the "resolved" of a saved file only
  * @property {string} catalog
  * @property {string} entity
  * @property {Record<string, any>[]} ports
@@ -163,6 +171,17 @@ function constExpr(b, value, w = b.width) {
 export function netlist(cat, d, res) {
   cat = withSubsystems(cat, d);
   return new Netlist(cat, d, res).build();
+}
+
+/**
+ * Whether a stored netlist ("resolved" of a file) is the netlist the system resolves to now: equal apart from the
+ * catalog that resolved it and the layout version (a file of a Composer before 0.9.8-beta has none).
+ * @param {unknown} stored
+ * @param {ResolvedNetlist} fresh
+ */
+export function sameNetlist(stored, fresh) {
+  const key = (/** @type {any} */ r) => JSON.stringify({ ...r, catalog: '', version: undefined });
+  return typeof stored === 'object' && stored !== null && key(stored) === key(fresh);
 }
 
 class Netlist {

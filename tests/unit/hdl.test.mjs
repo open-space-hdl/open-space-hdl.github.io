@@ -222,6 +222,25 @@ test('the differences of two netlists name what changes, nothing for equal ones'
   assert.ok(diff.includes('Generic rmap0.WinInit_g: WinInitOpen_c becomes openrmap.omap_pkg.WinInitOpen_c.'));
 });
 
+test('the command line tool exports a file of a Composer before 0.9.8-beta, whose netlist has no layout version', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'composer-hdl-'));
+  try {
+    const catFile = join(dir, 'catalog.json');
+    writeFileSync(catFile, JSON.stringify(catalogJsonWithFiles()));
+    const doc = JSON.parse(readFileSync(`${EXAMPLES}spw_rmap_node.composer.json`, 'utf-8'));
+    assert.equal(doc.resolved.version, 1);
+    delete doc.resolved.version;
+    const file = join(dir, 'spw_rmap_node.composer.json');
+    writeFileSync(file, `${JSON.stringify(doc, null, 2)}\n`);
+    const r = spawnSync(process.execPath, [`${ROOT}tools/composer_hdl.mjs`, file, join(dir, 'out'), '--catalog', catFile], { encoding: 'utf-8' });
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.doesNotMatch(r.stdout, /resolves differently/);
+    assert.ok(readdirSync(join(dir, 'out')).includes('spw_rmap_node.vhd'));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('the command line tool refuses a changed netlist, exports with --resolve and checks the sources it reads', () => {
   const dir = mkdtempSync(join(tmpdir(), 'composer-hdl-'));
   try {
