@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "18ae640fc792",
+ "id": "81f761071a83",
  "sources": [
   {
    "id": "openwire",
@@ -285,7 +285,7 @@
    "repo": "openfibre",
    "url": "https://github.com/open-space-hdl/openfibre",
    "doc": "https://openspacehdl.org/openfibre/",
-   "commit": "7726422f8bc85250ab0c82e332614eaf68a90f4b",
+   "commit": "7afb6fb511c7ac6e572afba006e9c50f6ad7a796",
    "library": "openfibre",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
@@ -499,6 +499,30 @@
      "pin": "7726422f8bc85250ab0c82e332614eaf68a90f4b",
      "evidence": "PR #20 of the core: None. The merge commit is the release v0.1.0 of the core.",
      "changes": []
+    },
+    {
+     "previous": "7726422f8bc85250ab0c82e332614eaf68a90f4b",
+     "pin": "84ec7551a6e4eeefa19c8ae5f4ceab90e18717ab",
+     "evidence": "PR #25 of the core: documentation tooling only (tools/docs/requirements.txt pins selectolax 1.0.0), no source, testbench or interface change.",
+     "changes": []
+    },
+    {
+     "previous": "84ec7551a6e4eeefa19c8ae5f4ceab90e18717ab",
+     "pin": "7afb6fb511c7ac6e572afba006e9c50f6ad7a796",
+     "evidence": "PR #35 of the core: - #28, `ofb_pa_gty`: ports unchanged. `Phy_NoSignal` is constant 0; `Phy_CdrEnable` has no effect. The optional ports `ch_rxcdrhold` and `ch_rxelecidle` of the transceiver wizard are no longer enabled (`tcl/ofb_gtw.tcl`). Control record of the behavioural model: `NoSignalSequence` replaced by `NoSignalNever` (default), field `NoSignalTime` removed. - #32, `ofb_core` and `ofb_multilane`: new generic `LaneJoinHoldWords_g` (natural 0 to 1000000, default 8192, at most `AlignTimeoutWords_g` while the alignment watchdog is on; 0 keeps the behaviour of 0.1.0). No port, stream format or register map change. - #31, `ofb_vck190`: build options for the transceiver reference clock, `si570` (default, 100 MHz, pins AB11/AB10) or `8a34001` (156.25 MHz, pins AD11/AD10), and the constraint files `constr/ofb_vck190_refclk_si570.xdc` and `constr/ofb_vck190_refclk_8a34001.xdc`; `build.tcl` writes the clock constraint `ofb_vck190_refclk_clock.xdc` and the results to `results/`. - No change of the Open Logic pin (4.7.0-ft.6) and of the UVVM pin. The merge commit is the release v0.1.1 of the core.",
+     "changes": [
+      {
+       "block": "openfibre/ofb_pa_gty",
+       "kind": "behaviour",
+       "text": "Phy_NoSignal is always 0 and Phy_CdrEnable has no effect (PA-IF-02, PA-IF-03): a lost signal reaches the Lane layer as words with errors (RXERR), and an end with AutoStart leaves Wait at once and starts like an end with LaneStart."
+      },
+      {
+       "block": "openfibre/ofb_core",
+       "kind": "generic_added",
+       "generic": "LaneJoinHoldWords_g",
+       "text": "New generic LaneJoinHoldWords_g (default 8192): when the link starts, the Data Link layer waits while another enabled lane is still initialising, for at most this many lane clock cycles (ML-LM-17), so that the realignment loses no word; at most AlignTimeoutWords_g while the watchdog is on."
+      }
+     ]
     }
    ]
   },
@@ -11351,6 +11375,16 @@
     },
     {
      "kind": "generic_range",
+     "generic": "LaneJoinHoldWords_g",
+     "max": "AlignTimeoutWords_g",
+     "when": {
+      "generic": "AlignTimeoutWords_g",
+      "not": 0
+     },
+     "message": "the join hold is at most the alignment watchdog AlignTimeoutWords_g while the watchdog is on (ML-LM-17)"
+    },
+    {
+     "kind": "generic_range",
      "generic": "VcInDepth_g",
      "min": "128 * NumLanes_g",
      "when": {
@@ -11608,6 +11642,19 @@
      "default": 10000,
      "label": "Alignment watchdog",
      "description": "Alignment watchdog of the Multi-Lane layer (ML-AL-11), in lane clock cycles: after this many cycles in Not Ready, or twice as many outside Both-Ends Ready, since the last stable Both-Ends Ready, it resets the active lanes; the error recovery buffer is kept and ML_ALIGN_TIMEOUTS counts the resets. 0 switches it off, otherwise 1024 to 1000000; the default 10000 is 64 us at 156.25 MHz.",
+     "advanced": true,
+     "unit": "cycles"
+    },
+    {
+     "name": "LaneJoinHoldWords_g",
+     "vhdlType": "natural range 0 to 1000000",
+     "kind": "integer",
+     "min": 0,
+     "max": 1000000,
+     "defaultText": "8192",
+     "default": 8192,
+     "label": "Lane join hold",
+     "description": "Join hold of the Multi-Lane layer (ML-LM-17), in lane clock cycles: when the link starts, after the first lane entered Active the Data Link layer sends nothing while another enabled lane is still initialising, for at most this time, so that the realignment loses no word; 0 (off) to 1000000, at most AlignTimeoutWords_g when the watchdog is on.",
      "advanced": true,
      "unit": "cycles"
     }
@@ -12317,10 +12364,11 @@
    "project": "OpenFibre",
    "vendor": "AMD Versal GTY",
    "notes": [
-    "Vendor-specific (AMD Versal GTY). Its entity (hdl/ofb_pa_gty/src/ofb_pa_gty.vhd) and its architecture struct (hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd) are not in compile_order.txt of the repository but in hdl/ofb_pa_gty/compile_order.txt: add them to the library openfibre after the core, and create the transceiver wizard instance ofb_gtw in the Vivado project with hdl/ofb_pa_gty/tcl/ofb_gtw.tcl (source the file, then ofb_gtw_create ofb_gtw 156.25 for a 156.25 MHz reference clock).",
+    "Vendor-specific (AMD Versal GTY). Its entity (hdl/ofb_pa_gty/src/ofb_pa_gty.vhd) and its architecture struct (hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd) are not in compile_order.txt of the repository but in hdl/ofb_pa_gty/compile_order.txt: add them to the library openfibre after the core, and create the transceiver wizard instance ofb_gtw in the Vivado project with hdl/ofb_pa_gty/tcl/ofb_gtw.tcl (source the file, then ofb_gtw_create ofb_gtw 156.25 for a 156.25 MHz reference clock or ofb_gtw_create ofb_gtw 100 for 100 MHz).",
     "RefClk is the output O of the IBUFDS_GTE5 of the reference clock pins of the quad; place the buffer in the chip-level top, as hdl/ofb_vck190/src/ofb_vck190_top.vhd does.",
     "Stat_TxReady reaches Phy_TxReady of the core through the Phy interface; the core holds the link in Near-End Reset while the transmitters are not ready, so its reset needs no status of the adapter. The VCK190 reference design resets the core and the adapter with the power-on reset.",
-    "The line rate is 6.25 Gbit/s with a 156.25 MHz reference clock, so LaneClk runs at 156.25 MHz.",
+    "The line rate is 6.25 Gbit/s, so LaneClk runs at 156.25 MHz; the reference clock is 100 MHz or 156.25 MHz, the frequency the wizard instance is created for (PA-CK-01).",
+    "Phy_NoSignal is always 0 and Phy_CdrEnable has no effect (PA-IF-02, PA-IF-03): the receiver of the transceiver gives no loss of signal indication at 6.25 Gbit/s, so a lost signal reaches the Lane layer as words with errors (RXERR), and an end with AutoStart leaves Wait at once and starts like an end with LaneStart.",
     "The architecture struct needs the AMD transceiver models in a simulation (unisim and the simulation files of the wizard; OpenFibre runs them with tools/run_xsim.py). GHDL and QuestaSim simulate the adapter with its behavioural model, the architecture mdl in plain VHDL: hdl/ofb_pa_gty/compile_order_sim.txt lists it instead of struct, with the 8B/10B package and ofb_pa_model_pkg (ModelIdx_g selects the control record of an instance). QuestaSim needs a time resolution of 1 fs (vsim -t fs) when the reference clocks of the ends differ by fractions of a picosecond, for example a few hundred ppm."
    ],
    "files": [

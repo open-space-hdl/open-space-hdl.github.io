@@ -51,7 +51,7 @@ sources:
     repo: openfibre
     url: https://github.com/open-space-hdl/openfibre
     doc: https://openspacehdl.org/openfibre/
-    commit: 7726422f8bc85250ab0c82e332614eaf68a90f4b
+    commit: 7afb6fb511c7ac6e572afba006e9c50f6ad7a796
     library: openfibre
     file_list: compile_order.txt
     file_list_format: files
