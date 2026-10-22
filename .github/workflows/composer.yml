@@ -114,17 +114,22 @@ jobs:
           cat vs.log
           grep "spacefibre_node: .* (1 vendor stub, 1 vendor file not analysed), top level elaborated and run to 0 ns" vs.log || { echo "The GHDL check did not replace ofb_pa_gty by a stub."; exit 1; }
 
-  browser:
-    name: Browser tests (${{ matrix.browser }})
+  site:
+    name: Site for the browser tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
+    timeout-minutes: 15
+    outputs:
+      playwright: ${{ steps.pin.outputs.playwright }}
     steps:
       - name: Check out the site
         uses: actions/checkout@v7
+      - name: Playwright version of the tests
+        id: pin
+        # the exact version in tests/package.json selects the container image of the browser jobs
+        run: |
+          v=$(node -p "require('./tests/package.json').devDependencies['@playwright/test']")
+          echo "$v" | grep -E -x '[0-9]+\.[0-9]+\.[0-9]+' || { echo "tests/package.json must pin an exact Playwright version, not $v"; exit 1; }
+          echo "playwright=$v" >> "$GITHUB_OUTPUT"
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
@@ -136,15 +141,45 @@ jobs:
         env:
           BUNDLE_GEMFILE: tests/jekyll/Gemfile
         run: bundle exec jekyll build
+      - name: The built site for the browser jobs
+        uses: actions/upload-artifact@v7
+        with:
+          name: site
+          path: _site/
+          retention-days: 1
+
+  browser:
+    name: Browser tests (${{ matrix.browser }})
+    needs: site
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # The browsers and their system packages come with the Playwright image of the version that tests/package.json
+    # pins, so no job installs them from a package mirror any more. On 2026-10-22 the mirror delivered them at about
+    # 35 kB/s: 25 minutes from 19:14 UTC, then twice more the 10-minute timeout of the install step (19:59 and 20:31 UTC).
+    # User 1001 as in the Playwright documentation for GitHub Actions.
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.site.outputs.playwright }}-noble
+      options: --user 1001
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - name: Check out the site
+        uses: actions/checkout@v7
+      - name: The built site
+        uses: actions/download-artifact@v7
+        with:
+          name: site
+          path: _site
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - name: Node packages
         working-directory: tests
+        # the one remaining download of the job: a slow registry fails here within 10 minutes, and a rerun is cheap
+        timeout-minutes: 10
         run: npm ci
-      - name: Browser
-        working-directory: tests
-        run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Browser tests
         working-directory: tests
         run: npx playwright test --project=${{ matrix.browser }}
