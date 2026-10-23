@@ -1,14 +1,14 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "81f761071a83",
+ "id": "75d78f7588f4",
  "sources": [
   {
    "id": "openwire",
    "name": "OpenWire",
    "repo": "openwire",
    "url": "https://github.com/open-space-hdl/openwire",
-   "doc": "https://openspacehdl.org/openwire/",
+   "doc": "/openwire/",
    "commit": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
    "library": "openwire",
    "fileList": "compile_order.txt",
@@ -96,7 +96,7 @@
    "name": "OpenRMAP",
    "repo": "openrmap",
    "url": "https://github.com/open-space-hdl/openrmap",
-   "doc": "https://openspacehdl.org/openrmap/",
+   "doc": "/openrmap/",
    "commit": "77868aab0bad0e372ce629a0b2e0a52e1b99bbac",
    "library": "openrmap",
    "fileList": "compile_order.txt",
@@ -186,7 +186,7 @@
    "name": "OpenSPP",
    "repo": "openspp",
    "url": "https://github.com/open-space-hdl/openspp",
-   "doc": "https://openspacehdl.org/openspp/",
+   "doc": "/openspp/",
    "commit": "018ebe17992d578dea037fa47251b3309a863bb8",
    "library": "openspp",
    "fileList": "compile_order.txt",
@@ -284,7 +284,7 @@
    "name": "OpenFibre",
    "repo": "openfibre",
    "url": "https://github.com/open-space-hdl/openfibre",
-   "doc": "https://openspacehdl.org/openfibre/",
+   "doc": "/openfibre/",
    "commit": "7afb6fb511c7ac6e572afba006e9c50f6ad7a796",
    "library": "openfibre",
    "fileList": "compile_order.txt",
@@ -531,7 +531,7 @@
    "name": "OpenCrypto",
    "repo": "opencrypto",
    "url": "https://github.com/open-space-hdl/opencrypto",
-   "doc": "https://openspacehdl.org/opencrypto/",
+   "doc": "/opencrypto/",
    "commit": "b835a4901c330e7e49ccc3dea13350e66e758ceb",
    "library": "opencrypto",
    "fileList": "compile_order.txt",
@@ -610,7 +610,7 @@
    "name": "OpenCompact",
    "repo": "opencompact",
    "url": "https://github.com/open-space-hdl/opencompact",
-   "doc": "https://openspacehdl.org/opencompact/",
+   "doc": "/opencompact/",
    "commit": "652153833a22407ec69aec66f77c722a29002d30",
    "library": "opencompact",
    "fileList": "compile_order.txt",
@@ -685,7 +685,7 @@
    "name": "Open Logic FT",
    "repo": "open-logic-ft",
    "url": "https://github.com/open-space-hdl/open-logic-ft",
-   "doc": "https://openspacehdl.org/open-logic-ft/",
+   "doc": "/open-logic-ft/",
    "tag": "4.7.0-ft.8",
    "library": "olo",
    "fileList": "compile_order.txt",
@@ -1855,7 +1855,7 @@
    "path": "src/ft/vhdl/olo_ft_fifo_sync.vhd",
    "summary": "Synchronous FIFO whose memory is protected by a SECDED code.",
    "idPrefix": "fifo",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_fifo_sync.html",
+   "doc": "/open-logic-ft/doc/ft/olo_ft_fifo_sync.html",
    "rates": {
     "evidence": "Open Logic test WriteFullFifo of olo_base_fifo_sync_tb (Depth_g words written and read in consecutive cycles); olo_ft_fifo_sync wraps olo_base_fifo_sync with the ECC encoder and decoder without pipeline stages (Pipeline_g 0)",
     "interfaces": {
@@ -2205,7 +2205,7 @@
    "path": "src/ft/vhdl/olo_ft_fifo_async.vhd",
    "summary": "FIFO between two clock domains whose memory is protected by a SECDED code; optionally triplicated synchronisers.",
    "idPrefix": "afifo",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_fifo_async.html",
+   "doc": "/open-logic-ft/doc/ft/olo_ft_fifo_async.html",
    "constraints": [
     {
      "kind": "vendor_scoped",
@@ -2681,7 +2681,7 @@
    "path": "src/ft/vhdl/olo_ft_fifo_packet.vhd",
    "summary": "Store-and-forward packet FIFO with drop, skip and repeat, memory protected by a SECDED code.",
    "idPrefix": "pfifo",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_fifo_packet.html",
+   "doc": "/open-logic-ft/doc/ft/olo_ft_fifo_packet.html",
    "notes": [
     "In_Drop keeps its default '0', so the FIFO discards no packet itself; a packet of more than Depth_g words is discarded.",
     "The rates hold for packets of up to Depth_g / 2 words: the FIFO writes one packet while it reads the one before. A longer packet stalls the input while the FIFO is full (Open Logic issue 284)."
@@ -3082,7 +3082,7 @@
    "path": "src/base/vhdl/olo_base_fifo_async.vhd",
    "summary": "FIFO between two clock domains without memory protection; optionally triplicated synchronisers.",
    "idPrefix": "afifo",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_fifo_async.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_fifo_async.html",
    "constraints": [
     {
      "kind": "vendor_scoped",
@@ -3503,7 +3503,7 @@
    "path": "src/base/vhdl/olo_base_cc_bits.vhd",
    "summary": "Synchronises independent level signals into another clock domain.",
    "idPrefix": "ccbits",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_bits.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_cc_bits.html",
    "constraints": [
     {
      "kind": "vendor_scoped",
@@ -3654,7 +3654,7 @@
    "path": "src/base/vhdl/olo_base_cc_pulse.vhd",
    "summary": "Passes single-cycle pulses into another clock domain.",
    "idPrefix": "ccpulse",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_pulse.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_cc_pulse.html",
    "constraints": [
     {
      "kind": "vendor_scoped",
@@ -3822,7 +3822,7 @@
    "path": "src/base/vhdl/olo_base_wconv_n2xn.vhd",
    "summary": "Packs N input words into one output word; the first input word goes to the lowest bits.",
    "idPrefix": "wconv",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_wconv_n2xn.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_wconv_n2xn.html",
    "notes": [
     "A partially filled output word leaves only with In_Last; a source without last strands its final words."
    ],
@@ -4034,7 +4034,7 @@
    "path": "src/base/vhdl/olo_base_wconv_xn2n.vhd",
    "summary": "Splits one input word into N output words, lowest bits first.",
    "idPrefix": "wconv",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_wconv_xn2n.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_wconv_xn2n.html",
    "rules": [
     {
      "kind": "generic_multiple",
@@ -4243,7 +4243,7 @@
    "path": "src/base/vhdl/olo_base_wconv_n2m.vhd",
    "summary": "Converts between any two widths, optionally with byte enables.",
    "idPrefix": "wconv",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_wconv_n2m.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_wconv_n2m.html",
    "rules": [
     {
      "kind": "generic_multiple",
@@ -4477,7 +4477,7 @@
    "path": "src/base/vhdl/olo_base_cc_handshake.vhd",
    "summary": "Passes data words with valid and ready between two clock domains (low throughput, no RAM).",
    "idPrefix": "cc",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_handshake.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_cc_handshake.html",
    "constraints": [
     {
      "kind": "vendor_scoped",
@@ -4691,7 +4691,7 @@
    "path": "src/base/vhdl/olo_base_cc_simple.vhd",
    "summary": "Passes valid-only data words between two clock domains; no back-pressure, the input rate must be low.",
    "idPrefix": "cc",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_simple.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_cc_simple.html",
    "constraints": [
     {
      "kind": "vendor_scoped",
@@ -4911,7 +4911,7 @@
    "path": "src/base/vhdl/olo_base_cc_n2xn.vhd",
    "summary": "Passes data with valid and ready to a clock that is an integer multiple of the input clock and phase aligned.",
    "idPrefix": "cc",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_n2xn.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_cc_n2xn.html",
    "rules": [
     {
      "kind": "clock_relation",
@@ -5118,7 +5118,7 @@
    "path": "src/base/vhdl/olo_base_cc_xn2n.vhd",
    "summary": "Passes data with valid and ready to a clock that is an integer fraction of the input clock and phase aligned.",
    "idPrefix": "cc",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_xn2n.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_cc_xn2n.html",
    "rules": [
     {
      "kind": "clock_relation",
@@ -5323,7 +5323,7 @@
    "path": "src/base/vhdl/olo_base_reset_gen.vhd",
    "summary": "Synchronises an asynchronous reset to a clock and stretches it; optionally triplicated synchronisers.",
    "idPrefix": "rst",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_reset_gen.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_reset_gen.html",
    "generics": [
     {
      "name": "RstPulseCycles_g",
@@ -5432,7 +5432,7 @@
    "path": "src/base/vhdl/olo_base_pl_stage.vhd",
    "summary": "Register stages with full throughput and registered ready, for timing.",
    "idPrefix": "pl",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_pl_stage.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_pl_stage.html",
    "generics": [
     {
      "name": "Width_g",
@@ -5583,7 +5583,7 @@
    "path": "src/base/vhdl/olo_base_rate_limit.vhd",
    "summary": "Limits a stream to MaxSamples_g beats per Period_g cycles.",
    "idPrefix": "rate",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_rate_limit.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_rate_limit.html",
    "rules": [
     {
      "kind": "generic_range",
@@ -5799,7 +5799,7 @@
    "path": "src/base/vhdl/olo_base_crc_append.vhd",
    "summary": "Appends a CRC to every packet of a stream.",
    "idPrefix": "crc",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_crc_append.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_crc_append.html",
    "rules": [
     {
      "kind": "generic_range",
@@ -6022,7 +6022,7 @@
    "path": "src/base/vhdl/olo_base_crc_check.vhd",
    "summary": "Checks the CRC at the end of every packet and drops or flags packets with an error.",
    "idPrefix": "crc",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_crc_check.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_crc_check.html",
    "rules": [
     {
      "kind": "generic_multiple",
@@ -6307,7 +6307,7 @@
    "path": "src/base/vhdl/olo_base_chunker.vhd",
    "summary": "Splits every packet into chunks of a fixed number of beats (no padding) and marks the end of the input packet.",
    "idPrefix": "chunk",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/base/olo_base_chunker.html",
+   "doc": "/open-logic-ft/doc/base/olo_base_chunker.html",
    "rates": {
     "evidence": "Open Logic documentation of olo_base_chunker, section Timing: data and handshake pass through combinationally (In_Ready = Out_Ready, Out_Valid = In_Valid), without latency or buffering",
     "packet": "chunk",
@@ -6521,7 +6521,7 @@
    "path": "src/ft/vhdl/olo_ft_ecc_monitor.vhd",
    "summary": "Counts the EDAC events of several memories and keeps a sticky double error flag per channel.",
    "idPrefix": "edac",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor.html",
+   "doc": "/open-logic-ft/doc/ft/olo_ft_ecc_monitor.html",
    "generics": [
     {
      "name": "Channels_g",
@@ -6744,7 +6744,7 @@
    "path": "src/ft/vhdl/olo_ft_ecc_monitor_axi.vhd",
    "summary": "EDAC monitor with an AXI4-Lite register file and an interrupt.",
    "idPrefix": "edac",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor_axi.html",
+   "doc": "/open-logic-ft/doc/ft/olo_ft_ecc_monitor_axi.html",
    "rules": [
     {
      "kind": "generic_range",
@@ -7021,7 +7021,7 @@
    "path": "src/axi/vhdl/olo_axi_lite_decoder.vhd",
    "summary": "Connects one AXI4-Lite master to several register files, each in an equal address window.",
    "idPrefix": "dec",
-   "doc": "https://openspacehdl.org/open-logic-ft/doc/axi/olo_axi_lite_decoder.html",
+   "doc": "/open-logic-ft/doc/axi/olo_axi_lite_decoder.html",
    "rules": [
     {
      "kind": "generic_multiple",
@@ -7388,7 +7388,7 @@
    "path": "hdl/ocp_core/src/ocp_core.vhd",
    "summary": "Lossless and near-lossless compression of multispectral and hyperspectral images (CCSDS 123.0-B-2) with all predictors, quantizers and entropy coders of the standard; every parameter is a generic, the header of the compressed image follows from them.",
    "idPrefix": "ocp",
-   "doc": "https://openspacehdl.org/opencompact/docs/user_guide.html",
+   "doc": "/opencompact/docs/user_guide.html",
    "project": "OpenCompact",
    "notes": [
     "Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen with SyncTmr_g = true. A reset aborts the image in progress.",
@@ -8588,7 +8588,7 @@
    "path": "hdl/ocp_channel/src/ocp_channel.vhd",
    "summary": "The compressor of ocp_core for a system: the samples of the images arrive as SDUs on a byte stream, for example from a receive port of OpenSPP, every compressed image leaves as one packet of a byte stream, and read-only registers report the configuration and count the images, the faulty and discarded SDUs and the memory errors.",
    "idPrefix": "och",
-   "doc": "https://openspacehdl.org/opencompact/docs/user_guide.html",
+   "doc": "/opencompact/docs/user_guide.html",
    "project": "OpenCompact",
    "notes": [
     "Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen with SyncTmr_g = true. A reset aborts the image in progress and clears the counters.",
@@ -10026,7 +10026,7 @@
    "path": "hdl/ocr_core/src/ocr_core.vhd",
    "summary": "AES-GCM authenticated encryption and decryption (FIPS 197, NIST SP 800-38D, CCSDS 352.0-B-2) with a key table, IV generation per key slot and a register file; one message per context, one status per message.",
    "idPrefix": "ocr",
-   "doc": "https://openspacehdl.org/opencrypto/docs/user_guide.html",
+   "doc": "/opencrypto/docs/user_guide.html",
    "project": "OpenCrypto",
    "notes": [
     "Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen with SyncTmr_g = true.",
@@ -10827,7 +10827,7 @@
    "path": "hdl/ocr_framer/src/ocr_framer.vhd",
    "summary": "Cuts packets of any length into chunks of ChunkBytes_g bytes and hands every chunk to the AES-GCM core as one encryption with a generated IV and a 4-byte AAD with the position of the chunk in its packet.",
    "idPrefix": "frm",
-   "doc": "https://openspacehdl.org/opencrypto/docs/user_guide.html",
+   "doc": "/opencrypto/docs/user_guide.html",
    "project": "OpenCrypto",
    "notes": [
     "The slot Cfg_Slot is loaded for generated IVs and stays unchanged while the framer holds chunks.",
@@ -11310,7 +11310,7 @@
    "path": "hdl/ofb_core/src/ofb_core.vhd",
    "summary": "SpaceFibre node interface of one port according to ECSS-E-ST-50-11C: virtual channels and broadcast messages, Data Link, Multi-Lane and Lane layers and the Management Information Base, for 1 to 4 lanes. The physical adapter (transceivers) is a separate block.",
    "idPrefix": "ofb",
-   "doc": "https://openspacehdl.org/openfibre/docs/user_guide.html",
+   "doc": "/openfibre/docs/user_guide.html",
    "project": "OpenFibre",
    "notes": [
     "The VC ports have the link format of OpenSPP: spp_core with DataWidth_g = 32 x NumLanes_g connects to a VC port directly (M_Link_User(0) to S_Vc_TUser); the further user bits of OpenSPP (destination index) do not reach the SpaceFibre port.",
@@ -12360,7 +12360,7 @@
    "path": "hdl/ofb_pa_gty/src/ofb_pa_gty.vhd",
    "summary": "Physical adapter of OpenFibre for one AMD Versal GTY quad (vendor-specific): 8B/10B, comma alignment and receive clock correction in the transceivers at 6.25 Gbit/s. Its lane clock output is the lane clock of the core.",
    "idPrefix": "pa",
-   "doc": "https://openspacehdl.org/openfibre/docs/user_guide.html",
+   "doc": "/openfibre/docs/user_guide.html",
    "project": "OpenFibre",
    "vendor": "AMD Versal GTY",
    "notes": [
@@ -12767,7 +12767,7 @@
    "path": "hdl/omap_core/src/omap_core.vhd",
    "summary": "RMAP target and initiator according to ECSS-E-ST-50-52C on SpaceWire packet ports, with a memory master, a pass-through port for other protocols and a register file.",
    "idPrefix": "rmap",
-   "doc": "https://openspacehdl.org/openrmap/docs/user_guide.html",
+   "doc": "/openrmap/docs/user_guide.html",
    "project": "OpenRMAP",
    "notes": [
     "Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.",
@@ -14137,7 +14137,7 @@
    "path": "hdl/spp_core/src/spp_core.vhd",
    "summary": "Space Packet Protocol (CCSDS 133.0-B-2) with the CPTP layer of ECSS-E-ST-50-53C: send and receive ports with Octet String or Packet Service, APID routing and a register file.",
    "idPrefix": "spp",
-   "doc": "https://openspacehdl.org/openspp/docs/user_guide.html",
+   "doc": "/openspp/docs/user_guide.html",
    "project": "OpenSPP",
    "notes": [
     "Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.",
@@ -15124,7 +15124,7 @@
    "path": "hdl/spp_nchar/src/spp_nchar.vhd",
    "summary": "Converts a packet link stream to the N-Char stream of a SpaceWire port (one character per beat, end of packet marker beat) and back.",
    "idPrefix": "nchar",
-   "doc": "https://openspacehdl.org/openspp/docs/user_guide.html",
+   "doc": "/openspp/docs/user_guide.html",
    "project": "OpenSPP",
    "notes": [
     "A received end of packet marker without data characters is discarded.",
@@ -15449,7 +15449,7 @@
    "path": "hdl/owr_core/src/owr_core.vhd",
    "summary": "SpaceWire port according to ECSS-E-ST-50-12C Rev.1: encoding, data link and network services (packets, time-codes, distributed interrupts) with a register file.",
    "idPrefix": "spw",
-   "doc": "https://openspacehdl.org/openwire/docs/user_guide.html",
+   "doc": "/openwire/docs/user_guide.html",
    "project": "OpenWire",
    "notes": [
     "LVDS output buffers for data and strobe and LVDS input buffers with fail-safe biasing belong to the top level; the core contains no I/O buffer.",

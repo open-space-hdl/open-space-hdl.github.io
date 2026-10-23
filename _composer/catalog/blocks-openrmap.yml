@@ -11,7 +11,7 @@ blocks:
     path: hdl/omap_core/src/omap_core.vhd
     packages: [hdl/omap_pkg/src/omap_pkg.vhd]
     idPrefix: rmap
-    doc: https://openspacehdl.org/openrmap/docs/user_guide.html
+    doc: /openrmap/docs/user_guide.html
     summary: >-
       RMAP target and initiator according to ECSS-E-ST-50-52C on SpaceWire packet ports, with a memory master,
       a pass-through port for other protocols and a register file.

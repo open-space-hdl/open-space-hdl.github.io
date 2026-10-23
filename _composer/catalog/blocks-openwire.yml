@@ -10,7 +10,7 @@ blocks:
     entity: owr_core
     path: hdl/owr_core/src/owr_core.vhd
     idPrefix: spw
-    doc: https://openspacehdl.org/openwire/docs/user_guide.html
+    doc: /openwire/docs/user_guide.html
     summary: >-
       SpaceWire port according to ECSS-E-ST-50-12C Rev.1: encoding, data link and network services (packets,
       time-codes, distributed interrupts) with a register file.

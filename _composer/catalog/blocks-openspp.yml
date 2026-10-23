@@ -11,7 +11,7 @@ blocks:
     path: hdl/spp_core/src/spp_core.vhd
     packages: [hdl/spp_pkg/src/spp_pkg.vhd]
     idPrefix: spp
-    doc: https://openspacehdl.org/openspp/docs/user_guide.html
+    doc: /openspp/docs/user_guide.html
     summary: >-
       Space Packet Protocol (CCSDS 133.0-B-2) with the CPTP layer of ECSS-E-ST-50-53C: send and receive ports with
       Octet String or Packet Service, APID routing and a register file.
@@ -186,7 +186,7 @@ blocks:
     path: hdl/spp_nchar/src/spp_nchar.vhd
     packages: [hdl/spp_pkg/src/spp_pkg.vhd]
     idPrefix: nchar
-    doc: https://openspacehdl.org/openspp/docs/user_guide.html
+    doc: /openspp/docs/user_guide.html
     summary: >-
       Converts a packet link stream to the N-Char stream of a SpaceWire port (one character per beat, end of packet
       marker beat) and back.

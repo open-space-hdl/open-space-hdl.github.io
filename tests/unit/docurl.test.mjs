@@ -19,17 +19,25 @@ test('a path of the website becomes its full address; a full address and no addr
   assert.equal(docUrl(undefined), undefined);
 });
 
+test('the catalog names the documentation of every block and source by its path on the website', () => {
+  const json = loadCatalogJson();
+  const docs = [...json.blocks, ...json.sources].map((x) => x.doc).filter((d) => d !== undefined);
+  assert.ok(docs.length >= 30, `${docs.length} pages`);
+  for (const d of docs) assert.match(d, /^\/[^/]/, d);
+});
+
 /** The catalog (with file lists for the export), its documentation once by full addresses and once by paths. */
 function catalogs() {
-  const full = loadCatalogJson();
-  for (const s of full.sources) if (!s.files) s.files = [`src/${s.id}_pkg.vhd`, `src/${s.id}_top.vhd`];
-  const paths = JSON.parse(JSON.stringify(full));
+  const json = loadCatalogJson();
+  for (const s of json.sources) if (!s.files) s.files = [`src/${s.id}_pkg.vhd`, `src/${s.id}_top.vhd`];
+  const full = JSON.parse(JSON.stringify(json));
+  const paths = JSON.parse(JSON.stringify(json));
   let n = 0;
-  for (const x of [...paths.blocks, ...paths.sources]) {
-    if (typeof x.doc === 'string' && x.doc.startsWith(`${SITE}/`)) {
-      x.doc = x.doc.slice(SITE.length);
-      n += 1;
-    }
+  for (const [f, p] of [...full.blocks, ...full.sources].map((x, k) => [x, [...paths.blocks, ...paths.sources][k]])) {
+    if (typeof f.doc !== 'string') continue;
+    f.doc = docUrl(f.doc);
+    if (p.doc.startsWith(`${SITE}/`)) p.doc = p.doc.slice(SITE.length);
+    n += 1;
   }
   return { full: new Catalog(full), paths: new Catalog(paths), n };
 }
