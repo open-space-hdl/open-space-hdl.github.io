@@ -15,6 +15,7 @@
  * <system>_regs.h, and the brief shows them. The register offsets stay in the headers and register maps of the cores.
  */
 
+import { docUrl } from './catalog.js';
 import { tryEvaluate } from './expr.js';
 import { subsystemName } from './subsystems.js';
 
@@ -260,7 +261,7 @@ export function analyseAddressMap(cat, d, res) {
     const src = cat.sourceById.get(b.source);
     if (b.registers && src) {
       bank.registers = { source: src.id, url: src.url, commit: src.commit ?? src.tag ?? '', header: b.registers.header, doc: b.registers.doc, prefix: b.registers.prefix };
-    } else if (b.doc) bank.doc = b.doc;
+    } else if (b.doc) bank.doc = docUrl(b.doc);
     space.banks.push(bank);
   };
 
