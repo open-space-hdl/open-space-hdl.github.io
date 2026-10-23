@@ -10,6 +10,21 @@ import { initialValue, sameValue } from './generics.js';
 export const CATALOG_FORMAT = 'open-space-composer-catalog';
 export const CATALOG_VERSION = 1;
 
+/** The website: the catalog names its documentation pages by their path there. */
+export const SITE = 'https://openspacehdl.org';
+
+/**
+ * The address of a documentation page of the catalog for an output that is read away from the website (the brief, the
+ * address map, a saved file): a path of the website (starting with "/") becomes its full address; a full address stays.
+ * The editor links the path as it is, so that the same catalog serves the website and a copy of it.
+ * @template {string | undefined} T
+ * @param {T} doc
+ * @returns {T}
+ */
+export function docUrl(doc) {
+  return /** @type {T} */ (typeof doc === 'string' && doc.startsWith('/') ? `${SITE}${doc}` : doc);
+}
+
 /** @typedef {import('./generics.js').GenericDef} GenericDef */
 
 /**

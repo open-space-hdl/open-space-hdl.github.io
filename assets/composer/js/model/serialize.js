@@ -7,6 +7,7 @@
  */
 
 import { agentBrief } from './brief.js';
+import { docUrl } from './catalog.js';
 import { checkConnection } from './compat.js';
 import { createDesign, DEFAULT_DOMAIN, identifierProblem, instanceTrafficProblem, trafficProblem } from './design.js';
 import { validateValue } from './generics.js';
@@ -25,7 +26,7 @@ export const FORMAT = 'open-space-composer-system';
 export const FORMAT_VERSION = 2;
 export const SCHEMA_URL = 'https://openspacehdl.org/composer/schema/system-1.json';
 export const SCHEMA_URL_2 = 'https://openspacehdl.org/composer/schema/system-2.json';
-export const GENERATOR = { name: 'Open Space Composer', version: '0.9.8-beta' };
+export const GENERATOR = { name: 'Open Space Composer', version: '0.9.9-beta' };
 
 export class FormatError extends Error {
   /** @param {string[]} problems */
@@ -79,7 +80,12 @@ function catalogSubset(cat, all) {
     id: cat.id,
     note: 'Catalog entries of the blocks of this system and of their interface types, as the Composer used them: ports, generics, clocks, resets, interfaces with their signals, clocks, fields and directions, presets, rules, notes and the initialisation by software.',
     types: [...cat.types.values()].filter((t) => typeIds.has(t.id)).map((t) => JSON.parse(JSON.stringify(t))),
-    blocks: blocks.map((b) => JSON.parse(JSON.stringify(b))),
+    // the documentation of a block by its full address: the file is read away from the website
+    blocks: blocks.map((b) => {
+      const o = JSON.parse(JSON.stringify(b));
+      if (o.doc) o.doc = docUrl(o.doc);
+      return o;
+    }),
   };
 }
 

@@ -6,7 +6,7 @@
  * are open, and how to verify the result. Pure and deterministic.
  */
 
-import { presetLinks } from './catalog.js';
+import { docUrl, presetLinks } from './catalog.js';
 import { formatHz } from './rules.js';
 import { subsystemsOf, withSubsystems } from './subsystems.js';
 import { addressMapSections, hex } from './addressmap.js';
@@ -521,7 +521,7 @@ export function agentBrief(cat, d, res, resolved, checks) {
     const b = cat.blocks.get(id);
     if (!b) continue;
     const users = placed.filter((x) => x.block === id).map((x) => `\`${x.name}\``).join(', ');
-    L.push(`**${b.name}** (\`${b.entity}\`, ${users})${b.doc ? `: ${b.doc}` : ''}`, '');
+    L.push(`**${b.name}** (\`${b.entity}\`, ${users})${b.doc ? `: ${docUrl(b.doc)}` : ''}`, '');
     for (const n of b.notes ?? []) L.push(`- ${n}`);
     if (!(b.notes ?? []).length) L.push(`- ${b.summary}`);
     L.push('');
