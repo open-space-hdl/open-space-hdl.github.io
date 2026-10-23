@@ -11,7 +11,7 @@ blocks:
     path: hdl/ocr_core/src/ocr_core.vhd
     packages: [hdl/ocr_pkg/src/ocr_pkg.vhd]
     idPrefix: ocr
-    doc: https://openspacehdl.org/opencrypto/docs/user_guide.html
+    doc: /opencrypto/docs/user_guide.html
     summary: >-
       AES-GCM authenticated encryption and decryption (FIPS 197, NIST SP 800-38D, CCSDS 352.0-B-2) with a key table,
       IV generation per key slot and a register file; one message per context, one status per message.
@@ -177,7 +177,7 @@ blocks:
     path: hdl/ocr_framer/src/ocr_framer.vhd
     packages: [hdl/ocr_pkg/src/ocr_pkg.vhd]
     idPrefix: frm
-    doc: https://openspacehdl.org/opencrypto/docs/user_guide.html
+    doc: /opencrypto/docs/user_guide.html
     summary: >-
       Cuts packets of any length into chunks of ChunkBytes_g bytes and hands every chunk to the AES-GCM core as one
       encryption with a generated IV and a 4-byte AAD with the position of the chunk in its packet.

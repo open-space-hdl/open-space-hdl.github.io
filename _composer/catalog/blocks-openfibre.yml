@@ -10,7 +10,7 @@ blocks:
     entity: ofb_core
     path: hdl/ofb_core/src/ofb_core.vhd
     idPrefix: ofb
-    doc: https://openspacehdl.org/openfibre/docs/user_guide.html
+    doc: /openfibre/docs/user_guide.html
     summary: >-
       SpaceFibre node interface of one port according to ECSS-E-ST-50-11C: virtual channels and broadcast messages,
       Data Link, Multi-Lane and Lane layers and the Management Information Base, for 1 to 4 lanes. The physical
@@ -223,7 +223,7 @@ blocks:
     # AMD transceiver models
     model: { fileList: hdl/ofb_pa_gty/compile_order_sim.txt, architecture: mdl }
     idPrefix: pa
-    doc: https://openspacehdl.org/openfibre/docs/user_guide.html
+    doc: /openfibre/docs/user_guide.html
     summary: >-
       Physical adapter of OpenFibre for one AMD Versal GTY quad (vendor-specific): 8B/10B, comma alignment and receive
       clock correction in the transceivers at 6.25 Gbit/s. Its lane clock output is the lane clock of the core.

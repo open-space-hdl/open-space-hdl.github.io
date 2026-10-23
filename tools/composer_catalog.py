@@ -1044,6 +1044,14 @@ def require(obj: dict, key: str, where: str) -> Any:
     return obj[key]
 
 
+def check_doc(ctx: "Context", where: str, doc: object) -> None:
+    """A documentation page of the catalog by its path on the website (starting with one "/"): the Composer links
+    the path as it is, its outputs name the full address (docUrl of assets/composer/js/model/catalog.js), so that the
+    same catalog serves openspacehdl.org and an offline copy of it."""
+    if not isinstance(doc, str) or not doc.startswith("/") or doc.startswith("//"):
+        ctx.err(where, f"doc {doc!r} must be a path of the website, starting with /")
+
+
 def load_sources(ctx: Context, resolve: bool = True) -> dict[str, dict]:
     data = load_yaml(CATALOG_DIR / "sources.yml")
     sources = {}
@@ -1718,6 +1726,8 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
     for key in ("doc", "project", "vendor", "notes", "rules", "constraints", "idRegister", "init", "endToEnd", "rates", "sizes"):
         if key in b:
             block[key] = b[key]
+    if "doc" in b:
+        check_doc(ctx, where, b["doc"])
     # texts that the Composer and the brief print as they are: an unquoted YAML note with ": " is a mapping
     notes = b.get("notes", [])
     if not isinstance(notes, list) or not all(isinstance(n, str) and n.strip() for n in notes):
@@ -1992,6 +2002,8 @@ def build_catalog(ctx: Context) -> dict:
     # the technology readiness level of every source, from the projects of the website (the only place it is decided)
     projects = {pr.get("repo"): pr for pr in load_yaml(ROOT / "_data" / "projects.yml") or []}
     for s in sources.values():
+        if "doc" in s:
+            check_doc(ctx, f"sources.yml {s['id']}", s["doc"])
         pr = projects.get(s["repo"])
         if pr is None or not isinstance(pr.get("trl"), int) or not isinstance(pr.get("trl_status"), str):
             ctx.err(f"source {s['id']}", f"_data/projects.yml has no trl and trl_status for the repository {s['repo']}")

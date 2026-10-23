@@ -11,7 +11,7 @@ blocks:
     entity: olo_ft_fifo_sync
     path: src/ft/vhdl/olo_ft_fifo_sync.vhd
     idPrefix: fifo
-    doc: https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_fifo_sync.html
+    doc: /open-logic-ft/doc/ft/olo_ft_fifo_sync.html
     summary: Synchronous FIFO whose memory is protected by a SECDED code.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -61,7 +61,7 @@ blocks:
     entity: olo_ft_fifo_async
     path: src/ft/vhdl/olo_ft_fifo_async.vhd
     idPrefix: afifo
-    doc: https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_fifo_async.html
+    doc: /open-logic-ft/doc/ft/olo_ft_fifo_async.html
     summary: FIFO between two clock domains whose memory is protected by a SECDED code; optionally triplicated synchronisers.
     clocks:
       - { port: In_Clk, primary: true, label: Input clock }
@@ -127,7 +127,7 @@ blocks:
     entity: olo_ft_fifo_packet
     path: src/ft/vhdl/olo_ft_fifo_packet.vhd
     idPrefix: pfifo
-    doc: https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_fifo_packet.html
+    doc: /open-logic-ft/doc/ft/olo_ft_fifo_packet.html
     summary: Store-and-forward packet FIFO with drop, skip and repeat, memory protected by a SECDED code.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -188,7 +188,7 @@ blocks:
     entity: olo_base_fifo_async
     path: src/base/vhdl/olo_base_fifo_async.vhd
     idPrefix: afifo
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_fifo_async.html
+    doc: /open-logic-ft/doc/base/olo_base_fifo_async.html
     summary: FIFO between two clock domains without memory protection; optionally triplicated synchronisers.
     clocks:
       - { port: In_Clk, primary: true, label: Input clock }
@@ -252,7 +252,7 @@ blocks:
     entity: olo_base_cc_bits
     path: src/base/vhdl/olo_base_cc_bits.vhd
     idPrefix: ccbits
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_bits.html
+    doc: /open-logic-ft/doc/base/olo_base_cc_bits.html
     summary: Synchronises independent level signals into another clock domain.
     clocks:
       - { port: In_Clk, primary: true, label: Input clock }
@@ -278,7 +278,7 @@ blocks:
     entity: olo_base_cc_pulse
     path: src/base/vhdl/olo_base_cc_pulse.vhd
     idPrefix: ccpulse
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_pulse.html
+    doc: /open-logic-ft/doc/base/olo_base_cc_pulse.html
     summary: Passes single-cycle pulses into another clock domain.
     clocks:
       - { port: In_Clk, primary: true, label: Input clock }
@@ -307,7 +307,7 @@ blocks:
     entity: olo_base_wconv_n2xn
     path: src/base/vhdl/olo_base_wconv_n2xn.vhd
     idPrefix: wconv
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_wconv_n2xn.html
+    doc: /open-logic-ft/doc/base/olo_base_wconv_n2xn.html
     summary: Packs N input words into one output word; the first input word goes to the lowest bits.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -345,7 +345,7 @@ blocks:
     entity: olo_base_wconv_xn2n
     path: src/base/vhdl/olo_base_wconv_xn2n.vhd
     idPrefix: wconv
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_wconv_xn2n.html
+    doc: /open-logic-ft/doc/base/olo_base_wconv_xn2n.html
     summary: Splits one input word into N output words, lowest bits first.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -381,7 +381,7 @@ blocks:
     entity: olo_base_wconv_n2m
     path: src/base/vhdl/olo_base_wconv_n2m.vhd
     idPrefix: wconv
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_wconv_n2m.html
+    doc: /open-logic-ft/doc/base/olo_base_wconv_n2m.html
     summary: Converts between any two widths, optionally with byte enables.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -420,7 +420,7 @@ blocks:
     entity: olo_base_cc_handshake
     path: src/base/vhdl/olo_base_cc_handshake.vhd
     idPrefix: cc
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_handshake.html
+    doc: /open-logic-ft/doc/base/olo_base_cc_handshake.html
     summary: Passes data words with valid and ready between two clock domains (low throughput, no RAM).
     clocks:
       - { port: In_Clk, primary: true, label: Input clock }
@@ -449,7 +449,7 @@ blocks:
     entity: olo_base_cc_simple
     path: src/base/vhdl/olo_base_cc_simple.vhd
     idPrefix: cc
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_simple.html
+    doc: /open-logic-ft/doc/base/olo_base_cc_simple.html
     summary: Passes valid-only data words between two clock domains; no back-pressure, the input rate must be low.
     clocks:
       - { port: In_Clk, primary: true, label: Input clock }
@@ -489,7 +489,7 @@ blocks:
     entity: olo_base_cc_n2xn
     path: src/base/vhdl/olo_base_cc_n2xn.vhd
     idPrefix: cc
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_n2xn.html
+    doc: /open-logic-ft/doc/base/olo_base_cc_n2xn.html
     summary: Passes data with valid and ready to a clock that is an integer multiple of the input clock and phase aligned.
     clocks:
       - { port: In_Clk, primary: true, label: Input clock }
@@ -517,7 +517,7 @@ blocks:
     entity: olo_base_cc_xn2n
     path: src/base/vhdl/olo_base_cc_xn2n.vhd
     idPrefix: cc
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_cc_xn2n.html
+    doc: /open-logic-ft/doc/base/olo_base_cc_xn2n.html
     summary: Passes data with valid and ready to a clock that is an integer fraction of the input clock and phase aligned.
     clocks:
       - { port: In_Clk, primary: true, label: Input clock }
@@ -546,7 +546,7 @@ blocks:
     entity: olo_base_reset_gen
     path: src/base/vhdl/olo_base_reset_gen.vhd
     idPrefix: rst
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_reset_gen.html
+    doc: /open-logic-ft/doc/base/olo_base_reset_gen.html
     summary: Synchronises an asynchronous reset to a clock and stretches it; optionally triplicated synchronisers.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -570,7 +570,7 @@ blocks:
     entity: olo_base_pl_stage
     path: src/base/vhdl/olo_base_pl_stage.vhd
     idPrefix: pl
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_pl_stage.html
+    doc: /open-logic-ft/doc/base/olo_base_pl_stage.html
     summary: Register stages with full throughput and registered ready, for timing.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -592,7 +592,7 @@ blocks:
     entity: olo_base_rate_limit
     path: src/base/vhdl/olo_base_rate_limit.vhd
     idPrefix: rate
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_rate_limit.html
+    doc: /open-logic-ft/doc/base/olo_base_rate_limit.html
     summary: Limits a stream to MaxSamples_g beats per Period_g cycles.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -621,7 +621,7 @@ blocks:
     entity: olo_base_crc_append
     path: src/base/vhdl/olo_base_crc_append.vhd
     idPrefix: crc
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_crc_append.html
+    doc: /open-logic-ft/doc/base/olo_base_crc_append.html
     summary: Appends a CRC to every packet of a stream.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -651,7 +651,7 @@ blocks:
     entity: olo_base_crc_check
     path: src/base/vhdl/olo_base_crc_check.vhd
     idPrefix: crc
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_crc_check.html
+    doc: /open-logic-ft/doc/base/olo_base_crc_check.html
     summary: Checks the CRC at the end of every packet and drops or flags packets with an error.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -687,7 +687,7 @@ blocks:
     entity: olo_base_chunker
     path: src/base/vhdl/olo_base_chunker.vhd
     idPrefix: chunk
-    doc: https://openspacehdl.org/open-logic-ft/doc/base/olo_base_chunker.html
+    doc: /open-logic-ft/doc/base/olo_base_chunker.html
     summary: Splits every packet into chunks of a fixed number of beats (no padding) and marks the end of the input packet.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -722,7 +722,7 @@ blocks:
     entity: olo_ft_ecc_monitor
     path: src/ft/vhdl/olo_ft_ecc_monitor.vhd
     idPrefix: edac
-    doc: https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor.html
+    doc: /open-logic-ft/doc/ft/olo_ft_ecc_monitor.html
     summary: Counts the EDAC events of several memories and keeps a sticky double error flag per channel.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -747,7 +747,7 @@ blocks:
     entity: olo_ft_ecc_monitor_axi
     path: src/ft/vhdl/olo_ft_ecc_monitor_axi.vhd
     idPrefix: edac
-    doc: https://openspacehdl.org/open-logic-ft/doc/ft/olo_ft_ecc_monitor_axi.html
+    doc: /open-logic-ft/doc/ft/olo_ft_ecc_monitor_axi.html
     summary: EDAC monitor with an AXI4-Lite register file and an interrupt.
     clocks:
       - { port: Clk, primary: true, label: Clock }
@@ -775,7 +775,7 @@ blocks:
     entity: olo_axi_lite_decoder
     path: src/axi/vhdl/olo_axi_lite_decoder.vhd
     idPrefix: dec
-    doc: https://openspacehdl.org/open-logic-ft/doc/axi/olo_axi_lite_decoder.html
+    doc: /open-logic-ft/doc/axi/olo_axi_lite_decoder.html
     summary: Connects one AXI4-Lite master to several register files, each in an equal address window.
     clocks:
       - { port: Clk, primary: true, label: Clock }

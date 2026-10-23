@@ -11,7 +11,7 @@ blocks:
     path: hdl/ocp_core/src/ocp_core.vhd
     packages: [hdl/ocp_pkg/src/ocp_pkg.vhd]
     idPrefix: ocp
-    doc: https://openspacehdl.org/opencompact/docs/user_guide.html
+    doc: /opencompact/docs/user_guide.html
     summary: >-
       Lossless and near-lossless compression of multispectral and hyperspectral images (CCSDS 123.0-B-2) with all
       predictors, quantizers and entropy coders of the standard; every parameter is a generic, the header of the
@@ -216,7 +216,7 @@ blocks:
     path: hdl/ocp_channel/src/ocp_channel.vhd
     packages: [hdl/ocp_pkg/src/ocp_pkg.vhd]
     idPrefix: och
-    doc: https://openspacehdl.org/opencompact/docs/user_guide.html
+    doc: /opencompact/docs/user_guide.html
     summary: >-
       The compressor of ocp_core for a system: the samples of the images arrive as SDUs on a byte stream, for example
       from a receive port of OpenSPP, every compressed image leaves as one packet of a byte stream, and read-only
