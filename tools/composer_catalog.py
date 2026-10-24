@@ -1863,9 +1863,12 @@ def check_block_files(ctx: Context, blocks: list[dict], sources: dict) -> None:
 
 def check_block_model(ctx: Context, blocks: list[dict], sources: dict) -> None:
     """The behavioural model of a vendor-specific block (model): its file list at the pin names the path of the block
-    once and further VHDL files of the repository outside its file list and outside files; one of them holds the named
-    architecture of the entity. catalog.json gets the files without the path, in their order, and how many of them come
+    once and further VHDL files of the repository outside its file list; one of them holds the named architecture of
+    the entity. A file of the model may also be a further file of the block (files) when both architectures use it: it
+    names no library besides ieee, std, work and the libraries of the sources, since the files of the block need the
+    vendor libraries otherwise. catalog.json gets the files without the path, in their order, and how many of them come
     before the path (packages of the model)."""
+    plain = {"ieee", "std", "work"} | {s["library"].lower() for s in sources.values()}
     for blk in blocks:
         model = blk.get("model")
         if not model:
@@ -1892,12 +1895,17 @@ def check_block_model(ctx: Context, blocks: list[dict], sources: dict) -> None:
             problem = None
             if f in listed:
                 problem = f"is listed in {s['file_list']} already"
-            elif f in (blk.get("files") or []):
-                problem = "is a further file of the block (files), which needs the vendor libraries"
             elif not re.search(r"\.vhdl?$", f):
                 problem = "is not a VHDL file"
             elif not git_ok_output(repo, "ls-tree", s["sha"], "--", f).strip():
                 problem = f"is not in the repository at {s['sha'][:10]}"
+            elif f in (blk.get("files") or []):
+                # shared by both architectures: no vendor library
+                code = strip_comments(git(repo, "show", f"{s['sha']}:{f}"))
+                libs = {x.strip().lower() for m in re.findall(r"\blibrary\s+([\w\s,]+);", code, re.I) for x in m.split(",")}
+                if libs - plain:
+                    problem = (f"is a further file of the block (files) that uses the libraries "
+                               f"{', '.join(sorted(libs - plain))}, which a model cannot")
             if problem:
                 ctx.err(where, f"{model['fileList']} names {f}, which {problem}")
                 ok = False

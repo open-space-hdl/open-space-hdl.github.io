@@ -76,6 +76,18 @@ jobs:
             exit 1
           fi
           grep "ReleaseBytes_g must be a power of two" invalid.log || { cat invalid.log; echo "The GHDL check stopped the top level for another reason."; exit 1; }
+      # Negative test: an instance of a component that no entity binds (a vendor primitive declared as a component
+      # without its library, for example in a file that a behavioural model shares with its vendor-specific block) must
+      # stop the elaboration; GHDL would simulate an empty instance otherwise. A test-only script adds one to a top level.
+      - name: The GHDL check stops a top level with an unbound component
+        run: |
+          node site/tests/export_unbound.mjs site/assets/composer/examples/spw_rmap_node.composer.json export/unbound
+          if python site/tools/composer_hdl_check.py export/unbound --sources sources --checkout-from . > unbound.log 2>&1; then
+            cat unbound.log
+            echo "The GHDL check passed a top level with an unbound component."
+            exit 1
+          fi
+          grep 'instance "i_unbound" of component "vendor_prim" is not bound' unbound.log || { cat unbound.log; echo "The GHDL check stopped the top level for another reason."; exit 1; }
       # Negative test: the GHDL check replaces a vendor-specific block by a stub and does not analyse its further files
       # (files in the catalog, for example its architecture), so it must stop when the compile order does not list such
       # a file or the sources do not have it. A test catalog names a file that no repository has.
@@ -112,7 +124,10 @@ jobs:
           node site/tools/composer_hdl.mjs site/assets/composer/examples/spacefibre_node.composer.json export/vs
           python site/tools/composer_hdl_check.py export/vs --sources sources --checkout-from . > vs.log 2>&1 || { cat vs.log; exit 1; }
           cat vs.log
-          grep "spacefibre_node: .* (1 vendor stub, 1 vendor file not analysed), top level elaborated and run to 0 ns" vs.log || { echo "The GHDL check did not replace ofb_pa_gty by a stub."; exit 1; }
+          # with the stub none of the further files of ofb_pa_gty is analysed, also those that its model lists
+          n=$(python -c "import json; print(len(next(b for b in json.load(open('site/assets/composer/catalog.json'))['blocks'] if b['id'] == 'openfibre/ofb_pa_gty')['files']))")
+          unused="$n vendor file$([ "$n" = 1 ] || echo s) not analysed"
+          grep "spacefibre_node: .* (1 vendor stub, $unused), top level elaborated and run to 0 ns" vs.log || { echo "The GHDL check did not replace ofb_pa_gty by a stub."; exit 1; }
 
   site:
     name: Site for the browser tests
