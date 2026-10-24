@@ -200,10 +200,12 @@ test('the brief names exactly one way to start the link for every value of the l
 test('the smoke test of the brief compiles the behavioural model of the adapter, without it the vendor libraries', () => {
   const d = node();
   const brief = /** @type {any} */ (toDocument(d, cat)).agent.brief;
-  // the files of the model in their compile order: its packages, the entity, the architecture mdl
+  // the files of the model in their compile order: its packages, the entity, the lane reset sequencer (a file for
+  // synthesis as well), the architecture mdl
   assert.ok(brief.includes('- `ofb_pa_gty` (`pa0`), library `openfibre`, architecture `mdl` (file list `hdl/ofb_pa_gty/compile_order_sim.txt` of `openfibre`): '
-    + '`tb/ofb_tb_8b10b_pkg.vhd`, `hdl/ofb_pa_gty/sim/ofb_pa_model_pkg.vhd`, `hdl/ofb_pa_gty/src/ofb_pa_gty.vhd`, `hdl/ofb_pa_gty/sim/ofb_pa_gty_model.vhd`; '
-    + 'in place of `hdl/ofb_pa_gty/src/ofb_pa_gty.vhd` and `hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd`.'));
+    + '`tb/ofb_tb_8b10b_pkg.vhd`, `hdl/ofb_pa_gty/sim/ofb_pa_model_pkg.vhd`, `hdl/ofb_pa_gty/src/ofb_pa_gty.vhd`, `hdl/ofb_pa_gty/src/ofb_pa_gty_lane_rst.vhd`, `hdl/ofb_pa_gty/sim/ofb_pa_gty_model.vhd`; '
+    + 'in place of `hdl/ofb_pa_gty/src/ofb_pa_gty.vhd` and `hdl/ofb_pa_gty/src/ofb_pa_gty_lane_rst.vhd` and'
+    + ' `hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd`.'));
   assert.match(brief, /With GHDL: analyse the libraries of section 1, with the models above, then/);
   assert.match(brief, /With QuestaSim: .* in the order of the table, with the models above \(`vcom -2008 -work <library> <files>`\)/);
   assert.match(brief, /`vsim -c -t fs t\.t_tb -do "set NumericStdNoWarnings 1; run 100 us; quit -f"`/);

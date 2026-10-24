@@ -31,6 +31,7 @@ blocks:
       - { name: LaneStart_g, label: Lane start after reset, description: "Reset value of LaneStart (LANE_CTRL bit 0 of every lane); the port starts the link without software. Set it at one end when the MIB of that end is reachable only over this link." }
       - { name: AlignTimeoutWords_g, label: Alignment watchdog, unit: cycles, advanced: true, description: "Alignment watchdog of the Multi-Lane layer (ML-AL-11), in lane clock cycles: after this many cycles in Not Ready, or twice as many outside Both-Ends Ready, since the last stable Both-Ends Ready, it resets the active lanes; the error recovery buffer is kept and ML_ALIGN_TIMEOUTS counts the resets. 0 switches it off, otherwise 1024 to 1000000; the default 10000 is 64 us at 156.25 MHz." }
       - { name: LaneJoinHoldWords_g, label: Lane join hold, unit: cycles, advanced: true, description: "Join hold of the Multi-Lane layer (ML-LM-17), in lane clock cycles: when the link starts, after the first lane entered Active the Data Link layer sends nothing while another enabled lane is still initialising, for at most this time, so that the realignment loses no word; 0 (off) to 1000000, at most AlignTimeoutWords_g when the watchdog is on." }
+      - { name: InitTimeoutWords_g, label: Initialisation timeout, unit: cycles, advanced: true, description: "Reset value of the initialisation timeout of the lanes (LANE_INIT_TIMEOUT, CORE-PL-08), in lane clock cycles (words): 1 to 16777215. 5000 is the timeout of the standard (ECSS 5.5.2.6b.1, 32 us at 156.25 MHz); any other value deviates from it. The VCK190 reference design uses 468750 (3 ms) with RxRstGapCycles_g = 0 of ofb_pa_gty, so that a lane waits in Started while the receiver of its transceiver resets." }
       - { name: AutoStart_g, label: Auto start after reset, description: "Reset value of AutoStart (LANE_CTRL bit 1 of every lane); the port starts the link when the far end does." }
       - { name: LaneClkFreq_g, label: Lane clock frequency, unit: Hz, fromClock: LaneClk, description: "Frequency of LaneClk (lane timers, alignment timeout)." }
       - { name: CoreClkFreq_g, label: Core clock frequency, unit: Hz, fromClock: CoreClk, description: "Frequency of CoreClk (scrubber of the error recovery buffer)." }
@@ -119,8 +120,10 @@ blocks:
         description: >-
           Symbol streams, control and status of every lane; connect the physical adapter or make the ports external.
           tx_ready (Phy_TxReady) is an asynchronous level from a register or a constant: while it is 0 the link stays in
-          Near-End Reset.
-        asyncSignals: [tx_ready]
+          Near-End Reset. The receiver reset configuration (rx_reset_on_disc, rx_reset_cdr_only, cdr_hold_idle,
+          pcs_rsvd_in) are static levels of the register PA_CTRL (MgmtClk); rx_reset_cmd (LANE_CTRL RX_RESET) and the
+          status and events of the adapter per lane (LANE_STATUS, LANE_EVENTS) are in LaneClk.
+        asyncSignals: [tx_ready, rx_reset_on_disc, rx_reset_cdr_only, cdr_hold_idle, pcs_rsvd_in]
         signals:
           tx_data: { port: PhyTx_Data, dir: out }
           tx_k: { port: PhyTx_K, dir: out }
@@ -144,6 +147,19 @@ blocks:
           prbs_cnt_reset: { port: Phy_PrbsCntReset, dir: out }
           prbs_err: { port: Phy_PrbsErr, dir: in }
           prbs_locked: { port: Phy_PrbsLocked, dir: in }
+          rx_reset_on_disc: { port: Phy_RxResetOnDisc, dir: out }
+          rx_reset_cdr_only: { port: Phy_RxResetCdrOnly, dir: out }
+          cdr_hold_idle: { port: Phy_CdrHoldIdle, dir: out }
+          pcs_rsvd_in: { port: Phy_PcsRsvdIn, dir: out }
+          rx_reset_cmd: { port: Phy_RxResetCmd, dir: out }
+          rx_buf_err: { port: Phy_RxBufErr, dir: in }
+          tx_buf_err: { port: Phy_TxBufErr, dir: in }
+          rx_reset_done: { port: Phy_RxResetDone, dir: in }
+          rx_reset_busy: { port: Phy_RxResetBusy, dir: in }
+          cdr_lock: { port: Phy_CdrLock, dir: in }
+          rx_elec_idle: { port: Phy_RxElecIdle, dir: in }
+          ev_rx_reset: { port: Phy_EvRxReset, dir: in }
+          ev_rx_reset_timeout: { port: Phy_EvRxResetTimeout, dir: in }
     rules:
       # ofb_dl_vc_out.vhd: a power of two, at least one data frame of 64 words (DL-VO-05)
       - { kind: generic_multiple, generic: VcOutDepth_g, of: 1, pow2Ratio: true }
@@ -163,7 +179,7 @@ blocks:
       # hdl/ofb_multilane/src/ofb_multilane.vhd: the join hold ends before the alignment watchdog can expire (assertion)
       - { kind: generic_range, generic: LaneJoinHoldWords_g, max: AlignTimeoutWords_g, when: { generic: AlignTimeoutWords_g, not: 0 }, message: "the join hold is at most the alignment watchdog AlignTimeoutWords_g while the watchdog is on (ML-LM-17)" }
       - { kind: generic_range, generic: VcInDepth_g, min: 128 * NumLanes_g, when: { generic: NumLanes_g, not: 1 }, message: "with several lanes the input VC buffer holds two flow control units (DL-VI-05); reference value 256 x NumLanes_g" }
-    idRegister: { address: "0x000", value: "0x0FB10009" }
+    idRegister: { address: "0x000", value: "0x0FB1000A" }
     registers: { map: hdl/ofb_mib/regs/ofb_regs.yml, header: sw/ofb_regs.h, doc: hdl/ofb_mib/docs/register_map.md, prefix: OFB }
     # the ECC of the memories inside the core: double-error flags per channel, counters, error injection
     protection:
@@ -217,8 +233,9 @@ blocks:
     source: openfibre
     entity: ofb_pa_gty
     path: hdl/ofb_pa_gty/src/ofb_pa_gty.vhd
-    # the architecture struct (hdl/ofb_pa_gty/compile_order.txt of OpenFibre)
-    files: [hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd]
+    # the lane reset sequencer and the architecture struct (hdl/ofb_pa_gty/compile_order.txt of OpenFibre); the
+    # behavioural model uses the sequencer as well
+    files: [hdl/ofb_pa_gty/src/ofb_pa_gty_lane_rst.vhd, hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd]
     # the behavioural model in plain VHDL (hdl/ofb_pa_gty/docs/model.md of OpenFibre), for a simulation without the
     # AMD transceiver models
     model: { fileList: hdl/ofb_pa_gty/compile_order_sim.txt, architecture: mdl }
@@ -236,6 +253,10 @@ blocks:
       - { name: NumLanes_g, label: Lanes, description: "Lanes of the quad in use (1 to 4); follows the core.", follow: { interfaces: [Phy], measure: generic, generic: NumLanes_g } }
       - { name: SimDevice_g, label: Device family, advanced: true, description: "SIM_DEVICE of the BUFG_GT (device family)." }
       - { name: RstPulseCycles_g, label: Reset length, advanced: true, description: "Minimum reset of the transceivers and their reset controller, in cycles of FreeRunClk (3 or more)." }
+      - { name: RxBufReset_g, label: Receive buffer reset, advanced: true, description: "Reset of the receive elastic buffer of a lane after a buffer error and after the first comma alignment of a lane start (PA-RS-03); false leaves the buffers to the transceiver." }
+      - { name: RxRstDoneCycles_g, label: Receiver reset bound, unit: cycles, advanced: true, description: "Bound of the wait for RXRESETDONE in an entire receiver reset, in cycles of FreeRunClk (PA-RS-05): the default 15000000 is 150 ms at 100 MHz. On expiry the lane reports a receiver reset timeout (LANE_EVENTS bit 7 of the core)." }
+      - { name: CdrWaitCycles_g, label: CDR reset wait, unit: cycles, advanced: true, description: "Wait after the RXCDRRESET pulse of the CDR-only receiver reset (PA_CTRL RX_RESET_CDR_ONLY of the core), in cycles of FreeRunClk: the default 10000 is 100 us at 100 MHz." }
+      - { name: RxRstGapCycles_g, label: Receiver reset gap, unit: cycles, advanced: true, description: "Gap after a receiver reset of a lane in which further requests are dropped, in cycles of FreeRunClk (PA-RS-04): the default 400000 is 4 ms at 100 MHz, so that lanes with the initialisation timeout of the standard (InitTimeoutWords_g = 5000 of the core) make initialisation attempts between two resets. 0: no gap, for a design whose initialisation timeout is longer than a receiver reset." }
       - { name: ModelIdx_g, label: Model index, advanced: true, description: "Behavioural model only (architecture mdl): the index of the control record of the instance; ignored by the transceiver architecture struct." }
     interfaces:
       - name: Phy
@@ -244,8 +265,11 @@ blocks:
         role: slave
         clock: LaneClk
         mustServe: true
-        description: The physical adapter ports of the core, one to one; tx_ready is Stat_TxReady, a register of FreeRunClk.
-        asyncSignals: [tx_ready]
+        description: >-
+          The physical adapter ports of the core, one to one; tx_ready is Stat_TxReady, a register of FreeRunClk. The
+          receiver reset configuration (Cfg_RxResetOnDisc, Cfg_RxResetCdrOnly, Cfg_CdrHoldIdle, Cfg_PcsRsvdIn) is
+          synchronised inside; rx_reset_cmd (Cmd_RxReset) and the status and events per lane are in LaneClk.
+        asyncSignals: [tx_ready, rx_reset_on_disc, rx_reset_cdr_only, cdr_hold_idle, pcs_rsvd_in]
         signals:
           tx_data: { port: PhyTx_Data, dir: out }
           tx_k: { port: PhyTx_K, dir: out }
@@ -269,6 +293,19 @@ blocks:
           prbs_cnt_reset: { port: Phy_PrbsCntReset, dir: out }
           prbs_err: { port: Phy_PrbsErr, dir: in }
           prbs_locked: { port: Phy_PrbsLocked, dir: in }
+          rx_reset_on_disc: { port: Cfg_RxResetOnDisc, dir: out }
+          rx_reset_cdr_only: { port: Cfg_RxResetCdrOnly, dir: out }
+          cdr_hold_idle: { port: Cfg_CdrHoldIdle, dir: out }
+          pcs_rsvd_in: { port: Cfg_PcsRsvdIn, dir: out }
+          rx_reset_cmd: { port: Cmd_RxReset, dir: out }
+          rx_buf_err: { port: Stat_RxBufErr, dir: in }
+          tx_buf_err: { port: Stat_TxBufErr, dir: in }
+          rx_reset_done: { port: Stat_RxResetDone, dir: in }
+          rx_reset_busy: { port: Stat_RxResetBusy, dir: in }
+          cdr_lock: { port: Stat_CdrLock, dir: in }
+          rx_elec_idle: { port: Stat_RxElecIdle, dir: in }
+          ev_rx_reset: { port: Ev_RxReset, dir: in }
+          ev_rx_reset_timeout: { port: Ev_RxResetTimeout, dir: in }
       - name: Gt
         label: Serial lanes
         type: spfi.serial
@@ -296,12 +333,13 @@ blocks:
         role: event_out
         clock: LaneClk
         tieOff: open
-        description: Receivers ready, receive buffer errors and clock corrections per lane.
-        signals: { rx_ready: Stat_RxReady, rx_buf_err: Stat_RxBufErr, clk_cor: Stat_ClkCor }
+        description: Receivers ready and clock corrections per lane; the receive buffer errors reach the core through the Phy interface.
+        signals: { rx_ready: Stat_RxReady, clk_cor: Stat_ClkCor }
     notes:
-      - "Vendor-specific (AMD Versal GTY). Its entity (hdl/ofb_pa_gty/src/ofb_pa_gty.vhd) and its architecture struct (hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd) are not in compile_order.txt of the repository but in hdl/ofb_pa_gty/compile_order.txt: add them to the library openfibre after the core, and create the transceiver wizard instance ofb_gtw in the Vivado project with hdl/ofb_pa_gty/tcl/ofb_gtw.tcl (source the file, then ofb_gtw_create ofb_gtw 156.25 for a 156.25 MHz reference clock or ofb_gtw_create ofb_gtw 100 for 100 MHz)."
+      - "Vendor-specific (AMD Versal GTY). Its entity (hdl/ofb_pa_gty/src/ofb_pa_gty.vhd), its lane reset sequencer (hdl/ofb_pa_gty/src/ofb_pa_gty_lane_rst.vhd) and its architecture struct (hdl/ofb_pa_gty/src/ofb_pa_gty_struct.vhd) are not in compile_order.txt of the repository but in hdl/ofb_pa_gty/compile_order.txt: add them to the library openfibre after the core, and create the transceiver wizard instance ofb_gtw in the Vivado project with hdl/ofb_pa_gty/tcl/ofb_gtw.tcl (source the file, then ofb_gtw_create ofb_gtw 156.25 for a 156.25 MHz reference clock or ofb_gtw_create ofb_gtw 100 for 100 MHz)."
       - RefClk is the output O of the IBUFDS_GTE5 of the reference clock pins of the quad; place the buffer in the chip-level top, as hdl/ofb_vck190/src/ofb_vck190_top.vhd does.
       - Stat_TxReady reaches Phy_TxReady of the core through the Phy interface; the core holds the link in Near-End Reset while the transmitters are not ready, so its reset needs no status of the adapter. The VCK190 reference design resets the core and the adapter with the power-on reset.
       - The line rate is 6.25 Gbit/s, so LaneClk runs at 156.25 MHz; the reference clock is 100 MHz or 156.25 MHz, the frequency the wizard instance is created for (PA-CK-01).
-      - "Phy_NoSignal is always 0 and Phy_CdrEnable has no effect (PA-IF-02, PA-IF-03): the receiver of the transceiver gives no loss of signal indication at 6.25 Gbit/s, so a lost signal reaches the Lane layer as words with errors (RXERR), and an end with AutoStart leaves Wait at once and starts like an end with LaneStart."
-      - "The architecture struct needs the AMD transceiver models in a simulation (unisim and the simulation files of the wizard; OpenFibre runs them with tools/run_xsim.py). GHDL and QuestaSim simulate the adapter with its behavioural model, the architecture mdl in plain VHDL: hdl/ofb_pa_gty/compile_order_sim.txt lists it instead of struct, with the 8B/10B package and ofb_pa_model_pkg (ModelIdx_g selects the control record of an instance). QuestaSim needs a time resolution of 1 fs (vsim -t fs) when the reference clocks of the ends differ by fractions of a picosecond, for example a few hundred ppm."
+      - "Phy_NoSignal is always 0 (PA-IF-03): the receiver of the transceiver gives no loss of signal indication at 6.25 Gbit/s, so a lost signal reaches the Lane layer as words with errors (RXERR), and an end with AutoStart leaves Wait at once and starts like an end with LaneStart."
+      - "Phy_CdrEnable does not stop the clock data recovery: its falling edge, when the lane leaves the states that use the line, starts the entire receiver reset of the lane (PA-IF-02, PA-RS-04; PA_CTRL RX_RESET_ON_DISCONNECT of the core), and LANE_CTRL RX_RESET of the core requests one. The adapter drops further requests of the lane for RxRstGapCycles_g after a reset, so that a lane with the initialisation timeout of the standard makes initialisation attempts between two resets; a design with a longer timeout (InitTimeoutWords_g of the core, LANE_INIT_TIMEOUT) sets RxRstGapCycles_g = 0, as the VCK190 reference design does. The CDR is held while the receiver reports electrical idle (PA-IF-04, PA_CTRL CDR_HOLD_IDLE)."
+      - "The architecture struct needs the AMD transceiver models in a simulation (unisim and the simulation files of the wizard; OpenFibre runs them with tools/run_xsim.py). GHDL and QuestaSim simulate the adapter with its behavioural model, the architecture mdl in plain VHDL: hdl/ofb_pa_gty/compile_order_sim.txt lists it instead of struct, with the 8B/10B package, ofb_pa_model_pkg (ModelIdx_g selects the control record of an instance) and the lane reset sequencer, which the model uses as well. QuestaSim needs a time resolution of 1 fs (vsim -t fs) when the reference clocks of the ends differ by fractions of a picosecond, for example a few hundred ppm."
