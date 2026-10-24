@@ -51,11 +51,11 @@ sources:
     repo: openfibre
     url: https://github.com/open-space-hdl/openfibre
     doc: /openfibre/
-    commit: 7afb6fb511c7ac6e572afba006e9c50f6ad7a796
+    commit: 8aa51e667b7fd6dbf8a419242ae0895dfc91c13f
     library: openfibre
     file_list: compile_order.txt
     file_list_format: files
-    verified_with: 4.7.0-ft.6
+    verified_with: 4.7.0-ft.9
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. compile_order.txt lists the technology-independent sources; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).
 
   - id: opencrypto

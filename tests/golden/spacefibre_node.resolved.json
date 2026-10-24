@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "catalog": "75d78f7588f4",
+  "catalog": "d46a38a13eb9",
   "entity": "spacefibre_node",
   "ports": [
     {
@@ -2212,6 +2212,12 @@
           "value": 8192,
           "vhdl": "8192",
           "default": true
+        },
+        {
+          "name": "InitTimeoutWords_g",
+          "value": 5000,
+          "vhdl": "5000",
+          "default": true
         }
       ],
       "ports": [
@@ -2689,6 +2695,93 @@
           "type": "std_logic_vector(0 downto 0)",
           "domain": "lane",
           "actual": "ofb0_Phy_PrbsLocked_s"
+        },
+        {
+          "name": "Phy_RxResetOnDisc",
+          "dir": "out",
+          "type": "std_logic",
+          "actual": "ofb0_Phy_RxResetOnDisc_s"
+        },
+        {
+          "name": "Phy_RxResetCdrOnly",
+          "dir": "out",
+          "type": "std_logic",
+          "actual": "ofb0_Phy_RxResetCdrOnly_s"
+        },
+        {
+          "name": "Phy_CdrHoldIdle",
+          "dir": "out",
+          "type": "std_logic",
+          "actual": "ofb0_Phy_CdrHoldIdle_s"
+        },
+        {
+          "name": "Phy_PcsRsvdIn",
+          "dir": "out",
+          "type": "std_logic_vector(15 downto 0)",
+          "actual": "ofb0_Phy_PcsRsvdIn_s"
+        },
+        {
+          "name": "Phy_RxResetCmd",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_RxResetCmd_s"
+        },
+        {
+          "name": "Phy_RxBufErr",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_RxBufErr_s"
+        },
+        {
+          "name": "Phy_TxBufErr",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_TxBufErr_s"
+        },
+        {
+          "name": "Phy_RxResetDone",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_RxResetDone_s"
+        },
+        {
+          "name": "Phy_RxResetBusy",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_RxResetBusy_s"
+        },
+        {
+          "name": "Phy_CdrLock",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_CdrLock_s"
+        },
+        {
+          "name": "Phy_RxElecIdle",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_RxElecIdle_s"
+        },
+        {
+          "name": "Phy_EvRxReset",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_EvRxReset_s"
+        },
+        {
+          "name": "Phy_EvRxResetTimeout",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "ofb0_Phy_EvRxResetTimeout_s"
         }
       ]
     },
@@ -2716,6 +2809,30 @@
           "name": "RstPulseCycles_g",
           "value": 1000,
           "vhdl": "1000",
+          "default": true
+        },
+        {
+          "name": "RxBufReset_g",
+          "value": true,
+          "vhdl": "true",
+          "default": true
+        },
+        {
+          "name": "RxRstDoneCycles_g",
+          "value": 15000000,
+          "vhdl": "15000000",
+          "default": true
+        },
+        {
+          "name": "CdrWaitCycles_g",
+          "value": 10000,
+          "vhdl": "10000",
+          "default": true
+        },
+        {
+          "name": "RxRstGapCycles_g",
+          "value": 400000,
+          "vhdl": "400000",
           "default": true
         },
         {
@@ -2928,6 +3045,37 @@
           "actual": "pa0_Phy_PrbsLocked_s"
         },
         {
+          "name": "Cfg_RxResetOnDisc",
+          "dir": "in",
+          "type": "std_logic",
+          "actual": "pa0_Cfg_RxResetOnDisc_s"
+        },
+        {
+          "name": "Cfg_RxResetCdrOnly",
+          "dir": "in",
+          "type": "std_logic",
+          "actual": "pa0_Cfg_RxResetCdrOnly_s"
+        },
+        {
+          "name": "Cfg_CdrHoldIdle",
+          "dir": "in",
+          "type": "std_logic",
+          "actual": "pa0_Cfg_CdrHoldIdle_s"
+        },
+        {
+          "name": "Cfg_PcsRsvdIn",
+          "dir": "in",
+          "type": "std_logic_vector(15 downto 0)",
+          "actual": "pa0_Cfg_PcsRsvdIn_s"
+        },
+        {
+          "name": "Cmd_RxReset",
+          "dir": "in",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Cmd_RxReset_s"
+        },
+        {
           "name": "Stat_TxReady",
           "dir": "out",
           "type": "std_logic",
@@ -2952,7 +3100,7 @@
           "dir": "out",
           "type": "std_logic_vector(0 downto 0)",
           "domain": "lane",
-          "actual": "open"
+          "actual": "pa0_Stat_RxBufErr_s"
         },
         {
           "name": "Stat_ClkCor",
@@ -2960,6 +3108,55 @@
           "type": "std_logic_vector(0 downto 0)",
           "domain": "lane",
           "actual": "open"
+        },
+        {
+          "name": "Stat_TxBufErr",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Stat_TxBufErr_s"
+        },
+        {
+          "name": "Stat_RxResetDone",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Stat_RxResetDone_s"
+        },
+        {
+          "name": "Stat_RxResetBusy",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Stat_RxResetBusy_s"
+        },
+        {
+          "name": "Stat_CdrLock",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Stat_CdrLock_s"
+        },
+        {
+          "name": "Stat_RxElecIdle",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Stat_RxElecIdle_s"
+        },
+        {
+          "name": "Ev_RxReset",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Ev_RxReset_s"
+        },
+        {
+          "name": "Ev_RxResetTimeout",
+          "dir": "out",
+          "type": "std_logic_vector(0 downto 0)",
+          "domain": "lane",
+          "actual": "pa0_Ev_RxResetTimeout_s"
         }
       ]
     },
@@ -3614,8 +3811,28 @@
       "type": "std_logic_vector(0 downto 0)"
     },
     {
+      "name": "ofb0_Phy_CdrHoldIdle_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_Phy_CdrLock_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_EvRxReset_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_EvRxResetTimeout_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
       "name": "ofb0_Phy_NoSignal_s",
       "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_PcsRsvdIn_s",
+      "type": "std_logic_vector(15 downto 0)"
     },
     {
       "name": "ofb0_Phy_PrbsCntReset_s",
@@ -3642,6 +3859,14 @@
       "type": "std_logic_vector(3 downto 0)"
     },
     {
+      "name": "ofb0_Phy_RxBufErr_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_RxElecIdle_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
       "name": "ofb0_Phy_RxEnable_s",
       "type": "std_logic_vector(0 downto 0)"
     },
@@ -3650,11 +3875,35 @@
       "type": "std_logic_vector(0 downto 0)"
     },
     {
+      "name": "ofb0_Phy_RxResetBusy_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_RxResetCdrOnly_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "ofb0_Phy_RxResetCmd_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_RxResetDone_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_RxResetOnDisc_s",
+      "type": "std_logic"
+    },
+    {
       "name": "ofb0_Phy_SerialFarLoopback_s",
       "type": "std_logic_vector(0 downto 0)"
     },
     {
       "name": "ofb0_Phy_SerialNearLoopback_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "ofb0_Phy_TxBufErr_s",
       "type": "std_logic_vector(0 downto 0)"
     },
     {
@@ -3798,6 +4047,34 @@
       "type": "std_logic_vector(1 downto 0)"
     },
     {
+      "name": "pa0_Cfg_CdrHoldIdle_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "pa0_Cfg_PcsRsvdIn_s",
+      "type": "std_logic_vector(15 downto 0)"
+    },
+    {
+      "name": "pa0_Cfg_RxResetCdrOnly_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "pa0_Cfg_RxResetOnDisc_s",
+      "type": "std_logic"
+    },
+    {
+      "name": "pa0_Cmd_RxReset_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Ev_RxReset_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Ev_RxResetTimeout_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
       "name": "pa0_Gt_RxN_s",
       "type": "std_logic_vector(0 downto 0)"
     },
@@ -3899,6 +4176,30 @@
     },
     {
       "name": "pa0_Stat_Aligned_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Stat_CdrLock_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Stat_RxBufErr_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Stat_RxElecIdle_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Stat_RxResetBusy_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Stat_RxResetDone_s",
+      "type": "std_logic_vector(0 downto 0)"
+    },
+    {
+      "name": "pa0_Stat_TxBufErr_s",
       "type": "std_logic_vector(0 downto 0)"
     },
     {
@@ -4542,6 +4843,34 @@
       "signal": "cdr_enable"
     },
     {
+      "to": "pa0_Cfg_CdrHoldIdle_s",
+      "from": "ofb0_Phy_CdrHoldIdle_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "cdr_hold_idle"
+    },
+    {
+      "to": "ofb0_Phy_CdrLock_s(0)",
+      "from": "pa0_Stat_CdrLock_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "cdr_lock"
+    },
+    {
+      "to": "ofb0_Phy_EvRxReset_s(0)",
+      "from": "pa0_Ev_RxReset_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "ev_rx_reset"
+    },
+    {
+      "to": "ofb0_Phy_EvRxResetTimeout_s(0)",
+      "from": "pa0_Ev_RxResetTimeout_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "ev_rx_reset_timeout"
+    },
+    {
       "to": "pa0_Phy_SerialFarLoopback_s(0)",
       "from": "ofb0_Phy_SerialFarLoopback_s(0)",
       "kind": "connection",
@@ -4561,6 +4890,13 @@
       "kind": "connection",
       "connection": "c7",
       "signal": "no_signal"
+    },
+    {
+      "to": "pa0_Cfg_PcsRsvdIn_s",
+      "from": "ofb0_Phy_PcsRsvdIn_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "pcs_rsvd_in"
     },
     {
       "to": "pa0_Phy_PrbsCntReset_s(0)",
@@ -4605,6 +4941,13 @@
       "signal": "prbs_tx_sel"
     },
     {
+      "to": "ofb0_Phy_RxBufErr_s(0)",
+      "from": "pa0_Stat_RxBufErr_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_buf_err"
+    },
+    {
       "to": "ofb0_PhyRx_CodeErr_s",
       "from": "pa0_PhyRx_CodeErr_s",
       "kind": "connection",
@@ -4624,6 +4967,13 @@
       "kind": "connection",
       "connection": "c7",
       "signal": "rx_disp_err"
+    },
+    {
+      "to": "ofb0_Phy_RxElecIdle_s(0)",
+      "from": "pa0_Stat_RxElecIdle_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_elec_idle"
     },
     {
       "to": "pa0_Phy_RxEnable_s(0)",
@@ -4647,11 +4997,53 @@
       "signal": "rx_k"
     },
     {
+      "to": "ofb0_Phy_RxResetBusy_s(0)",
+      "from": "pa0_Stat_RxResetBusy_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_reset_busy"
+    },
+    {
+      "to": "pa0_Cfg_RxResetCdrOnly_s",
+      "from": "ofb0_Phy_RxResetCdrOnly_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_reset_cdr_only"
+    },
+    {
+      "to": "pa0_Cmd_RxReset_s(0)",
+      "from": "ofb0_Phy_RxResetCmd_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_reset_cmd"
+    },
+    {
+      "to": "ofb0_Phy_RxResetDone_s(0)",
+      "from": "pa0_Stat_RxResetDone_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_reset_done"
+    },
+    {
+      "to": "pa0_Cfg_RxResetOnDisc_s",
+      "from": "ofb0_Phy_RxResetOnDisc_s",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "rx_reset_on_disc"
+    },
+    {
       "to": "ofb0_PhyRx_Valid_s(0)",
       "from": "pa0_PhyRx_Valid_s(0)",
       "kind": "connection",
       "connection": "c7",
       "signal": "rx_valid"
+    },
+    {
+      "to": "ofb0_Phy_TxBufErr_s(0)",
+      "from": "pa0_Stat_TxBufErr_s(0)",
+      "kind": "connection",
+      "connection": "c7",
+      "signal": "tx_buf_err"
     },
     {
       "to": "pa0_PhyTx_Data_s",
@@ -5373,10 +5765,10 @@
       "library": "openfibre",
       "source": "openfibre",
       "url": "https://github.com/open-space-hdl/openfibre",
-      "commit": "7afb6fb511c7ac6e572afba006e9c50f6ad7a796",
+      "commit": "8aa51e667b7fd6dbf8a419242ae0895dfc91c13f",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "verifiedWith": "4.7.0-ft.6",
+      "verifiedWith": "4.7.0-ft.9",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. compile_order.txt lists the technology-independent sources; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).",
       "entities": [
         "ofb_core",
@@ -5410,11 +5802,11 @@
           "addrWidth": 12,
           "window": 4096,
           "via": [],
-          "id": "0x0FB10009",
+          "id": "0x0FB1000A",
           "registers": {
             "source": "openfibre",
             "url": "https://github.com/open-space-hdl/openfibre",
-            "commit": "7afb6fb511c7ac6e572afba006e9c50f6ad7a796",
+            "commit": "8aa51e667b7fd6dbf8a419242ae0895dfc91c13f",
             "header": "sw/ofb_regs.h",
             "doc": "hdl/ofb_mib/docs/register_map.md",
             "prefix": "OFB"
