@@ -18,10 +18,10 @@ its library in the listed order, so a wrong order or a missing file fails here.
     library of the block instead, so the top level elaborates and runs with that architecture. Without one, the block is
     replaced by a stub: its own context clause and entity declaration, without the vendor libraries, and an
     architecture that drives every output with zeros. Either way the top level is checked against the real entity.
-    The further files of the block (files in the catalog, for example its architecture) are not analysed. Before
-    that, the check asserts that the compile order lists them right after the file of the block, in the order of the
-    catalog and in its library, and that each exists in the sources: the model or the stub would hide a missing
-    architecture.
+    The further files of the block (files in the catalog, for example its architecture) are not analysed in their
+    place; a file that the model lists as well is analysed with the model. Before that, the check asserts that the
+    compile order lists them right after the file of the block, in the order of the catalog and in its library, and
+    that each exists in the sources: the model or the stub would hide a missing architecture.
 
 --checkout-from creates the missing checkouts of the sources root as worktrees of the clones in <clones> (the clones of
 tools/composer_catalog.py clone), at the commits of the compile order.
@@ -30,7 +30,10 @@ tools/composer_catalog.py clone), at the commits of the compile order.
 the continuous integration does not use it.
 
 The top level is elaborated at the end and run to 0 ns, so that the assertions of the cores on their generics fire
-(ghdl --elab-run with --stop-time=0ns --assert-level=error). Exit status 0 when every step passes.
+(ghdl --elab-run with --stop-time=0ns --assert-level=error). The elaboration covers every file that the top level
+reaches, the behavioural models and the files they share with their vendor-specific block included. An instance of a
+component that no entity binds stops it (-Werror=binding): GHDL would simulate an empty instance otherwise, for example
+of a vendor primitive declared as a component without its library. Exit status 0 when every step passes.
 """
 
 from __future__ import annotations
@@ -198,6 +201,7 @@ def main() -> int:
 
     stubs = 0
     models = []
+    modelled = set()
     analysed = 0
     for lib, rel in files:
         if rel in skip:
@@ -216,6 +220,7 @@ def main() -> int:
                              f"is not in {a.sources}")
                 analyse(lib, m, a.sources / m)
                 analysed += 1
+                modelled.add(m)
             models.append(model["architecture"])
             continue
         if rel in vendors:
@@ -226,16 +231,20 @@ def main() -> int:
     # the mcode backend analyses every unit again in memory when it elaborates, Open Logic included: -frelaxed here,
     # the strict analysis of the cores and the top level is the step above
     # run to 0 ns: the assertions of the cores on their generics fire at the start of the simulation, not at the
-    # elaboration; an assertion of severity error or failure stops it
-    ghdl(["--elab-run", "--std=08", "-frelaxed", f"--work={entity}", f"--workdir={work / entity}", *paths, entity,
-          "--stop-time=0ns", "--assert-level=error", "--ieee-asserts=disable"], f"elaboration and simulation to 0 ns of {entity}")
+    # elaboration; an assertion of severity error or failure stops it. A component instance without a bound entity is
+    # an error, not the warning of GHDL (an empty instance)
+    ghdl(["--elab-run", "--std=08", "-frelaxed", "-Werror=binding", f"--work={entity}", f"--workdir={work / entity}", *paths,
+          entity, "--stop-time=0ns", "--assert-level=error", "--ieee-asserts=disable"],
+         f"elaboration and simulation to 0 ns of {entity}")
     notes = []
     if stubs or not models:
         notes.append(f"{stubs} vendor stub{'s' if stubs != 1 else ''}")
     if models:
         notes.append(f"{len(models)} vendor model{'s' if len(models) != 1 else ''} ({', '.join(models)})")
-    if skip:
-        notes.append(f"{len(skip)} vendor file{'s' if len(skip) != 1 else ''} not analysed")
+    # the further files of the vendor-specific blocks that no model analysed
+    unused = skip - modelled
+    if unused:
+        notes.append(f"{len(unused)} vendor file{'s' if len(unused) != 1 else ''} not analysed")
     print(f"{entity}: {analysed} files analysed ({', '.join(notes)}), top level elaborated and run to 0 ns")
     return 0
 
