@@ -1,6 +1,6 @@
 {
  "source": "opencompact",
- "commit": "591c5f37644bcc994946c17f35fc8841060299be",
+ "commit": "e427de1548b97e3757b11c412e4953aedfb6d366",
  "constants": {
   "LE_MAX_OUT": 21,
   "LE_MAX_FLUSH": 130
@@ -1062,7 +1062,7 @@
     "lCross": 0,
     "imagePeriod": 1536,
     "span1": 1535,
-    "span2": 3071
+    "span2": 3078
    },
    "noSpeculation": {
     "depth": 14,
@@ -1637,7 +1637,7 @@
     "lCross": 0,
     "imagePeriod": 956,
     "span1": 955,
-    "span2": 1911
+    "span2": 1916
    },
    "noSpeculation": {
     "depth": 15,
@@ -1647,7 +1647,7 @@
     "lCross": 0,
     "imagePeriod": 956,
     "span1": 955,
-    "span2": 1911
+    "span2": 1916
    }
   },
   {
@@ -5082,6 +5082,1073 @@
     "imagePeriod": 322,
     "span1": 321,
     "span2": 643
+   }
+  }
+ ],
+ "runtime": [
+  {
+   "name": "rc01_bi_m1_sample",
+   "generics": {
+    "XSize_g": 16,
+    "YSize_g": 12,
+    "ZSize_g": 8,
+    "DynamicRange_g": 12,
+    "SignedSamples_g": false,
+    "UserData_g": 0,
+    "EncodingOrder_g": "BI",
+    "SubFrameDepth_g": 1,
+    "OutputWordSize_g": 2,
+    "EntropyCoder_g": "SAMPLE_ADAPTIVE",
+    "SupTableCount_g": 0,
+    "SupTableData_g": "x\"00\"",
+    "PredictionBands_g": 3,
+    "PredictionMode_g": "FULL",
+    "LocalSum_g": "WIDE_NEIGHBOR",
+    "RegisterSize_g": 32,
+    "WeightResolution_g": 13,
+    "WeightUpdateInterval_g": 5,
+    "WeightUpdateVmin_g": -1,
+    "WeightUpdateVmax_g": 3,
+    "WeightExpOffsetsUsed_g": false,
+    "WeightExpOffsetTable_g": false,
+    "WeightExpOffsets_g": "(0 => 0)",
+    "CustomWeights_g": false,
+    "WeightInitTable_g": false,
+    "WeightInitResolution_g": 0,
+    "WeightInitValues_g": "(0 => 0)",
+    "Fidelity_g": "LOSSLESS",
+    "PeriodicUpdate_g": false,
+    "UpdatePeriodExp_g": 0,
+    "AbsBandDependent_g": false,
+    "AbsBitDepth_g": 1,
+    "AbsErrorLimits_g": "(0 => 0)",
+    "RelBandDependent_g": false,
+    "RelBitDepth_g": 1,
+    "RelErrorLimits_g": "(0 => 0)",
+    "SampleRepResolution_g": 0,
+    "DampingBandVarying_g": false,
+    "DampingTable_g": false,
+    "Damping_g": "(0 => 0)",
+    "OffsetBandVarying_g": false,
+    "OffsetTable_g": false,
+    "Offset_g": "(0 => 0)",
+    "UnaryLimit_g": 16,
+    "RescaleCounterSize_g": 6,
+    "InitialCountExp_g": 1,
+    "AccuInitBandVarying_g": false,
+    "AccuInitTable_g": false,
+    "AccuInit_g": "(0 => 3)",
+    "HybridAccuInit_g": "(0 => 0)",
+    "HybridAccuInitHigh_g": "(0 => 0)",
+    "BlockSize_g": 16,
+    "RestrictedCodes_g": false,
+    "RefInterval_g": 4096,
+    "RuntimeConfig_g": true
+   },
+   "imageStartCycles": 8,
+   "dims": [
+    [
+     16,
+     12,
+     8
+    ],
+    [
+     2,
+     1,
+     1
+    ],
+    [
+     16,
+     1,
+     8
+    ],
+    [
+     2,
+     12,
+     1
+    ],
+    [
+     2,
+     1,
+     8
+    ],
+    [
+     16,
+     12,
+     1
+    ],
+    [
+     2,
+     12,
+     8
+    ],
+    [
+     16,
+     1,
+     1
+    ],
+    [
+     6,
+     1,
+     8
+    ],
+    [
+     12,
+     10,
+     8
+    ],
+    [
+     9,
+     12,
+     6
+    ],
+    [
+     15,
+     1,
+     8
+    ],
+    [
+     13,
+     1,
+     1
+    ],
+    [
+     8,
+     10,
+     3
+    ],
+    [
+     12,
+     5,
+     1
+    ],
+    [
+     11,
+     3,
+     7
+    ],
+    [
+     16,
+     8,
+     7
+    ],
+    [
+     14,
+     12,
+     8
+    ],
+    [
+     13,
+     5,
+     4
+    ],
+    [
+     10,
+     7,
+     6
+    ]
+   ],
+   "speculation": {
+    "imagePeriod": 11569,
+    "starts": [
+     0,
+     11569,
+     11580,
+     12501,
+     12688,
+     12734,
+     14265,
+     15103,
+     15226,
+     15507,
+     22580,
+     27227,
+     28084,
+     28183,
+     29881,
+     30356,
+     32017,
+     38753,
+     48786,
+     50707
+    ]
+   },
+   "noSpeculation": {
+    "imagePeriod": 11569,
+    "starts": [
+     0,
+     11569,
+     11580,
+     12501,
+     12688,
+     12734,
+     14265,
+     15103,
+     15226,
+     15507,
+     22580,
+     27227,
+     28084,
+     28183,
+     29881,
+     30356,
+     32017,
+     38753,
+     48786,
+     50707
+    ]
+   }
+  },
+  {
+   "name": "rc02_bi_mnz_hybrid_abs",
+   "generics": {
+    "XSize_g": 12,
+    "YSize_g": 8,
+    "ZSize_g": 10,
+    "DynamicRange_g": 14,
+    "SignedSamples_g": false,
+    "UserData_g": 0,
+    "EncodingOrder_g": "BI",
+    "SubFrameDepth_g": 10,
+    "OutputWordSize_g": 4,
+    "EntropyCoder_g": "HYBRID",
+    "SupTableCount_g": 0,
+    "SupTableData_g": "x\"00\"",
+    "PredictionBands_g": 3,
+    "PredictionMode_g": "FULL",
+    "LocalSum_g": "WIDE_NEIGHBOR",
+    "RegisterSize_g": 48,
+    "WeightResolution_g": 14,
+    "WeightUpdateInterval_g": 6,
+    "WeightUpdateVmin_g": -1,
+    "WeightUpdateVmax_g": 3,
+    "WeightExpOffsetsUsed_g": false,
+    "WeightExpOffsetTable_g": false,
+    "WeightExpOffsets_g": "(0 => 0)",
+    "CustomWeights_g": false,
+    "WeightInitTable_g": false,
+    "WeightInitResolution_g": 0,
+    "WeightInitValues_g": "(0 => 0)",
+    "Fidelity_g": "ABSOLUTE",
+    "PeriodicUpdate_g": false,
+    "UpdatePeriodExp_g": 0,
+    "AbsBandDependent_g": false,
+    "AbsBitDepth_g": 6,
+    "AbsErrorLimits_g": "(0 => 3)",
+    "RelBandDependent_g": false,
+    "RelBitDepth_g": 1,
+    "RelErrorLimits_g": "(0 => 0)",
+    "SampleRepResolution_g": 2,
+    "DampingBandVarying_g": false,
+    "DampingTable_g": false,
+    "Damping_g": "(0 => 2)",
+    "OffsetBandVarying_g": false,
+    "OffsetTable_g": false,
+    "Offset_g": "(0 => 1)",
+    "UnaryLimit_g": 18,
+    "RescaleCounterSize_g": 6,
+    "InitialCountExp_g": 2,
+    "AccuInitBandVarying_g": false,
+    "AccuInitTable_g": false,
+    "AccuInit_g": "(0 => 3)",
+    "HybridAccuInit_g": "(30, 45, 60, 75, 90, 105, 120, 135, 150, 165)",
+    "HybridAccuInitHigh_g": "(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)",
+    "BlockSize_g": 16,
+    "RestrictedCodes_g": false,
+    "RefInterval_g": 4096,
+    "RuntimeConfig_g": true
+   },
+   "imageStartCycles": 9,
+   "dims": [
+    [
+     12,
+     8,
+     10
+    ],
+    [
+     2,
+     1,
+     1
+    ],
+    [
+     12,
+     1,
+     10
+    ],
+    [
+     2,
+     8,
+     1
+    ],
+    [
+     2,
+     1,
+     10
+    ],
+    [
+     12,
+     8,
+     1
+    ],
+    [
+     2,
+     8,
+     10
+    ],
+    [
+     12,
+     1,
+     1
+    ],
+    [
+     5,
+     8,
+     6
+    ],
+    [
+     5,
+     4,
+     10
+    ],
+    [
+     4,
+     3,
+     1
+    ],
+    [
+     6,
+     1,
+     2
+    ],
+    [
+     11,
+     8,
+     9
+    ],
+    [
+     4,
+     5,
+     5
+    ],
+    [
+     6,
+     5,
+     7
+    ],
+    [
+     3,
+     6,
+     9
+    ],
+    [
+     10,
+     4,
+     6
+    ],
+    [
+     12,
+     8,
+     1
+    ],
+    [
+     5,
+     5,
+     7
+    ],
+    [
+     7,
+     4,
+     9
+    ]
+   ],
+   "speculation": {
+    "imagePeriod": 29482,
+    "starts": [
+     0,
+     29482,
+     29527,
+     33244,
+     33765,
+     34412,
+     37653,
+     42598,
+     42983,
+     49856,
+     56006,
+     56391,
+     56634,
+     80668,
+     83418,
+     89578,
+     94502,
+     101352,
+     104593,
+     109751
+    ]
+   },
+   "noSpeculation": {
+    "imagePeriod": 29482,
+    "starts": [
+     0,
+     29482,
+     29527,
+     33244,
+     33765,
+     34412,
+     37653,
+     42598,
+     42983,
+     49856,
+     56006,
+     56391,
+     56634,
+     80668,
+     83418,
+     89578,
+     94502,
+     101352,
+     104593,
+     109751
+    ]
+   }
+  },
+  {
+   "name": "rc03_bsq_block_rel",
+   "generics": {
+    "XSize_g": 10,
+    "YSize_g": 10,
+    "ZSize_g": 6,
+    "DynamicRange_g": 16,
+    "SignedSamples_g": false,
+    "UserData_g": 0,
+    "EncodingOrder_g": "BSQ",
+    "SubFrameDepth_g": 1,
+    "OutputWordSize_g": 1,
+    "EntropyCoder_g": "BLOCK_ADAPTIVE",
+    "SupTableCount_g": 0,
+    "SupTableData_g": "x\"00\"",
+    "PredictionBands_g": 2,
+    "PredictionMode_g": "FULL",
+    "LocalSum_g": "NARROW_NEIGHBOR",
+    "RegisterSize_g": 40,
+    "WeightResolution_g": 12,
+    "WeightUpdateInterval_g": 5,
+    "WeightUpdateVmin_g": -2,
+    "WeightUpdateVmax_g": 4,
+    "WeightExpOffsetsUsed_g": false,
+    "WeightExpOffsetTable_g": false,
+    "WeightExpOffsets_g": "(0 => 0)",
+    "CustomWeights_g": false,
+    "WeightInitTable_g": false,
+    "WeightInitResolution_g": 0,
+    "WeightInitValues_g": "(0 => 0)",
+    "Fidelity_g": "RELATIVE",
+    "PeriodicUpdate_g": false,
+    "UpdatePeriodExp_g": 0,
+    "AbsBandDependent_g": false,
+    "AbsBitDepth_g": 1,
+    "AbsErrorLimits_g": "(0 => 0)",
+    "RelBandDependent_g": false,
+    "RelBitDepth_g": 8,
+    "RelErrorLimits_g": "(0 => 20)",
+    "SampleRepResolution_g": 0,
+    "DampingBandVarying_g": false,
+    "DampingTable_g": false,
+    "Damping_g": "(0 => 0)",
+    "OffsetBandVarying_g": false,
+    "OffsetTable_g": false,
+    "Offset_g": "(0 => 0)",
+    "UnaryLimit_g": 16,
+    "RescaleCounterSize_g": 6,
+    "InitialCountExp_g": 1,
+    "AccuInitBandVarying_g": false,
+    "AccuInitTable_g": false,
+    "AccuInit_g": "(0 => 3)",
+    "HybridAccuInit_g": "(0 => 0)",
+    "HybridAccuInitHigh_g": "(0 => 0)",
+    "BlockSize_g": 16,
+    "RestrictedCodes_g": false,
+    "RefInterval_g": 8,
+    "RuntimeConfig_g": true
+   },
+   "imageStartCycles": 9,
+   "dims": [
+    [
+     10,
+     10,
+     6
+    ],
+    [
+     2,
+     1,
+     1
+    ],
+    [
+     10,
+     1,
+     6
+    ],
+    [
+     2,
+     10,
+     1
+    ],
+    [
+     2,
+     1,
+     6
+    ],
+    [
+     10,
+     10,
+     1
+    ],
+    [
+     2,
+     10,
+     6
+    ],
+    [
+     10,
+     1,
+     1
+    ],
+    [
+     6,
+     10,
+     3
+    ],
+    [
+     7,
+     5,
+     4
+    ],
+    [
+     6,
+     8,
+     2
+    ],
+    [
+     9,
+     10,
+     2
+    ],
+    [
+     3,
+     1,
+     4
+    ],
+    [
+     9,
+     5,
+     6
+    ],
+    [
+     3,
+     9,
+     4
+    ],
+    [
+     4,
+     8,
+     1
+    ],
+    [
+     2,
+     5,
+     5
+    ],
+    [
+     10,
+     7,
+     6
+    ],
+    [
+     8,
+     5,
+     4
+    ],
+    [
+     4,
+     8,
+     2
+    ]
+   ],
+   "speculation": {
+    "imagePeriod": 20212,
+    "starts": [
+     0,
+     20212,
+     20257,
+     22132,
+     22789,
+     23032,
+     26409,
+     30324,
+     30641,
+     36695,
+     41333,
+     44541,
+     50605,
+     50891,
+     59883,
+     63433,
+     64498,
+     66066,
+     80158,
+     85476
+    ]
+   },
+   "noSpeculation": {
+    "imagePeriod": 20212,
+    "starts": [
+     0,
+     20212,
+     20257,
+     22132,
+     22789,
+     23032,
+     26409,
+     30324,
+     30641,
+     36695,
+     41333,
+     44541,
+     50605,
+     50891,
+     59883,
+     63433,
+     64498,
+     66066,
+     80158,
+     85476
+    ]
+   }
+  },
+  {
+   "name": "rc04_bi_m4_sample_both",
+   "generics": {
+    "XSize_g": 16,
+    "YSize_g": 8,
+    "ZSize_g": 12,
+    "DynamicRange_g": 16,
+    "SignedSamples_g": false,
+    "UserData_g": 0,
+    "EncodingOrder_g": "BI",
+    "SubFrameDepth_g": 4,
+    "OutputWordSize_g": 3,
+    "EntropyCoder_g": "SAMPLE_ADAPTIVE",
+    "SupTableCount_g": 0,
+    "SupTableData_g": "x\"00\"",
+    "PredictionBands_g": 4,
+    "PredictionMode_g": "FULL",
+    "LocalSum_g": "WIDE_NEIGHBOR",
+    "RegisterSize_g": 48,
+    "WeightResolution_g": 13,
+    "WeightUpdateInterval_g": 6,
+    "WeightUpdateVmin_g": -1,
+    "WeightUpdateVmax_g": 3,
+    "WeightExpOffsetsUsed_g": false,
+    "WeightExpOffsetTable_g": false,
+    "WeightExpOffsets_g": "(0 => 0)",
+    "CustomWeights_g": false,
+    "WeightInitTable_g": false,
+    "WeightInitResolution_g": 0,
+    "WeightInitValues_g": "(0 => 0)",
+    "Fidelity_g": "ABSOLUTE_RELATIVE",
+    "PeriodicUpdate_g": false,
+    "UpdatePeriodExp_g": 0,
+    "AbsBandDependent_g": false,
+    "AbsBitDepth_g": 5,
+    "AbsErrorLimits_g": "(0 => 4)",
+    "RelBandDependent_g": false,
+    "RelBitDepth_g": 9,
+    "RelErrorLimits_g": "(0 => 64)",
+    "SampleRepResolution_g": 0,
+    "DampingBandVarying_g": false,
+    "DampingTable_g": false,
+    "Damping_g": "(0 => 0)",
+    "OffsetBandVarying_g": false,
+    "OffsetTable_g": false,
+    "Offset_g": "(0 => 0)",
+    "UnaryLimit_g": 16,
+    "RescaleCounterSize_g": 6,
+    "InitialCountExp_g": 1,
+    "AccuInitBandVarying_g": false,
+    "AccuInitTable_g": false,
+    "AccuInit_g": "(0 => 4)",
+    "HybridAccuInit_g": "(0 => 0)",
+    "HybridAccuInitHigh_g": "(0 => 0)",
+    "BlockSize_g": 16,
+    "RestrictedCodes_g": false,
+    "RefInterval_g": 4096,
+    "RuntimeConfig_g": true
+   },
+   "imageStartCycles": 9,
+   "dims": [
+    [
+     16,
+     8,
+     12
+    ],
+    [
+     2,
+     1,
+     1
+    ],
+    [
+     16,
+     1,
+     12
+    ],
+    [
+     2,
+     8,
+     1
+    ],
+    [
+     2,
+     1,
+     12
+    ],
+    [
+     16,
+     8,
+     1
+    ],
+    [
+     2,
+     8,
+     12
+    ],
+    [
+     16,
+     1,
+     1
+    ],
+    [
+     8,
+     3,
+     6
+    ],
+    [
+     8,
+     4,
+     7
+    ],
+    [
+     13,
+     8,
+     9
+    ],
+    [
+     3,
+     7,
+     8
+    ],
+    [
+     3,
+     8,
+     2
+    ],
+    [
+     13,
+     7,
+     9
+    ],
+    [
+     13,
+     2,
+     6
+    ],
+    [
+     9,
+     3,
+     9
+    ],
+    [
+     10,
+     1,
+     1
+    ],
+    [
+     15,
+     6,
+     6
+    ],
+    [
+     4,
+     2,
+     2
+    ],
+    [
+     4,
+     6,
+     10
+    ]
+   ],
+   "speculation": {
+    "imagePeriod": 39562,
+    "starts": [
+     0,
+     39562,
+     39607,
+     44584,
+     45105,
+     45756,
+     50085,
+     55062,
+     55583,
+     58928,
+     64442,
+     89148,
+     93484,
+     94334,
+     115953,
+     119551,
+     125942,
+     126259,
+     138712,
+     139002
+    ]
+   },
+   "noSpeculation": {
+    "imagePeriod": 39562,
+    "starts": [
+     0,
+     39562,
+     39607,
+     44584,
+     45105,
+     45756,
+     50085,
+     55062,
+     55583,
+     58928,
+     64442,
+     89148,
+     93484,
+     94334,
+     115953,
+     119551,
+     125942,
+     126259,
+     138712,
+     139002
+    ]
+   }
+  },
+  {
+   "name": "rc05_bsq_column_hybrid",
+   "generics": {
+    "XSize_g": 8,
+    "YSize_g": 8,
+    "ZSize_g": 5,
+    "DynamicRange_g": 10,
+    "SignedSamples_g": false,
+    "UserData_g": 0,
+    "EncodingOrder_g": "BSQ",
+    "SubFrameDepth_g": 1,
+    "OutputWordSize_g": 2,
+    "EntropyCoder_g": "HYBRID",
+    "SupTableCount_g": 0,
+    "SupTableData_g": "x\"00\"",
+    "PredictionBands_g": 2,
+    "PredictionMode_g": "REDUCED",
+    "LocalSum_g": "WIDE_COLUMN",
+    "RegisterSize_g": 32,
+    "WeightResolution_g": 11,
+    "WeightUpdateInterval_g": 4,
+    "WeightUpdateVmin_g": -1,
+    "WeightUpdateVmax_g": 3,
+    "WeightExpOffsetsUsed_g": false,
+    "WeightExpOffsetTable_g": false,
+    "WeightExpOffsets_g": "(0 => 0)",
+    "CustomWeights_g": false,
+    "WeightInitTable_g": false,
+    "WeightInitResolution_g": 0,
+    "WeightInitValues_g": "(0 => 0)",
+    "Fidelity_g": "LOSSLESS",
+    "PeriodicUpdate_g": false,
+    "UpdatePeriodExp_g": 0,
+    "AbsBandDependent_g": false,
+    "AbsBitDepth_g": 1,
+    "AbsErrorLimits_g": "(0 => 0)",
+    "RelBandDependent_g": false,
+    "RelBitDepth_g": 1,
+    "RelErrorLimits_g": "(0 => 0)",
+    "SampleRepResolution_g": 0,
+    "DampingBandVarying_g": false,
+    "DampingTable_g": false,
+    "Damping_g": "(0 => 0)",
+    "OffsetBandVarying_g": false,
+    "OffsetTable_g": false,
+    "Offset_g": "(0 => 0)",
+    "UnaryLimit_g": 14,
+    "RescaleCounterSize_g": 5,
+    "InitialCountExp_g": 1,
+    "AccuInitBandVarying_g": false,
+    "AccuInitTable_g": false,
+    "AccuInit_g": "(0 => 3)",
+    "HybridAccuInit_g": "(20, 40, 60, 80, 100)",
+    "HybridAccuInitHigh_g": "(0, 0, 0, 0, 0)",
+    "BlockSize_g": 16,
+    "RestrictedCodes_g": false,
+    "RefInterval_g": 4096,
+    "RuntimeConfig_g": true
+   },
+   "imageStartCycles": 7,
+   "dims": [
+    [
+     8,
+     8,
+     5
+    ],
+    [
+     1,
+     1,
+     1
+    ],
+    [
+     8,
+     1,
+     5
+    ],
+    [
+     1,
+     8,
+     1
+    ],
+    [
+     1,
+     1,
+     5
+    ],
+    [
+     8,
+     8,
+     1
+    ],
+    [
+     1,
+     8,
+     5
+    ],
+    [
+     8,
+     1,
+     1
+    ],
+    [
+     8,
+     3,
+     3
+    ],
+    [
+     8,
+     2,
+     3
+    ],
+    [
+     4,
+     4,
+     4
+    ],
+    [
+     2,
+     1,
+     2
+    ],
+    [
+     1,
+     5,
+     3
+    ],
+    [
+     8,
+     4,
+     3
+    ],
+    [
+     3,
+     5,
+     1
+    ],
+    [
+     4,
+     1,
+     2
+    ],
+    [
+     2,
+     4,
+     2
+    ],
+    [
+     8,
+     1,
+     5
+    ],
+    [
+     7,
+     8,
+     5
+    ],
+    [
+     2,
+     8,
+     3
+    ]
+   ],
+   "speculation": {
+    "imagePeriod": 328,
+    "starts": [
+     0,
+     328,
+     337,
+     400,
+     416,
+     445,
+     545,
+     605,
+     621,
+     729,
+     799,
+     885,
+     900,
+     923,
+     1066,
+     1089,
+     1106,
+     1130,
+     1229,
+     1533
+    ]
+   },
+   "noSpeculation": {
+    "imagePeriod": 2188,
+    "starts": [
+     0,
+     2188,
+     2197,
+     2425,
+     2477,
+     2506,
+     2950,
+     3178,
+     3230,
+     3706,
+     4014,
+     4422,
+     4437,
+     4514,
+     5158,
+     5259,
+     5299,
+     5395,
+     5623,
+     7531
+    ]
    }
   }
  ]

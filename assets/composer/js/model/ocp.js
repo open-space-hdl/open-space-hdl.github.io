@@ -5,9 +5,11 @@
  *
  *   predictor   the cycles in which the predictor takes the samples of an image: a port of tools/ocp_throughput.py of
  *               OpenCompact, one to one. The testbenches of OpenCompact check that the RTL issues the samples of a
- *               configuration in exactly the cycles of that model.
+ *               configuration in exactly the cycles of that model. With the hybrid coder the tail of an image holds back
+ *               the next image through the output FIFO of the predictor (coderCycles, coder_cycles()).
  *   period      the cycles between the first samples of consecutive images (image_period() of tools/ocp_throughput.py,
- *               checked exactly by TC-CO-50 of OpenCompact).
+ *               checked exactly by TC-CO-50 of OpenCompact); with the runtime configuration (RuntimeConfig_g) those of
+ *               two images of the maxima (runtime_accept_cycles(), checked by TC-CO-53).
  *   header      the length of the header of the compressed image: the length of what tools/ocp_model.py header() of
  *               OpenCompact writes for the generics of a configuration.
  *   bound       the upper bound on the length of the compressed image (max_image_bytes() of tools/ocp_model.py, checked
@@ -87,12 +89,34 @@ function narrowSums(g) {
  */
 
 /**
- * Pipeline stages and required issue distances (cycles) for the generics of a configuration (latencies()).
+ * Issue conditions that depend on the image dimensions (issue_dist(), function issueDist of ocp_pkg).
+ * @param {boolean} bsq @param {number} sfd @param {number} nx @param {number} ny @param {number} nz
+ * @param {number} p @param {boolean} repIsSample @param {boolean} wUsed @param {boolean} crossRep
+ * @param {number} lWin @param {number} lRep @param {number} lDw
+ */
+function issueDist(bsq, sfd, nx, ny, nz, p, repIsSample, wUsed, crossRep, lWin, lRep, lDw) {
+  const m = Math.min(sfd, nz);
+  const gap1 = bsq || m === 1;
+  const runRows = bsq || nz === 1;
+  const rowGap = bsq ? nx - 1 : (nx - 1) * m;
+  const diffGap = bsq ? nx * ny : rowGap + 1;
+  const sameRep = !repIsSample && (wUsed || rowGap < lRep);
+  const crossDw = p > 0 && (bsq || m < nz) && diffGap < lDw;
+  const lFix = Math.max(gap1 ? 0 : lWin, sameRep ? lRep : 0);
+  const lCross = Math.max(crossRep ? lRep : 0, crossDw ? lDw : 0);
+  return { runRows, lFix, lCross };
+}
+
+/**
+ * Pipeline stages and required issue distances (cycles) for the generics of a configuration (latencies()). With dims
+ * = [nx, ny, nz] the generics are the maxima of a runtime configuration: the structure (speculation, memories) follows
+ * the maxima, the issue distances the dimensions of the image.
  * @param {Record<string, any>} g
  * @param {boolean} [speculation]
+ * @param {number[] | null} [dims]
  * @returns {Latencies}
  */
-export function latencies(g, speculation = true) {
+export function latencies(g, speculation = true, dims = null) {
   const d = g.DynamicRange_g;
   const nx = g.XSize_g;
   const ny = g.YSize_g;
@@ -110,7 +134,7 @@ export function latencies(g, speculation = true) {
   const qw = Math.max(d, 16) + 2;
   const wUsed = full || !narrow;
   const gap1 = bsq || m === 1;
-  const runRows = bsq || nz === 1;
+  let runRows = bsq || nz === 1;
   const ts = treeStages(c1 + 1);
   const threshSign = fid !== 'RELATIVE' && fid !== 'ABSOLUTE_RELATIVE';
   const spec = speculation && threshSign && gap1 && c > 0 && ts === 1 && (repIsSample || !wUsed);
@@ -134,14 +158,32 @@ export function latencies(g, speculation = true) {
   const lRep = st.rep_sum + 2;
   const rowGap = (nx - 1) * (bsq ? 1 : m);
   const sameRep = !repIsSample && (wUsed || rowGap < lRep);
-  const lFix = Math.max(lWin, sameRep ? lRep : 0);
+  let lFix = Math.max(lWin, sameRep ? lRep : 0);
   const diffRam = p > 0 && (bsq || m < nz);
   const lDw = st.dz + 2;
   const diffGap = bsq ? nx * ny : (nx - 1) * m + 1;
   const crossRep = !repIsSample && (p > 0 || narrow);
   const crossDw = diffRam && diffGap < lDw;
-  const lCross = Math.max(crossRep ? lRep : 0, crossDw ? lDw : 0);
+  let lCross = Math.max(crossRep ? lRep : 0, crossDw ? lDw : 0);
+  if (dims) {
+    const rt = issueDist(bsq, g.SubFrameDepth_g, dims[0], dims[1], dims[2], p, repIsSample, wUsed, crossRep, st.ram + 2,
+      lRep, lDw);
+    ({ runRows, lFix, lCross } = rt);
+  }
   return { stages: st, depth: st.out + 1, spec, runRows, c, narrow, lW, lFix, lCross };
+}
+
+/**
+ * Clock cycles of the image-start sequencer of the runtime configuration from Start to Done (image_start_cycles(),
+ * imageStartCycles of ocp_pkg): w + 3 with 2^w > max(l_rep, l_dw).
+ * @param {Record<string, any>} g
+ */
+export function imageStartCycles(g) {
+  const st = latencies(g).stages;
+  const lMax = Math.max(st.rep_sum + 2, st.dz + 2);
+  let w = 1;
+  while (2 ** w <= lMax) w += 1;
+  return w + 3;
 }
 
 /**
@@ -336,6 +378,11 @@ export function issueSpan(g, speculation = true, images = 1, fast = true, skippe
     if (images !== 1) throw new Error('the stride order is modelled for one image');
     return strideSpans(g, lat, st)[0];
   }
+  // with the hybrid coder the tail of an image can hold back the next image (issue_cycles())
+  if (images > 1 && g.EntropyCoder_g === 'HYBRID') {
+    const c = coderCycles(g, speculation, images);
+    return c[c.length - 1] - c[0];
+  }
   const r = issueCycles(g, lat, images, fast, skipped);
   return r.last - r.firsts[0];
 }
@@ -346,12 +393,27 @@ export function issueSpan(g, speculation = true, images = 1, fast = true, skippe
  * order the next image starts once all slots of the image have passed and its last item has been read from the output
  * buffer: the read takes two cycles, and the input buffer accepts the first sample of the next image one cycle after
  * the start, four cycles after the read of the last item.
+ *
+ * The tail of the hybrid coder does not change the period: it starts after the last item of an image has reached the
+ * coder, after the first sample of the next image was issued, and the predictor issues no item between the last sample
+ * of an image and the first of the next, so the output FIFO cannot hold the first sample back (coder_cycles() gives the
+ * same period; tests/unit/ocp.test.mjs compares both for every configuration of the regression).
+ *
+ * With the runtime configuration (RuntimeConfig_g, the generics are the maxima) the period of two images of the maxima
+ * (runtime_accept_cycles()): the first sample of the second image is accepted in the cycle after the last sample of
+ * the first was issued, and the first sample of an image is issued imageStartCycles + 1 cycles after its acceptance;
+ * the predictor does not use the stride order. Between those, the samples of the first image are issued as in
+ * issueCycles, without the hybrid tail (it follows the image): imageStartCycles + 1 + span + 1.
  * @param {Record<string, any>} g
  * @param {boolean} [speculation]
  * @param {boolean} [fast]   the shortcut of issueSpan outside stride order
  */
 export function imagePeriod(g, speculation = true, fast = true) {
   const lat = latencies(g, speculation);
+  if (g.RuntimeConfig_g === true) {
+    const r = issueCycles(g, lat, 1, fast);
+    return imageStartCycles(g) + 2 + (r.last - r.firsts[0]);
+  }
   const st = strideParams(g, lat);
   if (st) {
     const c = strideCycles(g, lat, st);
@@ -488,6 +550,203 @@ function issueCycles(g, lat, images, fast, skipped) {
     else rows(0);
   }
   return { firsts, last };
+}
+
+/**
+ * Entropy coder input sequence of an image (items(), CCSDS 5.4.2): ['L', 0, 0, 0] for an error limit value,
+ * ['S', z, y, x] for a sample.
+ * @param {Record<string, any>} g
+ * @returns {Generator<[string, number, number, number]>}
+ */
+function* coderItems(g) {
+  const nx = g.XSize_g;
+  const ny = g.YSize_g;
+  const nz = g.ZSize_g;
+  if (g.EncodingOrder_g === 'BSQ') {
+    for (let z = 0; z < nz; z += 1) for (let y = 0; y < ny; y += 1) for (let x = 0; x < nx; x += 1) yield ['S', z, y, x];
+    return;
+  }
+  const m = Math.min(g.SubFrameDepth_g, nz);
+  const nLim = limitItems(g);
+  for (let y = 0; y < ny; y += 1) {
+    if (nLim && y % 2 ** g.UpdatePeriodExp_g === 0) for (let i = 0; i < nLim; i += 1) yield ['L', 0, 0, 0];
+    for (let low = 0; low < nz; low += m) {
+      for (let x = 0; x < nx; x += 1) for (let z = low; z < Math.min(low + m, nz); z += 1) yield ['S', z, y, x];
+    }
+  }
+}
+
+/**
+ * Cycles of the tail of the hybrid coder after the last item of an image, plus NZ (HYBRID_TAIL of
+ * tools/ocp_throughput.py): its pipeline of 8 stages empties, it outputs the 8 flush words, then reads the final
+ * accumulators of the NZ bands with a latency of 2 and ends the image with the last of them.
+ */
+export const HYBRID_TAIL = 19;
+
+/**
+ * Issue cycle of every sample of consecutive images, with the output of the predictor modelled cycle by cycle
+ * (coder_cycles(), CO-TP-01), one to one:
+ *
+ * - the issue stage takes the next item once the samples it depends on have left the feedback loops (as issueCycles)
+ *   and while the items in flight, the write level of the output FIFO and 2 do not exceed its depth;
+ * - an item reaches the output FIFO `depth` cycles after its issue; the FIFO counts a write in its level from the next
+ *   cycle, offers the item two cycles after the write and lowers the level two cycles after the read;
+ * - the register stage behind the FIFO holds a main and a shadow item, its ready is registered;
+ * - the hybrid coder takes no item during the tail of an image (HYBRID_TAIL + NZ cycles after its last item), the other
+ *   coders take one item per cycle.
+ *
+ * With dims (the [nx, ny, nz] of every image; g holds the maxima) the images have their own dimensions (runtime
+ * configuration): the first sample of an image is accepted with the configuration in the cycle after the last sample of
+ * the previous image was issued and issued once the image-start sequencer is done, start + 1 cycles later; its
+ * acceptance cycle is returned for it. With tail false the output takes one item per cycle whatever the coder.
+ *
+ * Every item is simulated: for the tests and small images (issueSpan and imagePeriod use it only where they must).
+ * @param {Record<string, any>} g
+ * @param {boolean} [speculation]
+ * @param {number} [images]
+ * @param {number[][] | null} [dims]
+ * @param {number} [start]
+ * @param {boolean} [tail]
+ * @returns {number[]}
+ */
+export function coderCycles(g, speculation = true, images = 1, dims = null, start = 0, tail = true) {
+  const lat0 = latencies(g, speculation);
+  const depth = lat0.depth;
+  const fdepth = pow2AtLeast(depth + 8);
+  const hybrid = tail && g.EntropyCoder_g === 'HYBRID';
+  const runtime = dims !== null;
+  const list = dims ?? Array.from({ length: images }, () => [g.XSize_g, g.YSize_g, g.ZSize_g]);
+  /** @type {{ kind: string, z: number, y: number, x: number, last: boolean, first: boolean, tail: number, lat: Latencies, nx: number }[]} */
+  const seq = [];
+  for (const [nx, ny, nz] of list) {
+    const lat = runtime ? latencies(g, speculation, [nx, ny, nz]) : lat0;
+    const image = [...coderItems({ ...g, XSize_g: nx, YSize_g: ny, ZSize_g: nz })];
+    image.forEach(([kind, z, y, x], k) => {
+      seq.push({ kind, z, y, x, last: k === image.length - 1, first: k === 0, tail: HYBRID_TAIL + nz, lat, nx });
+    });
+  }
+  // the last cycle of a band and of a pixel, keyed z and z * K + x
+  const K = 1 << 18;
+  /** @type {Map<number, number>} */
+  const lastBand = new Map();
+  /** @type {Map<number, number>} */
+  const lastPixel = new Map();
+  /** @type {Map<number, number>} */
+  const writes = new Map();
+  /** @type {number[]} */
+  const fifo = [];
+  /** @type {number[]} */
+  const cycles = [];
+  let issue = 0;
+  let prev = -1;
+  /** @type {number | null} */
+  let take = null;
+  let inflight = 0;
+  let wrLevel = 0;
+  let rdLevel = 0;
+  let rdUp = false;
+  let wrDown = false;
+  /** @type {number | null} */
+  let main = null;
+  /** @type {number | null} */
+  let shadow = null;
+  let inReady = true;
+  let endingUntil = -1;
+  let taken = 0;
+  let t = 0;
+  while (taken < seq.length) {
+    // combinational signals of the cycle
+    const coderReady = !(hybrid && t <= endingUntil);
+    const written = writes.has(t) ? /** @type {number} */ (writes.get(t)) : null;
+    if (written !== null) writes.delete(t);
+    const fifoRead = rdLevel > 0 && inReady;
+    let issued = false;
+    if (issue < seq.length) {
+      const it = seq[issue];
+      const lat = it.lat;
+      let earliest = prev + 1;
+      if (runtime && it.first) {
+        // the first sample of the image is accepted with the configuration, then held for the image start
+        if (take === null) take = prev + 1;
+        earliest = take + start + 1;
+      }
+      if (it.kind === 'S') {
+        const needW = lat.c > 0 && it.y * it.nx + it.x > 1 && (!lat.spec || (!lat.runRows && it.x === 0));
+        const lSame = Math.max(lat.lFix, needW ? lat.lW : 0);
+        const band = lastBand.get(it.z);
+        if (band !== undefined) earliest = Math.max(earliest, band + lSame);
+        if (lat.lCross && it.z > 0) {
+          const above = lastPixel.get((it.z - 1) * K + it.x);
+          if (above !== undefined) earliest = Math.max(earliest, above + lat.lCross);
+          const left = lastPixel.get((it.z - 1) * K + it.x - 1);
+          if (lat.narrow && it.y === 0 && it.x > 0 && left !== undefined) earliest = Math.max(earliest, left + lat.lCross);
+        }
+      }
+      if (t >= earliest && inflight + wrLevel + 2 <= fdepth) {
+        issued = true;
+        prev = t;
+        if (it.kind === 'S') {
+          lastBand.set(it.z, t);
+          lastPixel.set(it.z * K + it.x, t);
+          cycles.push(runtime && it.first ? /** @type {number} */ (take) : t);
+        }
+        take = null;
+        writes.set(t + depth, issue);
+        issue += 1;
+      }
+    }
+    // registers at the end of the cycle: items in flight, FIFO, register stage, coder
+    inflight += (issued ? 1 : 0) - (written !== null ? 1 : 0);
+    const newRdUp = written !== null;
+    let newWrLevel = wrLevel;
+    if (written !== null) {
+      fifo.push(written);
+      newWrLevel += wrDown ? 0 : 1;
+    } else if (wrDown) {
+      newWrLevel -= 1;
+    }
+    const newWrDown = fifoRead;
+    let newRdLevel = rdLevel;
+    /** @type {number | null} */
+    let read = null;
+    if (fifoRead) {
+      read = /** @type {number} */ (fifo.shift());
+      newRdLevel -= rdUp ? 0 : 1;
+    } else if (rdUp) {
+      newRdLevel += 1;
+    }
+    const stuck = main !== null && !coderReady && (rdLevel > 0 || shadow !== null);
+    if (main !== null && coderReady) {
+      if (seq[main].last && hybrid) endingUntil = t + seq[main].tail;
+      taken += 1;
+      main = shadow;
+      shadow = null;
+    }
+    if (fifoRead) {
+      if (stuck) shadow = read;
+      else main = read;
+    }
+    inReady = !stuck;
+    wrLevel = newWrLevel;
+    rdLevel = newRdLevel;
+    rdUp = newRdUp;
+    wrDown = newWrDown;
+    t += 1;
+  }
+  return cycles;
+}
+
+/**
+ * Acceptance cycle of every sample at the input of the predictor for consecutive images of a runtime configuration (g:
+ * the generics with the maxima; dims: the [nx, ny, nz] of every image), without back pressure (runtime_accept_cycles(),
+ * CO-RC-03, CO-RC-05).
+ * @param {Record<string, any>} g
+ * @param {number[][]} dims
+ * @param {boolean} [speculation]
+ * @param {boolean} [tail]
+ */
+export function runtimeAcceptCycles(g, dims, speculation = true, tail = true) {
+  return coderCycles(g, speculation, 1, dims, imageStartCycles(g), tail);
 }
 
 /**
