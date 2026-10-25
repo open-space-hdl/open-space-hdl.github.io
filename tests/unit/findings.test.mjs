@@ -77,7 +77,7 @@ test('field maps: the user bits of external ports and the side band constants, f
 test('context clause, verified tags and the catalog entries in the file', () => {
   const doc = example('spp_over_spw');
   assert.deepEqual(doc.resolved.context, ['library ieee;', 'use ieee.std_logic_1164.all;', 'library olo;', 'library openwire;', 'library openrmap;', 'library openspp;']);
-  assert.deepEqual(doc.sources.map((/** @type {any} */ s) => [s.id, s.verifiedWith]), [['openwire', '4.7.0-ft.6'], ['openrmap', '4.7.0-ft.6'], ['openspp', '4.7.0-ft.6'], ['olo', undefined]]);
+  assert.deepEqual(doc.sources.map((/** @type {any} */ s) => [s.id, s.verifiedWith]), [['openwire', '4.7.0-ft.6'], ['openrmap', '4.7.0-ft.11'], ['openspp', '4.7.0-ft.6'], ['olo', undefined]]);
   assert.ok(doc.resolved.compile.every((/** @type {any} */ c) => c.library === 'olo' || /^4\.7\.0-ft\.\d+$/.test(c.verifiedWith)));
   // the catalog entries of every block of the system, inserted ones included, and of their types
   const sub = doc.catalogSubset;
@@ -166,8 +166,8 @@ test('every system reads the scoped constraints of the Open Logic base entities,
 });
 
 test('an RMAP target with fewer beats than bytes per word has no known defect at the pin of OpenRMAP', () => {
-  // OpenRMAP is pinned with Open Logic 4.7.0-ft.6, which fixes the address of the transfers that olo_axi_master_simple
-  // splits at AxiMaxBeats_g (ft.5)
+  // OpenRMAP is verified with Open Logic 4.7.0-ft.11, which has the fix of the address of the transfers
+  // that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5)
   let d = addInstance(createDesign('t'), cat, 'openrmap/omap_core', { x: 0, y: 0 }, 'target').design;
   for (const [width, beats] of [[32, 1], [32, 3], [64, 7]]) {
     d = setGeneric(setGeneric(d, cat, 'rmap0', 'AxiDataWidth_g', width).design, cat, 'rmap0', 'AxiMaxBeats_g', beats).design;

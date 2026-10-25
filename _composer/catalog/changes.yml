@@ -69,6 +69,15 @@ openrmap:
     pin: 77868aab0bad0e372ce629a0b2e0a52e1b99bbac
     evidence: "PR #14 of the core: None."
     changes: []
+  - previous: 77868aab0bad0e372ce629a0b2e0a52e1b99bbac
+    pin: 9b0ef2354cb5f63f9c415d8f4a7ae837ded6c74d
+    evidence: "PR #16 of the core: documentation tooling only (tools/docs/requirements.txt pins selectolax 1.0.0), no source, testbench or interface change."
+    changes: []
+  - previous: 9b0ef2354cb5f63f9c415d8f4a7ae837ded6c74d
+    pin: caac2f3e65abeeff365637c854a7b6a2036639f4
+    evidence: "PR #21 of the core: - Open Logic pin: `4.7.0-ft.6` (0.1.0) to `4.7.0-ft.11` (227eecd). Ports, generics, stream formats and the register map are unchanged. The merge commit is the release v0.1.1 of the core."
+    changes:
+      - { block: openrmap/omap_core, kind: behaviour, text: "With Open Logic 4.7.0-ft.11 the memory master of the target takes the next chunk of a non-verified write while the bytes of the current one pass, so the chunks follow each other without a gap, and it issues at most one read transaction every four cycles. Section 9.2 of the user guide gives the new rate model of reads and non-verified writes (TC-TG-18); ports, generics, stream formats and the register map are unchanged." }
 
 openspp:
   - previous: 2d7ee8f92175d15e41d1e069f0db663de951d0c6
@@ -190,6 +199,11 @@ openfibre:
       - { block: openfibre/ofb_pa_gty, kind: generic_added, generic: RxRstGapCycles_g, text: "New generic RxRstGapCycles_g (default 400000, 4 ms at 100 MHz): gap after a receiver reset of a lane in which further requests are dropped (PA-RS-04); 0 for a design whose initialisation timeout is longer than a receiver reset." }
       - { block: openfibre/ofb_pa_gty, kind: behaviour, text: "The Phy interface carries the new configuration inputs (Cfg_RxResetOnDisc, Cfg_RxResetCdrOnly, Cfg_CdrHoldIdle, Cfg_PcsRsvdIn, synchronised inside), the command Cmd_RxReset and the new status outputs and events (Stat_TxBufErr, Stat_RxResetDone, Stat_RxResetBusy, Stat_CdrLock, Stat_RxElecIdle, Ev_RxReset, Ev_RxResetTimeout), one to one with the core. Stat_RxBufErr moves from the Stat interface to the Phy interface (rx_buf_err); a system that exported it with Stat reads it in LANE_EVENTS of the core instead." }
       - { block: openfibre/ofb_pa_gty, kind: behaviour, text: "The falling edge of Phy_CdrEnable (the lane leaves the states that use the line) starts the entire receiver reset of the lane (PA-IF-02, PA-RS-04); the CDR is held while the receiver reports electrical idle (PA-IF-04). The new source hdl/ofb_pa_gty/src/ofb_pa_gty_lane_rst.vhd is in both file lists of the adapter. The wizard instance needs the reset, CDR and debug ports of tcl/ofb_gtw.tcl of this version: create it again." }
+  - previous: 8aa51e667b7fd6dbf8a419242ae0895dfc91c13f
+    pin: d1389f64862069666ed4f4290b729a6947885fe2
+    evidence: "PR #52 of the core: None (ports, generics and register map unchanged; Open Logic pin `4.7.0-ft.11` since #50). The merge commit is the release v0.1.4 of the core."
+    changes:
+      - { block: openfibre/ofb_core, kind: behaviour, text: "The error recovery buffer registers every admitted data word with its row write and the commit of its item (DL-ER-09), so every item reaches the transmitter one CoreClk cycle later: a packet of one byte on the idle link takes 370, 393, 400 and 402 ns with 1, 2, 3 and 4 lanes (user guide section 7)." }
 
 opencrypto:
   - previous: e03bc8cda75a660cc3e28bdc14d7f9409ddb0497
@@ -254,3 +268,17 @@ olo:
     evidence: "Tag 4.7.0-ft.8 of Open Logic FT: FIXED bursts of the AXI masters (new inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), new entities olo_base_stream_join and olo_base_stream_split, olo_base_wconv_n2m drives Out_Be with equal widths and checks its byte enables at the clock edge, olo_intf_i2c_master checks its commands at the clock edge; no port or generic change of the blocks of the catalog."
     changes:
       - { block: olo/olo_base_wconv_n2m, kind: behaviour, text: "With InWidth_g = OutWidth_g, Out_Be follows In_Be (UseBe_g) or is all '1'; it was not driven before. The check that only the last beat of a packet has partial byte enables runs on the accepted beats at the clock edge, so a source whose In_Valid settles one delta cycle after In_Be no longer stops the simulation." }
+  - previous: f9e7f596e5e4c547e17087d89e3ce1289514d42d
+    pin: 2b0b02f076ad9f597842a21faf4c60d8bf601b45
+    evidence: "Tag 4.7.0-ft.9 of Open Logic FT: the AXI master performance package. olo_axi_master_full accepts a command only with CmdWr_Ready/CmdRd_Ready and overlaps consecutive commands; olo_ft_axi_master_simple and olo_ft_axi_master_full get the generics IntFifoDepth_g (default 0) and EccPipeline_g (0 to 2, default 0); new internal entity olo_ft_private_fifo_stream. The AXI masters are used inside OpenRMAP; no change of the blocks of the catalog."
+    changes: []
+  - previous: 2b0b02f076ad9f597842a21faf4c60d8bf601b45
+    pin: dc3236838152b885a53250b932efe4eb25aa27f2
+    evidence: "Tag 4.7.0-ft.10 of Open Logic FT: olo_axi_master_full resets RdAlignLowIdx (a simulation reported NUMERIC_STD metavalue warnings until the first read; the hardware behaviour is unchanged); no change of the blocks of the catalog."
+    changes: []
+  - previous: dc3236838152b885a53250b932efe4eb25aa27f2
+    pin: 227eecdd0c7b808cc387d8959a12c8ad7be000d9
+    evidence: "Tag 4.7.0-ft.11 of Open Logic FT: the scoped constraint of the asynchronous read path of olo_base_ram_sdp (src/base/tcl/olo_base_ram_sdp.tcl) also matches the first read data register after synthesis retiming, and a CRITICAL WARNING [olo_base_ram_sdp-1] reports a distributed RAM read path without a capture register; olo_base_crc evaluates In_Last and In_Be only for an accepted beat (simulation assertions only, the hardware behaviour is unchanged); no port or generic change of the blocks of the catalog."
+    changes:
+      - { block: olo/olo_base_crc_append, kind: behaviour, text: "The CRC checks In_Last and In_Be only for an accepted beat (a simulation assertion of olo_base_crc); the hardware behaviour is unchanged." }
+      - { block: olo/olo_base_crc_check, kind: behaviour, text: "The CRC checks In_Last and In_Be only for an accepted beat (a simulation assertion of olo_base_crc); the hardware behaviour is unchanged." }

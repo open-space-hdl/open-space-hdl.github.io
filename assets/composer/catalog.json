@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "d46a38a13eb9",
+ "id": "955cea8c7666",
  "sources": [
   {
    "id": "openwire",
@@ -97,11 +97,11 @@
    "repo": "openrmap",
    "url": "https://github.com/open-space-hdl/openrmap",
    "doc": "/openrmap/",
-   "commit": "77868aab0bad0e372ce629a0b2e0a52e1b99bbac",
+   "commit": "caac2f3e65abeeff365637c854a7b6a2036639f4",
    "library": "openrmap",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.6",
+   "verifiedWith": "4.7.0-ft.11",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
    "files": [
     "hdl/omap_pkg/src/omap_regs_pkg.vhd",
@@ -178,6 +178,24 @@
      "pin": "77868aab0bad0e372ce629a0b2e0a52e1b99bbac",
      "evidence": "PR #14 of the core: None.",
      "changes": []
+    },
+    {
+     "previous": "77868aab0bad0e372ce629a0b2e0a52e1b99bbac",
+     "pin": "9b0ef2354cb5f63f9c415d8f4a7ae837ded6c74d",
+     "evidence": "PR #16 of the core: documentation tooling only (tools/docs/requirements.txt pins selectolax 1.0.0), no source, testbench or interface change.",
+     "changes": []
+    },
+    {
+     "previous": "9b0ef2354cb5f63f9c415d8f4a7ae837ded6c74d",
+     "pin": "caac2f3e65abeeff365637c854a7b6a2036639f4",
+     "evidence": "PR #21 of the core: - Open Logic pin: `4.7.0-ft.6` (0.1.0) to `4.7.0-ft.11` (227eecd). Ports, generics, stream formats and the register map are unchanged. The merge commit is the release v0.1.1 of the core.",
+     "changes": [
+      {
+       "block": "openrmap/omap_core",
+       "kind": "behaviour",
+       "text": "With Open Logic 4.7.0-ft.11 the memory master of the target takes the next chunk of a non-verified write while the bytes of the current one pass, so the chunks follow each other without a gap, and it issues at most one read transaction every four cycles. Section 9.2 of the user guide gives the new rate model of reads and non-verified writes (TC-TG-18); ports, generics, stream formats and the register map are unchanged."
+      }
+     ]
     }
    ]
   },
@@ -285,11 +303,11 @@
    "repo": "openfibre",
    "url": "https://github.com/open-space-hdl/openfibre",
    "doc": "/openfibre/",
-   "commit": "8aa51e667b7fd6dbf8a419242ae0895dfc91c13f",
+   "commit": "d1389f64862069666ed4f4290b729a6947885fe2",
    "library": "openfibre",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.9",
+   "verifiedWith": "4.7.0-ft.11",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. compile_order.txt lists the technology-independent sources; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).",
    "files": [
     "hdl/ofb_pkg/src/ofb_regs_pkg.vhd",
@@ -592,6 +610,18 @@
        "text": "The falling edge of Phy_CdrEnable (the lane leaves the states that use the line) starts the entire receiver reset of the lane (PA-IF-02, PA-RS-04); the CDR is held while the receiver reports electrical idle (PA-IF-04). The new source hdl/ofb_pa_gty/src/ofb_pa_gty_lane_rst.vhd is in both file lists of the adapter. The wizard instance needs the reset, CDR and debug ports of tcl/ofb_gtw.tcl of this version: create it again."
       }
      ]
+    },
+    {
+     "previous": "8aa51e667b7fd6dbf8a419242ae0895dfc91c13f",
+     "pin": "d1389f64862069666ed4f4290b729a6947885fe2",
+     "evidence": "PR #52 of the core: None (ports, generics and register map unchanged; Open Logic pin `4.7.0-ft.11` since #50). The merge commit is the release v0.1.4 of the core.",
+     "changes": [
+      {
+       "block": "openfibre/ofb_core",
+       "kind": "behaviour",
+       "text": "The error recovery buffer registers every admitted data word with its row write and the commit of its item (DL-ER-09), so every item reaches the transmitter one CoreClk cycle later: a packet of one byte on the idle link takes 370, 393, 400 and 402 ns with 1, 2, 3 and 4 lanes (user guide section 7)."
+      }
+     ]
     }
    ]
   },
@@ -755,11 +785,11 @@
    "repo": "open-logic-ft",
    "url": "https://github.com/open-space-hdl/open-logic-ft",
    "doc": "/open-logic-ft/",
-   "tag": "4.7.0-ft.8",
+   "tag": "4.7.0-ft.11",
    "library": "olo",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). The cores of the catalog are verified with 4.7.0-ft.6; the ports added since have a default (inputs) or may stay open (outputs), so they compile with 4.7.0-ft.8 unchanged.",
+   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). 4.7.0-ft.11 lets olo_axi_master_full overlap consecutive commands and adds the generics IntFifoDepth_g and EccPipeline_g to the fault-tolerant AXI masters (ft.9), resets the read alignment register of olo_axi_master_full (ft.10), matches the scoped constraint of the read path of olo_base_ram_sdp also after synthesis retiming and checks In_Last and In_Be of olo_base_crc only for an accepted beat (ft.11). The cores of the catalog are verified with 4.7.0-ft.6 (OpenWire, OpenSPP, OpenCrypto, OpenCompact); 4.7.0-ft.11 (OpenRMAP, OpenFibre); the ports added since 4.7.0-ft.6 have a default (inputs) or may stay open (outputs), so every core compiles with 4.7.0-ft.11 unchanged.",
    "files": [
     "src/intf/vhdl/olo_intf_pkg_can.vhd",
     "src/base/vhdl/olo_base_pkg_crc.vhd",
@@ -805,6 +835,7 @@
     "src/base/vhdl/olo_base_rs_encode.vhd",
     "src/base/vhdl/olo_base_rs_decode.vhd",
     "src/base/vhdl/olo_base_fifo_sync.vhd",
+    "src/ft/vhdl/olo_ft_private_fifo_stream.vhd",
     "src/ft/vhdl/olo_ft_fifo_sync.vhd",
     "src/base/vhdl/olo_base_flowctrl_handler.vhd",
     "src/base/vhdl/olo_base_fifo_packet.vhd",
@@ -921,9 +952,38 @@
        "text": "With InWidth_g = OutWidth_g, Out_Be follows In_Be (UseBe_g) or is all '1'; it was not driven before. The check that only the last beat of a packet has partial byte enables runs on the accepted beats at the clock edge, so a source whose In_Valid settles one delta cycle after In_Be no longer stops the simulation."
       }
      ]
+    },
+    {
+     "previous": "f9e7f596e5e4c547e17087d89e3ce1289514d42d",
+     "pin": "2b0b02f076ad9f597842a21faf4c60d8bf601b45",
+     "evidence": "Tag 4.7.0-ft.9 of Open Logic FT: the AXI master performance package. olo_axi_master_full accepts a command only with CmdWr_Ready/CmdRd_Ready and overlaps consecutive commands; olo_ft_axi_master_simple and olo_ft_axi_master_full get the generics IntFifoDepth_g (default 0) and EccPipeline_g (0 to 2, default 0); new internal entity olo_ft_private_fifo_stream. The AXI masters are used inside OpenRMAP; no change of the blocks of the catalog.",
+     "changes": []
+    },
+    {
+     "previous": "2b0b02f076ad9f597842a21faf4c60d8bf601b45",
+     "pin": "dc3236838152b885a53250b932efe4eb25aa27f2",
+     "evidence": "Tag 4.7.0-ft.10 of Open Logic FT: olo_axi_master_full resets RdAlignLowIdx (a simulation reported NUMERIC_STD metavalue warnings until the first read; the hardware behaviour is unchanged); no change of the blocks of the catalog.",
+     "changes": []
+    },
+    {
+     "previous": "dc3236838152b885a53250b932efe4eb25aa27f2",
+     "pin": "227eecdd0c7b808cc387d8959a12c8ad7be000d9",
+     "evidence": "Tag 4.7.0-ft.11 of Open Logic FT: the scoped constraint of the asynchronous read path of olo_base_ram_sdp (src/base/tcl/olo_base_ram_sdp.tcl) also matches the first read data register after synthesis retiming, and a CRITICAL WARNING [olo_base_ram_sdp-1] reports a distributed RAM read path without a capture register; olo_base_crc evaluates In_Last and In_Be only for an accepted beat (simulation assertions only, the hardware behaviour is unchanged); no port or generic change of the blocks of the catalog.",
+     "changes": [
+      {
+       "block": "olo/olo_base_crc_append",
+       "kind": "behaviour",
+       "text": "The CRC checks In_Last and In_Be only for an accepted beat (a simulation assertion of olo_base_crc); the hardware behaviour is unchanged."
+      },
+      {
+       "block": "olo/olo_base_crc_check",
+       "kind": "behaviour",
+       "text": "The CRC checks In_Last and In_Be only for an accepted beat (a simulation assertion of olo_base_crc); the hardware behaviour is unchanged."
+      }
+     ]
     }
    ],
-   "commit": "f9e7f596e5e4c547e17087d89e3ce1289514d42d"
+   "commit": "227eecdd0c7b808cc387d8959a12c8ad7be000d9"
   }
  ],
  "categories": [
