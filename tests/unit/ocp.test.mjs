@@ -2,11 +2,13 @@
 // (tests/golden/ocp_models.json, written by tools/composer_ocp_golden.py): every configuration of the regression of
 // OpenCompact, the named ones and the 24 random ones from fixed seeds, with and without the speculative weight loop.
 // The configurations with image framing (the "_last" variants of the regression) need no golden of their own: the
-// framing adds no item to the input sequence, so it does not change the rate of the predictor.
+// framing adds no item to the input sequence, so it does not change the rate of the predictor. The runtime
+// configurations of the regression (RuntimeConfig_g) have their own golden data: the period of two images of the maxima
+// and the start of every image of the seeded sequence of the regression.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { headerBytes, imagePeriod, issueSpan, latencies, LE_MAX_FLUSH, LE_MAX_OUT, maxImageBytes, outputSpan, strideParams } from '../../assets/composer/js/model/ocp.js';
+import { coderCycles, headerBytes, imagePeriod, imageStartCycles, issueSpan, latencies, LE_MAX_FLUSH, LE_MAX_OUT, maxImageBytes, outputSpan, runtimeAcceptCycles, strideParams } from '../../assets/composer/js/model/ocp.js';
 import { ROOT } from './helpers.mjs';
 
 const golden = JSON.parse(readFileSync(`${ROOT}tests/golden/ocp_models.json`, 'utf-8'));
@@ -48,6 +50,49 @@ test('the header length equals the header of the Python model for every configur
 test('the upper bound on the compressed image equals max_image_bytes of the Python model for every configuration', () => {
   assert.deepEqual({ LE_MAX_OUT, LE_MAX_FLUSH }, golden.constants);
   for (const c of configs) assert.equal(maxImageBytes(c.generics), c.maxImageBytes, c.name);
+});
+
+test('the tail of the hybrid coder does not change the image period: the period equals that of the coder model', () => {
+  let hybrid = 0;
+  for (const c of configs) {
+    for (const spec of [true, false]) {
+      if (strideParams(c.generics, latencies(c.generics, spec))) continue;
+      const n = c.generics.XSize_g * c.generics.YSize_g * c.generics.ZSize_g;
+      const two = coderCycles(c.generics, spec, 2);
+      assert.equal(imagePeriod(c.generics, spec), two[n] - two[0], `${c.name} speculation ${spec}`);
+      if (c.generics.EntropyCoder_g === 'HYBRID') hybrid += 1;
+    }
+  }
+  assert.ok(hybrid > 0, 'configurations with the hybrid coder');
+});
+
+test('runtime configurations: the image start, the period of two images of the maxima and the starts of a sequence equal the Python model', () => {
+  /** @type {{ name: string, generics: Record<string, any>, imageStartCycles: number, dims: number[][], speculation: any, noSpeculation: any }[]} */
+  const runtime = golden.runtime;
+  assert.equal(runtime.length, 5);
+  for (const c of runtime) {
+    assert.equal(c.generics.RuntimeConfig_g, true, c.name);
+    assert.equal(imageStartCycles(c.generics), c.imageStartCycles, c.name);
+    for (const [spec, want] of /** @type {const} */ ([[true, c.speculation], [false, c.noSpeculation]])) {
+      const where = `${c.name} speculation ${spec}`;
+      assert.equal(imagePeriod(c.generics, spec), want.imagePeriod, where);
+      assert.equal(imagePeriod(c.generics, spec, false), want.imagePeriod, where);
+      const cycles = runtimeAcceptCycles(c.generics, c.dims, spec);
+      /** @type {number[]} */
+      const starts = [];
+      let k = 0;
+      for (const [nx, ny, nz] of c.dims) {
+        starts.push(cycles[k] - cycles[0]);
+        k += nx * ny * nz;
+      }
+      assert.deepEqual(starts, want.starts, where);
+    }
+  }
+  // a configuration that uses the stride order with constant dimensions runs without it with the runtime configuration
+  const rc02 = runtime.find((c) => c.name === 'rc02_bi_mnz_hybrid_abs');
+  const constant = { .../** @type {any} */ (rc02).generics, RuntimeConfig_g: false };
+  assert.ok(strideParams(constant, latencies(constant)));
+  assert.notEqual(imagePeriod(constant), /** @type {any} */ (rc02).speculation.imagePeriod);
 });
 
 /**

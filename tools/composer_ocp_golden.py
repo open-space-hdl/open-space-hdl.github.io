@@ -6,7 +6,9 @@ the header and the upper bound on the length of the compressed image (tools/ocp_
 reference software and against every compressed image of the regression). This script runs the Python models of a
 clone of OpenCompact at the pinned commit for every configuration of its regression (tools/ocp_configs.py ALL: the
 named and the random configurations) and writes their results to tests/golden/ocp_models.json, where the unit tests
-compare the port with them.
+compare the port with them. For the runtime configurations of the regression (tools/ocp_configs.py RUNTIME,
+RuntimeConfig_g = true) it writes the period of two images of the maxima and the start of every image of the seeded
+sequence of the regression (runtime_accept_cycles).
 
     python tools/composer_ocp_golden.py <clone of opencompact at the pin>
 """
@@ -52,10 +54,33 @@ def main() -> None:
                 res["span2"] = ocp_throughput.issue_span(g, spec, 2)
             entry["speculation" if spec else "noSpeculation"] = res
         configs.append(entry)
+    # The runtime configurations of the regression (RuntimeConfig_g = true; the dimensions of a configuration are the
+    # maxima): the period of two images of the maxima, and the acceptance cycles of the first sample of every image of
+    # the seeded sequence of the regression (TC-CO-52), relative to the first; both from runtime_accept_cycles
+    runtime = []
+    for name, cfg in ocp_configs.RUNTIME.items():
+        g = dict(ocp_generics.generics(cfg), RuntimeConfig_g=True)
+        vhdl = {k: (v if isinstance(v, (bool, int)) else ocp_wrapper.value(k, v).strip('"')
+                    if k in ocp_wrapper.STRINGS else ocp_wrapper.value(k, v)) for k, v in g.items()}
+        maxima = (g["XSize_g"], g["YSize_g"], g["ZSize_g"])
+        dims = [tuple(d[:3]) for d in ocp_configs.runtime_sequence(cfg)]
+        entry = {"name": name, "generics": vhdl, "imageStartCycles": ocp_throughput.image_start_cycles(g),
+                 "dims": [list(d) for d in dims]}
+        for spec in (True, False):
+            two = ocp_throughput.runtime_accept_cycles(g, [maxima, maxima], spec)
+            seq = ocp_throughput.runtime_accept_cycles(g, dims, spec)
+            starts, k = [], 0
+            for nx, ny, nz in dims:
+                starts.append(seq[k] - seq[0])
+                k += nx * ny * nz
+            entry["speculation" if spec else "noSpeculation"] = {
+                "imagePeriod": two[maxima[0] * maxima[1] * maxima[2]] - two[0], "starts": starts}
+        runtime.append(entry)
     constants = {"LE_MAX_OUT": ocp_model.LE_MAX_OUT, "LE_MAX_FLUSH": ocp_model.LE_MAX_FLUSH}
-    OUT.write_text(json.dumps({"source": "opencompact", "commit": commit, "constants": constants, "configs": configs},
-                              indent=1) + "\n", encoding="utf-8", newline="\n")
-    print(f"wrote {OUT.relative_to(ROOT)}: {len(configs)} configurations at {commit[:10]}")
+    OUT.write_text(json.dumps({"source": "opencompact", "commit": commit, "constants": constants, "configs": configs,
+                               "runtime": runtime}, indent=1) + "\n", encoding="utf-8", newline="\n")
+    print(f"wrote {OUT.relative_to(ROOT)}: {len(configs)} configurations and {len(runtime)} runtime configurations at"
+          f" {commit[:10]}")
 
 
 if __name__ == "__main__":

@@ -215,7 +215,7 @@ test('stated traffic is an optional key of an external interface, kept when the 
   assert.throws(() => setTraffic(base, 'spw0.S_Pkt', { packetBytes: 64 }), /is not external/);
   doc.externals[0].traffic = { packetBytes: 64, bitsPerSecond: -1 };
   assert.throws(() => fromText(JSON.stringify(doc), cat), (e) => e instanceof FormatError && /externals\[0\]\.traffic: bitsPerSecond must be a positive number/.test(e.message));
-  assert.equal(/** @type {any} */ (toDocument(d, cat)).generator.version, '0.9.9-beta');
+  assert.equal(/** @type {any} */ (toDocument(d, cat)).generator.version, '0.9.10-beta');
 });
 
 test('a path runs through the inside of a subsystem', () => {
