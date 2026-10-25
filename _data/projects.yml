@@ -67,8 +67,12 @@
   repo: opencan
   group: interfaces-protocols
   tagline: [ECSS-E-ST-50-15C]
-  summary: CAN network core with nominal and redundant bus, bus redundancy management, CANopen services and time distribution.
-  public: false
+  summary: CAN network core with nominal and redundant bus, bus redundancy management, the application layer services of CiA 301 and time distribution.
+  public: true
+  docs: true
+  trl: 3
+  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
+  roadmap: true
 
 - name: Open1553
   repo: open1553
