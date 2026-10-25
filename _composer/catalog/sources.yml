@@ -75,11 +75,11 @@ sources:
     repo: opencompact
     url: https://github.com/open-space-hdl/opencompact
     doc: /opencompact/
-    commit: 652153833a22407ec69aec66f77c722a29002d30
+    commit: e427de1548b97e3757b11c412e4953aedfb6d366
     library: opencompact
     file_list: compile_order.txt
     file_list_format: files
-    verified_with: 4.7.0-ft.6
+    verified_with: 4.7.0-ft.9
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
   - id: olo

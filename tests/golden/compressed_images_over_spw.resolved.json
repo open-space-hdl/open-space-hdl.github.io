@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "catalog": "955cea8c7666",
+  "catalog": "64a6eb49ec58",
   "entity": "compressed_images_over_spw",
   "ports": [
     {
@@ -1176,6 +1176,12 @@
           "default": true
         },
         {
+          "name": "RuntimeConfig_g",
+          "value": false,
+          "vhdl": "false",
+          "default": true
+        },
+        {
           "name": "OutWidth_g",
           "value": 32,
           "vhdl": "32",
@@ -1363,6 +1369,93 @@
           "actual": null,
           "useDefault": true,
           "default": "'0'"
+        },
+        {
+          "name": "Cfg_XSize",
+          "dir": "in",
+          "type": "std_logic_vector(16 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_YSize",
+          "dir": "in",
+          "type": "std_logic_vector(16 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_ZSize",
+          "dir": "in",
+          "type": "std_logic_vector(16 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_AbsLimit",
+          "dir": "in",
+          "type": "std_logic_vector(15 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_RelLimit",
+          "dir": "in",
+          "type": "std_logic_vector(15 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_Taken",
+          "dir": "out",
+          "type": "std_logic",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_XSize",
+          "dir": "out",
+          "type": "std_logic_vector(16 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_YSize",
+          "dir": "out",
+          "type": "std_logic_vector(16 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_ZSize",
+          "dir": "out",
+          "type": "std_logic_vector(16 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_AbsLimit",
+          "dir": "out",
+          "type": "std_logic_vector(15 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_RelLimit",
+          "dir": "out",
+          "type": "std_logic_vector(15 downto 0)",
+          "domain": "sys",
+          "actual": "open"
         }
       ]
     },
@@ -5131,10 +5224,10 @@
       "library": "opencompact",
       "source": "opencompact",
       "url": "https://github.com/open-space-hdl/opencompact",
-      "commit": "652153833a22407ec69aec66f77c722a29002d30",
+      "commit": "e427de1548b97e3757b11c412e4953aedfb6d366",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "verifiedWith": "4.7.0-ft.6",
+      "verifiedWith": "4.7.0-ft.9",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
       "entities": [
         "ocp_core"

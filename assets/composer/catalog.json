@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "955cea8c7666",
+ "id": "64a6eb49ec58",
  "sources": [
   {
    "id": "openwire",
@@ -710,16 +710,17 @@
    "repo": "opencompact",
    "url": "https://github.com/open-space-hdl/opencompact",
    "doc": "/opencompact/",
-   "commit": "652153833a22407ec69aec66f77c722a29002d30",
+   "commit": "e427de1548b97e3757b11c412e4953aedfb6d366",
    "library": "opencompact",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.6",
+   "verifiedWith": "4.7.0-ft.9",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
    "files": [
     "hdl/ocp_pkg/src/ocp_regs_pkg.vhd",
     "hdl/ocp_pkg/src/ocp_pkg.vhd",
     "hdl/ocp_pkg/src/ocp_low_entropy_pkg.vhd",
+    "hdl/ocp_predictor/src/ocp_image_start.vhd",
     "hdl/ocp_predictor/src/ocp_predictor.vhd",
     "hdl/ocp_entropy_coder/src/ocp_cw_buffer.vhd",
     "hdl/ocp_entropy_coder/src/ocp_sample_adaptive_coder.vhd",
@@ -776,6 +777,41 @@
      "pin": "652153833a22407ec69aec66f77c722a29002d30",
      "evidence": "PR #14 of the core: None. No change of ports, generics, stream formats, the register map (ID 0x4F435001, version 1) or the Open Logic pin (4.7.0-ft.6). The merge commit is the release v0.1.1 of the core; it fixes the stop of the AMD Vivado simulator at time 0 in ocp_predictor, the known issue of v0.1.0, with fully constrained array types, and the behaviour is unchanged in every simulator (release notes, https://github.com/open-space-hdl/opencompact/releases/tag/v0.1.1).",
      "changes": []
+    },
+    {
+     "previous": "652153833a22407ec69aec66f77c722a29002d30",
+     "pin": "2554944c13698cebff01d51084deff7807821066",
+     "evidence": "PR #17 of the core: documentation tooling only (tools/docs/requirements.txt pins selectolax 1.0.0), no source, testbench or interface change.",
+     "changes": []
+    },
+    {
+     "previous": "2554944c13698cebff01d51084deff7807821066",
+     "pin": "e427de1548b97e3757b11c412e4953aedfb6d366",
+     "evidence": "PR #28 of the core: - New generic `RuntimeConfig_g` (boolean, default false) on `ocp_core`, `ocp_channel`, `ocp_mib`, `ocp_predictor`, `ocp_image_framer`, `ocp_header`, `ocp_hybrid_coder`. - New ports of `ocp_core` (all with defaults or unused with the generic false): inputs `Cfg_XSize`, `Cfg_YSize`, `Cfg_ZSize` (17 bits), `Cfg_AbsLimit`, `Cfg_RelLimit` (16 bits); outputs `Cfg_Taken`, `Act_XSize`, `Act_YSize`, `Act_ZSize`, `Act_AbsLimit`, `Act_RelLimit`. The ports of `ocp_channel` are unchanged. - Register map version 2 (ID 0x4F435002): CONTROL 0x060, STATUS 0x064, NEXT_X 0x068, NEXT_Y 0x06C, NEXT_Z 0x070, NEXT_LIMITS 0x074, LIMITS 0x078, GENERICS bit 18 RUNTIME_CONFIG; the existing registers keep their offsets and fields. - Open Logic 4.7.0-ft.9 (from 4.7.0-ft.6). The merge commit is the release v0.2.0 of the core.",
+     "changes": [
+      {
+       "block": "opencompact/ocp_core",
+       "kind": "generic_added",
+       "generic": "RuntimeConfig_g",
+       "text": "New generic RuntimeConfig_g (default false): the image dimensions and the band-independent error limit values of every image come from the new Cfg interface; XSize_g, YSize_g and ZSize_g are then the maxima. With false the compressed images and the throughput are unchanged."
+      },
+      {
+       "block": "opencompact/ocp_channel",
+       "kind": "generic_added",
+       "generic": "RuntimeConfig_g",
+       "text": "New generic RuntimeConfig_g (default false): the image dimensions and the band-independent error limit values of every image come from the registers NEXT_X, NEXT_Y, NEXT_Z and NEXT_LIMITS with CONTROL.COMMIT; XSize_g, YSize_g and ZSize_g are then the maxima. With false the compressed images and the throughput are unchanged."
+      },
+      {
+       "block": "opencompact/ocp_channel",
+       "kind": "registers",
+       "text": "Register map version 2 (ID 0x4F435002): new registers CONTROL 0x060, STATUS 0x064, NEXT_X 0x068, NEXT_Y 0x06C, NEXT_Z 0x070, NEXT_LIMITS 0x074, LIMITS 0x078 and GENERICS bit 18 RUNTIME_CONFIG; the existing registers keep their offsets and fields."
+      },
+      {
+       "block": "opencompact/ocp_core",
+       "kind": "behaviour",
+       "text": "New interfaces Cfg (the configuration of the next image), CfgTaken and Act (the values taken for the last image), present only with RuntimeConfig_g."
+      }
+     ]
     }
    ]
   },
@@ -7515,13 +7551,13 @@
    "library": "opencompact",
    "entity": "ocp_core",
    "path": "hdl/ocp_core/src/ocp_core.vhd",
-   "summary": "Lossless and near-lossless compression of multispectral and hyperspectral images (CCSDS 123.0-B-2) with all predictors, quantizers and entropy coders of the standard; every parameter is a generic, the header of the compressed image follows from them.",
+   "summary": "Lossless and near-lossless compression of multispectral and hyperspectral images (CCSDS 123.0-B-2) with all predictors, quantizers and entropy coders of the standard; every parameter is a generic (with RuntimeConfig_g the image dimensions and the band-independent error limit values of every image come from configuration ports), the header of the compressed image follows from them.",
    "idPrefix": "ocp",
    "doc": "/opencompact/docs/user_guide.html",
    "project": "OpenCompact",
    "notes": [
     "Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen with SyncTmr_g = true. A reset aborts the image in progress.",
-    "Every image is compressed independently with the same parameters; the samples of the next image may follow the last sample of an image without a gap.",
+    "Every image is compressed independently with the same parameters (with RuntimeConfig_g its own dimensions and error limit values from Cfg); the samples of the next image may follow the last sample of an image without a gap.",
     "The decompressor must know the tables that are not in the header (table generics false) and the initial accumulators of the hybrid coder.",
     "The hybrid coder is decoded from the end of the compressed image; keep Out_Last (the end of the packet) up to the decompressor.",
     "After a detected double error (Ecc_Ded) the compressed image in progress may be wrong; discard it and reset the core before the next image.",
@@ -7631,6 +7667,125 @@
      }
     },
     {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "PeriodicUpdate_g": false
+     },
+     "when": {
+      "generic": "Fidelity_g",
+      "not": "LOSSLESS"
+     }
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "AbsBandDependent_g": false
+     },
+     "when": [
+      {
+       "generic": "Fidelity_g",
+       "not": "LOSSLESS"
+      },
+      {
+       "generic": "Fidelity_g",
+       "not": "RELATIVE"
+      }
+     ]
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "RelBandDependent_g": false
+     },
+     "when": [
+      {
+       "generic": "Fidelity_g",
+       "not": "LOSSLESS"
+      },
+      {
+       "generic": "Fidelity_g",
+       "not": "ABSOLUTE"
+      }
+     ]
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "WeightInitTable_g": false
+     },
+     "when": "CustomWeights_g"
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "WeightExpOffsetTable_g": false
+     },
+     "when": "WeightExpOffsetsUsed_g"
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "DampingTable_g": false
+     },
+     "when": [
+      "DampingBandVarying_g",
+      {
+       "generic": "SampleRepResolution_g",
+       "not": 0
+      }
+     ]
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "OffsetTable_g": false
+     },
+     "when": [
+      "OffsetBandVarying_g",
+      {
+       "generic": "SampleRepResolution_g",
+       "not": 0
+      }
+     ]
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "AccuInitTable_g": false
+     },
+     "when": [
+      "AccuInitBandVarying_g",
+      {
+       "generic": "EntropyCoder_g",
+       "is": "SAMPLE_ADAPTIVE"
+      }
+     ]
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "SupTableCount_g": 0
+     }
+    },
+    {
      "kind": "flag_dropped",
      "interface": "Out",
      "signal": "error",
@@ -7641,11 +7796,20 @@
    ],
    "init": [
     {
-     "text": "None: the core starts from the initial state of the standard with every image; all parameters are generics."
+     "text": "None: the core starts from the initial state of the standard with every image; all parameters are generics.",
+     "unless": [
+      "RuntimeConfig_g"
+     ]
+    },
+    {
+     "text": "Drive Cfg with the configuration of an image before its first sample; Cfg_Taken pulses when the core takes it, and Act shows the values taken for the last image.",
+     "when": [
+      "RuntimeConfig_g"
+     ]
     }
    ],
    "rates": {
-    "evidence": "tools/ocp_throughput.py: the cycle in which the predictor takes every sample of a configuration (checked cycle by cycle by the predictor testbench: TC-PR-01 to TC-PR-37, PR-TP-01 to PR-TP-03) and image_period, the cycles between the first samples of consecutive images (TC-CO-50); tools/ocp_model.py: the header (compared with the CNES reference software for every configuration of the regression) and max_image_bytes, the upper bound on the compressed image (TC-CO-51: every compressed image of the regression and of the CCSDS test data set); user guide section 8.1; the bit packer outputs OutWidth_g bits per cycle (TC-CO-39 to TC-CO-41, TC-CO-45)",
+    "evidence": "tools/ocp_throughput.py: the cycle in which the predictor takes every sample of a configuration (checked cycle by cycle by the predictor testbench: TC-PR-01 to TC-PR-37, PR-TP-01 to PR-TP-03) and image_period, the cycles between the first samples of consecutive images (TC-CO-50); tools/ocp_model.py: the header (compared with the CNES reference software for every configuration of the regression) and max_image_bytes, the upper bound on the compressed image (TC-CO-51: every compressed image of the regression and of the CCSDS test data set); user guide section 8.1; with RuntimeConfig_g the period of two images of the maxima from runtime_accept_cycles, without the stride order and with the image-start sequencer (TC-CO-53); the bit packer outputs OutWidth_g bits per cycle (TC-CO-39 to TC-CO-41, TC-CO-45)",
     "model": "ocp",
     "packet": "image",
     "assumed": {
@@ -8312,6 +8476,15 @@
      "description": "In_Last marks the last sample of every image: early and missing image ends are detected, flagged on Out_Error and Ev_ImageError, and the core resynchronises."
     },
     {
+     "name": "RuntimeConfig_g",
+     "vhdlType": "boolean",
+     "kind": "boolean",
+     "defaultText": "false",
+     "default": false,
+     "label": "Runtime configuration",
+     "description": "The image dimensions NX, NY, NZ and the band-independent absolute and relative error limit values of every image come from the Cfg interface (user guide section 4.4); XSize_g, YSize_g and ZSize_g are then the maxima. Excludes periodic error limit updating, band-dependent error limits, header tables whose length depends on NZ and supplementary information tables (CO-CF-04)."
+    },
+    {
      "name": "OutWidth_g",
      "vhdlType": "positive",
      "kind": "integer",
@@ -8465,6 +8638,54 @@
       "double": "ErrInj_Double",
       "valid": "ErrInj_Valid"
      }
+    },
+    {
+     "name": "Cfg",
+     "type": "sig.control",
+     "role": "event_in",
+     "clock": "Clk",
+     "label": "Runtime configuration",
+     "description": "NX, NY, NZ (1 to the maxima) and the absolute and relative error limit values of the next image, taken with its first sample; the values change together in one clock cycle. A value out of range is taken as the nearest valid value.",
+     "mustServe": true,
+     "enabledBy": "RuntimeConfig_g",
+     "tieOff": "default",
+     "signals": {
+      "x_size": "Cfg_XSize",
+      "y_size": "Cfg_YSize",
+      "z_size": "Cfg_ZSize",
+      "abs_limit": "Cfg_AbsLimit",
+      "rel_limit": "Cfg_RelLimit"
+     }
+    },
+    {
+     "name": "CfgTaken",
+     "type": "sig.pulse",
+     "role": "event_out",
+     "clock": "Clk",
+     "label": "Configuration taken",
+     "description": "One pulse in the clock cycle in which the core takes the configuration, with the first sample of an image.",
+     "enabledBy": "RuntimeConfig_g",
+     "tieOff": "open",
+     "signals": {
+      "taken": "Cfg_Taken"
+     }
+    },
+    {
+     "name": "Act",
+     "type": "sig.status",
+     "role": "event_out",
+     "clock": "Clk",
+     "label": "Active configuration",
+     "description": "The values the core took for the last image, after the range limitation (after a reset the maxima and the first error limit values of the generics).",
+     "enabledBy": "RuntimeConfig_g",
+     "tieOff": "open",
+     "signals": {
+      "x_size": "Act_XSize",
+      "y_size": "Act_YSize",
+      "z_size": "Act_ZSize",
+      "abs_limit": "Act_AbsLimit",
+      "rel_limit": "Act_RelLimit"
+     }
     }
    ],
    "ports": [
@@ -8606,6 +8827,77 @@
      "vhdlType": "std_logic",
      "width": "1",
      "default": "'0'"
+    },
+    {
+     "name": "Cfg_XSize",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(16 downto 0)",
+     "width": "17",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Cfg_YSize",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(16 downto 0)",
+     "width": "17",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Cfg_ZSize",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(16 downto 0)",
+     "width": "17",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Cfg_AbsLimit",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(15 downto 0)",
+     "width": "16",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Cfg_RelLimit",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(15 downto 0)",
+     "width": "16",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Cfg_Taken",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Act_XSize",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(16 downto 0)",
+     "width": "17"
+    },
+    {
+     "name": "Act_YSize",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(16 downto 0)",
+     "width": "17"
+    },
+    {
+     "name": "Act_ZSize",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(16 downto 0)",
+     "width": "17"
+    },
+    {
+     "name": "Act_AbsLimit",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(15 downto 0)",
+     "width": "16"
+    },
+    {
+     "name": "Act_RelLimit",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(15 downto 0)",
+     "width": "16"
     }
    ],
    "tieOffs": [
@@ -8715,7 +9007,7 @@
    "library": "opencompact",
    "entity": "ocp_channel",
    "path": "hdl/ocp_channel/src/ocp_channel.vhd",
-   "summary": "The compressor of ocp_core for a system: the samples of the images arrive as SDUs on a byte stream, for example from a receive port of OpenSPP, every compressed image leaves as one packet of a byte stream, and read-only registers report the configuration and count the images, the faulty and discarded SDUs and the memory errors.",
+   "summary": "The compressor of ocp_core for a system: the samples of the images arrive as SDUs on a byte stream, for example from a receive port of OpenSPP, every compressed image leaves as one packet of a byte stream, and registers report the configuration (with RuntimeConfig_g they set the dimensions and error limits of every image) and count the images, the faulty and discarded SDUs and the memory errors.",
    "idPrefix": "och",
    "doc": "/opencompact/docs/user_guide.html",
    "project": "OpenCompact",
@@ -8834,6 +9126,125 @@
      }
     },
     {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "PeriodicUpdate_g": false
+     },
+     "when": {
+      "generic": "Fidelity_g",
+      "not": "LOSSLESS"
+     }
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "AbsBandDependent_g": false
+     },
+     "when": [
+      {
+       "generic": "Fidelity_g",
+       "not": "LOSSLESS"
+      },
+      {
+       "generic": "Fidelity_g",
+       "not": "RELATIVE"
+      }
+     ]
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "RelBandDependent_g": false
+     },
+     "when": [
+      {
+       "generic": "Fidelity_g",
+       "not": "LOSSLESS"
+      },
+      {
+       "generic": "Fidelity_g",
+       "not": "ABSOLUTE"
+      }
+     ]
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "WeightInitTable_g": false
+     },
+     "when": "CustomWeights_g"
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "WeightExpOffsetTable_g": false
+     },
+     "when": "WeightExpOffsetsUsed_g"
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "DampingTable_g": false
+     },
+     "when": [
+      "DampingBandVarying_g",
+      {
+       "generic": "SampleRepResolution_g",
+       "not": 0
+      }
+     ]
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "OffsetTable_g": false
+     },
+     "when": [
+      "OffsetBandVarying_g",
+      {
+       "generic": "SampleRepResolution_g",
+       "not": 0
+      }
+     ]
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "AccuInitTable_g": false
+     },
+     "when": [
+      "AccuInitBandVarying_g",
+      {
+       "generic": "EntropyCoder_g",
+       "is": "SAMPLE_ADAPTIVE"
+      }
+     ]
+    },
+    {
+     "kind": "generic_requires",
+     "generic": "RuntimeConfig_g",
+     "value": true,
+     "requires": {
+      "SupTableCount_g": 0
+     }
+    },
+    {
      "kind": "vector_within",
      "generic": "UserLastValue_g",
      "mask": "UserLastMask_g",
@@ -8849,16 +9260,25 @@
    ],
    "idRegister": {
     "address": "0x000",
-    "value": "0x4F435001"
+    "value": "0x4F435002"
    },
    "init": [
     {
-     "text": "None: the channel starts from the initial state of the standard with every image; all parameters are generics. Read ID (0x000) = 0x4F435001 to identify the channel; the configuration registers (0x004 to 0x02C) give the parameters of the compressed images."
+     "text": "None: the channel starts from the initial state of the standard with every image; all parameters are generics. Read ID (0x000) = 0x4F435002 to identify the channel; the configuration registers (0x004 to 0x02C) give the parameters of the compressed images.",
+     "unless": [
+      "RuntimeConfig_g"
+     ]
+    },
+    {
+     "text": "Read ID (0x000) = 0x4F435002 to identify the channel. Before the first sample of an image write NEXT_X (0x068), NEXT_Y (0x06C), NEXT_Z (0x070) and NEXT_LIMITS (0x074), then CONTROL.COMMIT (0x060); STATUS (0x064) shows CFG_ERROR for a value out of range and CFG_PENDING until the next image start.",
+     "when": [
+      "RuntimeConfig_g"
+     ]
     }
    ],
    "endToEnd": "Send the SDUs of one image, the last one with the end mark, and expect one compressed image at Out without Out_Error; IMAGES_DONE (status registers) counts it.",
    "rates": {
-    "evidence": "the rate data of ocp_core (tools/ocp_throughput.py image_period, tools/ocp_model.py header and max_image_bytes; user guide section 8.1); ocp_channel specification CH-TP-01 and ocp_input_adapter specification IA-FN-05: the samples at the byte rate of the source up to one sample per clock cycle, at most one clock cycle per SDU and one per compressed image",
+    "evidence": "the rate data of ocp_core (tools/ocp_throughput.py image_period, tools/ocp_model.py header and max_image_bytes; user guide section 8.1); ocp_channel specification CH-TP-01 and ocp_input_adapter specification IA-FN-05: the samples at the byte rate of the source up to one sample per clock cycle, at most one clock cycle per SDU and one per compressed image; with RuntimeConfig_g the period of ocp_core for two images of the maxima (runtime_accept_cycles, TC-CO-53)",
     "model": "ocp",
     "packet": "image",
     "assumed": {
@@ -9560,6 +9980,15 @@
      "label": "RAM style",
      "description": "Implementation of the memories (Open Logic).",
      "advanced": true
+    },
+    {
+     "name": "RuntimeConfig_g",
+     "vhdlType": "boolean",
+     "kind": "boolean",
+     "defaultText": "false",
+     "default": false,
+     "label": "Runtime configuration",
+     "description": "The image dimensions NX, NY, NZ and the band-independent absolute and relative error limit values of every image come from the registers NEXT_X, NEXT_Y, NEXT_Z and NEXT_LIMITS with CONTROL.COMMIT (user guide sections 4.3 and 4.4); XSize_g, YSize_g and ZSize_g are then the maxima. Excludes periodic error limit updating, band-dependent error limits, header tables whose length depends on NZ and supplementary information tables (CO-CF-04)."
     },
     {
      "name": "InStreamWidth_g",

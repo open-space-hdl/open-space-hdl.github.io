@@ -253,6 +253,18 @@ opencompact:
     pin: 652153833a22407ec69aec66f77c722a29002d30
     evidence: "PR #14 of the core: None. No change of ports, generics, stream formats, the register map (ID 0x4F435001, version 1) or the Open Logic pin (4.7.0-ft.6). The merge commit is the release v0.1.1 of the core; it fixes the stop of the AMD Vivado simulator at time 0 in ocp_predictor, the known issue of v0.1.0, with fully constrained array types, and the behaviour is unchanged in every simulator (release notes, https://github.com/open-space-hdl/opencompact/releases/tag/v0.1.1)."
     changes: []
+  - previous: 652153833a22407ec69aec66f77c722a29002d30
+    pin: 2554944c13698cebff01d51084deff7807821066
+    evidence: "PR #17 of the core: documentation tooling only (tools/docs/requirements.txt pins selectolax 1.0.0), no source, testbench or interface change."
+    changes: []
+  - previous: 2554944c13698cebff01d51084deff7807821066
+    pin: e427de1548b97e3757b11c412e4953aedfb6d366
+    evidence: "PR #28 of the core: - New generic `RuntimeConfig_g` (boolean, default false) on `ocp_core`, `ocp_channel`, `ocp_mib`, `ocp_predictor`, `ocp_image_framer`, `ocp_header`, `ocp_hybrid_coder`. - New ports of `ocp_core` (all with defaults or unused with the generic false): inputs `Cfg_XSize`, `Cfg_YSize`, `Cfg_ZSize` (17 bits), `Cfg_AbsLimit`, `Cfg_RelLimit` (16 bits); outputs `Cfg_Taken`, `Act_XSize`, `Act_YSize`, `Act_ZSize`, `Act_AbsLimit`, `Act_RelLimit`. The ports of `ocp_channel` are unchanged. - Register map version 2 (ID 0x4F435002): CONTROL 0x060, STATUS 0x064, NEXT_X 0x068, NEXT_Y 0x06C, NEXT_Z 0x070, NEXT_LIMITS 0x074, LIMITS 0x078, GENERICS bit 18 RUNTIME_CONFIG; the existing registers keep their offsets and fields. - Open Logic 4.7.0-ft.9 (from 4.7.0-ft.6). The merge commit is the release v0.2.0 of the core."
+    changes:
+      - { block: opencompact/ocp_core, kind: generic_added, generic: RuntimeConfig_g, text: "New generic RuntimeConfig_g (default false): the image dimensions and the band-independent error limit values of every image come from the new Cfg interface; XSize_g, YSize_g and ZSize_g are then the maxima. With false the compressed images and the throughput are unchanged." }
+      - { block: opencompact/ocp_channel, kind: generic_added, generic: RuntimeConfig_g, text: "New generic RuntimeConfig_g (default false): the image dimensions and the band-independent error limit values of every image come from the registers NEXT_X, NEXT_Y, NEXT_Z and NEXT_LIMITS with CONTROL.COMMIT; XSize_g, YSize_g and ZSize_g are then the maxima. With false the compressed images and the throughput are unchanged." }
+      - { block: opencompact/ocp_channel, kind: registers, text: "Register map version 2 (ID 0x4F435002): new registers CONTROL 0x060, STATUS 0x064, NEXT_X 0x068, NEXT_Y 0x06C, NEXT_Z 0x070, NEXT_LIMITS 0x074, LIMITS 0x078 and GENERICS bit 18 RUNTIME_CONFIG; the existing registers keep their offsets and fields." }
+      - { block: opencompact/ocp_core, kind: behaviour, text: "New interfaces Cfg (the configuration of the next image), CfgTaken and Act (the values taken for the last image), present only with RuntimeConfig_g." }
 
 olo:
   - previous: 1bc4fb90888cf24ac29bc54527c2982d2dec307c
