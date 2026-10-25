@@ -58,13 +58,22 @@ test('the start page groups the projects and shows every project exactly once', 
 test('a project that is not public yet shows Coming soon and no links, a public one its TRL and links', async ({ page }) => {
   await page.goto('/');
   const soon = page.locator('#projects .card').filter({ has: page.locator('.badge', { hasText: 'Coming soon' }) });
-  await expect(soon.locator('h4')).toHaveText(['OpenCAN', 'Open1553']);
+  await expect(soon.locator('h4')).toHaveText(['Open1553']);
   await expect(soon.locator('a')).toHaveCount(0);
   await expect(soon.locator('.trl')).toHaveCount(0);
   const dma = page.locator('#system-infrastructure .card');
   await expect(dma.locator('.trl')).toContainText('3');
   await expect(dma.getByRole('link', { name: 'Documentation' })).toHaveAttribute('href', '/opendma/');
   await expect(dma.getByRole('link', { name: 'Source on GitHub' })).toHaveAttribute('href', 'https://github.com/open-space-hdl/opendma');
+  const can = page.locator('#interfaces-protocols .card').filter({ has: page.locator('h4', { hasText: 'OpenCAN' }) });
+  await expect(can.locator('.trl')).toContainText('3');
+  await expect(can.getByRole('link', { name: 'Documentation' })).toHaveAttribute('href', '/opencan/');
+  await expect(can.getByRole('link', { name: 'Source on GitHub' })).toHaveAttribute('href', 'https://github.com/open-space-hdl/opencan');
+  // the TRL page lists a released project at its level, linked to its documentation
+  await page.goto('/trl/');
+  const row = page.locator('.status-table tbody tr').filter({ hasText: 'OpenCAN' });
+  await expect(row.locator('a.project-name')).toHaveAttribute('href', '/opencan/');
+  await expect(row.locator('.trl-scale')).toHaveAttribute('aria-label', 'Level 3 of 9');
 });
 
 test('every project card has a tagline and a summary of one sentence', async ({ page }) => {
@@ -117,15 +126,15 @@ test('the roadmap page is in the header of every page and on the TRL page, and l
     await expect(page.locator(`${target} h2`)).toHaveText(titles[i]);
   }
   // the roadmap of every core with a documentation site
-  await expect(page.locator('.link-row a')).toHaveText(['OpenWire', 'OpenFibre', 'OpenRMAP', 'OpenSPP', 'OpenCompact', 'OpenCrypto', 'OpenDMA']);
+  await expect(page.locator('.link-row a')).toHaveText(['OpenWire', 'OpenFibre', 'OpenRMAP', 'OpenSPP', 'OpenCAN', 'OpenCompact', 'OpenCrypto', 'OpenDMA']);
   for (const a of await page.locator('.link-row a').all()) await expect(a).toHaveAttribute('href', /^\/[a-z-]+\/docs\/roadmap\.html$/);
   // the overview states the state of every section; the building blocks of phase 1 of the space link core come next
   await expect(page.locator('.roadmap-toc .toc-state')).toHaveText(['In progress', 'Next', 'Next', 'In progress', 'Planned', 'Planned']);
   await expect(page.locator('.roadmap-section .eyebrow')).toHaveText(['In progress', 'Next', 'Next', 'In progress', 'Planned', 'Planned']);
   await expect(page.locator('.blocks-table .state-tag')).toHaveText(['Next', 'Next', 'Next', 'Planned', 'Planned', 'Planned', 'Done']);
-  // the further cores: the ones in progress first, then the planned ones in their order
+  // the further cores: the one in progress, the released CAN core, then the planned ones in their order
   await expect(page.locator('.cores-table td[data-label="Core"]')).toHaveText(['MIL-STD-1553B bus interface', 'CAN bus', 'Routing switch', 'Lossless data compression', 'Time codes']);
-  await expect(page.locator('.cores-table .state-tag')).toHaveText(['In progress', 'In progress', 'Planned', 'Planned', 'Planned']);
+  await expect(page.locator('.cores-table .state-tag')).toHaveText(['In progress', 'Done', 'Planned', 'Planned', 'Planned']);
   // the on-board chain ends with the transfer frames of the new core before the transmitter
   await expect(page.locator('.chain .chain-step.is-new')).toContainText('Transfer frames');
   expect(await page.locator('main').textContent()).not.toContain(String.fromCharCode(0x2014));
