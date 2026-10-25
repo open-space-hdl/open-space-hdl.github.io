@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "catalog": "955cea8c7666",
+  "catalog": "64a6eb49ec58",
   "entity": "spw_compression_node",
   "ports": [
     {
@@ -2329,6 +2329,12 @@
           "name": "RamStyle_g",
           "value": "auto",
           "vhdl": "\"auto\"",
+          "default": true
+        },
+        {
+          "name": "RuntimeConfig_g",
+          "value": false,
+          "vhdl": "false",
           "default": true
         },
         {
@@ -5477,10 +5483,10 @@
       "library": "opencompact",
       "source": "opencompact",
       "url": "https://github.com/open-space-hdl/opencompact",
-      "commit": "652153833a22407ec69aec66f77c722a29002d30",
+      "commit": "e427de1548b97e3757b11c412e4953aedfb6d366",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "verifiedWith": "4.7.0-ft.6",
+      "verifiedWith": "4.7.0-ft.9",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
       "entities": [
         "ocp_channel"
@@ -5536,11 +5542,11 @@
           "addrWidth": 8,
           "window": 256,
           "via": [],
-          "id": "0x4F435001",
+          "id": "0x4F435002",
           "registers": {
             "source": "opencompact",
             "url": "https://github.com/open-space-hdl/opencompact",
-            "commit": "652153833a22407ec69aec66f77c722a29002d30",
+            "commit": "e427de1548b97e3757b11c412e4953aedfb6d366",
             "header": "sw/ocp_regs.h",
             "doc": "hdl/ocp_mib/docs/register_map.md",
             "prefix": "OCP"

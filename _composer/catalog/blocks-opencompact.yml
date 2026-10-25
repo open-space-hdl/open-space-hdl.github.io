@@ -14,7 +14,9 @@ blocks:
     doc: /opencompact/docs/user_guide.html
     summary: >-
       Lossless and near-lossless compression of multispectral and hyperspectral images (CCSDS 123.0-B-2) with all
-      predictors, quantizers and entropy coders of the standard; every parameter is a generic, the header of the
+      predictors, quantizers and entropy coders of the standard; every parameter is a generic (with RuntimeConfig_g
+      the image dimensions and the band-independent error limit values of every image come from configuration ports),
+      the header of the
       compressed image follows from them.
     clocks:
       - { port: Clk, primary: true, label: Clock, description: All of the core. }
@@ -81,6 +83,7 @@ blocks:
       - { name: RefInterval_g, label: Reference sample interval (r), advanced: true, description: "Block-adaptive coder: 1 to 4096 blocks." }
       # Image framing and implementation (user guide 2.5)
       - { name: UseInLast_g, label: Image framing with In_Last, description: "In_Last marks the last sample of every image: early and missing image ends are detected, flagged on Out_Error and Ev_ImageError, and the core resynchronises." }
+      - { name: RuntimeConfig_g, label: Runtime configuration, description: "The image dimensions NX, NY, NZ and the band-independent absolute and relative error limit values of every image come from the Cfg interface (user guide section 4.4); XSize_g, YSize_g and ZSize_g are then the maxima. Excludes periodic error limit updating, band-dependent error limits, header tables whose length depends on NZ and supplementary information tables (CO-CF-04)." }
       - { name: OutWidth_g, label: Output width, unit: bits, choices: [8, 16, 32, 64], description: Width of the compressed image stream. }
       - { name: Speculation_g, label: Speculative weight loop, advanced: true, description: "Speculative weight loop of the predictor where it applies: one sample per cycle in BSQ order and with M = 1 (user guide 8.1)." }
       - { name: RamStyle_g, label: RAM style, advanced: true, description: Implementation of the memories (Open Logic). }
@@ -114,6 +117,18 @@ blocks:
       - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, description: "One pair for every memory of the core: corrected single error, detected double error.", memory: "memories of the predictor and the entropy coder (channels 0 to 13 of the error injection)", signals: { sec: Ecc_Sec, ded: Ecc_Ded } }
       - { name: ImageError, label: Image framing errors, type: sig.pulse, role: event_out, clock: Clk, tieOff: open, enabledBy: UseInLast_g, description: "One pulse for every image with a framing error, when it is detected at the input.", signals: { image_error: Ev_ImageError } }
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, description: Tests only., signals: { channel: ErrInj_Channel, double: ErrInj_Double, valid: ErrInj_Valid } }
+      - name: Cfg
+        label: Runtime configuration
+        type: sig.control
+        role: event_in
+        clock: Clk
+        enabledBy: RuntimeConfig_g
+        mustServe: true
+        tieOff: default
+        description: "NX, NY, NZ (1 to the maxima) and the absolute and relative error limit values of the next image, taken with its first sample; the values change together in one clock cycle. A value out of range is taken as the nearest valid value."
+        signals: { x_size: Cfg_XSize, y_size: Cfg_YSize, z_size: Cfg_ZSize, abs_limit: Cfg_AbsLimit, rel_limit: Cfg_RelLimit }
+      - { name: CfgTaken, label: Configuration taken, type: sig.pulse, role: event_out, clock: Clk, tieOff: open, enabledBy: RuntimeConfig_g, description: "One pulse in the clock cycle in which the core takes the configuration, with the first sample of an image.", signals: { taken: Cfg_Taken } }
+      - { name: Act, label: Active configuration, type: sig.status, role: event_out, clock: Clk, tieOff: open, enabledBy: RuntimeConfig_g, description: "The values the core took for the last image, after the range limitation (after a reset the maxima and the first error limit values of the generics).", signals: { x_size: Act_XSize, y_size: Act_YSize, z_size: Act_ZSize, abs_limit: Act_AbsLimit, rel_limit: Act_RelLimit } }
     # In_Error (with In_Last: the image ends with an error) serves a source that knows its faulty samples, such as the
     # input adapter inside ocp_channel; no sample source of the catalog has such a flag
     tieOffs:
@@ -162,6 +177,17 @@ blocks:
       - { kind: generic_range, generic: AccuInit_g, elements: "AccuInitBandVarying_g * (ZSize_g - 1) + 1", min: 0, max: "min(DynamicRange_g - 2, 14)", when: { generic: EntropyCoder_g, is: SAMPLE_ADAPTIVE }, message: "CCSDS 5.4.3.2.3.3" }
       # hdl/ocp_predictor/src/ocp_predictor.vhd: periodic error limit updating needs BI order in near-lossless compression
       - { kind: generic_requires, generic: PeriodicUpdate_g, value: true, requires: { EncodingOrder_g: BI }, when: { generic: Fidelity_g, not: LOSSLESS } }
+      # hdl/ocp_core/src/ocp_core.vhd (CO-CF-04): the configurations whose header or quantizer cannot follow the
+      # dimensions and error limit values of every image are excluded with the runtime configuration
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { PeriodicUpdate_g: false }, when: { generic: Fidelity_g, not: LOSSLESS } }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { AbsBandDependent_g: false }, when: [{ generic: Fidelity_g, not: LOSSLESS }, { generic: Fidelity_g, not: RELATIVE }] }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { RelBandDependent_g: false }, when: [{ generic: Fidelity_g, not: LOSSLESS }, { generic: Fidelity_g, not: ABSOLUTE }] }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { WeightInitTable_g: false }, when: CustomWeights_g }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { WeightExpOffsetTable_g: false }, when: WeightExpOffsetsUsed_g }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { DampingTable_g: false }, when: [DampingBandVarying_g, { generic: SampleRepResolution_g, not: 0 }] }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { OffsetTable_g: false }, when: [OffsetBandVarying_g, { generic: SampleRepResolution_g, not: 0 }] }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { AccuInitTable_g: false }, when: [AccuInitBandVarying_g, { generic: EntropyCoder_g, is: SAMPLE_ADAPTIVE }] }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { SupTableCount_g: 0 } }
       # the error flag of the compressed images (Out_Error) where the image framing reports framing errors
       - kind: flag_dropped
         interface: Out
@@ -173,7 +199,7 @@ blocks:
           framing error is sent like a good one. Mark or discard such images by Out_Error, or count them at
           ImageError (Ev_ImageError).
     rates:
-      evidence: "tools/ocp_throughput.py: the cycle in which the predictor takes every sample of a configuration (checked cycle by cycle by the predictor testbench: TC-PR-01 to TC-PR-37, PR-TP-01 to PR-TP-03) and image_period, the cycles between the first samples of consecutive images (TC-CO-50); tools/ocp_model.py: the header (compared with the CNES reference software for every configuration of the regression) and max_image_bytes, the upper bound on the compressed image (TC-CO-51: every compressed image of the regression and of the CCSDS test data set); user guide section 8.1; the bit packer outputs OutWidth_g bits per cycle (TC-CO-39 to TC-CO-41, TC-CO-45)"
+      evidence: "tools/ocp_throughput.py: the cycle in which the predictor takes every sample of a configuration (checked cycle by cycle by the predictor testbench: TC-PR-01 to TC-PR-37, PR-TP-01 to PR-TP-03) and image_period, the cycles between the first samples of consecutive images (TC-CO-50); tools/ocp_model.py: the header (compared with the CNES reference software for every configuration of the regression) and max_image_bytes, the upper bound on the compressed image (TC-CO-51: every compressed image of the regression and of the CCSDS test data set); user guide section 8.1; with RuntimeConfig_g the period of two images of the maxima from runtime_accept_cycles, without the stride order and with the image-start sequencer (TC-CO-53); the bit packer outputs OutWidth_g bits per cycle (TC-CO-39 to TC-CO-41, TC-CO-45)"
       model: ocp
       packet: image
       assumed:
@@ -194,10 +220,11 @@ blocks:
       interfaces:
         In: { noLimit: true }
     init:
-      - { text: "None: the core starts from the initial state of the standard with every image; all parameters are generics." }
+      - { text: "None: the core starts from the initial state of the standard with every image; all parameters are generics.", unless: [RuntimeConfig_g] }
+      - { text: "Drive Cfg with the configuration of an image before its first sample; Cfg_Taken pulses when the core takes it, and Act shows the values taken for the last image.", when: [RuntimeConfig_g] }
     notes:
       - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen with SyncTmr_g = true. A reset aborts the image in progress.
-      - Every image is compressed independently with the same parameters; the samples of the next image may follow the last sample of an image without a gap.
+      - Every image is compressed independently with the same parameters (with RuntimeConfig_g its own dimensions and error limit values from Cfg); the samples of the next image may follow the last sample of an image without a gap.
       - The decompressor must know the tables that are not in the header (table generics false) and the initial accumulators of the hybrid coder.
       - The hybrid coder is decoded from the end of the compressed image; keep Out_Last (the end of the packet) up to the decompressor.
       - After a detected double error (Ecc_Ded) the compressed image in progress may be wrong; discard it and reset the core before the next image.
@@ -219,8 +246,9 @@ blocks:
     doc: /opencompact/docs/user_guide.html
     summary: >-
       The compressor of ocp_core for a system: the samples of the images arrive as SDUs on a byte stream, for example
-      from a receive port of OpenSPP, every compressed image leaves as one packet of a byte stream, and read-only
-      registers report the configuration and count the images, the faulty and discarded SDUs and the memory errors.
+      from a receive port of OpenSPP, every compressed image leaves as one packet of a byte stream, and registers
+      report the configuration (with RuntimeConfig_g they set the dimensions and error limits of every image) and count
+      the images, the faulty and discarded SDUs and the memory errors.
     clocks:
       - { port: Clk, primary: true, label: Clock, description: All of the channel. }
     resets:
@@ -288,6 +316,7 @@ blocks:
       - { name: OutWidth_g, label: Core word width, unit: bits, choices: [8, 16, 32, 64], description: Width of the words of ocp_core; the output converter of the channel adapts them to the compressed image stream. }
       - { name: Speculation_g, label: Speculative weight loop, advanced: true, description: "Speculative weight loop of the predictor where it applies: one sample per cycle in BSQ order and with M = 1 (user guide 8.1)." }
       - { name: RamStyle_g, label: RAM style, advanced: true, description: Implementation of the memories (Open Logic). }
+      - { name: RuntimeConfig_g, label: Runtime configuration, description: "The image dimensions NX, NY, NZ and the band-independent absolute and relative error limit values of every image come from the registers NEXT_X, NEXT_Y, NEXT_Z and NEXT_LIMITS with CONTROL.COMMIT (user guide sections 4.3 and 4.4); XSize_g, YSize_g and ZSize_g are then the maxima. Excludes periodic error limit updating, band-dependent error limits, header tables whose length depends on NZ and supplementary information tables (CO-CF-04)." }
       # Streams and the user signal of the SDUs (user guide 4.3)
       - { name: InStreamWidth_g, label: SDU stream width, unit: bits, choices: [8, 16, 32, 64, 128], description: Width of the SDU stream; follows the connected source unless set by hand., follow: { interfaces: [In], measure: data } }
       - { name: OutStreamWidth_g, label: Compressed image stream width, unit: bits, choices: [8, 16, 32, 64, 128], description: Width of the compressed image stream; follows the connected sink unless set by hand., follow: { interfaces: [Out], measure: data } }
@@ -355,7 +384,7 @@ blocks:
         name: Near-lossless BIP, stride order
         summary: "Near-lossless compression with an absolute error limit in BIP order (M = NZ), full prediction and the sample-adaptive coder; the predictor uses its stride order. Configuration c29 of the user guide."
         generics: { SubFrameDepth_g: { sameAs: ZSize_g, why: BIP }, OutputWordSize_g: 2, RegisterSize_g: 48, WeightResolution_g: 14, WeightUpdateInterval_g: 5, Fidelity_g: ABSOLUTE, AbsBitDepth_g: 4, AbsErrorLimits_g: "(0 => 2)", SampleRepResolution_g: 2, Damping_g: "(0 => 1)", Offset_g: "(0 => 2)" }
-    idRegister: { address: "0x000", value: "0x4F435001" }
+    idRegister: { address: "0x000", value: "0x4F435002" }
     registers: { map: hdl/ocp_mib/regs/ocp_regs.yml, header: sw/ocp_regs.h, doc: hdl/ocp_mib/docs/register_map.md, prefix: OCP }
     # the ECC of the memories of ocp_core; the status registers count the events, the events also leave at Ecc
     protection:
@@ -373,6 +402,17 @@ blocks:
       - { kind: generic_range, generic: RescaleCounterSize_g, min: "max(4, InitialCountExp_g + 1)", when: { generic: EntropyCoder_g, not: BLOCK_ADAPTIVE }, message: "CCSDS 5.4.3.2.3.4, 5.4.3.3.4.5" }
       - { kind: generic_range, generic: AccuInit_g, elements: "AccuInitBandVarying_g * (ZSize_g - 1) + 1", min: 0, max: "min(DynamicRange_g - 2, 14)", when: { generic: EntropyCoder_g, is: SAMPLE_ADAPTIVE }, message: "CCSDS 5.4.3.2.3.3" }
       - { kind: generic_requires, generic: PeriodicUpdate_g, value: true, requires: { EncodingOrder_g: BI }, when: { generic: Fidelity_g, not: LOSSLESS } }
+      # hdl/ocp_core/src/ocp_core.vhd (CO-CF-04): the configurations whose header or quantizer cannot follow the
+      # dimensions and error limit values of every image are excluded with the runtime configuration
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { PeriodicUpdate_g: false }, when: { generic: Fidelity_g, not: LOSSLESS } }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { AbsBandDependent_g: false }, when: [{ generic: Fidelity_g, not: LOSSLESS }, { generic: Fidelity_g, not: RELATIVE }] }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { RelBandDependent_g: false }, when: [{ generic: Fidelity_g, not: LOSSLESS }, { generic: Fidelity_g, not: ABSOLUTE }] }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { WeightInitTable_g: false }, when: CustomWeights_g }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { WeightExpOffsetTable_g: false }, when: WeightExpOffsetsUsed_g }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { DampingTable_g: false }, when: [DampingBandVarying_g, { generic: SampleRepResolution_g, not: 0 }] }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { OffsetTable_g: false }, when: [OffsetBandVarying_g, { generic: SampleRepResolution_g, not: 0 }] }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { AccuInitTable_g: false }, when: [AccuInitBandVarying_g, { generic: EntropyCoder_g, is: SAMPLE_ADAPTIVE }] }
+      - { kind: generic_requires, generic: RuntimeConfig_g, value: true, requires: { SupTableCount_g: 0 } }
       # hdl/ocp_input_adapter/src/ocp_input_adapter.vhd: the end mark value lies within its mask (IA-CF-01); the stream
       # widths 8 to 128 are given by their choices
       - { kind: vector_within, generic: UserLastValue_g, mask: UserLastMask_g, message: "the end mark compares only the bits of the mask (IA-CF-01)" }
@@ -386,7 +426,7 @@ blocks:
           with an error (aborted, completed by a faulty SDU, or without its end mark) is sent like a good one. Mark or
           discard such images by Out_Error, or take them from the counter IMAGES_ABORTED of the status registers.
     rates:
-      evidence: "the rate data of ocp_core (tools/ocp_throughput.py image_period, tools/ocp_model.py header and max_image_bytes; user guide section 8.1); ocp_channel specification CH-TP-01 and ocp_input_adapter specification IA-FN-05: the samples at the byte rate of the source up to one sample per clock cycle, at most one clock cycle per SDU and one per compressed image"
+      evidence: "the rate data of ocp_core (tools/ocp_throughput.py image_period, tools/ocp_model.py header and max_image_bytes; user guide section 8.1); ocp_channel specification CH-TP-01 and ocp_input_adapter specification IA-FN-05: the samples at the byte rate of the source up to one sample per clock cycle, at most one clock cycle per SDU and one per compressed image; with RuntimeConfig_g the period of ocp_core for two images of the maxima (runtime_accept_cycles, TC-CO-53)"
       model: ocp
       packet: image
       assumed:
@@ -410,7 +450,8 @@ blocks:
       interfaces:
         In: { noLimit: true }
     init:
-      - { text: "None: the channel starts from the initial state of the standard with every image; all parameters are generics. Read ID (0x000) = 0x4F435001 to identify the channel; the configuration registers (0x004 to 0x02C) give the parameters of the compressed images." }
+      - { text: "None: the channel starts from the initial state of the standard with every image; all parameters are generics. Read ID (0x000) = 0x4F435002 to identify the channel; the configuration registers (0x004 to 0x02C) give the parameters of the compressed images.", unless: [RuntimeConfig_g] }
+      - { text: "Read ID (0x000) = 0x4F435002 to identify the channel. Before the first sample of an image write NEXT_X (0x068), NEXT_Y (0x06C), NEXT_Z (0x070) and NEXT_LIMITS (0x074), then CONTROL.COMMIT (0x060); STATUS (0x064) shows CFG_ERROR for a value out of range and CFG_PENDING until the next image start.", when: [RuntimeConfig_g] }
     endToEnd: "Send the SDUs of one image, the last one with the end mark, and expect one compressed image at Out without Out_Error; IMAGES_DONE (status registers) counts it."
     notes:
       - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen with SyncTmr_g = true. A reset aborts the image in progress and clears the counters.
