@@ -6858,5 +6858,2068 @@
     ]
    }
   }
+ ],
+ "latencyM": [
+  {
+   "name": "c01_lossless_bip",
+   "generics": {
+    "XSize_g": 32,
+    "YSize_g": 12,
+    "ZSize_g": 16,
+    "DynamicRange_g": 16,
+    "SignedSamples_g": false,
+    "UserData_g": 0,
+    "EncodingOrder_g": "BI",
+    "SubFrameDepth_g": 16,
+    "OutputWordSize_g": 4,
+    "EntropyCoder_g": "SAMPLE_ADAPTIVE",
+    "SupTableCount_g": 0,
+    "SupTableData_g": "x\"00\"",
+    "PredictionBands_g": 3,
+    "PredictionMode_g": "FULL",
+    "LocalSum_g": "WIDE_NEIGHBOR",
+    "RegisterSize_g": 32,
+    "WeightResolution_g": 13,
+    "WeightUpdateInterval_g": 6,
+    "WeightUpdateVmin_g": -1,
+    "WeightUpdateVmax_g": 3,
+    "WeightExpOffsetsUsed_g": false,
+    "WeightExpOffsetTable_g": false,
+    "WeightExpOffsets_g": "(0 => 0)",
+    "CustomWeights_g": false,
+    "WeightInitTable_g": false,
+    "WeightInitResolution_g": 0,
+    "WeightInitValues_g": "(0 => 0)",
+    "Fidelity_g": "LOSSLESS",
+    "PeriodicUpdate_g": false,
+    "UpdatePeriodExp_g": 0,
+    "AbsBandDependent_g": false,
+    "AbsBitDepth_g": 1,
+    "AbsErrorLimits_g": "(0 => 0)",
+    "RelBandDependent_g": false,
+    "RelBitDepth_g": 1,
+    "RelErrorLimits_g": "(0 => 0)",
+    "SampleRepResolution_g": 0,
+    "DampingBandVarying_g": false,
+    "DampingTable_g": false,
+    "Damping_g": "(0 => 0)",
+    "OffsetBandVarying_g": false,
+    "OffsetTable_g": false,
+    "Offset_g": "(0 => 0)",
+    "UnaryLimit_g": 18,
+    "RescaleCounterSize_g": 6,
+    "InitialCountExp_g": 1,
+    "AccuInitBandVarying_g": false,
+    "AccuInitTable_g": false,
+    "AccuInit_g": "(0 => 4)",
+    "HybridAccuInit_g": "(0 => 0)",
+    "HybridAccuInitHigh_g": "(0 => 0)",
+    "BlockSize_g": 16,
+    "RestrictedCodes_g": false,
+    "RefInterval_g": 4096,
+    "RuntimeConfig_g": true,
+    "RuntimeParams_g": true
+   },
+   "probes": [
+    {
+     "dims": [
+      2,
+      1,
+      2,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      2,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      3,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      3,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      3,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      3,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      2,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      2,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      3,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      3,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      3,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      3,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      32,
+      1,
+      2,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      1,
+      2,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      1,
+      3,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      1,
+      3,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      1,
+      4,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      1,
+      4,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      1,
+      5,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      1,
+      5,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      1,
+      6,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      1,
+      6,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      2,
+      2,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      2,
+      2,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      2,
+      3,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      2,
+      3,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      2,
+      4,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      2,
+      4,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      2,
+      5,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      2,
+      5,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      2,
+      6,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      32,
+      2,
+      6,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    }
+   ]
+  },
+  {
+   "name": "c05_near_rel_bi4_signed",
+   "generics": {
+    "XSize_g": 20,
+    "YSize_g": 10,
+    "ZSize_g": 14,
+    "DynamicRange_g": 14,
+    "SignedSamples_g": true,
+    "UserData_g": 0,
+    "EncodingOrder_g": "BI",
+    "SubFrameDepth_g": 4,
+    "OutputWordSize_g": 3,
+    "EntropyCoder_g": "HYBRID",
+    "SupTableCount_g": 0,
+    "SupTableData_g": "x\"00\"",
+    "PredictionBands_g": 6,
+    "PredictionMode_g": "REDUCED",
+    "LocalSum_g": "NARROW_COLUMN",
+    "RegisterSize_g": 36,
+    "WeightResolution_g": 12,
+    "WeightUpdateInterval_g": 5,
+    "WeightUpdateVmin_g": -2,
+    "WeightUpdateVmax_g": 5,
+    "WeightExpOffsetsUsed_g": true,
+    "WeightExpOffsetTable_g": true,
+    "WeightExpOffsets_g": "(3, -2, 5, -1, 5, 5, 4, 2, -6, 1, -3, 4, -6, -4, -5, -1, 1, -3, 0, 2, -5, 3, -3, -6, 5, -3, 0, -2, -4, 0, -4, -5, -4, 3, 3, 1, -4, -4, -6, -6, -3, -3, -4, -4, -2, -1, -3, 2, 4, 4, -3, -4, 5, -3, 0, -2, -6, -1, 0, -4, -4, -2, -5)",
+    "CustomWeights_g": false,
+    "WeightInitTable_g": false,
+    "WeightInitResolution_g": 0,
+    "WeightInitValues_g": "(0 => 0)",
+    "Fidelity_g": "RELATIVE",
+    "PeriodicUpdate_g": false,
+    "UpdatePeriodExp_g": 0,
+    "AbsBandDependent_g": false,
+    "AbsBitDepth_g": 1,
+    "AbsErrorLimits_g": "(0 => 0)",
+    "RelBandDependent_g": true,
+    "RelBitDepth_g": 8,
+    "RelErrorLimits_g": "(16, 32, 64, 8, 0, 128, 24)",
+    "SampleRepResolution_g": 0,
+    "DampingBandVarying_g": false,
+    "DampingTable_g": false,
+    "Damping_g": "(0 => 0)",
+    "OffsetBandVarying_g": false,
+    "OffsetTable_g": false,
+    "Offset_g": "(0 => 0)",
+    "UnaryLimit_g": 20,
+    "RescaleCounterSize_g": 6,
+    "InitialCountExp_g": 1,
+    "AccuInitBandVarying_g": false,
+    "AccuInitTable_g": false,
+    "AccuInit_g": "(0 => 3)",
+    "HybridAccuInit_g": "(0 => 64)",
+    "HybridAccuInitHigh_g": "(0 => 0)",
+    "BlockSize_g": 16,
+    "RestrictedCodes_g": false,
+    "RefInterval_g": 4096,
+    "RuntimeConfig_g": true,
+    "RuntimeParams_g": true
+   },
+   "probes": [
+    {
+     "dims": [
+      20,
+      1,
+      2,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      1,
+      2,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      1,
+      3,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      1,
+      3,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      1,
+      4,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      1,
+      4,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      1,
+      5,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      1,
+      5,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      1,
+      6,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      1,
+      6,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      2,
+      2,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      2,
+      2,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      2,
+      3,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      2,
+      3,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      2,
+      4,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      2,
+      4,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      2,
+      5,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      2,
+      5,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      2,
+      6,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    },
+    {
+     "dims": [
+      20,
+      2,
+      6,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 34,
+     "lCross": 34
+    }
+   ]
+  },
+  {
+   "name": "c09_custom_weights",
+   "generics": {
+    "XSize_g": 20,
+    "YSize_g": 12,
+    "ZSize_g": 10,
+    "DynamicRange_g": 16,
+    "SignedSamples_g": false,
+    "UserData_g": 0,
+    "EncodingOrder_g": "BI",
+    "SubFrameDepth_g": 10,
+    "OutputWordSize_g": 4,
+    "EntropyCoder_g": "SAMPLE_ADAPTIVE",
+    "SupTableCount_g": 0,
+    "SupTableData_g": "x\"00\"",
+    "PredictionBands_g": 4,
+    "PredictionMode_g": "FULL",
+    "LocalSum_g": "WIDE_NEIGHBOR",
+    "RegisterSize_g": 40,
+    "WeightResolution_g": 16,
+    "WeightUpdateInterval_g": 8,
+    "WeightUpdateVmin_g": -2,
+    "WeightUpdateVmax_g": 6,
+    "WeightExpOffsetsUsed_g": true,
+    "WeightExpOffsetTable_g": false,
+    "WeightExpOffsets_g": "(1, 3, -1, -2, -4, -4, 4, -6, -1, 2, 1, 3, -5, -1, 2, 3, 5, -6, 5, 0, -4, 5, 1, 5, 0, -4, -4, -3, -6, -5, -4, 2, 3, -5, 5, 0, 5, -5, -2, -3)",
+    "CustomWeights_g": true,
+    "WeightInitTable_g": true,
+    "WeightInitResolution_g": 10,
+    "WeightInitValues_g": "(5, -3, 1, 4, -2, 1, 103, 3, -3, 1, 106, 12, 5, -2, 1, 109, 11, 2, 4, -3, 1, 112, 11, 2, -1, 3, -2, 1, 115, 11, 2, -1, 5, -3, 1, 118, 10, 2, -1, 4, -2, 1, 121, 10, 2, -1, 3, -3, 1, 124, 10, 2, -1, 5, -2, 1, 127, 9, 2, -1)",
+    "Fidelity_g": "LOSSLESS",
+    "PeriodicUpdate_g": false,
+    "UpdatePeriodExp_g": 0,
+    "AbsBandDependent_g": false,
+    "AbsBitDepth_g": 1,
+    "AbsErrorLimits_g": "(0 => 0)",
+    "RelBandDependent_g": false,
+    "RelBitDepth_g": 1,
+    "RelErrorLimits_g": "(0 => 0)",
+    "SampleRepResolution_g": 0,
+    "DampingBandVarying_g": false,
+    "DampingTable_g": false,
+    "Damping_g": "(0 => 0)",
+    "OffsetBandVarying_g": false,
+    "OffsetTable_g": false,
+    "Offset_g": "(0 => 0)",
+    "UnaryLimit_g": 24,
+    "RescaleCounterSize_g": 9,
+    "InitialCountExp_g": 4,
+    "AccuInitBandVarying_g": false,
+    "AccuInitTable_g": false,
+    "AccuInit_g": "(0 => 6)",
+    "HybridAccuInit_g": "(0 => 0)",
+    "HybridAccuInitHigh_g": "(0 => 0)",
+    "BlockSize_g": 16,
+    "RestrictedCodes_g": false,
+    "RefInterval_g": 4096,
+    "RuntimeConfig_g": true,
+    "RuntimeParams_g": true
+   },
+   "probes": [
+    {
+     "dims": [
+      2,
+      1,
+      2,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      2,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      3,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      3,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      3,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      3,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      4,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      5,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      1,
+      6,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      2,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      2,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      3,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      3,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      3,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      3,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      4,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      5,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      2
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      2
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      3
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      2,
+      2,
+      6,
+      3
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 4,
+     "lCross": 5
+    },
+    {
+     "dims": [
+      20,
+      1,
+      2,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      1,
+      2,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      1,
+      3,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      1,
+      3,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      1,
+      4,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      1,
+      4,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      1,
+      5,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      1,
+      5,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      1,
+      6,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      1,
+      6,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      2,
+      2,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      2,
+      2,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      2,
+      3,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      2,
+      3,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      2,
+      4,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      2,
+      4,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      2,
+      5,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      2,
+      5,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      2,
+      6,
+      1
+     ],
+     "speculation": true,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    },
+    {
+     "dims": [
+      20,
+      2,
+      6,
+      1
+     ],
+     "speculation": false,
+     "runRows": false,
+     "lFix": 0,
+     "lCross": 0
+    }
+   ]
+  }
  ]
 }

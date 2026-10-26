@@ -107,9 +107,33 @@ def main() -> None:
             entry["speculation" if spec else "noSpeculation"] = {
                 "imagePeriod": two[maxima[0] * maxima[1] * maxima[2]] - two[0], "starts": starts}
         params.append(entry)
-    constants = {"LE_MAX_OUT": ocp_model.LE_MAX_OUT, "LE_MAX_FLUSH": ocp_model.LE_MAX_FLUSH}
+    # The issue distances with the M of an image (latencies with dims (nx, ny, nz, m)) where they differ from those
+    # with the M of the generics: the first three configurations of the regression in BI order with such images, the
+    # generics taken as the maxima, images of 1 and 2 rows and up to six bands
+    probes = []
+    for name, cfg in ocp_configs.ALL.items():
+        g = dict(ocp_generics.generics(cfg), RuntimeConfig_g=True, RuntimeParams_g=True)
+        if g["EncodingOrder_g"] != "BI" or len(probes) == 3:
+            continue
+        found = []
+        for nx in sorted({2, g["XSize_g"]}):
+            for ny in (1, 2):
+                for nz in range(1, min(g["ZSize_g"], 6) + 1):
+                    for m in range(1, min(g["SubFrameDepth_g"], nz) + 1):
+                        for spec in (True, False):
+                            a = ocp_throughput.latencies(g, spec, dims=(nx, ny, nz))
+                            b = ocp_throughput.latencies(g, spec, dims=(nx, ny, nz, m))
+                            key = ("run_rows", "l_fix", "l_cross")
+                            if any(a[k] != b[k] for k in key):
+                                found.append({"dims": [nx, ny, nz, m], "speculation": spec, "runRows": b["run_rows"],
+                                              "lFix": b["l_fix"], "lCross": b["l_cross"]})
+        if found:
+            vhdl = {k: (v if isinstance(v, (bool, int)) else ocp_wrapper.value(k, v).strip('"')
+                        if k in ocp_wrapper.STRINGS else ocp_wrapper.value(k, v)) for k, v in g.items()}
+            probes.append({"name": name, "generics": vhdl, "probes": found})
+    constants ={"LE_MAX_OUT": ocp_model.LE_MAX_OUT, "LE_MAX_FLUSH": ocp_model.LE_MAX_FLUSH}
     OUT.write_text(json.dumps({"source": "opencompact", "commit": commit, "constants": constants, "configs": configs,
-                               "runtime": runtime, "runtimeParams": params}, indent=1) + "\n", encoding="utf-8",
+                               "runtime": runtime, "runtimeParams": params, "latencyM": probes}, indent=1) + "\n", encoding="utf-8",
                    newline="\n")
     print(f"wrote {OUT.relative_to(ROOT)}: {len(configs)} configurations, {len(runtime)} runtime configurations and"
           f" {len(params)} runtime parameter configurations at {commit[:10]}")

@@ -119,11 +119,44 @@ test('runtime parameters: the period of the maxima, the starts of a sequence wit
   // in BI order the sequences take their own M: the images of the maxima and the others differ
   assert.ok(params.filter((c) => c.generics.EncodingOrder_g === 'BI').every((c) => new Set(c.dims.map((d) => d[3])).size > 1));
   // the bound with the runtime parameters is at least the bound with the values of the generics; the sample-adaptive and
-  // the hybrid coder take Umax up to 32 whatever UnaryLimit_g is
+  // the hybrid coder take Umax up to 32 whatever UnaryLimit_g is; without the runtime configuration the generic has no
+  // effect (the core stops the elaboration)
   for (const c of params) {
     const fixed = maxImageBytes({ ...c.generics, RuntimeParams_g: false });
     if (c.generics.EntropyCoder_g === 'BLOCK_ADAPTIVE') assert.equal(c.maxImageBytes, fixed, c.name);
     else assert.ok(c.maxImageBytes > fixed, `${c.name}: ${c.maxImageBytes} > ${fixed}`);
+    assert.equal(maxImageBytes({ ...c.generics, RuntimeConfig_g: false }), maxImageBytes({ ...c.generics, RuntimeConfig_g: false, RuntimeParams_g: false }), c.name);
+  }
+});
+
+test('runtime parameters: the issue distances with the M of an image equal the Python model where M changes them', () => {
+  /** @type {{ name: string, generics: Record<string, any>, probes: { dims: number[], speculation: boolean, runRows: boolean, lFix: number, lCross: number }[] }[]} */
+  const probes = golden.latencyM;
+  assert.equal(probes.length, 3);
+  for (const c of probes) {
+    assert.ok(c.probes.length > 0, c.name);
+    for (const p of c.probes) {
+      const lat = latencies(c.generics, p.speculation, p.dims);
+      assert.deepEqual([lat.runRows, lat.lFix, lat.lCross], [p.runRows, p.lFix, p.lCross], `${c.name} ${p.dims} speculation ${p.speculation}`);
+    }
+  }
+});
+
+test('runtime parameters: the bound is the largest max_image_bytes over Umax 32 and every gamma0 and gamma*', () => {
+  // small images (no rescaling: the longest final accumulators, gamma* at its maximum) and larger ones (the most
+  // rescalings, a small gamma*), from the hybrid configuration of the regression
+  const hybrid = /** @type {any} */ (golden.runtimeParams).find((/** @type {any} */ c) => c.generics.EntropyCoder_g === 'HYBRID').generics;
+  for (const [nx, ny] of [[2, 1], [3, 2], [12, 8], [64, 64]]) {
+    for (const gs of [4, 6, 11]) {
+      const g = { ...hybrid, XSize_g: nx, YSize_g: ny, RescaleCounterSize_g: gs };
+      let want = 0;
+      for (let g0 = 1; g0 <= Math.min(8, gs - 1); g0 += 1) {
+        for (let gsi = Math.max(4, g0 + 1); gsi <= gs; gsi += 1) {
+          want = Math.max(want, maxImageBytes({ ...g, RuntimeParams_g: false, UnaryLimit_g: 32, InitialCountExp_g: g0, RescaleCounterSize_g: gsi }));
+        }
+      }
+      assert.equal(maxImageBytes(g), want, `${nx} x ${ny} gamma* ${gs}`);
+    }
   }
 });
 
