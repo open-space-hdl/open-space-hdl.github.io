@@ -4,7 +4,7 @@
   "formatVersion": 2,
   "generator": {
     "name": "Open Space Composer",
-    "version": "0.9.11-beta",
+    "version": "0.9.11-beta+ocp-develop",
     "catalog": "17885a802fd3"
   },
   "system": {

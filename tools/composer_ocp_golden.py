@@ -8,7 +8,8 @@ clone of OpenCompact at the pinned commit for every configuration of its regress
 named and the random configurations) and writes their results to tests/golden/ocp_models.json, where the unit tests
 compare the port with them. For the runtime configurations of the regression (tools/ocp_configs.py RUNTIME,
 RuntimeConfig_g = true) it writes the period of two images of the maxima and the start of every image of the seeded
-sequence of the regression (runtime_accept_cycles).
+sequence of the regression (runtime_accept_cycles); for the runtime parameter configurations (RUNTIME_PARAMS,
+RuntimeParams_g = true) also with the M of every image, and the maximum of max_image_bytes over the parameter ranges.
 
     python tools/composer_ocp_golden.py <clone of opencompact at the pin>
 """
@@ -76,11 +77,42 @@ def main() -> None:
             entry["speculation" if spec else "noSpeculation"] = {
                 "imagePeriod": two[maxima[0] * maxima[1] * maxima[2]] - two[0], "starts": starts}
         runtime.append(entry)
+    # The runtime parameter configurations of the regression (tools/ocp_configs.py RUNTIME_PARAMS, RuntimeParams_g =
+    # true; M, gamma* and r of a configuration are the maxima): the period of two images of the maxima, the start of
+    # every image of the seeded sequence of the regression (TC-CO-59) with the M the core takes in BI order, and the
+    # maximum of max_image_bytes over the parameter ranges of every image (Umax 8 to 32, gamma0 from 1 to
+    # min(8, gamma* - 1), gamma* from max(4, gamma0 + 1) to the maximum; CO-RP-02)
+    params = []
+    for name, cfg in getattr(ocp_configs, "RUNTIME_PARAMS", {}).items():
+        g = dict(ocp_generics.generics(cfg), RuntimeConfig_g=True, RuntimeParams_g=True)
+        vhdl = {k: (v if isinstance(v, (bool, int)) else ocp_wrapper.value(k, v).strip('"')
+                    if k in ocp_wrapper.STRINGS else ocp_wrapper.value(k, v)) for k, v in g.items()}
+        maxima = (g["XSize_g"], g["YSize_g"], g["ZSize_g"])
+        bi = g["EncodingOrder_g"] == "BI"
+        dims = [tuple(taken[:3]) + ((p_taken[1],) if bi else ())
+                for _, taken, _, p_taken in ocp_configs.runtime_params_sequence(cfg)]
+        bound = ocp_model.max_image_bytes(cfg)
+        if cfg["entropy_coder_type"] != 2:
+            gs_max = cfg["gamma_star"]
+            bound = max(ocp_model.max_image_bytes(dict(cfg, large_u_max=32, gamma_0=g0, gamma_star=gs))
+                        for g0 in range(1, min(8, gs_max - 1) + 1) for gs in range(max(4, g0 + 1), gs_max + 1))
+        entry = {"name": name, "generics": vhdl, "maxImageBytes": bound, "dims": [list(d) for d in dims]}
+        for spec in (True, False):
+            two = ocp_throughput.runtime_accept_cycles(g, [maxima, maxima], spec)
+            seq = ocp_throughput.runtime_accept_cycles(g, dims, spec)
+            starts, k = [], 0
+            for dim in dims:
+                starts.append(seq[k] - seq[0])
+                k += dim[0] * dim[1] * dim[2]
+            entry["speculation" if spec else "noSpeculation"] = {
+                "imagePeriod": two[maxima[0] * maxima[1] * maxima[2]] - two[0], "starts": starts}
+        params.append(entry)
     constants = {"LE_MAX_OUT": ocp_model.LE_MAX_OUT, "LE_MAX_FLUSH": ocp_model.LE_MAX_FLUSH}
     OUT.write_text(json.dumps({"source": "opencompact", "commit": commit, "constants": constants, "configs": configs,
-                               "runtime": runtime}, indent=1) + "\n", encoding="utf-8", newline="\n")
-    print(f"wrote {OUT.relative_to(ROOT)}: {len(configs)} configurations and {len(runtime)} runtime configurations at"
-          f" {commit[:10]}")
+                               "runtime": runtime, "runtimeParams": params}, indent=1) + "\n", encoding="utf-8",
+                   newline="\n")
+    print(f"wrote {OUT.relative_to(ROOT)}: {len(configs)} configurations, {len(runtime)} runtime configurations and"
+          f" {len(params)} runtime parameter configurations at {commit[:10]}")
 
 
 if __name__ == "__main__":

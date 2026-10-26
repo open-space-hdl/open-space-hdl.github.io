@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { coderCycles, headerBytes, imagePeriod, imageStartCycles, issueSpan, latencies, LE_MAX_FLUSH, LE_MAX_OUT, maxImageBytes, outputSpan, runtimeAcceptCycles, strideParams } from '../../assets/composer/js/model/ocp.js';
+import { coderCycles, headerBytes, imagePeriod, imageStartCycles, issueSpan, latencies, LE_MAX_FLUSH, LE_MAX_OUT, maxImageBytes, outputSpan, rescaleCount, runtimeAcceptCycles, strideParams } from '../../assets/composer/js/model/ocp.js';
 import { ROOT } from './helpers.mjs';
 
 const golden = JSON.parse(readFileSync(`${ROOT}tests/golden/ocp_models.json`, 'utf-8'));
@@ -93,6 +93,57 @@ test('runtime configurations: the image start, the period of two images of the m
   const constant = { .../** @type {any} */ (rc02).generics, RuntimeConfig_g: false };
   assert.ok(strideParams(constant, latencies(constant)));
   assert.notEqual(imagePeriod(constant), /** @type {any} */ (rc02).speculation.imagePeriod);
+});
+
+test('runtime parameters: the period of the maxima, the starts of a sequence with the M of every image and the bound over the parameter ranges equal the Python model', () => {
+  /** @type {{ name: string, generics: Record<string, any>, maxImageBytes: number, dims: number[][], speculation: any, noSpeculation: any }[]} */
+  const params = golden.runtimeParams;
+  assert.deepEqual(params.map((c) => c.generics.EntropyCoder_g), ['SAMPLE_ADAPTIVE', 'HYBRID', 'BLOCK_ADAPTIVE']);
+  for (const c of params) {
+    assert.equal(c.generics.RuntimeParams_g, true, c.name);
+    assert.equal(maxImageBytes(c.generics), c.maxImageBytes, c.name);
+    for (const [spec, want] of /** @type {const} */ ([[true, c.speculation], [false, c.noSpeculation]])) {
+      const where = `${c.name} speculation ${spec}`;
+      assert.equal(imagePeriod(c.generics, spec), want.imagePeriod, where);
+      const cycles = runtimeAcceptCycles(c.generics, c.dims, spec);
+      /** @type {number[]} */
+      const starts = [];
+      let k = 0;
+      for (const [nx, ny, nz] of c.dims) {
+        starts.push(cycles[k] - cycles[0]);
+        k += nx * ny * nz;
+      }
+      assert.deepEqual(starts, want.starts, where);
+    }
+  }
+  // in BI order the sequences take their own M: the images of the maxima and the others differ
+  assert.ok(params.filter((c) => c.generics.EncodingOrder_g === 'BI').every((c) => new Set(c.dims.map((d) => d[3])).size > 1));
+  // the bound with the runtime parameters is at least the bound with the values of the generics; the sample-adaptive and
+  // the hybrid coder take Umax up to 32 whatever UnaryLimit_g is
+  for (const c of params) {
+    const fixed = maxImageBytes({ ...c.generics, RuntimeParams_g: false });
+    if (c.generics.EntropyCoder_g === 'BLOCK_ADAPTIVE') assert.equal(c.maxImageBytes, fixed, c.name);
+    else assert.ok(c.maxImageBytes > fixed, `${c.name}: ${c.maxImageBytes} > ${fixed}`);
+  }
+});
+
+test('the rescalings of the hybrid coder in closed form equal the counter loop', () => {
+  for (const tBand of [1, 2, 15, 16, 17, 100, 255, 256, 257, 1000, 4096, 5000]) {
+    for (let g0 = 1; g0 <= 8; g0 += 1) {
+      for (let gs = Math.max(4, g0 + 1); gs <= 11; gs += 1) {
+        let cnt = 2 ** g0;
+        let n = 0;
+        for (let i = 1; i < tBand; i += 1) {
+          if (cnt < 2 ** gs - 1) cnt += 1;
+          else {
+            n += 1;
+            cnt = Math.floor((cnt + 1) / 2);
+          }
+        }
+        assert.equal(rescaleCount(tBand, g0, gs), n, `tBand ${tBand} gamma0 ${g0} gamma* ${gs}`);
+      }
+    }
+  }
 });
 
 /**
