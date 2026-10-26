@@ -23,9 +23,11 @@
 - level: 4
   phase: Hardware and radiation tests
   meaning: >-
-    Synthesized and implemented with timing closure on a representative FPGA and tested on hardware in the
-    laboratory against its functional and performance requirements, ideally with an independent link partner.
-  evidence: [Synthesis and timing report, Hardware test plan, Hardware test report]
+    Synthesized and implemented with timing closure on a representative FPGA as part of a reference system of the
+    family, and tested on hardware in the laboratory against its functional and performance requirements, ideally
+    with an independent link partner. The hardware test report of the system states which functions of each
+    contained core were exercised.
+  evidence: [Reference system, Synthesis and timing report, Hardware test plan, Hardware test report]
 
 - level: 5
   phase: Hardware and radiation tests
