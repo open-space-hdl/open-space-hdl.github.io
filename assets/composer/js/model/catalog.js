@@ -87,6 +87,10 @@ export function docUrl(doc) {
  * @property {{ enable: {name: string, offset: number}[], status?: {name: string, offset: number}, events?: {name: string, offset: number} }} [irqRegisters]
  *           the registers of an interrupt in the register map of the block
  * @property {string | string[]} [memory]   the memory whose errors an ecc.event interface reports (one per element)
+ * @property {'pulse'|'aligned'} [flavor]   an ecc.event source: countable pulses, or flags aligned with the data words
+ *           of a read port that count only in the cycles that qualify names (olo_ft_ecc_monitor, Connecting Sources)
+ * @property {string[]} [qualify]   ports of the block whose AND marks the cycles of data-aligned flags (flavor aligned):
+ *           Out_Valid and Out_Ready of a FIFO, RdValid of a RAM
  */
 
 /**
@@ -181,6 +185,18 @@ export function sideOf(role) {
 /** @param {InterfaceDef['role']} role */
 export function isDriver(role) {
   return role === 'source' || role === 'master' || role === 'event_out';
+}
+
+/**
+ * The qualifier of an ECC event source whose flags are aligned with the data words of a read port (flavor aligned):
+ * the ports whose AND marks the cycles in which the flags count (olo_ft_ecc_monitor, Connecting Sources); null for
+ * countable pulses and other interfaces.
+ * @param {any} itf
+ * @returns {string[] | null}
+ */
+export function eccQualifier(itf) {
+  return itf?.type === 'ecc.event' && itf.role === 'event_out' && itf.flavor === 'aligned' && Array.isArray(itf.qualify)
+    ? itf.qualify : null;
 }
 
 /**

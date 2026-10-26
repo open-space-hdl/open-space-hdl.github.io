@@ -40,20 +40,29 @@ test('the inserted crossings take the free channels of the marked monitor, in th
     ['auto_ecc_c5', 'auto_cdc_c5.Ecc', 'edac0.In[0]', []],
     ['auto_ecc_c6', 'auto_cdc_c6.Ecc', 'edac0.In[1]', ['olo_base_cc_pulse']],
   ]);
-  assert.deepEqual(protection(d), []);
-  const p = /** @type {any} */ (res.protection);
-  assert.deepEqual(p.events.map((/** @type {any} */ e) => [e.source, e.to.channel, e.to.connection, e.to.crossed]), [
-    ['auto_cdc_c5.Ecc', 0, 'auto_ecc_c5', false],
-    ['auto_cdc_c6.Ecc', 1, 'auto_ecc_c6', true],
+  // the flags of the inserted FIFOs are aligned with their read words: In_Valid is their qualifier in the domain of the
+  // monitor, they are qualified before the pulse crossing, and the count across it is a lower bound
+  assert.deepEqual(protection(d), [
+    'info [] edac0.In[0] has valid, auto_cdc_c5.Ecc does not: it is auto_cdc_c5.Out_Valid and auto_cdc_c5.Out_Ready, because the ECC flags of auto_cdc_c5.Ecc are aligned with its read words and count only with them.',
+    'info [] The ECC flags of auto_cdc_c6.Ecc are aligned with its read words: they are qualified with auto_cdc_c6.Out_Valid and auto_cdc_c6.Out_Ready before the clock crossing auto_cdc_auto_ecc_c6, so edac0.In[1] gets one pulse per accepted word with an error.',
+    'info [] The count of edac0.In[1] is a lower bound: the clock crossing auto_cdc_auto_ecc_c6 transfers the ECC events of auto_cdc_c6.Ecc only when they are at least two cycles of the slower clock apart, so events closer together may be lost, including a DED: DedSticky of the channel is then not set.',
   ]);
-  // the nets: no tie-off of the used channels, valid '1' where the crossing has none
+  const p = /** @type {any} */ (res.protection);
+  assert.deepEqual(p.events.map((/** @type {any} */ e) => [e.source, e.to.channel, e.to.connection, e.to.crossed, e.qualify]), [
+    ['auto_cdc_c5.Ecc', 0, 'auto_ecc_c5', false, ['Out_Valid', 'Out_Ready']],
+    ['auto_cdc_c6.Ecc', 1, 'auto_ecc_c6', true, ['Out_Valid', 'Out_Ready']],
+  ]);
+  // the nets: no tie-off of the used channels; in the domain of the monitor In_Valid is the qualifier of the source,
+  // across the crossing the flags are qualified before it and arrive as pulses (In_Valid '1')
   const n = netlist(cat, d, res);
   assert.deepEqual(n.problems, []);
   const from = (/** @type {string} */ to) => n.nets.find((x) => x.to === to)?.from;
   assert.equal(from('edac0_In_EccSec_s(0)'), 'auto_cdc_c5_Out_EccSec_s');
-  assert.equal(from('edac0_In_Valid_s(0)'), "'1'");
+  assert.equal(from('edac0_In_Valid_s(0)'), 'auto_cdc_c5_Out_Valid_s and auto_cdc_c5_Out_Ready_s');
   assert.equal(from('edac0_In_EccDed_s(1)'), 'auto_cdc_auto_ecc_c6_Out_Pulse_s(1)');
-  assert.equal(from('auto_cdc_auto_ecc_c6_In_Pulse_s(0)'), 'auto_cdc_c6_Out_EccSec_s');
+  assert.equal(from('edac0_In_Valid_s(1)'), "'1'");
+  assert.equal(from('auto_cdc_auto_ecc_c6_In_Pulse_s(0)'), 'auto_cdc_c6_Out_EccSec_s and auto_cdc_c6_Out_Valid_s and auto_cdc_c6_Out_Ready_s');
+  assert.equal(from('auto_cdc_auto_ecc_c6_In_Pulse_s(1)'), 'auto_cdc_c6_Out_EccDed_s and auto_cdc_c6_Out_Valid_s and auto_cdc_c6_Out_Ready_s');
   assert.ok(!res.tieOffs.some((t) => t.port.startsWith('edac0.In_')));
 });
 
@@ -63,7 +72,8 @@ test('the brief and the C header: channels connected by the Composer, not stable
   const brief = doc.agent.brief;
   assert.match(brief, /\| `auto_cdc_c6\.Ecc` \| FIFO memory of `auto_cdc_c6` \(inserted crossing\) \| channel 1 of `edac0` \(`olo_ft_ecc_monitor_axi`\), connected by the Composer \|/);
   assert.match(brief, /these channels are not stable across edits of the system\. Software uses the channel macros of the C header of the address map\./);
-  assert.match(brief, /events closer than two cycles of the slower clock can merge into one, so the counter can be lower than the number of events, but at least one event is always reported\./);
+  assert.match(brief, /events closer together may be lost, including a DED \(DedSticky of the channel is then not set\), so the counter is a lower bound\./);
+  assert.match(brief, /The ECC flags of `auto_cdc_c5\.Ecc`, `auto_cdc_c6\.Ecc` are aligned with the read words of their memories and count only in the cycles of Out_Valid and Out_Ready of their block/);
   const header = exportHdl(cat, doc.resolved, { generator: 'x', input: 'x.composer.json', sha256: '0'.repeat(64) }).files.find((f) => f.name.endsWith('_regs.h'))?.text ?? '';
   assert.match(header, /^#define SPP_OVER_SPW_TWO_CLOCKS_EDAC0_CH_AUTO_CDC_C5_ECC 0u$/m);
   assert.match(header, /^#define SPP_OVER_SPW_TWO_CLOCKS_EDAC0_CH_AUTO_CDC_C6_ECC 1u$/m);

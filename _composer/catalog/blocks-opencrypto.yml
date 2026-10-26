@@ -231,7 +231,7 @@ blocks:
         signals: { data: M_Out_Data, keep: M_Out_Keep, last: M_Out_Last, user: M_Out_User, valid: M_Out_Valid, ready: M_Out_Ready }
         userFields:
           - { name: section, label: "Section of the beat: 01 AAD, 00 DATA", lsb: 0, bits: 2 }
-      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, vector: "2", tieOff: open, description: "Element 0 the chunk buffer, element 1 the position FIFO.", memory: [chunk buffer, position FIFO], signals: { sec: Ecc_Sec, ded: Ecc_Ded } }
+      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, vector: "2", tieOff: open, flavor: pulse, description: "Element 0 the chunk buffer, element 1 the position FIFO.", memory: [chunk buffer, position FIFO], signals: { sec: Ecc_Sec, ded: Ecc_Ded } }
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, description: Tests only., signals: { sel: ErrInj_Sel, bitflip: ErrInj_BitFlip, valid: ErrInj_Valid } }
     rules:
       - { kind: same_domain, interfaces: [M_Ctx, M_Out], message: "The framer and the core share clock and reset; a reset of only one of them leaves contexts or messages without partner." }

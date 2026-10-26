@@ -239,8 +239,12 @@ function protectionSection(p) {
     if (p.events.some((e) => e.to.connection?.startsWith('auto_ecc_'))) {
       L.push('The Composer assigns the channels of the system ECC monitor to the inserted crossings in the order of their connections, after the channels the connections use: these channels are not stable across edits of the system. Software uses the channel macros of the C header of the address map.', '');
     }
+    const aligned = p.events.filter((e) => e.qualify);
+    if (aligned.length) {
+      L.push(`The ECC flags of ${aligned.map((e) => `\`${e.source}\``).join(', ')} are aligned with the read words of their memories and count only in the cycles of ${[...new Set(aligned.map((e) => (e.qualify ?? []).join(' and ')))].join(', ')} of their block (olo_ft_ecc_monitor, Connecting Sources): the Composer makes that the In_Valid of a monitor in the same clock domain, and qualifies the flags before a clock crossing or a top-level port, so that they leave as pulses, one per accepted word with an error.`, '');
+    }
     if (p.events.some((e) => e.to.kind === 'block' && e.to.crossed)) {
-      L.push('Where an ECC event crosses into the clock domain of its monitor, events closer than two cycles of the slower clock can merge into one, so the counter can be lower than the number of events, but at least one event is always reported.', '');
+      L.push('Where an ECC event crosses into the clock domain of its monitor, the pulse crossing transfers the events only when they are at least two cycles of the slower clock apart: events closer together may be lost, including a DED (DedSticky of the channel is then not set), so the counter is a lower bound.', '');
     }
   }
   if (p.crossings.length) {

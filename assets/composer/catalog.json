@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "64a6eb49ec58",
+ "id": "17885a802fd3",
  "sources": [
   {
    "id": "openwire",
@@ -2226,6 +2226,11 @@
      "label": "EDAC events",
      "tieOff": "open",
      "memory": "FIFO memory",
+     "flavor": "aligned",
+     "qualify": [
+      "Out_Valid",
+      "Out_Ready"
+     ],
      "signals": {
       "sec": "Out_EccSec",
       "ded": "Out_EccDed"
@@ -2654,6 +2659,11 @@
      "label": "EDAC events",
      "tieOff": "open",
      "memory": "FIFO memory",
+     "flavor": "aligned",
+     "qualify": [
+      "Out_Valid",
+      "Out_Ready"
+     ],
      "signals": {
       "sec": "Out_EccSec",
       "ded": "Out_EccDed"
@@ -3075,6 +3085,11 @@
      "label": "EDAC events",
      "tieOff": "open",
      "memory": "FIFO memory",
+     "flavor": "aligned",
+     "qualify": [
+      "Out_Valid",
+      "Out_Ready"
+     ],
      "signals": {
       "sec": "Out_EccSec",
       "ded": "Out_EccDed"
@@ -6746,6 +6761,7 @@
      "clock": "Clk",
      "label": "Summary events",
      "tieOff": "open",
+     "flavor": "pulse",
      "signals": {
       "sec": "Evt_Sec",
       "ded": "Evt_Ded"
@@ -8607,6 +8623,7 @@
      "description": "One pair for every memory of the core: corrected single error, detected double error.",
      "tieOff": "open",
      "memory": "memories of the predictor and the entropy coder (channels 0 to 13 of the error injection)",
+     "flavor": "pulse",
      "signals": {
       "sec": "Ecc_Sec",
       "ded": "Ecc_Ded"
@@ -10202,6 +10219,7 @@
      "description": "One pair for every memory of ocp_core: corrected single error, detected double error; the status registers count them.",
      "tieOff": "open",
      "memory": "memories of the predictor and the entropy coder of ocp_core (channels 0 to 13 of the error injection)",
+     "flavor": "pulse",
      "signals": {
       "sec": "Ecc_Sec",
       "ded": "Ecc_Ded"
@@ -11680,6 +11698,7 @@
       "chunk buffer",
       "position FIFO"
      ],
+     "flavor": "pulse",
      "signals": {
       "sec": "Ecc_Sec",
       "ded": "Ecc_Ded"

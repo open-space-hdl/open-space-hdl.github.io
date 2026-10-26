@@ -16,6 +16,8 @@
  * open, and the user cannot connect it).
  */
 
+import { eccQualifier } from './catalog.js';
+
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./design.js').Design} Design */
 /** @typedef {import('./resolver.js').Resolved} Resolved */
@@ -203,6 +205,8 @@ export function analyseInterrupts(cat, d, res) {
  * @property {boolean} inserted
  * @property {boolean} registers   the block also reports its ECC in its own registers
  * @property {EventTarget} to
+ * @property {string[]} [qualify]  data-aligned flags: the ports of the source that qualify them (olo_ft_ecc_monitor,
+ *           Connecting Sources); the Composer applies the qualifier wherever they are counted or leave as pulses
  */
 
 /**
@@ -291,6 +295,7 @@ export function analyseProtection(cat, d, res) {
     .map((s) => {
       const mem = s.port.itf.memory;
       const memory = Array.isArray(mem) ? mem[s.index ?? 0] ?? mem[0] : mem ?? 'its memories';
+      const q = eccQualifier(s.port.itf);
       return {
         source: s.key,
         instance: s.instance,
@@ -299,6 +304,7 @@ export function analyseProtection(cat, d, res) {
         inserted: s.inserted,
         registers: Boolean(/** @type {any} */ (s.block).protection?.ecc),
         to: s.to,
+        ...(q ? { qualify: q } : {}),
       };
     });
 

@@ -1484,9 +1484,35 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         out = {"name": iname, "type": tid, "role": role}
         for key in ("clock", "label", "description", "mustServe", "externalOnly", "enabledBy", "sideband",
                     "params", "vector", "tieOff", "carry", "userFields", "needsLast", "clockSignals", "asyncSignals",
-                    "addressSpace", "irqRegisters", "memory"):
+                    "addressSpace", "irqRegisters", "memory", "flavor", "qualify"):
             if key in itf:
                 out[key] = itf[key]
+        # an ECC event source states its flavor (olo_ft_ecc_monitor, Connecting Sources): countable pulses, or flags
+        # aligned with the data words of a read port, which count only in the cycles where every port of qualify is '1'
+        if tid == "ecc.event" and role == "event_out":
+            flavor, qualify = itf.get("flavor"), itf.get("qualify")
+            if flavor not in ("pulse", "aligned"):
+                ctx.err(iwhere, "an ECC event source states its flavor: pulse or aligned")
+            elif flavor == "pulse" and qualify is not None:
+                ctx.err(iwhere, "qualify goes with flavor aligned")
+            elif flavor == "aligned":
+                if not isinstance(qualify, list) or not qualify or not all(isinstance(q, str) for q in qualify):
+                    ctx.err(iwhere, "flavor aligned needs qualify: the ports whose AND marks the cycles of the flags")
+                elif itf.get("vector") is not None:
+                    ctx.err(iwhere, "qualify is for an interface without vector")
+                else:
+                    for q in qualify:
+                        p = port_by_name.get(q)
+                        if p is None or p["width"] != "1":
+                            ctx.err(iwhere, f"qualify: {q} is no one-bit port of {ent.name}")
+                            continue
+                        # the qualifier is in the clock domain of the flags: it belongs to an interface of the same clock
+                        owners = [x for x in b.get("interfaces") or []
+                                  if q in [s["port"] if isinstance(s, dict) else s for s in (x.get("signals") or {}).values()]]
+                        if not any(x.get("clock") == itf.get("clock") for x in owners):
+                            ctx.err(iwhere, f"qualify: {q} is in no interface of the clock {itf.get('clock')}")
+        elif "flavor" in itf or "qualify" in itf:
+            ctx.err(iwhere, "flavor and qualify are for ECC event sources (ecc.event, event_out)")
         mem = itf.get("memory")
         if mem is not None and (tid != "ecc.event" or not (isinstance(mem, str) or (isinstance(mem, list) and all(isinstance(x, str) for x in mem)))):
             ctx.err(iwhere, "memory names the memory whose errors an ecc.event interface reports (a text, or one per element)")

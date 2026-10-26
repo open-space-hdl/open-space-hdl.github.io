@@ -205,6 +205,8 @@ function deriveBlock(cat, name, def, res, resolved) {
     for (const key of /** @type {const} */ (['mustServe', 'externalOnly', 'sideband', 'userFields', 'carry', 'needsLast', 'clockSignals', 'asyncSignals', 'tieOff'])) {
       if (pv.itf[key] !== undefined) itf[key] = pv.itf[key];
     }
+    // the ECC events that a subsystem exports are pulses: data-aligned flags are qualified before they leave it
+    if (pv.itf.type === 'ecc.event' && pv.itf.role === 'event_out') itf.flavor = 'pulse';
     // a condition on the generics inside (an AXI4 master with single transfers) is decided here: the block of the
     // subsystem has no generics
     const lite = /** @type {{generic: string, value: unknown}[] | undefined} */ (pv.itf.params?.liteWhen);
