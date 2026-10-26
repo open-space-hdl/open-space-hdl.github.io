@@ -37,7 +37,7 @@ blocks:
         clock: Clk
         tieOff: open
         signals: { in_level: In_Level, out_level: Out_Level, full: Full, alm_full: AlmFull, empty: Empty, alm_empty: AlmEmpty }
-      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, memory: FIFO memory, signals: { sec: Out_EccSec, ded: Out_EccDed } }
+      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, flavor: aligned, qualify: [Out_Valid, Out_Ready], memory: FIFO memory, signals: { sec: Out_EccSec, ded: Out_EccDed } }
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, signals: { bitflip: In_ErrInj_BitFlip, valid: In_ErrInj_Valid } }
     rates:
       evidence: "Open Logic test WriteFullFifo of olo_base_fifo_sync_tb (Depth_g words written and read in consecutive cycles); olo_ft_fifo_sync wraps olo_base_fifo_sync with the ECC encoder and decoder without pipeline stages (Pipeline_g 0)"
@@ -101,7 +101,7 @@ blocks:
         clock: Out_Clk
         tieOff: open
         signals: { full: Out_Full, empty: Out_Empty, alm_full: Out_AlmFull, alm_empty: Out_AlmEmpty, level: Out_Level }
-      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Out_Clk, tieOff: open, memory: FIFO memory, signals: { sec: Out_EccSec, ded: Out_EccDed } }
+      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Out_Clk, tieOff: open, flavor: aligned, qualify: [Out_Valid, Out_Ready], memory: FIFO memory, signals: { sec: Out_EccSec, ded: Out_EccDed } }
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: In_Clk, tieOff: default, signals: { bitflip: In_ErrInj_BitFlip, valid: In_ErrInj_Valid } }
     constraints:
       - { kind: vendor_scoped, file: src/base/tcl/olo_base_constraints_amd.tcl, note: "AMD Vivado: source the script once; it reads the scoped constraints of the Open Logic base entities (clock crossings, reset generator, RAM)." }
@@ -162,7 +162,7 @@ blocks:
         signals: { data: Out_Data, valid: Out_Valid, ready: Out_Ready, last: Out_Last, size: Out_Size }
       - { name: OutCtrl, label: Skip and repeat, type: sig.control, role: event_in, clock: Clk, tieOff: default, signals: { next: Out_Next, repeat: Out_Repeat } }
       - { name: Status, label: Fill status, type: sig.status, role: event_out, clock: Clk, tieOff: open, signals: { packet_level: PacketLevel, free_words: FreeWords } }
-      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, memory: FIFO memory, signals: { sec: Out_EccSec, ded: Out_EccDed } }
+      - { name: Ecc, label: EDAC events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, flavor: aligned, qualify: [Out_Valid, Out_Ready], memory: FIFO memory, signals: { sec: Out_EccSec, ded: Out_EccDed } }
       - { name: ErrInj, label: Error injection, type: ecc.inject, role: event_in, clock: Clk, tieOff: default, signals: { bitflip: In_ErrInj_BitFlip, valid: In_ErrInj_Valid } }
     # In_Drop (on any beat: the packet is discarded) serves a source that marks a bad packet while it writes it; no stream
     # source of the catalog has such a flag, so the input keeps its default '0'
@@ -733,7 +733,7 @@ blocks:
       - { name: CounterWidth_g, label: Counter width, unit: bits }
     interfaces:
       - { name: In, label: EDAC events, type: ecc.event, role: event_in, clock: Clk, vector: Channels_g, signals: { sec: In_EccSec, ded: In_EccDed, valid: In_Valid } }
-      - { name: Evt, label: Summary events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, signals: { sec: Evt_Sec, ded: Evt_Ded } }
+      - { name: Evt, label: Summary events, type: ecc.event, role: event_out, clock: Clk, tieOff: open, flavor: pulse, signals: { sec: Evt_Sec, ded: Evt_Ded } }
       - { name: Sticky, label: Double error flags, type: sig.status, role: event_out, clock: Clk, tieOff: open, signals: { ded_sticky: DedSticky } }
       - { name: Clr, label: Clear, type: sig.control, role: event_in, clock: Clk, tieOff: default, signals: { clr: Clr } }
       - { name: RdCtrl, label: Counter read, type: sig.control, role: event_in, clock: Clk, tieOff: default, signals: { channel: Rd_Channel, ena: Rd_Ena, clr: Rd_Clr } }

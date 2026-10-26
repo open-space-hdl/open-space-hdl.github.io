@@ -13,7 +13,7 @@
  * Inserted blocks are derived state: they appear and disappear with the reason for them.
  */
 
-import { absentValue, isDriver } from './catalog.js';
+import { absentValue, eccQualifier, isDriver } from './catalog.js';
 import { typedEndpoint } from './compat.js';
 import { evaluate, tryEvaluate } from './expr.js';
 import { smallestValid } from './suggest.js';
@@ -67,6 +67,9 @@ import {
  * @property {{ from: string, to: string }[]} hops
  * @property {Record<string, number | boolean>} [sideband]
  * @property {Record<string, 'zero' | 'ones' | 'sideband'>} [constants]   receiver signals without a source
+ * @property {{ instance: string, ports: string[], gate: boolean }} [qualify]   data-aligned ECC flags of the source: the
+ *           valid of the receiver is the AND of these ports (gate false), or the flags are gated with it before the
+ *           inserted clock crossing (gate true)
  */
 
 /**
@@ -756,13 +759,17 @@ export class Resolution {
     this.signalMismatch(c, drv, rcv, fd, fr, chain);
 
     // clock crossing
+    /** @type {string | undefined} */
+    let crossing;
     if (srcDom && dstDom && srcDom !== dstDom) {
       const cc = this.clockCrossing(c, carried, srcDom, dstDom);
       if (cc) {
         chain.adapters.push(cc.id);
         path.push(`${cc.id}.In`, `${cc.id}.Out`);
+        crossing = cc.id;
       }
     }
+    if (drv.port.type.id === 'ecc.event') this.eccEvents(c, drv, rcv, chain, crossing);
     path.push(c.to);
     for (let k = 0; k + 1 < path.length; k += 2) chain.hops.push({ from: path[k], to: path[k + 1] });
     this.chains.push(chain);
@@ -823,6 +830,39 @@ export class Resolution {
         { connection: c.id });
     }
     return rec;
+  }
+
+  /**
+   * ECC events of a connection (olo_ft_ecc_monitor, Connecting Sources). Data-aligned flags count only in the cycles of
+   * their qualifier: in the clock domain of a receiver with a valid (In_Valid of a monitor) the qualifier is that
+   * valid; otherwise the netlist gates the flags with it at the source, so they cross or arrive as pulses. An inserted
+   * pulse crossing (olo_base_cc_pulse) transfers events only when they are at least two cycles of the slower clock
+   * apart, so events closer together may be lost.
+   * @param {Connection} c
+   * @param {NonNullable<ReturnType<Resolution['endpoint']>>} drv
+   * @param {NonNullable<ReturnType<Resolution['endpoint']>>} rcv
+   * @param {Chain} chain
+   * @param {string} [cc]   the inserted crossing
+   */
+  eccEvents(c, drv, rcv, chain, cc) {
+    const q = eccQualifier(drv.port.itf);
+    const ports = q ? q.map((p) => `${drv.rec.id}.${p}`).join(' and ') : '';
+    if (q && !cc && rcv.port.itf.signals.valid) {
+      chain.qualify = { instance: drv.rec.id, ports: q, gate: false };
+      this.check('info', 'protection',
+        `${c.to} has valid, ${c.from} does not: it is ${ports}, because the ECC flags of ${c.from} are aligned with its read words and count only with them.`,
+        { connection: c.id });
+    } else if (q) {
+      chain.qualify = { instance: drv.rec.id, ports: q, gate: true };
+      this.check('info', 'protection',
+        `The ECC flags of ${c.from} are aligned with its read words: they are qualified with ${ports}${cc ? ` before the clock crossing ${cc}` : ''}, so ${c.to} gets one pulse per accepted word with an error.`,
+        { connection: c.id });
+    }
+    if (cc) {
+      this.check('info', 'protection',
+        `The count of ${c.to} is a lower bound: the clock crossing ${cc} transfers the ECC events of ${c.from} only when they are at least two cycles of the slower clock apart, so events closer together may be lost, including a DED: DedSticky of the channel is then not set.`,
+        { connection: c.id });
+    }
   }
 
   /**
@@ -1089,6 +1129,12 @@ export class Resolution {
           return { port, w, sel: p.index === null ? '' : `(${(p.index + 1) * w - 1} downto ${p.index * w})` };
         };
         if (e) {
+          const q = eccQualifier(p.itf);
+          if (q) {
+            this.check('info', 'protection',
+              `${ref} leaves the system as pulses: its ECC flags are aligned with the read words of ${inst.id}, so they are qualified with ${q.join(' and ')} first, one pulse per accepted word with an error.`,
+              { instance: inst.id });
+          }
           for (const pname of Object.values(p.itf.signals)) {
             const { port, w } = slice(pname);
             const name = `${e.prefix}${pname}${p.index === null ? '' : `_${p.index}`}`;

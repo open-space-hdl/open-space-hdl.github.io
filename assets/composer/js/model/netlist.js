@@ -25,7 +25,7 @@
  * Clocks and resets are port actuals, never assignments, so that no clock gets a delta delay in simulation.
  */
 
-import { absentValue } from './catalog.js';
+import { absentValue, eccQualifier } from './catalog.js';
 import { formatReal, genericWidth, sameValue, vectorAtWidth } from './generics.js';
 import { tryEvaluate } from './expr.js';
 import { packFields, RESET_PORT, vhdlType } from './resolver.js';
@@ -200,6 +200,43 @@ class Netlist {
     this.problems = [];
     /** @type {Map<string, string>} "<instance>.<port>" -> the top-level port that is its actual (clock pins) */
     this.directActuals = new Map();
+    /** @type {{ net: Net, qualify: { instance: string, ports: string[], gate: boolean } }[]} nets of data-aligned ECC flags */
+    this.qualified = [];
+  }
+
+  /**
+   * A net of data-aligned ECC flags: the qualifier itself (gate false) or the flags gated with it (gate true). Its
+   * expression is completed when all nets are known (qualifyAll), since an input of the qualifier may have no driver.
+   * @param {Net} net
+   * @param {{ instance: string, ports: string[], gate: boolean }} qualify
+   */
+  qualifyNet(net, qualify) {
+    this.nets.push(net);
+    this.qualified.push({ net, qualify });
+  }
+
+  /**
+   * The expressions of the nets of data-aligned ECC flags: the AND of the qualifier ports of the source at the
+   * instance (olo_ft_ecc_monitor, Connecting Sources), with the flags where they are gated. An output of the source
+   * is its signal; an input is its signal where a net drives it, a top-level port that is its actual, else its default.
+   */
+  qualifyAll() {
+    for (const { net, qualify } of this.qualified) {
+      const rec = this.res.byId.get(qualify.instance);
+      if (!rec) continue;
+      const { b } = this.info(rec);
+      const terms = qualify.ports.map((pn) => {
+        const port = b.ports.find((x) => x.name === pn);
+        const sig = signalName(rec.id, pn);
+        if (!port || port.dir === 'out') return sig;
+        const direct = this.directActuals.get(`${rec.id}.${pn}`);
+        if (direct) return direct;
+        if (this.nets.some((n) => n !== net && (n.to === sig || n.to.startsWith(`${sig}(`)))) return sig;
+        return port.default ?? "'0'";
+      }).filter((x) => x !== "'1'");
+      const q = terms.includes("'0'") ? "'0'" : terms.length ? terms.join(' and ') : "'1'";
+      net.from = qualify.gate ? (q === "'1'" ? net.from : q === "'0'" ? "'0'" : `${net.from} and ${q}`) : q;
+    }
   }
 
   /**
@@ -333,6 +370,11 @@ class Netlist {
         for (const [name, bb] of [...B].sort((x, y) => x[0].localeCompare(y[0]))) {
           const constant = last ? chain.constants?.[name] : undefined;
           const a = A.get(name);
+          if (!a && name === 'valid' && last && chain.qualify && !chain.qualify.gate && bb.dir === 'in') {
+            // the valid of the receiver is the qualifier of the data-aligned ECC flags of the source (same domain)
+            this.qualifyNet({ to: bitsExpr(bb), from: '', kind: 'connection', connection: chain.connection, signal: name, reason: `The ECC flags of ${chain.from} are aligned with its read words: ${name} is their qualifier.` }, chain.qualify);
+            continue;
+          }
           if (constant && bb.dir === 'in') {
             if (constant === 'sideband' && sb && conn?.sideband) {
               const v = packFields(sb.fields, conn.sideband);
@@ -346,7 +388,11 @@ class Netlist {
           }
           if (a) {
             const w = Math.min(a.width, bb.width);
-            if (a.dir === 'out' && bb.dir === 'in') {
+            if (a.dir === 'out' && bb.dir === 'in' && chain.qualify?.gate && hop.from === chain.from) {
+              // data-aligned ECC flags before an inserted clock crossing: qualified in the source domain, so that they
+              // cross as pulses
+              this.qualifyNet({ to: bitsExpr(bb, w), from: bitsExpr(a, w), kind: 'connection', connection: chain.connection, signal: name, reason: `The ECC flags of ${chain.from} are aligned with its read words: qualified before the clock crossing.` }, chain.qualify);
+            } else if (a.dir === 'out' && bb.dir === 'in') {
               this.nets.push({ to: bitsExpr(bb, w), from: bitsExpr(a, w), kind: 'connection', connection: chain.connection, signal: name });
               if (bb.width > w) this.nets.push({ to: bitsExpr({ ...bb, lo: bb.lo + w, width: bb.width - w }), from: constExpr({ ...bb, width: bb.width - w }, 'zero'), kind: 'constant', connection: chain.connection, signal: name, reason: `${name} is narrower at ${chain.from}.` });
             } else if (a.dir === 'in' && bb.dir === 'out') {
@@ -393,7 +439,11 @@ class Netlist {
       }
       // a one-bit vector port of the top level is used as its bit
       const topExpr = w === 1 && /vector/i.test(tp.vhdlType) ? `${tp.name}(0)` : tp.name;
-      if (tp.dir === 'out') this.nets.push({ to: topExpr, from: bitsExpr(bits), kind: 'top', signal: m[2] });
+      const q = eccQualifier(itf);
+      if (tp.dir === 'out' && q) {
+        // data-aligned ECC flags leave the system as pulses: qualified first
+        this.qualifyNet({ to: topExpr, from: bitsExpr(bits), kind: 'top', signal: m[2], reason: `The ECC flags of ${rec.id} are aligned with its read words: qualified before they leave the system.` }, { instance: rec.id, ports: q, gate: true });
+      } else if (tp.dir === 'out') this.nets.push({ to: topExpr, from: bitsExpr(bits), kind: 'top', signal: m[2] });
       else this.nets.push({ to: bitsExpr(bits), from: topExpr, kind: 'top', signal: m[2] });
     }
     for (const t of this.res.tieOffs) {
@@ -423,12 +473,12 @@ class Netlist {
     const res = this.res;
     this.connectionNets();
     this.boundaryNets();
-    // signals referenced by the nets
+    this.qualifyAll();
+    // signals referenced by the nets (an expression of data-aligned ECC flags names several)
     const used = new Set();
     for (const n of this.nets) {
       for (const e of [n.to, n.from]) {
-        const m = /^([A-Za-z]\w*)(\(|$)/.exec(e);
-        if (m) used.add(m[1]);
+        for (const m of e.matchAll(/(?:^|[^\w'"])([A-Za-z]\w*)/g)) used.add(m[1]);
       }
     }
     const clockOf = (/** @type {string} */ dom) => {

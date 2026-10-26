@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "catalog": "64a6eb49ec58",
+  "catalog": "17885a802fd3",
   "entity": "spp_over_spw_two_clocks",
   "ports": [
     {
@@ -5336,25 +5336,27 @@
     },
     {
       "to": "edac0_In_Valid_s(0)",
-      "from": "'1'",
-      "kind": "constant",
+      "from": "auto_cdc_c5_Out_Valid_s and auto_cdc_c5_Out_Ready_s",
+      "kind": "connection",
       "connection": "auto_ecc_c5",
       "signal": "valid",
-      "reason": "auto_cdc_c5.Ecc has no valid: events without valid are valid in every cycle, as the default of In_Valid of olo_ft_ecc_monitor."
+      "reason": "The ECC flags of auto_cdc_c5.Ecc are aligned with its read words: valid is their qualifier."
     },
     {
       "to": "auto_cdc_auto_ecc_c6_In_Pulse_s(1)",
-      "from": "auto_cdc_c6_Out_EccDed_s",
+      "from": "auto_cdc_c6_Out_EccDed_s and auto_cdc_c6_Out_Valid_s and auto_cdc_c6_Out_Ready_s",
       "kind": "connection",
       "connection": "auto_ecc_c6",
-      "signal": "ded"
+      "signal": "ded",
+      "reason": "The ECC flags of auto_cdc_c6.Ecc are aligned with its read words: qualified before the clock crossing."
     },
     {
       "to": "auto_cdc_auto_ecc_c6_In_Pulse_s(0)",
-      "from": "auto_cdc_c6_Out_EccSec_s",
+      "from": "auto_cdc_c6_Out_EccSec_s and auto_cdc_c6_Out_Valid_s and auto_cdc_c6_Out_Ready_s",
       "kind": "connection",
       "connection": "auto_ecc_c6",
-      "signal": "sec"
+      "signal": "sec",
+      "reason": "The ECC flags of auto_cdc_c6.Ecc are aligned with its read words: qualified before the clock crossing."
     },
     {
       "to": "edac0_In_EccDed_s(1)",
@@ -6675,7 +6677,11 @@
           "channel": 0,
           "connection": "auto_ecc_c5",
           "crossed": false
-        }
+        },
+        "qualify": [
+          "Out_Valid",
+          "Out_Ready"
+        ]
       },
       {
         "source": "auto_cdc_c6.Ecc",
@@ -6691,7 +6697,11 @@
           "channel": 1,
           "connection": "auto_ecc_c6",
           "crossed": true
-        }
+        },
+        "qualify": [
+          "Out_Valid",
+          "Out_Ready"
+        ]
       }
     ],
     "crossings": [
