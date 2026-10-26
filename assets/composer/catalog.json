@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "0846149d6652",
+ "id": "fd594297bc51",
  "sources": [
   {
    "id": "openwire",
@@ -710,7 +710,7 @@
    "repo": "opencompact",
    "url": "https://github.com/open-space-hdl/opencompact",
    "doc": "/opencompact/",
-   "commit": "8be9d956f270736abf128816a667f6df6b4ef247",
+   "commit": "dd94c8395a81cf2b6925f33d8f4bbff9328cfcec",
    "branch": "develop",
    "library": "opencompact",
    "fileList": "compile_order.txt",
@@ -859,6 +859,12 @@
      "previous": "31bba54bcb175f2307203c97a65978a8855143bb",
      "pin": "8be9d956f270736abf128816a667f6df6b4ef247",
      "evidence": "PR #32 of the core: None.",
+     "changes": []
+    },
+    {
+     "previous": "8be9d956f270736abf128816a667f6df6b4ef247",
+     "pin": "dd94c8395a81cf2b6925f33d8f4bbff9328cfcec",
+     "evidence": "PR #33 of the core: None: no port, stream format, generic, register map or Open Logic pin changes. New Python API of the reference model as listed above. (pinned at the head of the pull request before its merge)",
      "changes": []
     }
    ]

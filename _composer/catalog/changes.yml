@@ -285,6 +285,10 @@ opencompact:
     pin: 8be9d956f270736abf128816a667f6df6b4ef247
     evidence: "PR #32 of the core: None."
     changes: []
+  - previous: 8be9d956f270736abf128816a667f6df6b4ef247
+    pin: dd94c8395a81cf2b6925f33d8f4bbff9328cfcec
+    evidence: "PR #33 of the core: None: no port, stream format, generic, register map or Open Logic pin changes. New Python API of the reference model as listed above. (pinned at the head of the pull request before its merge)"
+    changes: []
 
 olo:
   - previous: 1bc4fb90888cf24ac29bc54527c2982d2dec307c

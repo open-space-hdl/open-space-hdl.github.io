@@ -75,7 +75,7 @@ sources:
     repo: opencompact
     url: https://github.com/open-space-hdl/opencompact
     doc: /opencompact/
-    commit: 8be9d956f270736abf128816a667f6df6b4ef247
+    commit: dd94c8395a81cf2b6925f33d8f4bbff9328cfcec
     branch: develop
     library: opencompact
     file_list: compile_order.txt
