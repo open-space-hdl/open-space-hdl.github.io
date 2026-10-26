@@ -265,6 +265,26 @@ opencompact:
       - { block: opencompact/ocp_channel, kind: generic_added, generic: RuntimeConfig_g, text: "New generic RuntimeConfig_g (default false): the image dimensions and the band-independent error limit values of every image come from the registers NEXT_X, NEXT_Y, NEXT_Z and NEXT_LIMITS with CONTROL.COMMIT; XSize_g, YSize_g and ZSize_g are then the maxima. With false the compressed images and the throughput are unchanged." }
       - { block: opencompact/ocp_channel, kind: registers, text: "Register map version 2 (ID 0x4F435002): new registers CONTROL 0x060, STATUS 0x064, NEXT_X 0x068, NEXT_Y 0x06C, NEXT_Z 0x070, NEXT_LIMITS 0x074, LIMITS 0x078 and GENERICS bit 18 RUNTIME_CONFIG; the existing registers keep their offsets and fields." }
       - { block: opencompact/ocp_core, kind: behaviour, text: "New interfaces Cfg (the configuration of the next image), CfgTaken and Act (the values taken for the last image), present only with RuntimeConfig_g." }
+  - previous: e427de1548b97e3757b11c412e4953aedfb6d366
+    pin: b43b405df1f5c98ff2d58e2847535e9e7686d0fb
+    evidence: "PR #29 of the core: None."
+    changes: []
+  - previous: b43b405df1f5c98ff2d58e2847535e9e7686d0fb
+    pin: 64df54256ad88206685ceef03d1af08633becca6
+    evidence: "PR #30 of the core: None in this PR. Planned for the RTL: the generic `RuntimeParams_g` on `ocp_core`, `ocp_channel`, `ocp_mib`, `ocp_predictor` and the entropy coders; the `Cfg_` and `Act_` ports of the parameters on `ocp_core` and `ocp_mib`; register map version 3 (ID 0x4F435003) with the registers at 0x07C to 0x08C and GENERICS.RUNTIME_PARAMS."
+    changes: []
+  - previous: 64df54256ad88206685ceef03d1af08633becca6
+    pin: 31bba54bcb175f2307203c97a65978a8855143bb
+    evidence: "PR #31 of the core: - New generic `RuntimeParams_g` (default false) on `ocp_core`, `ocp_channel`, `ocp_mib`, `ocp_predictor`, the three entropy coders and the header generator; `RuntimeM_g` on `ocp_image_start`. - `ocp_core`: new inputs `Cfg_UserData` (8 bits), `Cfg_M` (17), `Cfg_WeightInterval` (4), `Cfg_WeightVmin`, `Cfg_WeightVmax` (5 each), `Cfg_UnaryLimit` (6), `Cfg_InitCountExp`, `Cfg_RescaleSize`, `Cfg_AccuInit` (4 each), `Cfg_RefInterval` (13), all with defaults, and the outputs `Act_UserData` to `Act_RefInterval` of the same widths. - `ocp_mib`: the same names as outputs (`Cfg_`) and inputs (`Act_`, with defaults); new generics `HybridAccuInit_g` and `HybridAccuInitHigh_g` (the lower bound of gamma0). - Register map version 3: ID 0x4F435003 for every configuration, NEXT_SAMPLES (0x07C), NEXT_ORDER (0x080), NEXT_WEIGHTS (0x084), NEXT_ADAPTIVE (0x088), NEXT_BLOCK (0x08C), GENERICS.RUNTIME_PARAMS (bit 19); the registers of version 2 keep their offsets and fields. - `ocp_channel`: ports unchanged; the generic `RuntimeParams_g` is new. - Internal units: new parameter ports on `ocp_predictor` (`Cfg_M`, `Cfg_WeightInterval`, `Cfg_WeightVmin`, `Cfg_WeightVmax`), `ocp_image_start` (`In_M`), `ocp_header` (the header field bits), the sample-adaptive and the block-adaptive coder (`In_` ports with every item) and the hybrid coder (`Cfg_` ports). - No stream format and no Open Logic pin changes."
+    changes:
+      - { block: opencompact/ocp_core, kind: generic_added, generic: RuntimeParams_g, text: "New generic RuntimeParams_g (default false, only with RuntimeConfig_g): the user-defined data, M (BI order), the weight update parameters and the entropy coder parameters of every image come from the new Params interface; SubFrameDepth_g, RescaleCounterSize_g and RefInterval_g are then the maxima. With false the compressed images and the throughput are unchanged." }
+      - { block: opencompact/ocp_channel, kind: generic_added, generic: RuntimeParams_g, text: "New generic RuntimeParams_g (default false, only with RuntimeConfig_g): the user-defined data, M (BI order), the weight update parameters and the entropy coder parameters of every image come from the registers NEXT_SAMPLES to NEXT_BLOCK with the same CONTROL.COMMIT; SubFrameDepth_g, RescaleCounterSize_g and RefInterval_g are then the maxima. With false the compressed images and the throughput are unchanged." }
+      - { block: opencompact/ocp_channel, kind: registers, text: "Register map version 3 (ID 0x4F435003): new registers NEXT_SAMPLES 0x07C, NEXT_ORDER 0x080, NEXT_WEIGHTS 0x084, NEXT_ADAPTIVE 0x088, NEXT_BLOCK 0x08C and GENERICS bit 19 RUNTIME_PARAMS; with the runtime parameters the parameter fields of SAMPLES, ORDER, WEIGHTS, ADAPTIVE and BLOCK show the values of the last image that started; the existing registers keep their offsets and fields." }
+      - { block: opencompact/ocp_core, kind: behaviour, text: "New interfaces Params (the runtime parameters of the next image, taken with Cfg) and ParamsAct (the values taken for the last image), present only with RuntimeParams_g." }
+  - previous: 31bba54bcb175f2307203c97a65978a8855143bb
+    pin: 8be9d956f270736abf128816a667f6df6b4ef247
+    evidence: "PR #32 of the core: None."
+    changes: []
 
 olo:
   - previous: 1bc4fb90888cf24ac29bc54527c2982d2dec307c
