@@ -39,11 +39,12 @@ permalink: /roadmap/
       <h2 id="hardware-title">Hardware tests for TRL 4</h2>
       <p>
         The cores are at TRL 3: fully verified by simulation. TRL 4 needs synthesis and timing closure on a target
-        FPGA and a hardware test in the laboratory, with a test plan and a test report.
+        FPGA as part of a reference system of the family, and a hardware test of that system in the laboratory, with a
+        test plan and a test report that states which functions of each contained core were exercised.
       </p>
       <p>
-        The first system in hardware is a SpaceFibre node with RMAP control and AES-GCM encryption of Space Packets on
-        an AMD Versal evaluation board. It covers four cores:
+        The first system in hardware is a SpaceFibre node with RMAP control and CCSDS 123.0-B-2 compression of four
+        image channels into Space Packets on an AMD Versal evaluation board. It covers four cores:
       </p>
       <div class="table-frame">
         <table class="trl-table roadmap-table">
@@ -54,11 +55,11 @@ permalink: /roadmap/
             <tr><td data-label="Core">OpenFibre</td><td data-label="Role">The SpaceFibre port with its transceiver adapter</td></tr>
             <tr><td data-label="Core">OpenRMAP</td><td data-label="Role">The RMAP target through which the far end of the link controls the system</td></tr>
             <tr><td data-label="Core">OpenSPP</td><td data-label="Role">The Space Packets on a virtual channel of the link</td></tr>
-            <tr><td data-label="Core">OpenCrypto</td><td data-label="Role">The AES-GCM encryption of the packets</td></tr>
+            <tr><td data-label="Core">OpenCompact</td><td data-label="Role">The compression of the image channels</td></tr>
           </tbody>
         </table>
       </div>
-      <p>OpenWire and OpenCompact follow with their own hardware runs.</p>
+      <p>A second system with AES-GCM encryption brings OpenCrypto to hardware; OpenWire follows in a reference system with a SpaceWire port.</p>
     </section>
 
     <section class="roadmap-section" id="space-link" aria-labelledby="space-link-title">
@@ -193,8 +194,8 @@ permalink: /roadmap/
       <h2 id="systems-title">Reference systems and evaluation boards</h2>
       <p>
         A reference system is a complete FPGA design built from the cores for a test in the laboratory. After the
-        SpaceFibre node with encryption above, the second reference system adds CCSDS 123.0-B-2 image compression with
-        OpenCompact in front of the encryption.
+        SpaceFibre node with compression above, the second reference system adds AES-GCM encryption with OpenCrypto
+        behind the compression.
       </p>
       <p>Further evaluation boards follow the AMD Versal board, in this order:</p>
       <ol class="board-list">
