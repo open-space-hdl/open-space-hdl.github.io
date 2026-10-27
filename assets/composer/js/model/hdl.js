@@ -42,7 +42,7 @@ const INNER_RULE = `    ${'-'.repeat(95)}`;
 
 /**
  * @typedef {object} ExportInfo
- * @property {string} generator    name and version of the generator, for example "Open Space Composer 0.9.11-beta"
+ * @property {string} generator    name and version of the generator, for example "Open Space Composer 0.9.12-beta"
  * @property {string} input        file name of the system file the export is made from
  * @property {string} sha256       SHA-256 of that file, hexadecimal
  * @property {string} [description]   description of the system

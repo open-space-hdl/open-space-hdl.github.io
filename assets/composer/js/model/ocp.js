@@ -13,7 +13,8 @@
  *   header      the length of the header of the compressed image: the length of what tools/ocp_model.py header() of
  *               OpenCompact writes for the generics of a configuration.
  *   bound       the upper bound on the length of the compressed image (max_image_bytes() of tools/ocp_model.py, checked
- *               against every compressed image of the regression by TC-CO-51 of OpenCompact).
+ *               against every compressed image of the regression by TC-CO-51 of OpenCompact); with the runtime
+ *               parameters (RuntimeParams_g) its maximum over the parameter ranges of every image.
  *
  * tests/golden/ocp_models.json holds the results of the Python models for every configuration of the regression of
  * OpenCompact at the pinned commit (tools/composer_ocp_golden.py), and tests/unit/ocp.test.mjs compares the port with
@@ -109,8 +110,9 @@ function issueDist(bsq, sfd, nx, ny, nz, p, repIsSample, wUsed, crossRep, lWin, 
 
 /**
  * Pipeline stages and required issue distances (cycles) for the generics of a configuration (latencies()). With dims
- * = [nx, ny, nz] the generics are the maxima of a runtime configuration: the structure (speculation, memories) follows
- * the maxima, the issue distances the dimensions of the image.
+ * = [nx, ny, nz] or [nx, ny, nz, m] the generics are the maxima of a runtime configuration: the structure (speculation,
+ * memories) follows the maxima, the issue distances the dimensions of the image (and its M with the runtime
+ * parameters).
  * @param {Record<string, any>} g
  * @param {boolean} [speculation]
  * @param {number[] | null} [dims]
@@ -166,8 +168,8 @@ export function latencies(g, speculation = true, dims = null) {
   const crossDw = diffRam && diffGap < lDw;
   let lCross = Math.max(crossRep ? lRep : 0, crossDw ? lDw : 0);
   if (dims) {
-    const rt = issueDist(bsq, g.SubFrameDepth_g, dims[0], dims[1], dims[2], p, repIsSample, wUsed, crossRep, st.ram + 2,
-      lRep, lDw);
+    const sfd = dims.length > 3 ? dims[3] : g.SubFrameDepth_g;
+    const rt = issueDist(bsq, sfd, dims[0], dims[1], dims[2], p, repIsSample, wUsed, crossRep, st.ram + 2, lRep, lDw);
     ({ runRows, lFix, lCross } = rt);
   }
   return { stages: st, depth: st.out + 1, spec, runRows, c, narrow, lW, lFix, lCross };
@@ -595,10 +597,11 @@ export const HYBRID_TAIL = 19;
  * - the hybrid coder takes no item during the tail of an image (HYBRID_TAIL + NZ cycles after its last item), the other
  *   coders take one item per cycle.
  *
- * With dims (the [nx, ny, nz] of every image; g holds the maxima) the images have their own dimensions (runtime
- * configuration): the first sample of an image is accepted with the configuration in the cycle after the last sample of
- * the previous image was issued and issued once the image-start sequencer is done, start + 1 cycles later; its
- * acceptance cycle is returned for it. With tail false the output takes one item per cycle whatever the coder.
+ * With dims (the [nx, ny, nz] of every image, or [nx, ny, nz, m] with the runtime parameters; g holds the maxima) the
+ * images have their own dimensions (runtime configuration): the first sample of an image is accepted with the
+ * configuration in the cycle after the last sample of the previous image was issued and issued once the image-start
+ * sequencer is done, start + 1 cycles later; its acceptance cycle is returned for it. With tail false the output takes
+ * one item per cycle whatever the coder.
  *
  * Every item is simulated: for the tests and small images (issueSpan and imagePeriod use it only where they must).
  * @param {Record<string, any>} g
@@ -618,9 +621,13 @@ export function coderCycles(g, speculation = true, images = 1, dims = null, star
   const list = dims ?? Array.from({ length: images }, () => [g.XSize_g, g.YSize_g, g.ZSize_g]);
   /** @type {{ kind: string, z: number, y: number, x: number, last: boolean, first: boolean, tail: number, lat: Latencies, nx: number }[]} */
   const seq = [];
-  for (const [nx, ny, nz] of list) {
-    const lat = runtime ? latencies(g, speculation, [nx, ny, nz]) : lat0;
-    const image = [...coderItems({ ...g, XSize_g: nx, YSize_g: ny, ZSize_g: nz })];
+  for (const dim of list) {
+    const [nx, ny, nz] = dim;
+    /** @type {Record<string, any>} */
+    const gi = { ...g, XSize_g: nx, YSize_g: ny, ZSize_g: nz };
+    if (dim.length > 3) gi.SubFrameDepth_g = dim[3];
+    const lat = runtime ? latencies(g, speculation, dim) : lat0;
+    const image = [...coderItems(gi)];
     image.forEach(([kind, z, y, x], k) => {
       seq.push({ kind, z, y, x, last: k === image.length - 1, first: k === 0, tail: HYBRID_TAIL + nz, lat, nx });
     });
@@ -738,8 +745,8 @@ export function coderCycles(g, speculation = true, images = 1, dims = null, star
 
 /**
  * Acceptance cycle of every sample at the input of the predictor for consecutive images of a runtime configuration (g:
- * the generics with the maxima; dims: the [nx, ny, nz] of every image), without back pressure (runtime_accept_cycles(),
- * CO-RC-03, CO-RC-05).
+ * the generics with the maxima; dims: the [nx, ny, nz] of every image, or [nx, ny, nz, m] with the runtime parameters),
+ * without back pressure (runtime_accept_cycles(), CO-RC-03, CO-RC-05).
  * @param {Record<string, any>} g
  * @param {number[][]} dims
  * @param {boolean} [speculation]
@@ -789,6 +796,12 @@ function optionIdBits(d, restricted) {
  * with at most LE_MAX_OUT + Umax + D bits, one bit per rescaling of the statistics and the tail (hybrid coder), or
  * every block of J entries with the option identifier and J D bits (block-adaptive coder); fill bits up to a multiple
  * of B bytes.
+ *
+ * With the runtime parameters (RuntimeParams_g with RuntimeConfig_g) every image takes its own Umax, gamma0 and gamma*
+ * (ocp_core CO-RP-02, user guide section 4.5), and the bound is the maximum of max_image_bytes over their ranges: Umax
+ * 32, with the hybrid coder the largest body over gamma0 from 1 to min(8, RescaleCounterSize_g - 1) and gamma* from
+ * max(4, gamma0 + 1) to RescaleCounterSize_g (the smallest gamma0 of the hybrid coder only narrows the range). The
+ * header has the same length for every value.
  * @param {Record<string, any>} g
  */
 export function maxImageBytes(g) {
@@ -812,23 +825,34 @@ export function maxImageBytes(g) {
       limBits += frames * n * g.RelBitDepth_g;
     }
   }
-  const umax = g.UnaryLimit_g;
+  const runtime = g.RuntimeConfig_g === true && g.RuntimeParams_g === true;
+  const umax = runtime ? 32 : g.UnaryLimit_g;
   let body;
   if (g.EntropyCoder_g === 'SAMPLE_ADAPTIVE') {
     body = limBits + nz * d + nz * (tBand - 1) * (umax + d);
   } else if (g.EntropyCoder_g === 'HYBRID') {
     const gs = g.RescaleCounterSize_g;
-    // the counter does not depend on the data: its rescalings are counted exactly
-    let cnt = 2 ** g.InitialCountExp_g;
-    let rescales = 0;
-    for (let i = 1; i < tBand; i += 1) {
-      if (cnt < 2 ** gs - 1) cnt += 1;
-      else {
-        rescales += 1;
-        cnt = Math.floor((cnt + 1) / 2);
+    /** @type {(rescales: number, gsi: number) => number} */
+    const hybrid = (rescales, gsi) =>
+      limBits + nz * d + nz * (tBand - 1) * (LE_MAX_OUT + umax + d) + nz * rescales + LE_MAX_FLUSH + nz * (2 + d + gsi) + 1;
+    if (runtime) {
+      body = 0;
+      for (let g0 = 1; g0 <= Math.min(8, gs - 1); g0 += 1) {
+        for (let gsi = Math.max(4, g0 + 1); gsi <= gs; gsi += 1) body = Math.max(body, hybrid(rescaleCount(tBand, g0, gsi), gsi));
       }
+    } else {
+      // the counter does not depend on the data: its rescalings are counted exactly
+      let cnt = 2 ** g.InitialCountExp_g;
+      let rescales = 0;
+      for (let i = 1; i < tBand; i += 1) {
+        if (cnt < 2 ** gs - 1) cnt += 1;
+        else {
+          rescales += 1;
+          cnt = Math.floor((cnt + 1) / 2);
+        }
+      }
+      body = hybrid(rescales, gs);
     }
-    body = limBits + nz * d + nz * (tBand - 1) * (LE_MAX_OUT + umax + d) + nz * rescales + LE_MAX_FLUSH + nz * (2 + d + gs) + 1;
   } else {
     const j = g.BlockSize_g;
     const blocks = Math.ceil((nz * tBand + nLim) / j);
@@ -837,6 +861,19 @@ export function maxImageBytes(g) {
   const unit = 8 * g.OutputWordSize_g;
   const bits = 8 * headerBytes(g) + body;
   return Math.ceil(bits / unit) * g.OutputWordSize_g;
+}
+
+/**
+ * Rescalings of the statistics of a band of tBand samples with the hybrid coder (CCSDS 5.4.3.3.4.2, 5.4.3.3.4.4), the
+ * count of the loop of maxImageBytes in closed form: the counter starts at 2^gamma0 and takes 2^gamma* - 1 - 2^gamma0
+ * increments up to the first rescaling, then every 2^(gamma* - 1) samples one, for gamma0 < gamma*.
+ * @param {number} tBand
+ * @param {number} g0   gamma0
+ * @param {number} gs   gamma*
+ */
+export function rescaleCount(tBand, g0, gs) {
+  const first = 2 ** gs - 2 ** g0;
+  return tBand - 1 < first ? 0 : Math.floor((tBand - 1 - first) / 2 ** (gs - 1)) + 1;
 }
 
 /**
