@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "catalog": "17885a802fd3",
+  "catalog": "13caffc27875",
   "entity": "compressed_images_over_spw",
   "ports": [
     {
@@ -1182,6 +1182,12 @@
           "default": true
         },
         {
+          "name": "RuntimeParams_g",
+          "value": false,
+          "vhdl": "false",
+          "default": true
+        },
+        {
           "name": "OutWidth_g",
           "value": 32,
           "vhdl": "32",
@@ -1416,6 +1422,96 @@
           "default": "(others => '0')"
         },
         {
+          "name": "Cfg_UserData",
+          "dir": "in",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_M",
+          "dir": "in",
+          "type": "std_logic_vector(16 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_WeightInterval",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_WeightVmin",
+          "dir": "in",
+          "type": "std_logic_vector(4 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_WeightVmax",
+          "dir": "in",
+          "type": "std_logic_vector(4 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_UnaryLimit",
+          "dir": "in",
+          "type": "std_logic_vector(5 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_InitCountExp",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_RescaleSize",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_AccuInit",
+          "dir": "in",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
+          "name": "Cfg_RefInterval",
+          "dir": "in",
+          "type": "std_logic_vector(12 downto 0)",
+          "domain": "sys",
+          "actual": null,
+          "useDefault": true,
+          "default": "(others => '0')"
+        },
+        {
           "name": "Cfg_Taken",
           "dir": "out",
           "type": "std_logic",
@@ -1454,6 +1550,76 @@
           "name": "Act_RelLimit",
           "dir": "out",
           "type": "std_logic_vector(15 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_UserData",
+          "dir": "out",
+          "type": "std_logic_vector(7 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_M",
+          "dir": "out",
+          "type": "std_logic_vector(16 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_WeightInterval",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_WeightVmin",
+          "dir": "out",
+          "type": "std_logic_vector(4 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_WeightVmax",
+          "dir": "out",
+          "type": "std_logic_vector(4 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_UnaryLimit",
+          "dir": "out",
+          "type": "std_logic_vector(5 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_InitCountExp",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_RescaleSize",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_AccuInit",
+          "dir": "out",
+          "type": "std_logic_vector(3 downto 0)",
+          "domain": "sys",
+          "actual": "open"
+        },
+        {
+          "name": "Act_RefInterval",
+          "dir": "out",
+          "type": "std_logic_vector(12 downto 0)",
           "domain": "sys",
           "actual": "open"
         }
@@ -5224,7 +5390,7 @@
       "library": "opencompact",
       "source": "opencompact",
       "url": "https://github.com/open-space-hdl/opencompact",
-      "commit": "e427de1548b97e3757b11c412e4953aedfb6d366",
+      "commit": "c238942b0274e5227272c40688131fb87a444af1",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.9",
