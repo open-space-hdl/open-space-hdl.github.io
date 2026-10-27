@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "catalog": "17885a802fd3",
+  "catalog": "13caffc27875",
   "entity": "spw_compression_node",
   "ports": [
     {
@@ -2333,6 +2333,12 @@
         },
         {
           "name": "RuntimeConfig_g",
+          "value": false,
+          "vhdl": "false",
+          "default": true
+        },
+        {
+          "name": "RuntimeParams_g",
           "value": false,
           "vhdl": "false",
           "default": true
@@ -5483,7 +5489,7 @@
       "library": "opencompact",
       "source": "opencompact",
       "url": "https://github.com/open-space-hdl/opencompact",
-      "commit": "e427de1548b97e3757b11c412e4953aedfb6d366",
+      "commit": "c238942b0274e5227272c40688131fb87a444af1",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.9",
@@ -5542,11 +5548,11 @@
           "addrWidth": 8,
           "window": 256,
           "via": [],
-          "id": "0x4F435002",
+          "id": "0x4F435003",
           "registers": {
             "source": "opencompact",
             "url": "https://github.com/open-space-hdl/opencompact",
-            "commit": "e427de1548b97e3757b11c412e4953aedfb6d366",
+            "commit": "c238942b0274e5227272c40688131fb87a444af1",
             "header": "sw/ocp_regs.h",
             "doc": "hdl/ocp_mib/docs/register_map.md",
             "prefix": "OCP"

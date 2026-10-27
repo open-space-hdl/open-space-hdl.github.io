@@ -132,6 +132,43 @@ test('the ranges of the standard that depend on other parameters: M <= NZ, restr
   assert.deepEqual(errors(setGeneric(k, cat, 'ocp0', 'EntropyCoder_g', 'HYBRID').design), []);
 });
 
+test('the runtime parameters only with the runtime configuration; with the hybrid coder some gamma0 keeps every initial accumulator below 2^(D + gamma0)', () => {
+  let d = createDesign('t');
+  d = addInstance(d, cat, 'opencompact/ocp_core', { x: 0, y: 0 }).design;
+  const errors = (/** @type {any} */ x) => resolve(cat, x).checks.filter((c) => c.severity === 'error' && c.instance === 'ocp0' && c.rule !== 'must_serve').map((c) => c.message);
+  const set = (/** @type {any} */ x, /** @type {Record<string, any>} */ g) => Object.entries(g).reduce((y, [k, v]) => setGeneric(y, cat, 'ocp0', k, v).design, x);
+  // CO-CF-05: the parameters travel with the configuration of an image
+  const p = set(d, { RuntimeParams_g: true });
+  assert.deepEqual(errors(p), ['ocp0: RuntimeParams_g = true requires RuntimeConfig_g = true.']);
+  const h = set(p, { RuntimeConfig_g: true, EntropyCoder_g: 'HYBRID' });
+  assert.deepEqual(errors(h), []);
+  // D = 16, gamma* = 6: gamma0 up to 5, every accumulator below 2^21 (the last element repeats for the remaining bands)
+  const low = '2 ** minimum(31, DynamicRange_g + minimum(8, RescaleCounterSize_g - 1)) - 1';
+  const high = '2 ** maximum(0, DynamicRange_g + minimum(8, RescaleCounterSize_g - 1) - 31) - 1';
+  const why = 'with RuntimeParams_g some gamma0 up to min(8, RescaleCounterSize_g - 1) keeps every initial accumulator below 2^(D + gamma0) (CCSDS 5.4.3.3.4.3, CO-CF-05)';
+  assert.deepEqual(errors(set(h, { HybridAccuInit_g: '(0 => 2097151)' })), []);
+  assert.deepEqual(errors(set(h, { HybridAccuInit_g: '(0 => 2097152)' })), [`ocp0: element 0 of HybridAccuInit_g = 2097152 must be at most ${low} = 2097151 (${why}).`]);
+  assert.deepEqual(errors(set(h, { HybridAccuInit_g: '(5, 6, 2097152)' })), [`ocp0: element 2 of HybridAccuInit_g = 2097152 must be at most ${low} = 2097151 (${why}).`]);
+  assert.deepEqual(errors(set(h, { HybridAccuInit_g: '(5, 6, 2097152)', ZSize_g: 2, SubFrameDepth_g: 2 })), []);
+  // below 2^31 the part from 2^31 on is zero; from D + gamma0 = 32 on it is below 2^(D + gamma0 - 31)
+  assert.deepEqual(errors(set(h, { HybridAccuInitHigh_g: '(0 => 1)' })), [`ocp0: element 0 of HybridAccuInitHigh_g = 1 must be at most ${high} = 0 (${why}).`]);
+  const wide = set(h, { DynamicRange_g: 24, RescaleCounterSize_g: 11 });
+  assert.deepEqual(errors(set(wide, { HybridAccuInit_g: '(0 => 2147483647)', HybridAccuInitHigh_g: '(0 => 1)' })), []);
+  assert.deepEqual(errors(set(wide, { HybridAccuInitHigh_g: '(0 => 2)' })), [`ocp0: element 0 of HybridAccuInitHigh_g = 2 must be at most ${high} = 1 (${why}).`]);
+  // only with the runtime parameters and the hybrid coder
+  assert.deepEqual(errors(set(h, { RuntimeParams_g: false, HybridAccuInit_g: '(0 => 2097152)' })), []);
+  assert.deepEqual(errors(set(h, { EntropyCoder_g: 'SAMPLE_ADAPTIVE', HybridAccuInit_g: '(0 => 2097152)' })), []);
+  // the channel has the same rules
+  let c = createDesign('t');
+  c = addInstance(c, cat, 'opencompact/ocp_channel', { x: 0, y: 0 }).design;
+  const id = c.instances[0].id;
+  const chErrors = (/** @type {any} */ x) => resolve(cat, x).checks.filter((k) => k.severity === 'error' && k.instance === id && k.rule !== 'must_serve').map((k) => k.message);
+  c = setGeneric(c, cat, id, 'RuntimeParams_g', true).design;
+  assert.deepEqual(chErrors(c), [`${id}: RuntimeParams_g = true requires RuntimeConfig_g = true.`]);
+  for (const [k, v] of Object.entries({ RuntimeConfig_g: true, EntropyCoder_g: 'HYBRID', HybridAccuInit_g: '(0 => 2097152)' })) c = setGeneric(c, cat, id, k, v).design;
+  assert.deepEqual(chErrors(c), [`${id}: element 0 of HybridAccuInit_g = 2097152 must be at most ${low} = 2097151 (${why}).`]);
+});
+
 test('a BIP preset: the sub-frame depth follows the number of bands until the user sets it, also in the file and the brief', () => {
   let d = createDesign('t');
   d = addInstance(d, cat, 'opencompact/ocp_core', { x: 0, y: 0 }, 'lossless_bip').design;
