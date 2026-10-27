@@ -1,6 +1,6 @@
 {
  "source": "opencompact",
- "commit": "f81626e625c16343c044dc5279f3bff0458126d1",
+ "commit": "c238942b0274e5227272c40688131fb87a444af1",
  "constants": {
   "LE_MAX_OUT": 21,
   "LE_MAX_FLUSH": 130
