@@ -13,7 +13,7 @@
 import { hex, sizeText } from '../model/addressmap.js';
 import { crossingGroups, readinessStatement } from '../model/systemviews.js';
 import { candidates, checkConnection, effectiveType, resolveEndpoint } from '../model/compat.js';
-import { connectionsAt, getInstance, PREFIX_RE, trafficFields, trafficFromFields } from '../model/design.js';
+import { connectionsAt, getInstance, PREFIX_RE, resetGroupOf, trafficFields, trafficFromFields } from '../model/design.js';
 import { formatReal, formatValue, isEditable, isEnabled, parseInput } from '../model/generics.js';
 import { formatHz } from '../model/rules.js';
 import { formatRate, pathAt } from '../model/throughput.js';
@@ -218,6 +218,60 @@ export class InspectorView {
     return h('div', { class: 'cmp-field cmp-check' },
       box, h('label', { for: 'cmp-inst-monitor' }, 'System ECC monitor'),
       h('p', { class: 'cmp-help', id: 'cmp-inst-monitor-help' }, 'Reports the ECC events of the crossings the Composer inserts, on its free channels.'));
+  }
+
+  /**
+   * The reset group of a block with a reset output (its source): the blocks it resets instead of the reset generator
+   * of their clock domain, and the name of the group. On a member of a group: the group and its source.
+   * @param {string} id
+   * @param {import('../model/catalog.js').BlockDef} b
+   */
+  resetGroupField(id, b) {
+    const d = this.app.design;
+    const outputs = b.interfaces.filter((i) => i.type === 'reset' && i.role === 'event_out');
+    const member = resetGroupOf(d, id);
+    const memberNote = member
+      ? h('p', { class: 'cmp-help', 'data-reset-member': member.id }, 'Reset: group ',
+        h('span', { class: 'cmp-mono' }, member.id), ' from ',
+        h('button', { type: 'button', class: 'cmp-link-btn cmp-mono', onclick: () => this.app.selectInstances([member.source.split('.')[0]], undefined, { focusCanvas: true }) }, member.source),
+        ', instead of the reset generator of its clock domain.')
+      : null;
+    if (outputs.length === 0) return memberNote ? h('div', { class: 'cmp-field' }, memberNote) : null;
+    const candidates = d.instances.filter((i) => i.id !== id && !i.block.startsWith('subsystem/'));
+    return h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-rgroup' },
+      h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-rgroup' }, 'Reset group'),
+      memberNote,
+      outputs.map((o) => {
+        const source = `${id}.${o.name}`;
+        const group = (d.resetGroups ?? []).find((g) => g.source === source);
+        const members = group?.members ?? [];
+        const err = this.errorLine(`cmp-rgroup-err-${o.name}`);
+        const apply = (/** @type {string[]} */ next, /** @type {string | undefined} */ name) => err.show(this.app.setResetGroup(source, next, name));
+        const nameId = `cmp-rgroup-name-${o.name}`;
+        const name = group
+          ? h('div', { class: 'cmp-field' },
+            h('label', { for: nameId }, 'Name of the group'),
+            h('input', { id: nameId, class: 'cmp-input cmp-mono', value: group.id, onchange: (/** @type {Event} */ e) => apply(members, /** @type {HTMLInputElement} */ (e.target).value.trim()) }))
+          : null;
+        return h('div', { class: 'cmp-rgroup', 'data-source': source },
+          h('p', { class: 'cmp-help' }, `The checked blocks take ${o.name} as their reset instead of the reset generator of their clock domain; ${id} itself stays on it, so the system reset reaches them through ${id}.`),
+          name,
+          h('ul', { class: 'cmp-list', role: 'list' }, candidates.map((c) => {
+            const other = resetGroupOf(d, c.id);
+            const elsewhere = other && other.source !== source;
+            const box = h('input', {
+              id: `cmp-rgroup-${o.name}-${c.id}`,
+              type: 'checkbox',
+              checked: members.includes(c.id),
+              disabled: Boolean(elsewhere),
+              onchange: () => apply(box.checked ? [...members, c.id] : members.filter((m) => m !== c.id), undefined),
+            });
+            return h('li', { class: 'cmp-check' }, box,
+              h('label', { for: `cmp-rgroup-${o.name}-${c.id}`, class: 'cmp-mono' }, c.id),
+              elsewhere ? h('span', { class: 'cmp-facts' }, ` in group ${other.id}`) : null);
+          })),
+          err.el);
+      }));
   }
 
   /**
@@ -440,6 +494,7 @@ export class InspectorView {
             adv.map((g) => this.genericField(inst.id, g, values[g.name], inst.generics, rec)))
           : null),
       this.monitorField(inst.id, b),
+      this.resetGroupField(inst.id, b),
       this.assumedField(inst.id, b),
       this.clocksSection(inst.id, b, rec),
       h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-itf' },

@@ -42,7 +42,7 @@ const INNER_RULE = `    ${'-'.repeat(95)}`;
 
 /**
  * @typedef {object} ExportInfo
- * @property {string} generator    name and version of the generator, for example "Open Space Composer 0.9.12-beta"
+ * @property {string} generator    name and version of the generator, for example "Open Space Composer 0.10.0-beta"
  * @property {string} input        file name of the system file the export is made from
  * @property {string} sha256       SHA-256 of that file, hexadecimal
  * @property {string} [description]   description of the system
@@ -569,6 +569,7 @@ export function netlistDiff(before, after) {
   keyed('Library', before.compile, after.compile, (c) => c.library, (c) => `${c.url} ${c.tag ? `${c.tag} ` : ''}${c.commit}`);
   keyed('Clock', before.clocks, after.clocks, (c) => c.id, (c) => `${c.actual} ${c.frequencyHz} Hz`);
   keyed('Reset generator of', before.resets, after.resets, (r) => r.domain, (r) => r.generator);
+  keyed('Reset group', before.resetGroups ?? [], after.resetGroups ?? [], (g) => g.group, (g) => `${g.source} to ${g.ports.join(', ')}`);
   const ca = before.constraints.map((c) => JSON.stringify(c));
   const cb = after.constraints.map((c) => JSON.stringify(c));
   for (const c of ca) if (!cb.includes(c)) out.push(`Constraint removed: ${c}`);

@@ -2,8 +2,9 @@
 /**
  * The .composer.json file format: writing a design and reading it back with full validation. Version 1 is a system of
  * blocks; version 2 adds the definitions of the subsystems it uses and is written only when it uses one, so that every
- * other system stays a version 1 file. The JSON schemas are published at /composer/schema/system-1.json and
- * system-2.json. No DOM dependency.
+ * other system stays a version 1 file; version 3 adds reset groups and is written only when the system has one, so
+ * that a Composer that cannot read them refuses the file instead of dropping them. The JSON schemas are published at
+ * /composer/schema/system-1.json, system-2.json and system-3.json. No DOM dependency.
  */
 
 import { agentBrief } from './brief.js';
@@ -15,18 +16,23 @@ import { migrate } from './migration.js';
 import { netlist, RESOLVED_VERSION, sameNetlist } from './netlist.js';
 import { resolve } from './resolver.js';
 import {
-  definitionDocument, definitionHash, definitionOrder, directSubsystems, subsystemBlockId, subsystemsOf, withSubsystems,
+  definitionDocument, definitionHash, definitionOrder, directSubsystems, subsystemBlockId, subsystemName, subsystemsOf,
+  withSubsystems,
 } from './subsystems.js';
 
 /** @typedef {import('./catalog.js').Catalog} Catalog */
 /** @typedef {import('./design.js').Design} Design */
 
 export const FORMAT = 'open-space-composer-system';
-/** Highest format version this Composer reads; it writes version 1 unless the system uses subsystems. */
-export const FORMAT_VERSION = 2;
+/**
+ * Highest format version this Composer reads; it writes version 3 when the system has reset groups, version 2 when it
+ * uses subsystems, else version 1.
+ */
+export const FORMAT_VERSION = 3;
 export const SCHEMA_URL = 'https://openspacehdl.org/composer/schema/system-1.json';
 export const SCHEMA_URL_2 = 'https://openspacehdl.org/composer/schema/system-2.json';
-export const GENERATOR = { name: 'Open Space Composer', version: '0.9.12-beta' };
+export const SCHEMA_URL_3 = 'https://openspacehdl.org/composer/schema/system-3.json';
+export const GENERATOR = { name: 'Open Space Composer', version: '0.10.0-beta' };
 
 export class FormatError extends Error {
   /** @param {string[]} problems */
@@ -102,11 +108,13 @@ export function toDocument(d, cat, opts = {}) {
   const names = d.subsystems ? definitionOrder(d.subsystems, directSubsystems(d)) : [];
   const defs = names.map((n) => /** @type {Record<string, Design>} */ (d.subsystems)[n]);
   const body = definitionDocument(d);
+  const groups = d.resetGroups ?? [];
+  const version = groups.length ? 3 : names.length ? 2 : 1;
   /** @type {Record<string, unknown>} */
   const out = {
-    $schema: names.length ? SCHEMA_URL_2 : SCHEMA_URL,
+    $schema: [SCHEMA_URL, SCHEMA_URL_2, SCHEMA_URL_3][version - 1],
     format: FORMAT,
-    formatVersion: names.length ? 2 : 1,
+    formatVersion: version,
     generator: { ...GENERATOR, catalog: cat.id },
     system: body.system,
     sources: usedSources(cat, [d, ...defs]),
@@ -115,6 +123,7 @@ export function toDocument(d, cat, opts = {}) {
     connections: body.connections,
     externals: body.externals,
   };
+  if (groups.length) out.resetGroups = groups.map((g) => ({ id: g.id, source: g.source, members: [...g.members] }));
   if (names.length) {
     out.subsystems = defs.map((def) => {
       const { name, ...rest } = definitionDocument(def);
@@ -341,6 +350,48 @@ function readParts(d, o, cat, errors, warnings) {
 }
 
 /**
+ * Reads the reset groups of the system (format version 3): the form of every group and its references to instances.
+ * The rules of the groups (the source a reset output, one group per member, the clock domain) are checks of the
+ * resolver, so that a file that breaks them opens and can be repaired.
+ * @param {Design} d
+ * @param {Record<string, any>} o
+ * @param {string[]} errors
+ */
+function readResetGroups(d, o, errors) {
+  if (o.resetGroups === undefined) return;
+  /** @type {import('./design.js').ResetGroup[]} */
+  const groups = [];
+  for (const [k, g] of (Array.isArray(o.resetGroups) ? o.resetGroups : []).entries()) {
+    const where = `resetGroups[${k}]`;
+    if (!isObject(g) || typeof g.id !== 'string' || typeof g.source !== 'string' || !Array.isArray(g.members) || g.members.length === 0) {
+      errors.push(`${where}: needs id, source and at least one member.`);
+      continue;
+    }
+    const idProblem = identifierProblem(g.id);
+    if (idProblem) errors.push(`${where}.id: ${idProblem}`);
+    else if (groups.some((x) => x.id === g.id)) errors.push(`${where}: duplicate id "${g.id}".`);
+    const m = /^([a-z](?:_?[a-z0-9])*)\.([A-Za-z]\w*)$/.exec(g.source);
+    if (!m) errors.push(`${where}.source: "<instance>.<interface>" of a reset output, not "${g.source}".`);
+    else if (!d.instances.some((i) => i.id === m[1])) errors.push(`${where}.source: no instance "${m[1]}".`);
+    /** @type {string[]} */
+    const members = [];
+    for (const member of g.members) {
+      if (typeof member !== 'string' || identifierProblem(member)) {
+        errors.push(`${where}.members: "${String(member)}" is no instance id (a member is an instance; the catalog selects its reset ports).`);
+        continue;
+      }
+      const inst = d.instances.find((i) => i.id === member);
+      if (!inst) errors.push(`${where}.members: no instance "${member}".`);
+      else if (subsystemName(inst.block)) errors.push(`${where}.members: ${member} is a subsystem; a reset group takes blocks of the top level.`);
+      else if (members.includes(member)) errors.push(`${where}.members: ${member} is named twice.`);
+      else members.push(member);
+    }
+    groups.push({ id: g.id, source: g.source, members });
+  }
+  if (groups.length) d.resetGroups = groups;
+}
+
+/**
  * Checks that every clock domain with a block as source has that block and its clock output.
  * @param {Design} d
  * @param {Catalog} cat
@@ -463,6 +514,7 @@ function readSubsystems(o, cat, warnings) {
     const problem = identifierProblem(s.name);
     if (problem) errors.push(`subsystems[${k}].name: ${problem}`);
     else if (raw.has(s.name)) errors.push(`subsystems[${k}]: duplicate name "${s.name}".`);
+    else if (s.resetGroups !== undefined) errors.push(`subsystems[${k}] (${s.name}): a subsystem has no reset groups; they belong to the top level.`);
     else raw.set(s.name, s);
   }
   if (errors.length > 0) throw new FormatError(errors);
@@ -524,10 +576,10 @@ export function fromDocument(doc, cat) {
   if (!isObject(doc)) throw new FormatError(['The file does not contain a JSON object.']);
   const raw = /** @type {Record<string, any>} */ (doc);
   if (raw.format !== FORMAT) throw new FormatError(['This is not an Open Space Composer system file (format field missing).']);
-  if (raw.formatVersion !== 1 && raw.formatVersion !== 2) {
+  if (raw.formatVersion !== 1 && raw.formatVersion !== 2 && raw.formatVersion !== 3) {
     throw new FormatError([
       typeof raw.formatVersion === 'number' && raw.formatVersion > FORMAT_VERSION
-        ? `The file has format version ${raw.formatVersion}; this Composer reads versions 1 and 2.`
+        ? `The file has format version ${raw.formatVersion}; this Composer reads versions 1 to 3.`
         : `Unsupported format version ${String(raw.formatVersion)}.`,
     ]);
   }
@@ -537,7 +589,11 @@ export function fromDocument(doc, cat) {
   for (const name of mig.unknown) {
     warnings.push(`The file was saved with a version of ${name} older than the changes the catalog records: the changes of its blocks cannot be listed; compare the netlist differences.`);
   }
-  if (o.formatVersion === 1 && o.subsystems !== undefined) throw new FormatError(['subsystems: only a file of format version 2 has subsystems.']);
+  if (o.formatVersion === 1 && o.subsystems !== undefined) throw new FormatError(['subsystems: only a file of format version 2 or 3 has subsystems.']);
+  if (o.formatVersion !== 3 && o.resetGroups !== undefined) throw new FormatError(['resetGroups: only a file of format version 3 has reset groups.']);
+  if (o.formatVersion === 3 && !(Array.isArray(o.resetGroups) && o.resetGroups.length > 0)) {
+    throw new FormatError(['resetGroups: a file of format version 3 has at least one reset group.']);
+  }
   const otherCatalog = Boolean(isObject(o.generator) && o.generator.catalog && o.generator.catalog !== cat.id);
 
   // the subsystems first: the instances of the system refer to them
@@ -546,6 +602,7 @@ export function fromDocument(doc, cat) {
 
   const d = createDesign();
   readParts(d, o, scat, errors, warnings);
+  readResetGroups(d, o, errors);
 
   // layout
   const lay = isObject(o.layout) ? o.layout : {};

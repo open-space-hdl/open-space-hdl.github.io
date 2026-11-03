@@ -82,6 +82,8 @@ export const RESOLVED_VERSION = 1;
  * @property {Record<string, any>[]} ports
  * @property {Record<string, any>[]} clocks
  * @property {Record<string, any>[]} resets
+ * @property {{ group: string, source: string, output: string, domain: string, ports: string[] }[]} [resetGroups]   the
+ *           reset groups (format version 3): the signal of the source and every reset port it drives
  * @property {Record<string, any>[]} instances
  * @property {{ name: string, type: string }[]} signals
  * @property {Net[]} nets
@@ -486,7 +488,11 @@ class Netlist {
       const src = /** @type {{ kind: string, instance?: string, port?: string }} */ (c?.source ?? { kind: 'external' });
       return src.kind === 'block' ? signalName(src.instance ?? '', src.port ?? '') : `Clk_${dom}`;
     };
-    const resetUsers = new Set(res.instances.flatMap((r) => Object.values(r.resets)).filter((v) => v.endsWith('.RstOut')).map((v) => signalName(instanceOf(v), 'RstOut')));
+    // the reset sources: the output of a reset generator, or the reset output of a reset group
+    const isSource = (/** @type {string} */ v) => v !== RESET_PORT && v.includes('.');
+    const resetUsers = new Set(res.instances.flatMap((r) => Object.values(r.resets)).filter(isSource).map((v) => signalName(instanceOf(v), portOf(v))));
+    /** @type {Map<string, import('./resolver.js').ResolvedResetGroup>} reset port -> its group */
+    const groupOfPort = new Map((res.resetGroups ?? []).flatMap((g) => g.ports.map((p) => [p, g])));
     for (const r of resetUsers) used.add(r);
     for (const dom of this.d.clockDomains) {
       const s = /** @type {{ kind: string, instance?: string, port?: string }} */ (dom.source);
@@ -508,16 +514,18 @@ class Netlist {
         // a reset input: synchronous (from the reset generator of its domain) or asynchronous, and why
         const rst = b.resets.find((r) => r.port === p.name && r.dir !== 'out');
         if (rst) {
-          const gen = rec.resets[p.name]?.endsWith('.RstOut') ? instanceOf(rec.resets[p.name]) : undefined;
+          const grp = groupOfPort.get(`${rec.id}.${p.name}`);
+          const gen = !grp && rec.resets[p.name]?.endsWith('.RstOut') ? instanceOf(rec.resets[p.name]) : undefined;
+          const from = grp ? `: the reset of the group ${grp.group} (${grp.source})` : gen ? `: the output of the reset generator ${gen}` : '';
           o.reset = rst.sync === 'async'
-            ? { kind: 'async', note: rst.description ?? `Asynchronous reset: ${b.entity} synchronises its release itself.` }
-            : { kind: 'sync', note: `Synchronous reset in the clock domain ${this.d.clockDomains.find((c) => c.id === rec.clocks[rst.clock ?? ''])?.name ?? rec.clocks[rst.clock ?? ''] ?? ''} (clock ${rst.clock ?? ''})${gen ? `: the output of the reset generator ${gen}` : ''}.` };
+            ? { kind: 'async', note: grp ? `Asynchronous reset from the group ${grp.group} (${grp.source}): ${b.entity} synchronises its release itself.` : rst.description ?? `Asynchronous reset: ${b.entity} synchronises its release itself.` }
+            : { kind: 'sync', note: `Synchronous reset in the clock domain ${this.d.clockDomains.find((c) => c.id === rec.clocks[rst.clock ?? ''])?.name ?? rec.clocks[rst.clock ?? ''] ?? ''} (clock ${rst.clock ?? ''})${from}.` };
         }
         if (clockPorts.has(p.name)) {
           o.actual = rec.clocks[p.name] ? clockOf(rec.clocks[p.name]) : 'open';
         } else if (p.name in rec.resets && p.dir !== 'out') {
           const r = rec.resets[p.name];
-          o.actual = r === RESET_PORT ? RESET_PORT : r.endsWith('.RstOut') ? signalName(instanceOf(r), 'RstOut') : 'open';
+          o.actual = r === RESET_PORT ? RESET_PORT : isSource(r) ? signalName(instanceOf(r), portOf(r)) : 'open';
         } else if (this.directActuals.has(`${rec.id}.${p.name}`)) {
           o.actual = this.directActuals.get(`${rec.id}.${p.name}`);
         } else if (used.has(sig)) {
@@ -611,6 +619,10 @@ class Netlist {
       }),
       clocks,
       resets,
+      // the reset groups (format version 3): the signal of the source and the reset ports it drives
+      ...(res.resetGroups?.length
+        ? { resetGroups: res.resetGroups.map((g) => ({ group: g.group, source: g.source, output: signalName(instanceOf(g.source), portOf(g.source)), domain: g.domain, ports: [...g.ports] })) }
+        : {}),
       instances,
       signals: signals.sort((a, b) => a.name.localeCompare(b.name)),
       nets: this.nets,

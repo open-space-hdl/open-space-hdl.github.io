@@ -105,5 +105,10 @@ test('the file format page is linked from the editor and documents the parts of 
   const schema2 = await fmt.request.get('/composer/schema/system-2.json');
   expect(schema2.ok()).toBe(true);
   expect(Object.keys((await schema2.json()).properties)).toEqual(expect.arrayContaining(['subsystems', 'resolved']));
+  const schema3 = await fmt.request.get('/composer/schema/system-3.json');
+  expect(schema3.ok()).toBe(true);
+  const s3 = await schema3.json();
+  expect(s3.required).toEqual(expect.arrayContaining(['resetGroups']));
+  expect(Object.keys(s3.properties)).toEqual(expect.arrayContaining(['resetGroups', 'subsystems', 'resolved']));
   await fmt.close();
 });

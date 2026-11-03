@@ -91,6 +91,8 @@ export function docUrl(doc) {
  *           of a read port that count only in the cycles that qualify names (olo_ft_ecc_monitor, Connecting Sources)
  * @property {string[]} [qualify]   ports of the block whose AND marks the cycles of data-aligned flags (flavor aligned):
  *           Out_Valid and Out_Ready of a FIFO, RdValid of a RAM
+ * @property {string} [resetBy]   in a block with reset ports for a reset group (group true): the one of them that resets
+ *           the logic behind this interface; an interface without it stays on the reset of its clock domain
  */
 
 /**
@@ -127,7 +129,9 @@ export function docUrl(doc) {
  * @property {string[]} [packages]  packages of the block library that its generics refer to
  * @property {GenericDef[]} generics
  * @property {{port: string, primary?: boolean, output?: boolean, frequency?: string | number, label?: string, description?: string, freqGeneric?: string}[]} clocks
- * @property {{port: string, dir?: string, active?: string, sync?: string, clock?: string, description?: string}[]} resets
+ * @property {{port: string, dir?: string, active?: string, sync?: string, clock?: string, description?: string, group?: boolean}[]} resets
+ *           group: the reset input that a reset group of the system drives; the other inputs of a block with such a port
+ *           stay on the reset of their clock domain
  * @property {InterfaceDef[]} interfaces
  * @property {{name: string, dir: string, vhdlType: string, width: string|null, default?: string}[]} ports
  * @property {{port: string, value: string}[]} [tieOffs]
