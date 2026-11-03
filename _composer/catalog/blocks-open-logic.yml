@@ -561,6 +561,39 @@ blocks:
     interfaces:
       - { name: RstOut, label: Reset, type: reset, role: event_out, clock: Clk, signals: { rst: RstOut } }
 
+  - id: olo/olo_ft_reset_ctrl_axi
+    kind: olo
+    name: Commanded reset with registers
+    group: olo-reset
+    source: olo
+    entity: olo_ft_reset_ctrl_axi
+    path: src/ft/vhdl/olo_ft_reset_ctrl_axi.vhd
+    idPrefix: prst
+    doc: /open-logic-ft/doc/ft/olo_ft_reset_ctrl_axi.html
+    summary: >-
+      A reset of a group of blocks commanded by software: a write of a 32-bit key to an AXI4-Lite register drives a
+      reset pulse on RstOut, which also follows the reset of the block.
+    clocks:
+      - { port: Clk, primary: true, label: Clock }
+    resets:
+      - { port: Rst, active: high, sync: sync, clock: Clk }
+    generics:
+      - { name: RstPulseCycles_g, label: Reset pulse cycles, unit: cycles, description: "Length of the commanded reset, 1 to 65535." }
+      - { name: Key_g, label: Command key, advanced: true, description: "32-bit command value (default ASCII \"PIPE\"); all zeros and all ones stop the elaboration." }
+      - { name: AxiAddrWidth_g, label: Register address width, unit: bits, description: "4 to 30; the address is fully decoded." }
+      - { name: ReadTimeoutClks_g, label: Read timeout, unit: cycles, advanced: true, description: Reads of unmapped addresses are answered through this timeout with an error response. }
+    interfaces:
+      - { name: S_AxiLite, label: Registers, type: axi4lite, role: slave, clock: Clk, prefix: S_AxiLite_, params: { addrWidth: AxiAddrWidth_g } }
+      - { name: RstOut, label: Commanded reset, type: reset, role: event_out, clock: Clk, tieOff: open, description: "Reset of the controlled blocks, high-active, synchronous to Clk: '1' while a commanded pulse runs and while Rst is '1' (one cycle later).", signals: { rst: RstOut } }
+    idRegister: { address: "0x000", value: "0x52535401" }
+    init:
+      - { text: "Read ID (0x000) = 0x52535401 to identify the block. To reset the controlled blocks write Key_g to CTRL (0x004) with all four byte enables, then poll STATUS (0x008) until BUSY (bit 0) is 0; COUNT (bits 31:16) counts the commands since the reset of the block." }
+    notes:
+      - Rst is synchronous and high-active; connect a reset that is asserted at power-up, such as the output of olo_base_reset_gen. RstOut follows Rst one clock cycle later, so the controlled blocks are also reset with the system.
+      - "A command is a full-word write of Key_g to CTRL; any other write does nothing. RstOut rises in the cycle after the write response handshake and stays '1' for RstPulseCycles_g cycles; a command while BUSY is '1' restarts the count."
+      - RstOut is synchronous to Clk. Blocks on another clock take it through an olo_base_reset_gen in their own clock domain (SyncTmr_g = true in a radiation environment).
+      - "Its state relies on the TMR of the synthesis tool, like the other ft entities without a codeword: with TMR a single upset neither starts nor changes a reset."
+
   # Flow --------------------------------------------------------------------------------------------------------------
   - id: olo/olo_base_pl_stage
     kind: olo
