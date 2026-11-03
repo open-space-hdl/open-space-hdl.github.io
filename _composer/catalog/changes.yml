@@ -302,3 +302,7 @@ olo:
     changes:
       - { block: olo/olo_base_crc_append, kind: behaviour, text: "The CRC checks In_Last and In_Be only for an accepted beat (a simulation assertion of olo_base_crc); the hardware behaviour is unchanged." }
       - { block: olo/olo_base_crc_check, kind: behaviour, text: "The CRC checks In_Last and In_Be only for an accepted beat (a simulation assertion of olo_base_crc); the hardware behaviour is unchanged." }
+  - previous: 227eecdd0c7b808cc387d8959a12c8ad7be000d9
+    pin: 02a790ddf05c190a98314b6a75f4f4b92ffa9cf2
+    evidence: "Tag 4.7.0-ft.12 of Open Logic FT: the new entity olo_ft_reset_ctrl_axi, a reset of a group of blocks commanded by a key write to an AXI4-Lite register (new block of the catalog); no change of the existing blocks of the catalog."
+    changes: []

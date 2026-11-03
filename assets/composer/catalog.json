@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "13caffc27875",
+ "id": "ceeeddaa62ed",
  "sources": [
   {
    "id": "openwire",
@@ -850,11 +850,11 @@
    "repo": "open-logic-ft",
    "url": "https://github.com/open-space-hdl/open-logic-ft",
    "doc": "/open-logic-ft/",
-   "tag": "4.7.0-ft.11",
+   "tag": "4.7.0-ft.12",
    "library": "olo",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). 4.7.0-ft.11 lets olo_axi_master_full overlap consecutive commands and adds the generics IntFifoDepth_g and EccPipeline_g to the fault-tolerant AXI masters (ft.9), resets the read alignment register of olo_axi_master_full (ft.10), matches the scoped constraint of the read path of olo_base_ram_sdp also after synthesis retiming and checks In_Last and In_Be of olo_base_crc only for an accepted beat (ft.11). The cores of the catalog are verified with 4.7.0-ft.6 (OpenWire, OpenSPP, OpenCrypto, OpenCompact); 4.7.0-ft.11 (OpenRMAP, OpenFibre); the ports added since 4.7.0-ft.6 have a default (inputs) or may stay open (outputs), so every core compiles with 4.7.0-ft.11 unchanged.",
+   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). 4.7.0-ft.11 lets olo_axi_master_full overlap consecutive commands and adds the generics IntFifoDepth_g and EccPipeline_g to the fault-tolerant AXI masters (ft.9), resets the read alignment register of olo_axi_master_full (ft.10), matches the scoped constraint of the read path of olo_base_ram_sdp also after synthesis retiming and checks In_Last and In_Be of olo_base_crc only for an accepted beat (ft.11). 4.7.0-ft.12 adds olo_ft_reset_ctrl_axi, a reset of a group of blocks commanded through AXI4-Lite. The cores of the catalog are verified with 4.7.0-ft.6 (OpenWire, OpenSPP, OpenCrypto), 4.7.0-ft.9 (OpenCompact) and 4.7.0-ft.11 (OpenRMAP, OpenFibre); the ports added since 4.7.0-ft.6 have a default (inputs) or may stay open (outputs), so every core compiles with 4.7.0-ft.12 unchanged.",
    "files": [
     "src/intf/vhdl/olo_intf_pkg_can.vhd",
     "src/base/vhdl/olo_base_pkg_crc.vhd",
@@ -938,6 +938,7 @@
     "src/axi/vhdl/olo_axi_master_full.vhd",
     "src/ft/vhdl/olo_ft_axi_master_full.vhd",
     "src/axi/vhdl/olo_axi_lite_slave.vhd",
+    "src/ft/vhdl/olo_ft_reset_ctrl_axi.vhd",
     "src/ft/vhdl/olo_ft_ecc_monitor_axi.vhd",
     "src/axi/vhdl/olo_axi_lite_decoder.vhd",
     "3rdParty/en_cl_fix/hdl/en_cl_fix_private_pkg.vhd",
@@ -1046,9 +1047,15 @@
        "text": "The CRC checks In_Last and In_Be only for an accepted beat (a simulation assertion of olo_base_crc); the hardware behaviour is unchanged."
       }
      ]
+    },
+    {
+     "previous": "227eecdd0c7b808cc387d8959a12c8ad7be000d9",
+     "pin": "02a790ddf05c190a98314b6a75f4f4b92ffa9cf2",
+     "evidence": "Tag 4.7.0-ft.12 of Open Logic FT: the new entity olo_ft_reset_ctrl_axi, a reset of a group of blocks commanded by a key write to an AXI4-Lite register (new block of the catalog); no change of the existing blocks of the catalog.",
+     "changes": []
     }
    ],
-   "commit": "227eecdd0c7b808cc387d8959a12c8ad7be000d9"
+   "commit": "02a790ddf05c190a98314b6a75f4f4b92ffa9cf2"
   }
  ],
  "categories": [
@@ -5627,6 +5634,263 @@
      "vhdlType": "std_logic",
      "width": "1",
      "default": "not RstInPolarity_g"
+    }
+   ]
+  },
+  {
+   "id": "olo/olo_ft_reset_ctrl_axi",
+   "kind": "olo",
+   "name": "Commanded reset with registers",
+   "group": "olo-reset",
+   "source": "olo",
+   "library": "olo",
+   "entity": "olo_ft_reset_ctrl_axi",
+   "path": "src/ft/vhdl/olo_ft_reset_ctrl_axi.vhd",
+   "summary": "A reset of a group of blocks commanded by software: a write of a 32-bit key to an AXI4-Lite register drives a reset pulse on RstOut, which also follows the reset of the block.",
+   "idPrefix": "prst",
+   "doc": "/open-logic-ft/doc/ft/olo_ft_reset_ctrl_axi.html",
+   "notes": [
+    "Rst is synchronous and high-active; connect a reset that is asserted at power-up, such as the output of olo_base_reset_gen. RstOut follows Rst one clock cycle later, so the controlled blocks are also reset with the system.",
+    "A command is a full-word write of Key_g to CTRL; any other write does nothing. RstOut rises in the cycle after the write response handshake and stays '1' for RstPulseCycles_g cycles; a command while BUSY is '1' restarts the count.",
+    "RstOut is synchronous to Clk. Blocks on another clock take it through an olo_base_reset_gen in their own clock domain (SyncTmr_g = true in a radiation environment).",
+    "Its state relies on the TMR of the synthesis tool, like the other ft entities without a codeword: with TMR a single upset neither starts nor changes a reset."
+   ],
+   "idRegister": {
+    "address": "0x000",
+    "value": "0x52535401"
+   },
+   "init": [
+    {
+     "text": "Read ID (0x000) = 0x52535401 to identify the block. To reset the controlled blocks write Key_g to CTRL (0x004) with all four byte enables, then poll STATUS (0x008) until BUSY (bit 0) is 0; COUNT (bits 31:16) counts the commands since the reset of the block."
+    }
+   ],
+   "generics": [
+    {
+     "name": "RstPulseCycles_g",
+     "vhdlType": "positive range 1 to 65535",
+     "kind": "integer",
+     "min": 1,
+     "max": 65535,
+     "defaultText": "16",
+     "default": 16,
+     "label": "Reset pulse cycles",
+     "description": "Length of the commanded reset, 1 to 65535.",
+     "unit": "cycles"
+    },
+    {
+     "name": "Key_g",
+     "vhdlType": "std_logic_vector(31 downto 0)",
+     "kind": "std_logic_vector",
+     "defaultText": "x\"50495045\"",
+     "default": "x\"50495045\"",
+     "label": "Command key",
+     "description": "32-bit command value (default ASCII \"PIPE\"); all zeros and all ones stop the elaboration.",
+     "advanced": true
+    },
+    {
+     "name": "AxiAddrWidth_g",
+     "vhdlType": "positive range 4 to 30",
+     "kind": "integer",
+     "min": 4,
+     "max": 30,
+     "defaultText": "12",
+     "default": 12,
+     "label": "Register address width",
+     "description": "4 to 30; the address is fully decoded.",
+     "unit": "bits"
+    },
+    {
+     "name": "ReadTimeoutClks_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "100",
+     "default": 100,
+     "label": "Read timeout",
+     "description": "Reads of unmapped addresses are answered through this timeout with an error response.",
+     "advanced": true,
+     "unit": "cycles"
+    }
+   ],
+   "clocks": [
+    {
+     "port": "Clk",
+     "primary": true,
+     "label": "Clock"
+    }
+   ],
+   "resets": [
+    {
+     "port": "Rst",
+     "active": "high",
+     "sync": "sync",
+     "clock": "Clk"
+    }
+   ],
+   "interfaces": [
+    {
+     "name": "S_AxiLite",
+     "type": "axi4lite",
+     "role": "slave",
+     "clock": "Clk",
+     "label": "Registers",
+     "params": {
+      "addrWidth": "AxiAddrWidth_g"
+     },
+     "signals": {
+      "AwAddr": "S_AxiLite_AwAddr",
+      "AwValid": "S_AxiLite_AwValid",
+      "AwReady": "S_AxiLite_AwReady",
+      "WData": "S_AxiLite_WData",
+      "WStrb": "S_AxiLite_WStrb",
+      "WValid": "S_AxiLite_WValid",
+      "WReady": "S_AxiLite_WReady",
+      "BResp": "S_AxiLite_BResp",
+      "BValid": "S_AxiLite_BValid",
+      "BReady": "S_AxiLite_BReady",
+      "ArAddr": "S_AxiLite_ArAddr",
+      "ArValid": "S_AxiLite_ArValid",
+      "ArReady": "S_AxiLite_ArReady",
+      "RData": "S_AxiLite_RData",
+      "RResp": "S_AxiLite_RResp",
+      "RValid": "S_AxiLite_RValid",
+      "RReady": "S_AxiLite_RReady"
+     }
+    },
+    {
+     "name": "RstOut",
+     "type": "reset",
+     "role": "event_out",
+     "clock": "Clk",
+     "label": "Commanded reset",
+     "description": "Reset of the controlled blocks, high-active, synchronous to Clk: '1' while a commanded pulse runs and while Rst is '1' (one cycle later).",
+     "tieOff": "open",
+     "signals": {
+      "rst": "RstOut"
+     }
+    }
+   ],
+   "ports": [
+    {
+     "name": "Clk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Rst",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_ArAddr",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(AxiAddrWidth_g - 1 downto 0)",
+     "width": "AxiAddrWidth_g"
+    },
+    {
+     "name": "S_AxiLite_ArValid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_ArReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_AwAddr",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(AxiAddrWidth_g - 1 downto 0)",
+     "width": "AxiAddrWidth_g"
+    },
+    {
+     "name": "S_AxiLite_AwValid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_AwReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_WData",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(31 downto 0)",
+     "width": "32"
+    },
+    {
+     "name": "S_AxiLite_WStrb",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(3 downto 0)",
+     "width": "4"
+    },
+    {
+     "name": "S_AxiLite_WValid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_WReady",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_BResp",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "S_AxiLite_BValid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_BReady",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_RData",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(31 downto 0)",
+     "width": "32"
+    },
+    {
+     "name": "S_AxiLite_RResp",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "S_AxiLite_RValid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_AxiLite_RReady",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "RstOut",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
     }
    ]
   },
