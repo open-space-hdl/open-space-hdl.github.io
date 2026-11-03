@@ -10,8 +10,8 @@ import { checkConnection, resolveEndpoint } from '../model/compat.js';
 import {
   addConnection, addDomain, addInstance, adoptAdapter, assignClock, clearGeneric, DesignError, getInstance,
   moveInstances, moveToDomain, removeConnections, removeDomain, removeInstances, renameDomain, renameInstance,
-  setAdapterGeneric, setConstant, setDomainBox, setExternal, setGeneric, setInstanceTraffic, setSideband, setSystem, setTraffic,
-  setViewport, sidebandDefaults, updateDomain,
+  setAdapterGeneric, setConstant, setDomainBox, setExternal, setGeneric, setInstanceTraffic, setResetGroup, setSideband, setSystem,
+  setTraffic, setViewport, sidebandDefaults, updateDomain,
 } from '../model/design.js';
 import { designComments, exportHdl, netlistDiff } from '../model/hdl.js';
 import { ADAPTER_WIDTH, BLOCK_WIDTH, blockGeometry, freeSpot, freeSpotIn, snap } from '../model/layout.js';
@@ -1070,6 +1070,23 @@ export class App {
   setSystem(props) {
     try {
       this.ws.apply('system', (d) => setSystem(d, props));
+      return null;
+    } catch (e) {
+      if (e instanceof DesignError) return e.message;
+      throw e;
+    }
+  }
+
+  /**
+   * Sets the members (and optionally the name) of the reset group of a reset output; no members remove the group.
+   * @param {string} source   "instance.Interface"
+   * @param {string[]} members
+   * @param {string} [id]
+   * @returns {string | null}   the problem, or null
+   */
+  setResetGroup(source, members, id) {
+    try {
+      this.ws.apply('reset group', (d) => setResetGroup(d, this.catalog, source, members, id));
       return null;
     } catch (e) {
       if (e instanceof DesignError) return e.message;

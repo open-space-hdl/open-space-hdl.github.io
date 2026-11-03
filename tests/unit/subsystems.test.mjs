@@ -189,7 +189,7 @@ test('a system without subsystems is written as version 1 again', () => {
   // a version 1 file has no subsystems
   const v1 = fixtureDoc();
   v1.formatVersion = 1;
-  assert.throws(() => read(v1), /only a file of format version 2 has subsystems/);
+  assert.throws(() => read(v1), /only a file of format version 2 or 3 has subsystems/);
 });
 
 test('a subsystem may not take the name of a library, of the system or of a reserved word', () => {

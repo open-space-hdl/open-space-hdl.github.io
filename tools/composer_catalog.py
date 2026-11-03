@@ -34,7 +34,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG_DIR = ROOT / "_composer" / "catalog"
 OUT_FILE = ROOT / "assets" / "composer" / "catalog.json"
-SCHEMA_FILES = {1: ROOT / "composer" / "schema" / "system-1.json", 2: ROOT / "composer" / "schema" / "system-2.json"}
+SCHEMA_FILES = {1: ROOT / "composer" / "schema" / "system-1.json", 2: ROOT / "composer" / "schema" / "system-2.json",
+                3: ROOT / "composer" / "schema" / "system-3.json"}
 EXAMPLES_DIR = ROOT / "assets" / "composer" / "examples"
 SUBSYSTEM_FIXTURES_DIR = ROOT / "tests" / "fixtures" / "subsystems"
 
@@ -1394,7 +1395,7 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             ctx.err(where, f"clock output {c['port']}: frequency '{c['frequency']}' cannot be evaluated")
     resets = []
     for r in b.get("resets") or []:
-        unknown = set(r) - {"port", "dir", "active", "sync", "clock", "description"}
+        unknown = set(r) - {"port", "dir", "active", "sync", "clock", "description", "group"}
         if unknown:
             ctx.err(where, f"reset {r.get('port')}: unknown keys {', '.join(sorted(map(str, unknown)))}")
         p = use(require(r, "port", where), "resets")
@@ -1404,6 +1405,9 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
             ctx.err(where, f"reset {r['port']}: direction differs from the VHDL")
         if r.get("clock") and r["clock"] not in clock_ports:
             ctx.err(where, f"reset {r['port']}: unknown clock {r['clock']}")
+        # a reset input that a reset group of the system drives (group true); the other inputs stay on their domain
+        if "group" in r and (r["group"] is not True or r.get("dir", "in") != "in"):
+            ctx.err(where, f"reset {r['port']}: group is true on a reset input, or absent")
         # a reset input that gets the unsynchronised system reset (asynchronous, or without a clock): the system has no
         # timing exception on Rst, so the block must release it through olo_base_reset_gen, whose scoped constraints
         # cut the paths into its synchronisers
@@ -1484,9 +1488,12 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         out = {"name": iname, "type": tid, "role": role}
         for key in ("clock", "label", "description", "mustServe", "externalOnly", "enabledBy", "sideband",
                     "params", "vector", "tieOff", "carry", "userFields", "needsLast", "clockSignals", "asyncSignals",
-                    "addressSpace", "irqRegisters", "memory", "flavor", "qualify"):
+                    "addressSpace", "irqRegisters", "memory", "flavor", "qualify", "resetBy"):
             if key in itf:
                 out[key] = itf[key]
+        # the reset port of a group (group true) that resets the logic behind the interface
+        if "resetBy" in itf and itf["resetBy"] not in {r["port"] for r in resets if r.get("group")}:
+            ctx.err(iwhere, f"resetBy {itf['resetBy']} is no reset input of the block with group true")
         # an ECC event source states its flavor (olo_ft_ecc_monitor, Connecting Sources): countable pulses, or flags
         # aligned with the data words of a read port, which count only in the cycles where every port of qualify is '1'
         if tid == "ecc.event" and role == "event_out":

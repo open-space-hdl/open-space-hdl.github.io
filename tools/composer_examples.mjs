@@ -14,7 +14,7 @@ import { Catalog } from '../assets/composer/js/model/catalog.js';
 import { checkConnection } from '../assets/composer/js/model/compat.js';
 import {
   addConnection, addDomain, addInstance, assignClock, createDesign, moveToDomain, renameDomain, setExternal, setGeneric, setInstanceTraffic,
-  setSystem, sidebandDefaults, updateDomain,
+  setResetGroup, setSystem, sidebandDefaults, updateDomain,
 } from '../assets/composer/js/model/design.js';
 import { designComments, exportHdl } from '../assets/composer/js/model/hdl.js';
 import { fromText, GENERATOR, toDocument, toText } from '../assets/composer/js/model/serialize.js';
@@ -230,10 +230,16 @@ function linkDomain(d, spw, hz) {
   examples.push(['compressed_images_over_spw', 'Compressed and encrypted images over SpaceWire', d]);
 }
 
-{
+/**
+ * The SpaceWire compression node: an OpenCompact channel, the OpenCrypto framer and AES-GCM core and OpenSPP behind
+ * one OpenWire port, with an ECC monitor.
+ * @param {string} name
+ * @param {string} description
+ */
+function compressionNode(name, description) {
   let d = base(
-    'spw_compression_node',
-    'SpaceWire compression node: the images arrive as Space Packets over SpaceWire, the samples of an image in several SDUs of the Octet String Service, the last one marked by the CPTP User Application value 1. The OpenCompact channel compresses every image of 32 x 32 samples in 8 bands of 12 bits losslessly (CCSDS 123.0-B-2, BIP order) and counts the images and the faulty SDUs in its status registers, the OpenCrypto framer cuts every compressed image into chunks, the AES-GCM core encrypts every chunk, and OpenSPP sends every encrypted chunk as one Space Packet back over the same OpenWire port. An ECC monitor reports the corrected and detected errors of the memories of the compressor and of the buffers of the framer. The throughput budget assumes a compression ratio of 2: an assumption about the images, not a property of the channel; the brief marks every number that depends on it.',
+    name,
+    description,
     [
       ['openwire/owr_core', undefined],
       ['openspp/spp_nchar', undefined],
@@ -279,8 +285,22 @@ function linkDomain(d, spw, hz) {
   });
   // an assumption about the images, not a property of the channel: the budget behind it uses it and the brief marks
   // every number that depends on it
-  d = setInstanceTraffic(d, cat, 'och0', { ratio: 2 });
-  examples.push(['spw_compression_node', 'SpaceWire compression node', d]);
+  return setInstanceTraffic(d, cat, 'och0', { ratio: 2 });
+}
+
+const COMPRESSION_NODE = 'SpaceWire compression node: the images arrive as Space Packets over SpaceWire, the samples of an image in several SDUs of the Octet String Service, the last one marked by the CPTP User Application value 1. The OpenCompact channel compresses every image of 32 x 32 samples in 8 bands of 12 bits losslessly (CCSDS 123.0-B-2, BIP order) and counts the images and the faulty SDUs in its status registers, the OpenCrypto framer cuts every compressed image into chunks, the AES-GCM core encrypts every chunk, and OpenSPP sends every encrypted chunk as one Space Packet back over the same OpenWire port. An ECC monitor reports the corrected and detected errors of the memories of the compressor and of the buffers of the framer. The throughput budget assumes a compression ratio of 2: an assumption about the images, not a property of the channel; the brief marks every number that depends on it.';
+examples.push(['spw_compression_node', 'SpaceWire compression node', compressionNode('spw_compression_node', COMPRESSION_NODE)]);
+
+{
+  // the compression node with a commanded reset of its processing path: a reset group (format version 3)
+  let d = compressionNode(
+    'spw_compression_node_pipeline_reset',
+    'SpaceWire compression node with a reset of its processing path: as spw_compression_node, and the reset controller prst0 (olo_ft_reset_ctrl_axi) resets the OpenCompact channel, the framer and the AES-GCM core as one reset group when software writes its key to the CTRL register, while the SpaceWire port, OpenSPP and the ECC monitor keep running. The system reset also resets the group, through prst0. OpenSPP stays outside the group: a reset of it would cut a Space Packet on the SpaceWire link. The throughput budget assumes a compression ratio of 2: an assumption about the images, not a property of the channel; the brief marks every number that depends on it.',
+  );
+  d = addInstance(d, cat, 'olo/olo_ft_reset_ctrl_axi', { x: 0, y: 0 }).design;
+  d = external(d, { 'prst0.S_AxiLite': 'prst_reg_' });
+  d = setResetGroup(d, cat, 'prst0.RstOut', ['och0', 'frm0', 'ocr0'], 'pipe');
+  examples.push(['spw_compression_node_pipeline_reset', 'SpaceWire compression node with a pipeline reset', d]);
 }
 
 {

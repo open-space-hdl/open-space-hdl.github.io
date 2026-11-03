@@ -63,6 +63,14 @@ import { withSubsystems } from './subsystems.js';
  */
 
 /**
+ * @typedef {object} ResetGroup
+ * @property {string} id
+ * @property {string} source       "instance.Interface" of a reset output (an interface of type reset, an event output)
+ * @property {string[]} members    instances whose reset inputs the source drives instead of the reset generator of
+ *                                 their clock domain
+ */
+
+/**
  * @typedef {object} Design
  * @property {string} name
  * @property {string} description
@@ -74,6 +82,7 @@ import { withSubsystems } from './subsystems.js';
  * @property {{ instances: Record<string, {x: number, y: number}>, domains: Record<string, {x: number, y: number, w: number, h: number}>, viewport: {x: number, y: number, zoom: number} }} layout
  * @property {string} [eccMonitor]   the instance of an ECC monitor that reports the ECC events of the crossings the
  *           Composer inserts (system.eccMonitor)
+ * @property {ResetGroup[]} [resetGroups]   reset groups of the system (format version 3); absent when there is none
  * @property {Record<string, Design>} [subsystems]   definitions of the subsystems used, also inside them, by name
  * @property {import('./migration.js').MigrationNote[]} [migrations]   the changes of the catalog since the pins of the
  *           file the design was opened from, until it is saved (not part of the file)
@@ -270,10 +279,16 @@ export function removeInstances(d, ids) {
   const fallback = domains[0]?.id;
   const domainBoxes = { ...(d.layout.domains ?? {}) };
   for (const id of goneDomains) delete domainBoxes[id];
-  const { eccMonitor, ...rest } = d;
+  const { eccMonitor, resetGroups, ...rest } = d;
+  // reset groups: a removed source ends its group, removed members leave theirs, an empty group ends
+  const groups = (resetGroups ?? [])
+    .filter((g) => !touches(g.source))
+    .map((g) => ({ ...g, members: g.members.filter((m) => !gone.has(m)) }))
+    .filter((g) => g.members.length > 0);
   return {
     ...rest,
     ...(eccMonitor && !gone.has(eccMonitor) ? { eccMonitor } : {}),
+    ...(groups.length ? { resetGroups: groups } : {}),
     clockDomains: domains,
     instances: d.instances
       .filter((i) => !gone.has(i.id))
@@ -655,6 +670,9 @@ export function renameInstance(d, oldId, newId) {
   return {
     ...d,
     ...(d.eccMonitor === oldId ? { eccMonitor: newId } : {}),
+    ...(d.resetGroups
+      ? { resetGroups: d.resetGroups.map((g) => ({ ...g, source: re(g.source), members: g.members.map((m) => (m === oldId ? newId : m)) })) }
+      : {}),
     instances: d.instances.map((i) => (i.id === oldId ? { ...i, id: newId } : i)),
     connections: d.connections.map((c) => ({ ...c, from: re(c.from), to: re(c.to) })),
     externals: d.externals.map((e) => ({ ...e, interface: re(e.interface) })),
@@ -838,6 +856,61 @@ export function setSystem(d, props) {
   // no monitor: the key is gone (the file has none)
   if ('eccMonitor' in props && !props.eccMonitor) delete next.eccMonitor;
   return next;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// Reset groups
+// --------------------------------------------------------------------------------------------------------------------
+
+/**
+ * The reset outputs of an instance that can drive a reset group: its interfaces of type reset that are event outputs.
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {string} id
+ * @returns {string[]}   interface names
+ */
+export function resetOutputs(d, cat, id) {
+  const inst = getInstance(d, id);
+  const b = inst ? withSubsystems(cat, d).blocks.get(inst.block) : undefined;
+  return (b?.interfaces ?? []).filter((i) => i.type === 'reset' && i.role === 'event_out').map((i) => i.name);
+}
+
+/**
+ * The reset group an instance is a member of.
+ * @param {Design} d
+ * @param {string} id
+ */
+export function resetGroupOf(d, id) {
+  return (d.resetGroups ?? []).find((g) => g.members.includes(id));
+}
+
+/**
+ * Sets the members of the reset group of a source: creates the group (named id, or "<instance>_reset"), replaces its
+ * members, or removes the group when members is empty. The rules of a group (one group per member, the clock domain,
+ * the source not a member) are checks of the resolver; this keeps the references valid.
+ * @param {Design} d
+ * @param {Catalog} cat
+ * @param {string} source   "instance.Interface" of a reset output
+ * @param {string[]} members
+ * @param {string} [id]     a new name of the group
+ */
+export function setResetGroup(d, cat, source, members, id) {
+  const [inst, itf] = source.split('.');
+  if (!getInstance(d, inst)) throw new DesignError(`Unknown instance "${inst}".`);
+  if (!resetOutputs(d, cat, inst).includes(itf)) throw new DesignError(`${source} is no reset output.`);
+  for (const m of members) if (!getInstance(d, m)) throw new DesignError(`Unknown instance "${m}".`);
+  if (new Set(members).size !== members.length) throw new DesignError('A member is named twice.');
+  const groups = d.resetGroups ?? [];
+  const old = groups.find((g) => g.source === source);
+  const others = groups.filter((g) => g !== old);
+  const gid = id ?? old?.id ?? uniqueIdentifier(`${inst}_reset`, new Set(others.map((g) => g.id)));
+  const problem = identifierProblem(gid);
+  if (problem) throw new DesignError(`Reset group: ${problem}`);
+  if (others.some((g) => g.id === gid)) throw new DesignError(`A reset group "${gid}" exists already.`);
+  const group = { id: gid, source, members: [...members] };
+  const next = members.length === 0 ? others : old ? groups.map((g) => (g === old ? group : g)) : [...groups, group];
+  const { resetGroups: _old, ...rest } = d;
+  return next.length ? { ...rest, resetGroups: next } : rest;
 }
 
 /**

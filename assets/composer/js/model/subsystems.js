@@ -485,6 +485,7 @@ export function sameDefinition(a, b) {
 export function placeProblem(d, sys) {
   if (sys.name === d.name) return `${sys.name} is this system.`;
   if (sys.instances.length === 0) return `${sys.name} has no blocks.`;
+  if (sys.resetGroups?.length) return `${sys.name} has reset groups; a subsystem has none (they belong to the top level).`;
   let defs;
   try {
     defs = definitionsOf(sys);

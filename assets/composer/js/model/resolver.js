@@ -52,7 +52,8 @@ import {
  * @property {Record<string, unknown>} generics    all generic values
  * @property {string[]} auto             generics whose value was derived (clock domain, connected interface)
  * @property {Record<string, string>} clocks       clock port -> domain id
- * @property {Record<string, string>} resets       reset port -> source ("Rst", "<reset generator>.RstOut", "open")
+ * @property {Record<string, string>} resets       reset port -> source ("Rst", "<reset generator>.RstOut", the reset output
+ *                                                "<instance>.<port>" of a reset group, "open")
  * @property {string} [domain]           domain of the primary clock
  * @property {Record<string, Packing>} packing     interface -> packing of the carried side band into its data
  */
@@ -73,6 +74,15 @@ import {
  */
 
 /**
+ * @typedef {object} ResolvedResetGroup
+ * @property {string} group
+ * @property {string} source      "<instance>.<port>" of the reset output
+ * @property {string} domain      clock domain of the source
+ * @property {string[]} ports     "<instance>.<reset port>" of every port the group drives, members first, then the
+ *                                inserted blocks that join it
+ */
+
+/**
  * @typedef {object} Check
  * @property {'error' | 'warning' | 'info'} severity
  * @property {string} rule
@@ -89,6 +99,7 @@ import {
  * @property {Chain[]} chains
  * @property {Map<string, Chain>} chainOf      connection id -> chain
  * @property {{ id: string, name: string, frequencyHz: number, source: any, members: string[], resetGen: string, clock: string }[]} domains
+ * @property {ResolvedResetGroup[]} resetGroups   the reset groups of the system as resolved (empty without groups)
  * @property {{ name: string, dir: 'in' | 'out' | 'inout', vhdlType: string, kind: 'clock' | 'reset' | 'interface', ref?: string, port?: string, domain?: string }[]} topPorts
  * @property {{ interface: string, prefix: string, implicit: boolean }[]} externals
  * @property {{ port: string, value: string, reason: string, fields?: FieldValue[] }[]} tieOffs
@@ -318,6 +329,7 @@ export class Resolution {
     this.connectionsPass();
     this.eccMonitorPass();
     this.resetsPass();
+    this.resetGroupsPass();
     this.boundaryPass();
     runRules(this);
     const instances = [...this.d.instances.map((i) => this.byId.get(i.id)).filter((x) => x !== undefined), ...this.autos];
@@ -328,6 +340,7 @@ export class Resolution {
       chains: this.chains,
       chainOf: new Map(this.chains.map((c) => [c.connection, c])),
       domains: this.domainsResult(instances),
+      resetGroups: this.resetGroups,
       topPorts: this.topPorts,
       externals: this.externals,
       tieOffs: this.tieOffs,
@@ -1078,6 +1091,116 @@ export class Resolution {
           rec.resets[r.port] = gen ? `${gen}.RstOut` : RESET_PORT;
         }
       }
+    }
+  }
+
+  /**
+   * The reset groups of the system (format version 3). The source, a reset output of a block, drives the reset inputs
+   * of the members instead of the reset generator of their clock domain: the synchronous ones in its own clock domain
+   * (another domain is an error), the asynchronous ones directly. A block whose catalog entry marks reset inputs with
+   * group gets the group reset on those only. An inserted block takes the group reset when both ends of its
+   * connection are reset by the same group (for a block with marked inputs: the interfaces whose resetBy names one of
+   * them); at the border of a group it keeps the reset of its domain.
+   */
+  resetGroupsPass() {
+    /** @type {ResolvedResetGroup[]} */
+    this.resetGroups = [];
+    const groups = this.d.resetGroups ?? [];
+    if (groups.length === 0) return;
+    const domName = (/** @type {string | undefined} */ id) => this.d.clockDomains.find((c) => c.id === id)?.name ?? String(id);
+    /** @type {Map<string, string>} member -> group */
+    const memberOf = new Map();
+    /** @type {Map<string, string>} source -> group */
+    const bySource = new Map();
+    for (const g of groups) {
+      const [srcId, itfName] = g.source.split('.');
+      const src = this.byId.get(srcId);
+      const sb = src && this.cat.blocks.get(src.block);
+      const itf = sb?.interfaces.find((i) => i.name === itfName);
+      if (!src || !itf || itf.type !== 'reset' || itf.role !== 'event_out') {
+        this.check('error', 'reset_group', `Reset group ${g.id}: the source ${g.source} is no reset output (an interface of type reset that is an event output).`, { instance: srcId });
+        continue;
+      }
+      const other = bySource.get(g.source);
+      if (other) {
+        this.check('error', 'reset_group', `Reset groups ${other} and ${g.id} have the same source ${g.source}: one group per reset output.`, { instance: srcId });
+        continue;
+      }
+      bySource.set(g.source, g.id);
+      const source = `${srcId}.${itf.signals.rst}`;
+      const domain = src.clocks[itf.clock ?? ''];
+      /** @type {string[]} */
+      const ports = [];
+      for (const m of g.members) {
+        if (m === srcId) {
+          this.check('error', 'reset_group', `Reset group ${g.id}: ${m} is its source and cannot be a member; it stays on the reset of its clock domain, so that the system reset reaches the group through it.`, { instance: m });
+          continue;
+        }
+        const first = memberOf.get(m);
+        if (first) {
+          this.check('error', 'reset_group', `${m} is a member of the reset groups ${first} and ${g.id}: a block takes one reset.`, { instance: m });
+          continue;
+        }
+        memberOf.set(m, g.id);
+        const rec = this.byId.get(m);
+        const b = rec && this.cat.blocks.get(rec.block);
+        if (!rec || !b) continue;
+        const inputs = b.resets.filter((r) => r.dir !== 'out');
+        const marked = inputs.filter((r) => r.group);
+        const targets = marked.length ? marked : inputs;
+        if (targets.length === 0) {
+          this.check('warning', 'reset_group', `${m} has no reset input: the reset group ${g.id} does not reset it.`, { instance: m });
+          continue;
+        }
+        for (const r of targets) {
+          if (r.sync === 'async' || !r.clock) {
+            rec.resets[r.port] = source;
+            ports.push(`${m}.${r.port}`);
+            this.check('info', 'reset_group', `${m}.${r.port} is an asynchronous reset: it takes the reset of the group ${g.id} directly, and ${b.entity} synchronises its release itself.`, { instance: m });
+          } else if (rec.clocks[r.clock] !== domain) {
+            this.check('error', 'reset_group', `${m}.${r.port} is synchronous to ${domName(rec.clocks[r.clock])}; the reset of the group ${g.id} is synchronous to ${domName(domain)}.`, { instance: m });
+          } else {
+            rec.resets[r.port] = source;
+            ports.push(`${m}.${r.port}`);
+          }
+        }
+      }
+      this.resetGroups.push({ group: g.id, source, domain, ports });
+    }
+    // the group that resets the logic behind an endpoint of a connection, if any
+    const groupAt = (/** @type {string} */ ref) => {
+      const [id, itfRef = ''] = ref.split('.');
+      const gid = memberOf.get(id);
+      const rec = this.byId.get(id);
+      const b = rec && this.cat.blocks.get(rec.block);
+      if (!gid || !b) return undefined;
+      const marked = b.resets.filter((r) => r.dir !== 'out' && r.group).map((r) => r.port);
+      if (marked.length === 0) return gid;
+      const itf = b.interfaces.find((i) => i.name === itfRef.replace(/\[\d+\]$/, ''));
+      return itf?.resetBy && marked.includes(itf.resetBy) ? gid : undefined;
+    };
+    /** @type {Map<string, string[]>} group -> inserted blocks at its border */
+    const border = new Map();
+    for (const rec of this.autos) {
+      if (!rec.connection || rec.role === 'reset') continue;
+      const chain = this.chains.find((c) => c.connection === rec.connection);
+      if (!chain) continue;
+      const a = groupAt(chain.from);
+      const z = groupAt(chain.to);
+      const grp = a && a === z ? this.resetGroups.find((x) => x.group === a) : undefined;
+      if (grp) {
+        const b = this.cat.blocks.get(rec.block);
+        for (const r of b?.resets ?? []) {
+          if (r.dir === 'out' || (r.sync !== 'async' && r.clock && rec.clocks[r.clock] !== grp.domain)) continue;
+          rec.resets[r.port] = grp.source;
+          grp.ports.push(`${rec.id}.${r.port}`);
+        }
+      } else {
+        for (const gid of new Set([a, z].filter((x) => x !== undefined))) border.set(gid, [...(border.get(gid) ?? []), `${rec.id} (${chain.from} to ${chain.to})`]);
+      }
+    }
+    for (const [gid, list] of border) {
+      this.check('info', 'reset_group', `The inserted blocks ${list.join(', ')} at the border of the reset group ${gid} keep the reset of their clock domain: only one end of their connection is reset by the group.`);
     }
   }
 
