@@ -81,6 +81,8 @@ blocks:
         type: pkt.link
         role: source
         clock: Clk
+        # reset by Rst only (CO-RS-12): the border of a group of DpRst; the warning on a member at its far end quotes this
+        resetBorder: "reset the link side (spp_nchar, the SpaceWire or SpaceFibre port) with the reset of the link, never with DpRst, so that the EEP that ends an interrupted packet reaches the far end (OpenSPP user guide 3.1)."
         mustServe: true
         description: "Transmitted packets; user bit 0 is the error end of packet, bits 4:1 the destination index."
         signals: { data: M_Link_Data, keep: M_Link_Keep, last: M_Link_Last, user: M_Link_User, valid: M_Link_Valid, ready: M_Link_Ready }

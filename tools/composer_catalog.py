@@ -1493,12 +1493,16 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         out = {"name": iname, "type": tid, "role": role}
         for key in ("clock", "label", "description", "mustServe", "externalOnly", "enabledBy", "sideband",
                     "params", "vector", "tieOff", "carry", "userFields", "needsLast", "clockSignals", "asyncSignals",
-                    "addressSpace", "irqRegisters", "memory", "flavor", "qualify", "resetBy"):
+                    "addressSpace", "irqRegisters", "memory", "flavor", "qualify", "resetBy", "resetBorder"):
             if key in itf:
                 out[key] = itf[key]
         # the reset port of a group (group true) that resets the logic behind the interface
         if "resetBy" in itf and itf["resetBy"] not in {r["port"] for r in resets if r.get("group")}:
             ctx.err(iwhere, f"resetBy {itf['resetBy']} is no reset input of the block with group true")
+        # why the far end of a border of a group stays out of it: an interface without resetBy in a block with group ports
+        if "resetBorder" in itf and (not isinstance(itf["resetBorder"], str) or not itf["resetBorder"].strip()
+                                      or "resetBy" in itf or not any(r.get("group") for r in resets)):
+            ctx.err(iwhere, "resetBorder is a text on an interface without resetBy of a block with a reset input for groups")
         # an ECC event source states its flavor (olo_ft_ecc_monitor, Connecting Sources): countable pulses, or flags
         # aligned with the data words of a read port, which count only in the cycles where every port of qualify is '1'
         if tid == "ecc.event" and role == "event_out":
