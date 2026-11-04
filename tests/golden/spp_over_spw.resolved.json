@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "catalog": "0b539a2c9589",
+  "catalog": "3eac4209d32d",
   "entity": "spp_over_spw",
   "ports": [
     {
@@ -2846,6 +2846,19 @@
           "actual": "auto_rst_sys_RstOut_s"
         },
         {
+          "name": "DpRst",
+          "dir": "in",
+          "type": "std_logic",
+          "domain": "sys",
+          "reset": {
+            "kind": "sync",
+            "note": "Synchronous reset in the clock domain System clock (clock Clk), for a reset group; spp0 is in none, so the port keeps its default."
+          },
+          "actual": null,
+          "useDefault": true,
+          "default": "'0'"
+        },
+        {
           "name": "S_Tx_Valid",
           "dir": "in",
           "type": "std_logic_vector(1 downto 0)",
@@ -4759,7 +4772,7 @@
       "commit": "02a790ddf05c190a98314b6a75f4f4b92ffa9cf2",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). 4.7.0-ft.11 lets olo_axi_master_full overlap consecutive commands and adds the generics IntFifoDepth_g and EccPipeline_g to the fault-tolerant AXI masters (ft.9), resets the read alignment register of olo_axi_master_full (ft.10), matches the scoped constraint of the read path of olo_base_ram_sdp also after synthesis retiming and checks In_Last and In_Be of olo_base_crc only for an accepted beat (ft.11). 4.7.0-ft.12 adds olo_ft_reset_ctrl_axi, a reset of a group of blocks commanded through AXI4-Lite. The cores of the catalog are verified with 4.7.0-ft.6 (OpenWire, OpenSPP, OpenCrypto), 4.7.0-ft.9 (OpenCompact) and 4.7.0-ft.11 (OpenRMAP, OpenFibre); the ports added since 4.7.0-ft.6 have a default (inputs) or may stay open (outputs), so every core compiles with 4.7.0-ft.12 unchanged.",
+      "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). 4.7.0-ft.11 lets olo_axi_master_full overlap consecutive commands and adds the generics IntFifoDepth_g and EccPipeline_g to the fault-tolerant AXI masters (ft.9), resets the read alignment register of olo_axi_master_full (ft.10), matches the scoped constraint of the read path of olo_base_ram_sdp also after synthesis retiming and checks In_Last and In_Be of olo_base_crc only for an accepted beat (ft.11). 4.7.0-ft.12 adds olo_ft_reset_ctrl_axi, a reset of a group of blocks commanded through AXI4-Lite. The cores of the catalog are verified with 4.7.0-ft.6 (OpenWire, OpenCrypto), 4.7.0-ft.9 (OpenCompact), 4.7.0-ft.11 (OpenRMAP, OpenFibre) and 4.7.0-ft.12 (OpenSPP); the ports added since 4.7.0-ft.6 have a default (inputs) or may stay open (outputs), so every core compiles with 4.7.0-ft.12 unchanged.",
       "entities": [
         "olo_base_reset_gen"
       ]
@@ -4794,10 +4807,10 @@
       "library": "openspp",
       "source": "openspp",
       "url": "https://github.com/open-space-hdl/openspp",
-      "commit": "018ebe17992d578dea037fa47251b3309a863bb8",
+      "commit": "1f40829d62f8693ad970234ba5d4257777064e0f",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
-      "verifiedWith": "4.7.0-ft.6",
+      "verifiedWith": "4.7.0-ft.12",
       "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
       "entities": [
         "spp_core",
@@ -4891,7 +4904,7 @@
           "registers": {
             "source": "openspp",
             "url": "https://github.com/open-space-hdl/openspp",
-            "commit": "018ebe17992d578dea037fa47251b3309a863bb8",
+            "commit": "1f40829d62f8693ad970234ba5d4257777064e0f",
             "header": "sw/spp_regs.h",
             "doc": "hdl/spp_mib/docs/register_map.md",
             "prefix": "SPP"

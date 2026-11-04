@@ -77,7 +77,7 @@ test('field maps: the user bits of external ports and the side band constants, f
 test('context clause, verified tags and the catalog entries in the file', () => {
   const doc = example('spp_over_spw');
   assert.deepEqual(doc.resolved.context, ['library ieee;', 'use ieee.std_logic_1164.all;', 'library olo;', 'library openwire;', 'library openrmap;', 'library openspp;']);
-  assert.deepEqual(doc.sources.map((/** @type {any} */ s) => [s.id, s.verifiedWith]), [['openwire', '4.7.0-ft.6'], ['openrmap', '4.7.0-ft.11'], ['openspp', '4.7.0-ft.6'], ['olo', undefined]]);
+  assert.deepEqual(doc.sources.map((/** @type {any} */ s) => [s.id, s.verifiedWith]), [['openwire', '4.7.0-ft.6'], ['openrmap', '4.7.0-ft.11'], ['openspp', '4.7.0-ft.12'], ['olo', undefined]]);
   assert.ok(doc.resolved.compile.every((/** @type {any} */ c) => c.library === 'olo' || /^4\.7\.0-ft\.\d+$/.test(c.verifiedWith)));
   // the catalog entries of every block of the system, inserted ones included, and of their types
   const sub = doc.catalogSubset;

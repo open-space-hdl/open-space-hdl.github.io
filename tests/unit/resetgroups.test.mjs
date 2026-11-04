@@ -288,6 +288,37 @@ test('a reset input for a group outside one keeps its default: no reset generato
   assert.deepEqual(n.resets, []);
 });
 
+test('OpenSPP spp_core: DpRst keeps its default outside a group; in a group only DpRst takes its reset (CO-RS-12: M_Link by Rst only)', () => {
+  // the catalog entry: DpRst is an input for groups with the VHDL default '0', and every interface is reset by it
+  // except the link output
+  const spp = /** @type {any} */ (cat.blocks.get('openspp/spp_core'));
+  assert.deepEqual(spp.resets.map((/** @type {any} */ r) => [r.port, r.group ?? false]), [['Rst', false], ['DpRst', true]]);
+  assert.equal(spp.ports.find((/** @type {any} */ p) => p.name === 'DpRst')?.default, "'0'");
+  assert.deepEqual(spp.interfaces.filter((/** @type {any} */ i) => i.resetBy !== 'DpRst').map((/** @type {any} */ i) => i.name), ['M_Link']);
+  let d = createDesign('t');
+  for (const b of ['olo/olo_ft_reset_ctrl_axi', 'openspp/spp_core', 'openspp/spp_nchar']) d = addInstance(d, cat, b, { x: 0, y: 0 }).design;
+  d = link(cat, d, 'spp0.M_Link', 'nchar0.S_Link');
+  d = link(cat, d, 'nchar0.M_Link', 'spp0.S_Link');
+  let r = resolve(cat, d);
+  assert.equal(r.byId.get('spp0')?.resets.Rst, 'auto_rst_sys.RstOut');
+  assert.equal(r.byId.get('spp0')?.resets.DpRst, 'default');
+  // in a group: DpRst takes the group reset, Rst and the link side stay on the reset generator of the domain
+  d = setResetGroup(d, cat, 'prst0.RstOut', ['spp0'], 'dp');
+  r = resolve(cat, d);
+  assert.equal(r.byId.get('spp0')?.resets.DpRst, 'prst0.RstOut');
+  assert.equal(r.byId.get('spp0')?.resets.Rst, 'auto_rst_sys.RstOut');
+  assert.equal(r.byId.get('nchar0')?.resets.Rst, 'auto_rst_sys.RstOut');
+  assert.deepEqual(r.resetGroups, [{ group: 'dp', source: 'prst0.RstOut', domain: 'sys', ports: ['spp0.DpRst'] }]);
+  assert.deepEqual(groupChecks(r), []);
+  const n = netlist(cat, d, r);
+  assert.deepEqual(n.problems, []);
+  const port = (/** @type {string} */ inst, /** @type {string} */ name) => n.instances.find((i) => i.id === inst)?.ports.find((/** @type {any} */ p) => p.name === name);
+  assert.equal(port('spp0', 'DpRst').actual, 'prst0_RstOut_s');
+  assert.match(port('spp0', 'DpRst').reset.note, /: the reset of the group dp \(prst0\.RstOut\)\.$/);
+  assert.equal(port('spp0', 'Rst').actual, 'auto_rst_sys_RstOut_s');
+  assert.equal(port('nchar0', 'Rst').actual, 'auto_rst_sys_RstOut_s');
+});
+
 test('a reset output of any name: the members take the signal of its port', () => {
   // a test entry of the catalog: the reset controller with its output port named PipeRst
   const json = loadCatalogJson();
