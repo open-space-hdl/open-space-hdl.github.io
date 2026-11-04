@@ -68,6 +68,16 @@ const CASES = [
   // OpenCrypto ocr_gcm.vhd and ocr_framer.vhd: at most 65536 bytes
   ['ocr_gcm.vhd: release buffer of at most 65536 bytes', 'opencrypto/ocr_core', undefined, [['ReleaseBuffer_g', true], ['ReleaseBytes_g', 131072]], /^ocr0: ReleaseBytes_g = 131072 must be at most 65536\.$/],
   ['ocr_framer.vhd: chunk of at most 65536 bytes', 'opencrypto/ocr_framer', undefined, [['ChunkBytes_g', 131072]], /^frm0: ChunkBytes_g = 131072 must be at most 65536\.$/],
+  // OpenSPP spp_packetizer.vhd (specification section 3), at 32-bit streams (4 bytes per beat)
+  ['spp_packetizer.vhd: stream of 8 to 128 bits', 'openspp/spp_packetizer', undefined, [['DataWidth_g', 256]], /^ptz0: DataWidth_g = 256 must be from 8 to 128\.$/],
+  ['spp_packetizer.vhd: segment in whole beats', 'openspp/spp_packetizer', undefined, [['DataWidth_g', 32], ['ChunkBytes_g', 1002], ['BufferBytes_g', 2048]], /^ptz0: ChunkBytes_g = 1002 must be a multiple of DataWidth_g \/ 8 = 4; the next valid value is 1004\.$/],
+  ['spp_packetizer.vhd: Packet Data Field of at most 65536 bytes', 'openspp/spp_packetizer', undefined, [['DataWidth_g', 32], ['SecHdrBytes_g', 64], ['Crc_g', true], ['BufferBytes_g', 65536], ['ChunkBytes_g', 65472]], /^ptz0: ChunkBytes_g = 65472 must be at most 65536 - SecHdrBytes_g - 2 \* Crc_g = 65470 \(the longest Packet Data Field, 65536 bytes with the secondary header and the CRC \(SPP 4\.1\.2\.1\)\)\.$/],
+  ['spp_packetizer.vhd: the longest Packet Data Field', 'openspp/spp_packetizer', undefined, [['DataWidth_g', 32], ['SecHdrBytes_g', 64], ['Crc_g', true], ['BufferBytes_g', 65536], ['ChunkBytes_g', 65468]], null],
+  ['spp_packetizer.vhd: buffer of a power of two beats', 'openspp/spp_packetizer', undefined, [['DataWidth_g', 32], ['BufferBytes_g', 12288]], /^ptz0: BufferBytes_g = 12288 must be a power of two times DataWidth_g \/ 8 = 4; the next valid value is 16384\.$/],
+  ['spp_packetizer.vhd: buffer holds a segment', 'openspp/spp_packetizer', undefined, [['DataWidth_g', 32], ['BufferBytes_g', 2048]], /^ptz0: BufferBytes_g = 2048 must be at least ChunkBytes_g = 4096 \(the buffer holds a segment\)\.$/],
+  ['spp_packetizer.vhd: at most 64 segments', 'openspp/spp_packetizer', undefined, [['MaxChunks_g', 65]], /^ptz0: MaxChunks_g = 65 must be from 2 to 64\.$/],
+  ['spp_packetizer.vhd: at least 2 segments', 'openspp/spp_packetizer', undefined, [['MaxChunks_g', 1]], /^ptz0: MaxChunks_g = 1 must be from 2 to 64\.$/],
+  ['spp_packetizer.vhd: secondary header of at most 64 bytes', 'openspp/spp_packetizer', undefined, [['SecHdrBytes_g', 65]], /^ptz0: SecHdrBytes_g = 65 must be from 0 to 64\.$/],
   // Open Logic
   ['olo_base_fifo_packet.vhd', 'olo/olo_ft_fifo_packet', undefined, [['Depth_g', 1000]], /Depth_g = 1000 must be a power of two; the next valid value is 1024\./],
   ['olo_base_wconv_n2xn.vhd', 'olo/olo_base_wconv_n2xn', undefined, [['InWidth_g', 8], ['OutWidth_g', 20]], /OutWidth_g = 20 must be a multiple of InWidth_g = 8; the next valid value is 24\./],

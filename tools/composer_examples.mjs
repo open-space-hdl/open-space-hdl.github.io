@@ -14,7 +14,7 @@ import { Catalog } from '../assets/composer/js/model/catalog.js';
 import { checkConnection } from '../assets/composer/js/model/compat.js';
 import {
   addConnection, addDomain, addInstance, assignClock, createDesign, moveToDomain, renameDomain, setExternal, setGeneric, setInstanceTraffic,
-  setResetGroup, setSystem, sidebandDefaults, updateDomain,
+  setConstant, setResetGroup, setSystem, sidebandDefaults, updateDomain,
 } from '../assets/composer/js/model/design.js';
 import { designComments, exportHdl } from '../assets/composer/js/model/hdl.js';
 import { fromText, GENERATOR, toDocument, toText } from '../assets/composer/js/model/serialize.js';
@@ -108,6 +108,45 @@ function linkDomain(d, spw, hz) {
     'spw0.S_AxiLite': 'spw_reg_', 'rmap0.S_AxiLite': 'rmap_reg_', 'spp0.S_AxiLite': 'spp_reg_',
   });
   examples.push(['spp_over_spw', 'Space Packets over SpaceWire', d]);
+}
+
+{
+  let d = base(
+    'spp_over_spw_segmented',
+    'Space Packets over SpaceWire with a packetizer: as spp_over_spw, and send port 1 takes the Space Packets of an OpenSPP packetizer (Packet Service), which cuts data units of any length into segments of 1024 bytes with a CRC; an EDAC monitor counts the errors of its buffers.',
+    [
+      ['openwire/owr_core', undefined],
+      ['openrmap/omap_core', 'target'],
+      ['openspp/spp_nchar', undefined],
+      ['openspp/spp_core', undefined],
+      ['openspp/spp_packetizer', undefined],
+      ['olo/olo_ft_ecc_monitor_axi', undefined],
+    ],
+  );
+  d = link(d, 'spw0.M_Pkt', 'rmap0.S_Pkt');
+  d = link(d, 'rmap0.M_Pkt', 'spw0.S_Pkt');
+  d = link(d, 'rmap0.M_User', 'nchar0.S_NChar');
+  d = link(d, 'nchar0.M_NChar', 'rmap0.S_User');
+  d = link(d, 'nchar0.M_Link', 'spp0.S_Link');
+  d = link(d, 'spp0.M_Link', 'nchar0.S_Link');
+  d = setGeneric(d, cat, 'spp0', 'NumTx_g', 2).design;
+  // send port 1 with the Packet Service, for the complete Space Packets of the packetizer
+  d = setGeneric(d, cat, 'spp0', 'TxOctetString_g', 'x"FFFD"').design;
+  d = setGeneric(d, cat, 'ptz0', 'ChunkBytes_g', 1024).design;
+  d = setGeneric(d, cat, 'ptz0', 'BufferBytes_g', 2048).design;
+  d = setGeneric(d, cat, 'ptz0', 'Crc_g', true).design;
+  d = setConstant(d, cat, 'ptz0', 'Apid', 'apid', 0x100);
+  d = link(d, 'ptz0.M', 'spp0.S_Tx[1]');
+  // the ECC events of the segment buffer and the descriptors of the packetizer, one channel each
+  d = setGeneric(d, cat, 'edac0', 'Channels_g', 2).design;
+  d = link(d, 'ptz0.Ecc[0]', 'edac0.In[0]');
+  d = link(d, 'ptz0.Ecc[1]', 'edac0.In[1]');
+  d = linkDomain(d, 'spw0', 200e6);
+  d = external(d, {
+    'spp0.S_Tx[0]': 'tx0_', 'ptz0.S': 'seg_in_', 'spp0.M_Rx[0]': 'rx0_', 'rmap0.M_Axi': 'mem_',
+    'spw0.S_AxiLite': 'spw_reg_', 'rmap0.S_AxiLite': 'rmap_reg_', 'spp0.S_AxiLite': 'spp_reg_', 'edac0.S_AxiLite': 'edac_reg_',
+  });
+  examples.push(['spp_over_spw_segmented', 'Space Packets over SpaceWire, with a packetizer', d]);
 }
 
 {
