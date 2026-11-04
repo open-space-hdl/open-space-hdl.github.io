@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addInstance, createDesign, DesignError, setExternal, setGeneric, setInstanceTraffic, setTraffic } from '../../assets/composer/js/model/design.js';
-import { imagePeriod, latencies, maxImageBytes, strideParams } from '../../assets/composer/js/model/ocp.js';
+import { imagePeriod, latencies, maxImageBytes, strideParams } from '../../assets/composer/js/vendor/opencompact/ocp_throughput.mjs';
 import { resolve } from '../../assets/composer/js/model/resolver.js';
 import { fromText, toDocument, toText } from '../../assets/composer/js/model/serialize.js';
 import { elementText, formatRate } from '../../assets/composer/js/model/throughput.js';

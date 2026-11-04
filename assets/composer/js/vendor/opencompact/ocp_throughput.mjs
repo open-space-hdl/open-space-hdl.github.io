@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 by Julian Schneider
+//
+// Throughput, header length and compressed-image bound of ocp_core from its generics, for web pages (the Open Space
+// Composer): the JavaScript port of tools/ocp_throughput.py and of header() and max_image_bytes() of
+// tools/ocp_model.py. tools/tests/ocp_throughput.test.mjs compares it with the Python models
+// (tools/tests/golden_ocp_models.json, written by tools/ocp_estimate_golden.py).
 // @ts-check
 /**
  * Models of the OpenCompact compressor ocp_core (CCSDS 123.0-B-2) that the catalog cannot state as expressions (pure,
@@ -16,15 +23,26 @@
  *               against every compressed image of the regression by TC-CO-51 of OpenCompact); with the runtime
  *               parameters (RuntimeParams_g) its maximum over the parameter ranges of every image.
  *
- * tests/golden/ocp_models.json holds the results of the Python models for every configuration of the regression of
- * OpenCompact at the pinned commit (tools/composer_ocp_golden.py), and tests/unit/ocp.test.mjs compares the port with
- * them.
+ * tools/tests/golden_ocp_models.json holds the results of the Python models for every configuration of the regression
+ * of OpenCompact (tools/ocp_estimate_golden.py), and tools/tests/ocp_throughput.test.mjs compares the port with them.
  *
  * The Python model issues the samples one by one. A real image (1024 x 1024 x 200 samples) needs a shortcut, which
  * the full simulation (fast = false) does not take: see issueSpan.
  */
 
-import { literalBits } from './rules.js';
+/**
+ * Number of bits of a VHDL bit-string literal (x"07", "0101", 12x"FF"), or undefined.
+ * @param {unknown} v
+ */
+export function literalBits(v) {
+  if (typeof v !== 'string') return undefined;
+  const m = /^\s*(\d*)([bBoOxX]?)"([0-9a-fA-F_]*)"\s*$/.exec(v);
+  if (!m) return undefined;
+  if (m[1]) return Number(m[1]);
+  const digits = m[3].replace(/_/g, '').length;
+  const per = { '': 1, b: 1, o: 3, x: 4 }[m[2].toLowerCase()] ?? 1;
+  return digits * per;
+}
 
 /**
  * The elements of an integer_vector generic: "(0 => 4)", "(2, 3, 4)" or the Python form "2,3,4".
@@ -365,7 +383,7 @@ export const ITEM_LIMIT = 50_000_000;
  *           before the end of the image are skipped.
  *
  * Skipping adds the shift to the cycle counter, to the cycle of the last sample and to every entry. In BSQ order the
- * rows are those of a band. tests/unit/ocp.test.mjs checks that the shortcut equals the full simulation for every
+ * rows are those of a band. tools/tests/ocp_throughput.test.mjs checks that the shortcut equals the full simulation for every
  * configuration of the regression and for enlarged images.
  * @param {Record<string, any>} g
  * @param {boolean} [speculation]
@@ -399,7 +417,7 @@ export function issueSpan(g, speculation = true, images = 1, fast = true, skippe
  * The tail of the hybrid coder does not change the period: it starts after the last item of an image has reached the
  * coder, after the first sample of the next image was issued, and the predictor issues no item between the last sample
  * of an image and the first of the next, so the output FIFO cannot hold the first sample back (coder_cycles() gives the
- * same period; tests/unit/ocp.test.mjs compares both for every configuration of the regression).
+ * same period; tools/tests/ocp_throughput.test.mjs compares both for every configuration of the regression).
  *
  * With the runtime configuration (RuntimeConfig_g, the generics are the maxima) the period of two images of the maxima
  * (runtime_accept_cycles()): the first sample of the second image is accepted in the cycle after the last sample of
@@ -771,7 +789,7 @@ export function outputSpan(g, speculation = true) {
 /**
  * Longest output codeword of the low-entropy codes of the hybrid coder (CCSDS 123.0-B-2 tables B-1 to B-16) and sum of
  * the longest flush codeword of every code (tables B-17 to B-32), in bits: LE_MAX_OUT and LE_MAX_FLUSH of
- * tools/ocp_model.py, computed there from the code tables (tests/unit/ocp.test.mjs compares them).
+ * tools/ocp_model.py, computed there from the code tables (tools/tests/ocp_throughput.test.mjs compares them).
  */
 export const LE_MAX_OUT = 21;
 export const LE_MAX_FLUSH = 130;

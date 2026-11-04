@@ -14,6 +14,7 @@ import { hex, sizeText } from '../model/addressmap.js';
 import { crossingGroups, readinessStatement } from '../model/systemviews.js';
 import { candidates, checkConnection, effectiveType, resolveEndpoint } from '../model/compat.js';
 import { connectionsAt, getInstance, PREFIX_RE, resetGroupOf, trafficFields, trafficFromFields } from '../model/design.js';
+import { ocpEstimate, ocpEstimates } from '../model/estimates.js';
 import { formatReal, formatValue, isEditable, isEnabled, parseInput } from '../model/generics.js';
 import { formatHz } from '../model/rules.js';
 import { formatRate, pathAt } from '../model/throughput.js';
@@ -169,6 +170,7 @@ export class InspectorView {
       this.interruptsSection(),
       this.protectionSection(),
       this.readinessSection(),
+      this.estimatesSection(),
       h('p', { class: 'cmp-help cmp-autosave-note' }, 'The open systems are kept in this browser. Save a system to keep it as a file.'),
     ];
   }
@@ -218,6 +220,49 @@ export class InspectorView {
     return h('div', { class: 'cmp-field cmp-check' },
       box, h('label', { for: 'cmp-inst-monitor' }, 'System ECC monitor'),
       h('p', { class: 'cmp-help', id: 'cmp-inst-monitor-help' }, 'Reports the ECC events of the crossings the Composer inserts, on its free channels.'));
+  }
+
+  /**
+   * The estimate of an OpenCompact instance (model/estimates.js): the memories, the logic and the clock frequency of
+   * the models OpenCompact supplies, the cycles per sample of the throughput model, and the notes of the models word
+   * for word (their source and accuracy).
+   * @param {import('../model/resolver.js').ResolvedInstance | undefined} rec
+   */
+  estimateSection(rec) {
+    const e = rec ? ocpEstimate(rec) : null;
+    if (!e) return null;
+    const r = e.resources;
+    const n = (/** @type {number | null} */ v, /** @type {string} */ unit) => (v === null ? 'no model' : `${v} ${unit}`);
+    return h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-estimate', 'data-view': 'estimate' },
+      h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-estimate' }, 'Resources (estimate for PolarFire)'),
+      e.scope ? h('p', { class: 'cmp-help' }, e.scope) : null,
+      h('ul', { class: 'cmp-list', role: 'list' },
+        h('li', {}, `Memories: ${r.memories.length}, ${r.ramBits.data} data bits, ${r.ramBits.stored} bits stored with the check bits`),
+        h('li', {}, `Logic: ${n(r.lut, 'LUT')}, ${n(r.ff, 'flip-flops')}`),
+        h('li', {}, `Clock frequency: ${n(r.fmaxMHz, 'MHz')}`),
+        h('li', {}, `Cycles per sample: ${e.cyclesPerSample.toFixed(2)} (throughput model)`)),
+      h('details', { class: 'cmp-adv' }, h('summary', {}, `Memories (${r.memories.length})`),
+        h('ul', { class: 'cmp-list', role: 'list' }, r.memories.map((m) => h('li', {},
+          h('span', { class: 'cmp-mono' }, m.name), ` ${m.depth} x ${m.width} bits, ${m.codeword} bits stored (ECC channel ${m.channel})`)))),
+      h('ul', { class: 'cmp-list', role: 'list', 'data-view': 'estimate-notes' }, r.notes.map((t) => h('li', { class: 'cmp-help' }, t))));
+  }
+
+  /**
+   * The estimates of the OpenCompact instances of the system and their sum, labelled as the ocp_core instances only so
+   * that nobody reads it as the resources of the system.
+   */
+  estimatesSection() {
+    const all = ocpEstimates(this.app.resolved);
+    if (!all) return null;
+    const t = all.total;
+    const n = (/** @type {number | null} */ v, /** @type {string} */ unit) => (v === null ? 'no model' : `${v} ${unit}`);
+    return h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-estimates', 'data-view': 'estimates' },
+      h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-estimates' }, 'OpenCompact resources (estimate for PolarFire, ocp_core instances only)'),
+      h('ul', { class: 'cmp-list', role: 'list' }, all.instances.map((e) => h('li', {},
+        h('button', { type: 'button', class: 'cmp-link-btn cmp-mono', onclick: () => this.app.selectInstances([e.instance], undefined, { focusCanvas: true }) }, e.instance),
+        h('span', { class: 'cmp-facts' }, ` ${e.resources.ramBits.stored} memory bits, ${n(e.resources.lut, 'LUT')}, ${n(e.resources.ff, 'flip-flops')}, ${n(e.resources.fmaxMHz, 'MHz')}`)))),
+      h('p', { 'data-view': 'estimates-total' }, `Sum of the ocp_core instances only, not the system: ${t.memories} memories, ${t.ramBitsStored} memory bits, ${n(t.lut, 'LUT')}, ${n(t.ff, 'flip-flops')}; lowest clock frequency ${n(t.fmaxMHz, 'MHz')}.`),
+      h('ul', { class: 'cmp-list', role: 'list' }, all.notes.map((x) => h('li', { class: 'cmp-help' }, x))));
   }
 
   /**
@@ -496,6 +541,7 @@ export class InspectorView {
       this.monitorField(inst.id, b),
       this.resetGroupField(inst.id, b),
       this.assumedField(inst.id, b),
+      this.estimateSection(rec),
       this.clocksSection(inst.id, b, rec),
       h('section', { class: 'cmp-insp-sec', 'aria-labelledby': 'cmp-h-itf' },
         h('h3', { class: 'cmp-insp-sub', id: 'cmp-h-itf' }, 'Interfaces'),

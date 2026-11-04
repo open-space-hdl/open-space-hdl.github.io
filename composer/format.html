@@ -244,9 +244,11 @@ permalink: /composer/format/
         shows the rate of the outputs together, with the packets spread evenly over them, in order and with such a
         store behind every output; where the outputs lose rate in order, a warning names the slower outputs and the
         depth of the FIFO they need.</li>
-      <li>Where no expression can state the rate, the Composer computes it with a port of the published model of the
-        core, checked against that model for every configuration of its regression: the cycles of an image in the
-        predictor of OpenCompact (<code>tools/ocp_throughput.py</code>) and the length of its header. A compressor
+      <li>Where no expression can state the rate, the Composer computes it with the model the core supplies in
+        JavaScript, which the core checks against its published model for every configuration of its regression: the
+        cycles of an image in the predictor of OpenCompact (<code>tools/estimate/ocp_throughput.mjs</code>, the port of
+        <code>tools/ocp_throughput.py</code>, copied byte for byte from the pinned tag into the Composer) and the length
+        of its header. A compressor
         cuts the samples into images and sends each as one compressed image, whose length depends on the data: the
         compression ratio the user assumes for the instance (<code>traffic</code> of an instance), marked as
         <code>assumed ratio</code> wherever a number depends on it, else the upper bound on the compressed image that

@@ -1031,6 +1031,8 @@ class Context:
     # rules that refer to other blocks, checked when all blocks are built
     size_chains: list[tuple[str, dict]] = field(default_factory=list)
     type_ids: set[str] = field(default_factory=set)
+    # the vendored files of the sources (sources.yml vendor): source id -> note and file contents at the pin
+    vendored: dict[str, dict] = field(default_factory=dict)
 
     def err(self, where: str, msg: str) -> None:
         self.errors.append(f"{where}: {msg}")
@@ -2053,6 +2055,12 @@ def build_catalog(ctx: Context) -> dict:
         s["trl_status"] = pr["trl_status"]
     # the changes of the blocks per source, as a chain of pin steps (the migration of files of older pins)
     check_changes(ctx, load_yaml(CATALOG_DIR / "changes.yml"), sources, blocks)
+    # the files a source supplies to the Composer itself, as they are at the pin
+    for s in sources.values():
+        if s.get("vendor") is not None:
+            note = vendor_files(ctx, s)
+            if note is not None:
+                s["vendor"] = [{"path": f["path"], "file": f"vendor/{s['id']}/{f['file']}", "sha256": f["sha256"]} for f in note["files"]]
     catalog = {
         "format": CATALOG_FORMAT,
         "formatVersion": CATALOG_VERSION,
@@ -2066,6 +2074,81 @@ def build_catalog(ctx: Context) -> dict:
     # Content identifier: lets a saved system tell which catalog it was resolved with
     digest = hashlib.sha256(json.dumps(catalog, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
     return {"format": catalog.pop("format"), "formatVersion": catalog.pop("formatVersion"), "id": digest[:12]} | catalog
+
+
+VENDOR_DIR = ROOT / "assets" / "composer" / "js" / "vendor"
+VENDOR_NOTE = "VENDOR.json"
+
+
+def vendor_files(ctx: Context, src: dict) -> dict | None:
+    """The files a source supplies to the Composer itself (sources.yml vendor: paths in its repository), byte for byte
+    as at the pin, for assets/composer/js/vendor/<source id>/ under their file names: the vendoring note (the source,
+    its commit and tag, every file with its path and SHA-256), with the contents in ctx.vendored."""
+    where = f"sources.yml {src['id']}"
+    paths = src["vendor"]
+    if not isinstance(paths, list) or not paths or not all(isinstance(p, str) for p in paths):
+        ctx.err(where, "vendor is a list of paths in the repository")
+        return None
+    names = [p.rsplit("/", 1)[-1] for p in paths]
+    if len(set(names)) != len(names) or VENDOR_NOTE in names:
+        ctx.err(where, f"vendor: the file names must be unique and differ from {VENDOR_NOTE}")
+        return None
+    repo = ctx.repos / src["repo"]
+    tags = git_ok_output(repo, "tag", "--points-at", src["sha"]).split()
+    files, data = [], {}
+    for path, name in zip(paths, names):
+        res = subprocess.run(["git", "-C", str(repo), "show", f"{src['sha']}:{path}"], capture_output=True)
+        if res.returncode != 0:
+            ctx.err(where, f"vendor: {path} is not in the repository at {src['sha'][:10]}")
+            continue
+        files.append({"path": path, "file": name, "sha256": hashlib.sha256(res.stdout).hexdigest()})
+        data[name] = res.stdout
+    note = {"source": src["id"], "repo": src["url"], "commit": src["sha"], "tag": sorted(tags)[0] if tags else None, "files": files}
+    ctx.vendored[src["id"]] = {"note": note, "data": data}
+    return note
+
+
+def vendor_note_text(note: dict) -> str:
+    return json.dumps(note, indent=1, ensure_ascii=False) + "\n"
+
+
+def write_vendored(ctx: Context) -> None:
+    """Writes the vendored files and their notes; removes files of a source that it no longer supplies."""
+    for sid, v in ctx.vendored.items():
+        d = VENDOR_DIR / sid
+        d.mkdir(parents=True, exist_ok=True)
+        keep = set(v["data"]) | {VENDOR_NOTE}
+        for f in d.iterdir():
+            if f.name not in keep:
+                f.unlink()
+        for name, data in v["data"].items():
+            (d / name).write_bytes(data)
+        (d / VENDOR_NOTE).write_text(vendor_note_text(v["note"]), encoding="utf-8", newline="\n")
+    for d in (VENDOR_DIR.iterdir() if VENDOR_DIR.exists() else []):
+        if d.is_dir() and d.name not in ctx.vendored:
+            for f in d.iterdir():
+                f.unlink()
+            d.rmdir()
+
+
+def check_vendored(ctx: Context) -> None:
+    """The vendored files equal their sources at the pin, byte for byte, and the notes are current."""
+    for sid, v in ctx.vendored.items():
+        d = VENDOR_DIR / sid
+        where = str(d.relative_to(ROOT))
+        for name, data in v["data"].items():
+            f = d / name
+            if not f.exists() or f.read_bytes() != data:
+                ctx.err(where, f"{name} differs from the source at the pin: run 'python tools/composer_catalog.py build'")
+        note = d / VENDOR_NOTE
+        if not note.exists() or note.read_text(encoding="utf-8") != vendor_note_text(v["note"]):
+            ctx.err(where, f"{VENDOR_NOTE} is not current: run 'python tools/composer_catalog.py build'")
+        extra = sorted(f.name for f in d.iterdir() if f.name not in set(v["data"]) | {VENDOR_NOTE}) if d.exists() else []
+        if extra:
+            ctx.err(where, f"files that the source does not supply: {', '.join(extra)}")
+    for d in (VENDOR_DIR.iterdir() if VENDOR_DIR.exists() else []):
+        if d.is_dir() and d.name not in ctx.vendored:
+            ctx.err(str(d.relative_to(ROOT)), "no source of sources.yml vendors these files")
 
 
 def camel(key: str) -> str:
@@ -2087,6 +2170,7 @@ def cmd_build(ctx: Context) -> int:
         return 1
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     OUT_FILE.write_text(render(catalog), encoding="utf-8", newline="\n")
+    write_vendored(ctx)
     print(f"wrote {OUT_FILE.relative_to(ROOT)}: {len(catalog['types'])} types, {len(catalog['blocks'])} blocks")
     return 0
 
@@ -2102,6 +2186,7 @@ def cmd_check(ctx: Context, fetch: bool) -> int:
         current = OUT_FILE.read_text(encoding="utf-8") if OUT_FILE.exists() else ""
         if current != render(catalog):
             ctx.err(str(OUT_FILE.relative_to(ROOT)), "not current: run 'python tools/composer_catalog.py build'")
+        check_vendored(ctx)
     check_examples(ctx, catalog)
     report(ctx)
     if not ctx.errors:

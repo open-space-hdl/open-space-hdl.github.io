@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "catalog": "ceeeddaa62ed",
+  "catalog": "0b539a2c9589",
   "entity": "spw_compression_node_pipeline_reset",
   "ports": [
     {
@@ -6010,7 +6010,7 @@
       "library": "opencompact",
       "source": "opencompact",
       "url": "https://github.com/open-space-hdl/opencompact",
-      "commit": "c238942b0274e5227272c40688131fb87a444af1",
+      "commit": "7956d5a7c19d32a6e21a4870f39a39c8846be81d",
       "fileList": "compile_order.txt",
       "fileListFormat": "files",
       "verifiedWith": "4.7.0-ft.9",
@@ -6073,7 +6073,7 @@
           "registers": {
             "source": "opencompact",
             "url": "https://github.com/open-space-hdl/opencompact",
-            "commit": "c238942b0274e5227272c40688131fb87a444af1",
+            "commit": "7956d5a7c19d32a6e21a4870f39a39c8846be81d",
             "header": "sw/ocp_regs.h",
             "doc": "hdl/ocp_mib/docs/register_map.md",
             "prefix": "OCP"

@@ -4,3 +4,5 @@ composer/** text eol=lf
 _composer/** text eol=lf
 tests/** text eol=lf
 tools/composer_* text eol=lf
+# Vendored files of the sources (sources.yml vendor): byte for byte as in their repositories
+assets/composer/js/vendor/** -text

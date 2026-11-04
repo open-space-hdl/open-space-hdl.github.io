@@ -8,6 +8,8 @@
 #                     or files (one VHDL file per line)
 #   verified_with:    Open Logic FT tag the repository is verified with (its open-logic submodule)
 #   note:             what a build of a system needs to know about the repository (shown in the brief)
+#   vendor:           files of the repository that the Composer itself uses, copied byte for byte from the pin into
+#                     assets/composer/js/vendor/<id>/ by the build, with the note VENDOR.json (commit, tag, SHA-256)
 
 sources:
   - id: openwire
@@ -75,12 +77,14 @@ sources:
     repo: opencompact
     url: https://github.com/open-space-hdl/opencompact
     doc: /opencompact/
-    commit: c238942b0274e5227272c40688131fb87a444af1
+    commit: 7956d5a7c19d32a6e21a4870f39a39c8846be81d
     library: opencompact
     file_list: compile_order.txt
     file_list_format: files
     verified_with: 4.7.0-ft.9
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
+    # the models of OpenCompact for the Composer (MIT): throughput, header and image bound, resource estimate
+    vendor: [tools/estimate/ocp_throughput.mjs, tools/estimate/ocp_resources.mjs, tools/estimate/ocp_models.mjs, tools/estimate/LICENSE]
 
   - id: olo
     name: Open Logic FT

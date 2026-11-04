@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "ceeeddaa62ed",
+ "id": "0b539a2c9589",
  "sources": [
   {
    "id": "openwire",
@@ -710,12 +710,34 @@
    "repo": "opencompact",
    "url": "https://github.com/open-space-hdl/opencompact",
    "doc": "/opencompact/",
-   "commit": "c238942b0274e5227272c40688131fb87a444af1",
+   "commit": "7956d5a7c19d32a6e21a4870f39a39c8846be81d",
    "library": "opencompact",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
    "verifiedWith": "4.7.0-ft.9",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
+   "vendor": [
+    {
+     "path": "tools/estimate/ocp_throughput.mjs",
+     "file": "vendor/opencompact/ocp_throughput.mjs",
+     "sha256": "39583efc344ec6bd3d553658e67cd8198f94e8b73421c3f0326afa8a2d0a80c8"
+    },
+    {
+     "path": "tools/estimate/ocp_resources.mjs",
+     "file": "vendor/opencompact/ocp_resources.mjs",
+     "sha256": "267eb4ed63385a4062f0a5b1b1cef1b278274c76d01445300ddc65d706dc9c48"
+    },
+    {
+     "path": "tools/estimate/ocp_models.mjs",
+     "file": "vendor/opencompact/ocp_models.mjs",
+     "sha256": "61374ff8a432869e9d6861e4d22c41d4d5f5bc1a243c2d19ea678495c4d9423a"
+    },
+    {
+     "path": "tools/estimate/LICENSE",
+     "file": "vendor/opencompact/LICENSE",
+     "sha256": "3a68ace9ec43fc1dccfd742559db4c0b57c9eb7b22f9a10b9b0a233f123d521d"
+    }
+   ],
    "files": [
     "hdl/ocp_pkg/src/ocp_regs_pkg.vhd",
     "hdl/ocp_pkg/src/ocp_pkg.vhd",
@@ -841,6 +863,12 @@
        "text": "New interfaces Params (the runtime parameters of the next image, taken with Cfg) and ParamsAct (the values taken for the last image), present only with RuntimeParams_g."
       }
      ]
+    },
+    {
+     "previous": "c238942b0274e5227272c40688131fb87a444af1",
+     "pin": "7956d5a7c19d32a6e21a4870f39a39c8846be81d",
+     "evidence": "PR #39 of the core: None. The core is unchanged; the new JavaScript functions for the Composer are `headerBytes`, `imagePeriod`, `maxImageBytes` and `estimateResources(generics, target = \"polarfire\")`. The merge commit is the release v0.3.1 of the core.",
+     "changes": []
     }
    ]
   },
