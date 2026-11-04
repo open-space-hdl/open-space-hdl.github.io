@@ -127,10 +127,18 @@ test('the notes are info checks of rule migration until the system is saved at t
   // saved: the file is at the current pins, reading it again gives no changes and no remark of another catalog
   const text = toText(design, cat);
   assert.ok(!text.includes('"migrations"'));
+  // one save of the design that fromText read gives a clean file: no remark of rule migration in its checks or its
+  // brief, and saving what it reads back gives the same text
+  const doc = JSON.parse(text);
+  assert.deepEqual(doc.checks.filter((/** @type {any} */ c) => c.rule === 'migration'), []);
+  assert.ok(!doc.agent.brief.includes('Register map v2'));
+  // the design keeps its list for the editor until it is saved
+  assert.equal(design.migrations?.length, 9);
   const again = fromText(text, cat);
   assert.deepEqual(again.migrations, []);
   assert.equal(again.design.migrations, undefined);
   assert.deepEqual(resolve(cat, again.design).checks.filter((c) => c.rule === 'migration'), []);
+  assert.equal(toText(again.design, cat), text);
 });
 
 test('the instances inside a subsystem definition are migrated and named with the definition', () => {
