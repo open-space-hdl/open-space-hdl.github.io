@@ -32,7 +32,7 @@ export const FORMAT_VERSION = 3;
 export const SCHEMA_URL = 'https://openspacehdl.org/composer/schema/system-1.json';
 export const SCHEMA_URL_2 = 'https://openspacehdl.org/composer/schema/system-2.json';
 export const SCHEMA_URL_3 = 'https://openspacehdl.org/composer/schema/system-3.json';
-export const GENERATOR = { name: 'Open Space Composer', version: '0.11.2-beta' };
+export const GENERATOR = { name: 'Open Space Composer', version: '0.11.3-beta' };
 
 export class FormatError extends Error {
   /** @param {string[]} problems */
@@ -98,12 +98,18 @@ function catalogSubset(cat, all) {
 /**
  * Document object of a design (deterministic key order, so that saving twice gives the same text). A full document
  * also holds what the design resolves to: the netlist ("resolved"), the checks, the brief for an agent and the catalog
- * entries of the blocks it uses ("catalogSubset"); the autosave of the browser leaves them out.
+ * entries of the blocks it uses ("catalogSubset"); the autosave of the browser leaves them out. The document is at
+ * the current pins: the changes since an older file that the design still lists (migrations) end with it, so its
+ * checks and brief carry no remark of rule migration.
  * @param {Design} d
  * @param {Catalog} cat
  * @param {{ full?: boolean }} [opts]
  */
 export function toDocument(d, cat, opts = {}) {
+  if (d.migrations) {
+    const { migrations, ...current } = d;
+    d = current;
+  }
   // the definitions the system uses, also inside them, leaves first; those it no longer uses are not written
   const names = d.subsystems ? definitionOrder(d.subsystems, directSubsystems(d)) : [];
   const defs = names.map((n) => /** @type {Record<string, Design>} */ (d.subsystems)[n]);

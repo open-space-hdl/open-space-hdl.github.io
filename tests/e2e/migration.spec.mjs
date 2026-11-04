@@ -54,6 +54,9 @@ test('a file of an older pin: the changes in a dialog, in the inspector and amon
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Save', exact: true }).click()]);
   const saved = JSON.parse(readFileSync(await download.path(), 'utf-8'));
   expect(saved.sources.find((/** @type {any} */ s) => s.id === 'openspp').commit).toBe(catalog.sources.find((/** @type {any} */ s) => s.id === 'openspp').commit);
+  // one save gives a clean file: no remark of rule migration in its checks or its brief
+  expect(saved.checks.filter((/** @type {any} */ c) => c.rule === 'migration')).toEqual([]);
+  expect(saved.agent.brief).not.toContain('Register map v2');
   await expect(page.locator('#cmp-h-changes')).toHaveCount(0);
   await expect(page.locator('.cmp-check-item.cmp-sev-info', { hasText: 'Register map v2' })).toHaveCount(0);
 });

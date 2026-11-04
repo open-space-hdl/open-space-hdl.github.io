@@ -574,7 +574,8 @@ file &lt;library&gt; &lt;path&gt;</code></pre>
     <p>
       The editor shows the list when the file opens and keeps it in the inspector of the system until the system is
       saved. The checks carry it as remarks of rule <code>migration</code>. A saved file is at the current pins, and
-      the list ends. The command line tool prints the list before the differences of the netlist. A commit the chain
+      the list ends: one save writes a file without these remarks, also when a program writes the design it read
+      (<code>toText</code>). The command line tool prints the list before the differences of the netlist. A commit the chain
       does not know (older than its first step) is named: the changes of that source cannot be listed, and the
       differences of the netlist remain the reference.
     </p>
