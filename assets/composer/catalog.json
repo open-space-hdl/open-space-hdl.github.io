@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "c1a3d87ffe8b",
+ "id": "cf2616554595",
  "sources": [
   {
    "id": "openwire",
@@ -16924,6 +16924,513 @@
      "dir": "out",
      "vhdlType": "std_logic_vector(0 downto 0)",
      "width": "1"
+    }
+   ]
+  },
+  {
+   "id": "openspp/spp_packetizer",
+   "kind": "module",
+   "name": "Packetizer",
+   "group": "openspp",
+   "source": "openspp",
+   "library": "openspp",
+   "entity": "spp_packetizer",
+   "path": "hdl/spp_packetizer/src/spp_packetizer.vhd",
+   "summary": "Cuts data units of any length into segments of ChunkBytes_g bytes and sends every segment as one Space Packet, with the Sequence Flags of its segment and the Packet Sequence Count of the instance, to a send port of the Packet Service; optional Packet Secondary Header and CRC.",
+   "idPrefix": "ptz",
+   "doc": "/openspp/docs/user_guide.html",
+   "project": "OpenSPP",
+   "notes": [
+    "Connect M to a send port of the core with the Packet Service (TxOctetString_g bit '0'), and receive its APID at receive ports of the Packet Service; the Octet String Service never carries the Sequence Flags '01', '00' and '10' (SPP 4.1.3.4.2.3), and a receive port of the Octet String Service discards such packets (0x1A).",
+    "Use an APID that no other source of the managed data path uses and that is not the Idle APID 2047; the count of the instance is the Packet Sequence Count of the APID (SPP 4.1.3.4.3.3).",
+    "MAX_LENGTH of the core and TxBufferBytes_g of the send port hold the longest packet, 6 + SecHdrBytes_g + ChunkBytes_g bytes, plus 2 with Crc_g; a send buffer of two such packets lets the next packet enter while one leaves.",
+    "Change Cfg_Apid and Cfg_Type only while the packetizer holds no data; they are sampled per packet, and a change inside a data unit would split it between two APIDs.",
+    "Reset the packetizer together with the core (Rst, or the reset group of DpRst), or only while no packet is between it and the send port; a packet cut off by its reset would merge with the next one in the send buffer, which the core rejects (0x04).",
+    "A receiver finds the data units from the Sequence Flags ('01' or '11' starts one, '10' or '11' ends it) and a lost segment from a gap in the Packet Sequence Count of the APID; with Crc_g it checks every segment.",
+    "The packets are Space Packets of CCSDS 133.0-B-2, not PUS packets (ECSS-E-ST-70-41C uses only the Sequence Flags '11')."
+   ],
+   "rules": [
+    {
+     "kind": "generic_multiple",
+     "generic": "DataWidth_g",
+     "of": 8
+    },
+    {
+     "kind": "generic_range",
+     "generic": "DataWidth_g",
+     "min": 8,
+     "max": 128
+    },
+    {
+     "kind": "generic_multiple",
+     "generic": "ChunkBytes_g",
+     "of": "DataWidth_g / 8"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "ChunkBytes_g",
+     "max": "65536 - SecHdrBytes_g - 2 * Crc_g",
+     "message": "the longest Packet Data Field, 65536 bytes with the secondary header and the CRC (SPP 4.1.2.1)"
+    },
+    {
+     "kind": "generic_multiple",
+     "generic": "BufferBytes_g",
+     "of": "DataWidth_g / 8",
+     "pow2Ratio": true
+    },
+    {
+     "kind": "generic_range",
+     "generic": "BufferBytes_g",
+     "min": "ChunkBytes_g",
+     "message": "the buffer holds a segment"
+    },
+    {
+     "kind": "generic_range",
+     "generic": "MaxChunks_g",
+     "min": 2,
+     "max": 64
+    },
+    {
+     "kind": "generic_range",
+     "generic": "SecHdrBytes_g",
+     "min": 0,
+     "max": 64
+    }
+   ],
+   "endToEnd": "Send one data unit of 3 * ChunkBytes_g bytes and expect three Space Packets of its APID with the Sequence Flags '01', '00' and '10' at a receive port of the Packet Service.",
+   "rates": {
+    "evidence": "specification PT-PF-01 (every packet one beat per clock cycle, at most 3 clock cycles between two packets) and PT-PF-02 (with BufferBytes_g at least twice ChunkBytes_g, at most the extra output beats of a packet plus 3 stall cycles per segment at the input); TC-PT-11 (hdl/spp_packetizer/docs/verification_report.md); with a smaller buffer the input waits while every packet leaves (user guide 4.7), counted here as one more packet per segment",
+    "packet": "segment",
+    "vars": {
+     "B": "DataWidth_g / 8",
+     "H": "6 + SecHdrBytes_g + 2 * Crc_g",
+     "W": "max(0, 1 - floor(BufferBytes_g / (2 * ChunkBytes_g)))"
+    },
+    "interfaces": {
+     "S": {
+      "bytesPerBeat": "B",
+      "overheadCycles": "cdiv(n, ChunkBytes_g) * (cdiv(H, B) + 3 + W * (cdiv(ChunkBytes_g + H, B) + 3))"
+     },
+     "M": {
+      "cycles": "cdiv(n, B) + 3"
+     }
+    },
+    "routes": [
+     {
+      "from": "S",
+      "to": "M",
+      "chunk": "ChunkBytes_g",
+      "addBytes": "H"
+     }
+    ]
+   },
+   "sizes": {
+    "evidence": "user guide section 4.7: every data unit is cut into segments of ChunkBytes_g bytes, each sent as one Space Packet",
+    "interfaces": {
+     "S": {
+      "noLimit": true
+     }
+    }
+   },
+   "packages": [
+    "spp_pkg"
+   ],
+   "generics": [
+    {
+     "name": "DataWidth_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "32",
+     "default": 32,
+     "label": "Stream width",
+     "description": "The DataWidth_g of the core; follows the connected send port.",
+     "check": "multiple8",
+     "unit": "bits",
+     "follow": {
+      "interfaces": [
+       "M",
+       "S"
+      ],
+      "measure": "data",
+      "rank": 1
+     }
+    },
+    {
+     "name": "ChunkBytes_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "4096",
+     "default": 4096,
+     "label": "Segment size",
+     "description": "Bytes of a segment, a multiple of DataWidth_g / 8; the last segment of a data unit holds the rest. A packet has 6 + SecHdrBytes_g + ChunkBytes_g bytes, plus 2 with Crc_g.",
+     "unit": "bytes"
+    },
+    {
+     "name": "BufferBytes_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "8192",
+     "default": 8192,
+     "label": "Segment buffer",
+     "description": "DataWidth_g / 8 times a power of two, at least ChunkBytes_g. At twice ChunkBytes_g the next segment enters while a packet leaves; at ChunkBytes_g the input waits while every packet leaves.",
+     "unit": "bytes"
+    },
+    {
+     "name": "MaxChunks_g",
+     "vhdlType": "positive",
+     "kind": "integer",
+     "min": 1,
+     "max": 2147483647,
+     "defaultText": "8",
+     "default": 8,
+     "label": "Buffered segments",
+     "description": "Segments the buffer holds at most (short data units)."
+    },
+    {
+     "name": "SecHdrBytes_g",
+     "vhdlType": "natural",
+     "kind": "integer",
+     "min": 0,
+     "max": 2147483647,
+     "defaultText": "0",
+     "default": 0,
+     "label": "Secondary header",
+     "description": "Bytes of the Packet Secondary Header from SecHdr_Data; 0 for none.",
+     "unit": "bytes"
+    },
+    {
+     "name": "Crc_g",
+     "vhdlType": "boolean",
+     "kind": "boolean",
+     "defaultText": "false",
+     "default": false,
+     "label": "CRC",
+     "description": "CRC of two bytes at the end of every User Data Field, over the bytes of the segment (x^16 + x^12 + x^5 + 1, initial value all ones, ECSS-E-ST-70-41C Annex B.1)."
+    }
+   ],
+   "clocks": [
+    {
+     "port": "Clk",
+     "primary": true,
+     "label": "Clock",
+     "description": "The clock of the core."
+    }
+   ],
+   "resets": [
+    {
+     "port": "Rst",
+     "active": "high",
+     "sync": "sync",
+     "clock": "Clk"
+    }
+   ],
+   "interfaces": [
+    {
+     "name": "S",
+     "type": "byte.stream",
+     "role": "sink",
+     "clock": "Clk",
+     "label": "Data units in",
+     "description": "Data units of any length; a last beat without byte enables ends a data unit, a data unit without any byte sends nothing. Error with the last beat marks an aborted data unit, which is sent and closed like any other (Aborted).",
+     "tieOff": "zero",
+     "signals": {
+      "data": "S_Data",
+      "keep": "S_Keep",
+      "last": "S_Last",
+      "valid": "S_Valid",
+      "ready": "S_Ready",
+      "error": "S_Error"
+     },
+     "widths": {
+      "data": "DataWidth_g",
+      "keep": "DataWidth_g / 8"
+     }
+    },
+    {
+     "name": "M",
+     "type": "byte.stream",
+     "role": "source",
+     "clock": "Clk",
+     "label": "Space Packets out",
+     "description": "One complete Space Packet per segment, to a send port of the core with the Packet Service (TxOctetString_g bit '0'), whose side band it does not use.",
+     "mustServe": true,
+     "signals": {
+      "data": "M_Data",
+      "keep": "M_Keep",
+      "last": "M_Last",
+      "valid": "M_Valid",
+      "ready": "M_Ready"
+     },
+     "widths": {
+      "data": "DataWidth_g",
+      "keep": "DataWidth_g / 8"
+     }
+    },
+    {
+     "name": "Apid",
+     "type": "sig.control",
+     "role": "event_in",
+     "clock": "Clk",
+     "label": "APID",
+     "description": "APID of the packets, sampled per packet (HdrSample); it changes only while the packetizer holds no data.",
+     "sideband": {
+      "signal": "apid",
+      "description": "Static APID of the packets, set as a constant of the instance; not the Idle APID 2047.",
+      "fields": [
+       {
+        "name": "apid",
+        "label": "APID",
+        "lsb": 0,
+        "bits": 11,
+        "kind": "integer",
+        "default": 0
+       }
+      ]
+     },
+     "tieOff": "constant",
+     "signals": {
+      "apid": "Cfg_Apid"
+     }
+    },
+    {
+     "name": "Type",
+     "type": "sig.control",
+     "role": "event_in",
+     "clock": "Clk",
+     "label": "Packet type",
+     "description": "Packet Type of the packets: '0' telemetry (the default), '1' telecommand; sampled per packet like the APID.",
+     "tieOff": "default",
+     "signals": {
+      "type": "Cfg_Type"
+     }
+    },
+    {
+     "name": "SecHdr",
+     "type": "sig.control",
+     "role": "event_in",
+     "clock": "Clk",
+     "label": "Secondary header",
+     "description": "Packet Secondary Header of SecHdrBytes_g bytes, bits 7:0 its first byte (a time code sent as T0 T1 T2 T3 is applied as T3 & T2 & T1 & T0); sampled per packet at HdrSample, so a time code there gives the time of that clock edge.",
+     "tieOff": "default",
+     "signals": {
+      "data": "SecHdr_Data"
+     },
+     "widths": {
+      "data": "8 * maximum(SecHdrBytes_g, 1)"
+     }
+    },
+    {
+     "name": "HdrSample",
+     "type": "sig.pulse",
+     "role": "event_out",
+     "clock": "Clk",
+     "label": "Header sampled",
+     "description": "'1' for one clock cycle per packet: Cfg_Apid, Cfg_Type and SecHdr_Data are sampled at the rising edge of Clk that ends this cycle; the first beat of the packet follows at least two cycles later.",
+     "tieOff": "open",
+     "signals": {
+      "sample": "Hdr_Sample"
+     }
+    },
+    {
+     "name": "Aborted",
+     "type": "sig.pulse",
+     "role": "event_out",
+     "clock": "Clk",
+     "label": "Aborted data units",
+     "description": "One pulse per accepted last beat with error; count it to report the aborted data units.",
+     "tieOff": "open",
+     "signals": {
+      "aborted": "Aborted"
+     }
+    },
+    {
+     "name": "Ecc",
+     "type": "ecc.event",
+     "role": "event_out",
+     "clock": "Clk",
+     "label": "EDAC events",
+     "description": "Element 0 the segment buffer, element 1 the descriptors. A packet with a double error is still sent; the CRC (Crc_g) lets the receiver detect it.",
+     "vector": "2",
+     "tieOff": "open",
+     "memory": [
+      "segment buffer",
+      "descriptors"
+     ],
+     "flavor": "pulse",
+     "signals": {
+      "sec": "Ecc_Sec",
+      "ded": "Ecc_Ded"
+     }
+    },
+    {
+     "name": "ErrInj",
+     "type": "ecc.inject",
+     "role": "event_in",
+     "clock": "Clk",
+     "label": "Error injection",
+     "description": "Tests only.",
+     "tieOff": "default",
+     "signals": {
+      "data": "ErrInj_Data",
+      "desc": "ErrInj_Desc",
+      "double": "ErrInj_Double"
+     },
+     "widths": {
+      "data": "1"
+     }
+    }
+   ],
+   "ports": [
+    {
+     "name": "Clk",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Rst",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Valid",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Ready",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Data",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(DataWidth_g - 1 downto 0)",
+     "width": "DataWidth_g"
+    },
+    {
+     "name": "S_Keep",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(DataWidth_g / 8 - 1 downto 0)",
+     "width": "DataWidth_g / 8"
+    },
+    {
+     "name": "S_Last",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "S_Error",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
+    },
+    {
+     "name": "M_Valid",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "M_Ready",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'1'"
+    },
+    {
+     "name": "M_Data",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(DataWidth_g - 1 downto 0)",
+     "width": "DataWidth_g"
+    },
+    {
+     "name": "M_Keep",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(DataWidth_g / 8 - 1 downto 0)",
+     "width": "DataWidth_g / 8"
+    },
+    {
+     "name": "M_Last",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Cfg_Apid",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(10 downto 0)",
+     "width": "11"
+    },
+    {
+     "name": "Cfg_Type",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
+    },
+    {
+     "name": "SecHdr_Data",
+     "dir": "in",
+     "vhdlType": "std_logic_vector(8 * maximum(SecHdrBytes_g, 1) - 1 downto 0)",
+     "width": "8 * maximum(SecHdrBytes_g, 1)",
+     "default": "(others => '0')"
+    },
+    {
+     "name": "Hdr_Sample",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Aborted",
+     "dir": "out",
+     "vhdlType": "std_logic",
+     "width": "1"
+    },
+    {
+     "name": "Ecc_Sec",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "Ecc_Ded",
+     "dir": "out",
+     "vhdlType": "std_logic_vector(1 downto 0)",
+     "width": "2"
+    },
+    {
+     "name": "ErrInj_Data",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
+    },
+    {
+     "name": "ErrInj_Desc",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
+    },
+    {
+     "name": "ErrInj_Double",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
     }
    ]
   },

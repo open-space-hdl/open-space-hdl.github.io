@@ -13,6 +13,12 @@
       "description": "Space Packets over SpaceWire: OpenSPP behind the pass-through port of an OpenRMAP target, which shares one OpenWire port."
     },
     {
+      "file": "spp_over_spw_segmented.composer.json",
+      "name": "spp_over_spw_segmented",
+      "title": "Space Packets over SpaceWire, with a packetizer",
+      "description": "Space Packets over SpaceWire with a packetizer: as spp_over_spw, and send port 1 takes the Space Packets of an OpenSPP packetizer (Packet Service), which cuts data units of any length into segments of 1024 bytes with a CRC; an EDAC monitor counts the errors of its buffers."
+    },
+    {
       "file": "spp_over_spw_two_clocks.composer.json",
       "name": "spp_over_spw_two_clocks",
       "title": "Space Packets over SpaceWire, two clocks",

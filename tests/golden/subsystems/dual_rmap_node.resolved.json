@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "catalog": "c1a3d87ffe8b",
+  "catalog": "cf2616554595",
   "entity": "dual_rmap_node",
   "ports": [
     {
@@ -4309,7 +4309,7 @@
     {
       "name": "spw_port",
       "netlist": {
-        "catalog": "c1a3d87ffe8b",
+        "catalog": "cf2616554595",
         "entity": "spw_port",
         "ports": [
           {
@@ -5496,7 +5496,7 @@
     {
       "name": "rmap_node",
       "netlist": {
-        "catalog": "c1a3d87ffe8b",
+        "catalog": "cf2616554595",
         "entity": "rmap_node",
         "ports": [
           {
