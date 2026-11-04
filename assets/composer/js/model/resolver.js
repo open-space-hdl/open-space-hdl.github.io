@@ -53,7 +53,8 @@ import {
  * @property {string[]} auto             generics whose value was derived (clock domain, connected interface)
  * @property {Record<string, string>} clocks       clock port -> domain id
  * @property {Record<string, string>} resets       reset port -> source ("Rst", "<reset generator>.RstOut", the reset output
- *                                                "<instance>.<port>" of a reset group, "open")
+ *                                                "<instance>.<port>" of a reset group, "open"; "default": an input for
+ *                                                reset groups outside one, which keeps its VHDL default)
  * @property {string} [domain]           domain of the primary clock
  * @property {Record<string, Packing>} packing     interface -> packing of the carried side band into its data
  */
@@ -1056,12 +1057,12 @@ export class Resolution {
     this.resetGen = new Map();
     const all = [...this.d.instances.map((i) => this.byId.get(i.id)).filter((x) => x !== undefined), ...this.autos];
     // a reset generator for every clock domain with a synchronous reset input (blocks with an asynchronous reset
-    // synchronise its release themselves)
+    // synchronise its release themselves); an input for reset groups takes only the reset of a group
     const used = new Set();
     for (const rec of all) {
       const b = this.cat.blocks.get(rec.block);
       for (const r of b?.resets ?? []) {
-        if (r.dir === 'out' || r.sync === 'async' || !r.clock) continue;
+        if (r.dir === 'out' || r.group || r.sync === 'async' || !r.clock) continue;
         const dom = rec.clocks[r.clock];
         if (dom) used.add(dom);
       }
@@ -1084,6 +1085,9 @@ export class Resolution {
       if (!b) continue;
       for (const r of b.resets) {
         if (r.dir === 'out') rec.resets[r.port] = 'open';
+        // outside a reset group the input keeps its default (the catalog requires one), so the block behaves as if
+        // it had no such input; resetGroupsPass connects it in a group
+        else if (r.group) rec.resets[r.port] = 'default';
         else if (r.sync === 'async' || !r.clock) rec.resets[r.port] = RESET_PORT;
         else {
           const dom = rec.clocks[r.clock];
@@ -1098,9 +1102,9 @@ export class Resolution {
    * The reset groups of the system (format version 3). The source, a reset output of a block, drives the reset inputs
    * of the members instead of the reset generator of their clock domain: the synchronous ones in its own clock domain
    * (another domain is an error), the asynchronous ones directly. A block whose catalog entry marks reset inputs with
-   * group gets the group reset on those only. An inserted block takes the group reset when both ends of its
-   * connection are reset by the same group (for a block with marked inputs: the interfaces whose resetBy names one of
-   * them); at the border of a group it keeps the reset of its domain.
+   * group gets the group reset on those only; outside a group they keep their default. An inserted block takes the
+   * group reset when both ends of its connection are reset by the same group (for a block with marked inputs: the
+   * interfaces whose resetBy names one of them); at the border of a group it keeps the reset of its domain.
    */
   resetGroupsPass() {
     /** @type {ResolvedResetGroup[]} */

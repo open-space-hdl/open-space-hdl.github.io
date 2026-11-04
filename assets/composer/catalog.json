@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "0b539a2c9589",
+ "id": "3eac4209d32d",
  "sources": [
   {
    "id": "openwire",
@@ -205,11 +205,11 @@
    "repo": "openspp",
    "url": "https://github.com/open-space-hdl/openspp",
    "doc": "/openspp/",
-   "commit": "018ebe17992d578dea037fa47251b3309a863bb8",
+   "commit": "1f40829d62f8693ad970234ba5d4257777064e0f",
    "library": "openspp",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.6",
+   "verifiedWith": "4.7.0-ft.12",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
    "files": [
     "hdl/spp_pkg/src/spp_regs_pkg.vhd",
@@ -228,8 +228,12 @@
     "hdl/spp_encapsulation/src/spp_encapsulation.vhd",
     "hdl/spp_encapsulation/src/spp_decapsulation.vhd",
     "hdl/spp_mib/src/spp_mib.vhd",
+    "hdl/spp_core/src/spp_link_output.vhd",
     "hdl/spp_core/src/spp_core.vhd",
-    "hdl/spp_nchar/src/spp_nchar.vhd"
+    "hdl/spp_nchar/src/spp_nchar.vhd",
+    "hdl/spp_packetizer/src/spp_packetizer_trailer.vhd",
+    "hdl/spp_packetizer/src/spp_packetizer_segmenter.vhd",
+    "hdl/spp_packetizer/src/spp_packetizer.vhd"
    ],
    "trl": 3,
    "trlStatus": "Fully verified by simulation. Not yet tested on hardware, no flight heritage.",
@@ -292,6 +296,29 @@
        "kind": "generic_range",
        "generic": "DataWidth_g",
        "text": "DataWidth_g must be a multiple of 8 (checked at elaboration)."
+      }
+     ]
+    },
+    {
+     "previous": "018ebe17992d578dea037fa47251b3309a863bb8",
+     "pin": "f5a6be62b644345e2a691a4ad27955e4482a98e8",
+     "evidence": "PR #11 of the core: documentation tooling only (tools/docs/requirements.txt pins selectolax 1.0.0), no source, testbench or interface change.",
+     "changes": []
+    },
+    {
+     "previous": "f5a6be62b644345e2a691a4ad27955e4482a98e8",
+     "pin": "1f40829d62f8693ad970234ba5d4257777064e0f",
+     "evidence": "PR #17 of the core: - `spp_core`: new input port `DpRst : in std_logic := '0'` (synchronous, high-active, clock `Clk`). An instance without it keeps its behaviour. `M_Link` is driven by the register stage `spp_link_output`: one clock cycle more latency, the same throughput and clock cycles per packet. The reset domains of the interfaces are in the specification of `spp_core` (CO-RS-12): `M_Link` with `Rst` only, all other interfaces with `Rst` and `DpRst`. - New entities and sources: `spp_link_output` (`hdl/spp_core/src`), `spp_packetizer`, `spp_packetizer_segmenter` and `spp_packetizer_trailer` (`hdl/spp_packetizer/src`); `compile_order.txt` lists them. - Open Logic pin: 4.7.0-ft.6 (main) to 4.7.0-ft.12 (02a790d). - No change of the generics, stream formats, `TUser` layouts or the register map of `spp_core`. The merge commit is the release v0.2.0 of the core.",
+     "changes": [
+      {
+       "block": "openspp/spp_core",
+       "kind": "behaviour",
+       "text": "New reset input DpRst (synchronous, high-active, default '0'): it resets every function of the core except the link output stage, which ends a packet open on M_Link with an EEP beat. It is an input for reset groups: an instance in no group keeps it at its default and behaves as before."
+      },
+      {
+       "block": "openspp/spp_core",
+       "kind": "behaviour",
+       "text": "M_Link is driven by the register stage spp_link_output: one clock cycle more latency; the throughput and the clock cycles per packet are unchanged."
       }
      ]
     }
@@ -882,7 +909,7 @@
    "library": "olo",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). 4.7.0-ft.11 lets olo_axi_master_full overlap consecutive commands and adds the generics IntFifoDepth_g and EccPipeline_g to the fault-tolerant AXI masters (ft.9), resets the read alignment register of olo_axi_master_full (ft.10), matches the scoped constraint of the read path of olo_base_ram_sdp also after synthesis retiming and checks In_Last and In_Be of olo_base_crc only for an accepted beat (ft.11). 4.7.0-ft.12 adds olo_ft_reset_ctrl_axi, a reset of a group of blocks commanded through AXI4-Lite. The cores of the catalog are verified with 4.7.0-ft.6 (OpenWire, OpenSPP, OpenCrypto), 4.7.0-ft.9 (OpenCompact) and 4.7.0-ft.11 (OpenRMAP, OpenFibre); the ports added since 4.7.0-ft.6 have a default (inputs) or may stay open (outputs), so every core compiles with 4.7.0-ft.12 unchanged.",
+   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). 4.7.0-ft.11 lets olo_axi_master_full overlap consecutive commands and adds the generics IntFifoDepth_g and EccPipeline_g to the fault-tolerant AXI masters (ft.9), resets the read alignment register of olo_axi_master_full (ft.10), matches the scoped constraint of the read path of olo_base_ram_sdp also after synthesis retiming and checks In_Last and In_Be of olo_base_crc only for an accepted beat (ft.11). 4.7.0-ft.12 adds olo_ft_reset_ctrl_axi, a reset of a group of blocks commanded through AXI4-Lite. The cores of the catalog are verified with 4.7.0-ft.6 (OpenWire, OpenCrypto), 4.7.0-ft.9 (OpenCompact), 4.7.0-ft.11 (OpenRMAP, OpenFibre) and 4.7.0-ft.12 (OpenSPP); the ports added since 4.7.0-ft.6 have a default (inputs) or may stay open (outputs), so every core compiles with 4.7.0-ft.12 unchanged.",
    "files": [
     "src/intf/vhdl/olo_intf_pkg_can.vhd",
     "src/base/vhdl/olo_base_pkg_crc.vhd",
@@ -15579,6 +15606,8 @@
    "project": "OpenSPP",
    "notes": [
     "Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.",
+    "DpRst restarts the core while the link stays in operation: it resets every function except the link output stage, which ends a packet open on M_Link with an EEP beat. It takes the reset of a reset group of the system and keeps its default '0' outside one. M_Link is reset by Rst only, so the link side (spp_nchar, the SpaceWire or SpaceFibre port) stays out of the group (user guide 3.1).",
+    "M_Link is driven by the register stage spp_link_output, which adds one clock cycle of latency (since OpenSPP 0.2.0) and no cycle per packet: the throughput and the clock cycles per packet are unchanged.",
     "After the reset the core initialises both APID tables (2048 clock cycles); packets are sent and delivered once the tables are ready.",
     "Serve every receive port, or place a buffer behind a port whose user can stall for long.",
     "TxBufferBytes_g holds the longest SDU of a port, RxBufferBytes_g the longest Space Packet.",
@@ -15997,6 +16026,14 @@
      "active": "high",
      "sync": "sync",
      "clock": "Clk"
+    },
+    {
+     "port": "DpRst",
+     "active": "high",
+     "sync": "sync",
+     "clock": "Clk",
+     "group": true,
+     "description": "Data path reset: every function except the link output stage, which ends a packet open on M_Link with an EEP beat."
     }
    ],
    "interfaces": [
@@ -16055,6 +16092,7 @@
      },
      "vector": "NumTx_g",
      "tieOff": "zero",
+     "resetBy": "DpRst",
      "signals": {
       "data": "S_Tx_Data",
       "keep": "S_Tx_Keep",
@@ -16110,6 +16148,7 @@
        "bits": 8
       }
      ],
+     "resetBy": "DpRst",
      "signals": {
       "data": "M_Rx_Data",
       "keep": "M_Rx_Keep",
@@ -16175,6 +16214,7 @@
        "bits": 1
       }
      ],
+     "resetBy": "DpRst",
      "signals": {
       "data": "S_Link_Data",
       "keep": "S_Link_Keep",
@@ -16198,6 +16238,7 @@
      "params": {
       "addrWidth": 11
      },
+     "resetBy": "DpRst",
      "signals": {
       "AwAddr": "S_AxiLite_AwAddr",
       "AwValid": "S_AxiLite_AwValid",
@@ -16241,6 +16282,7 @@
        "offset": 92
       }
      },
+     "resetBy": "DpRst",
      "signals": {
       "irq": "Irq"
      }
@@ -16252,6 +16294,7 @@
      "clock": "Clk",
      "label": "Errors",
      "tieOff": "open",
+     "resetBy": "DpRst",
      "signals": {
       "valid": "Err_Valid",
       "code": "Err_Code",
@@ -16272,6 +16315,13 @@
      "dir": "in",
      "vhdlType": "std_logic",
      "width": "1"
+    },
+    {
+     "name": "DpRst",
+     "dir": "in",
+     "vhdlType": "std_logic",
+     "width": "1",
+     "default": "'0'"
     },
     {
      "name": "S_Tx_Valid",

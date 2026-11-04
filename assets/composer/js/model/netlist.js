@@ -516,14 +516,15 @@ class Netlist {
         if (rst) {
           const grp = groupOfPort.get(`${rec.id}.${p.name}`);
           const gen = !grp && rec.resets[p.name]?.endsWith('.RstOut') ? instanceOf(rec.resets[p.name]) : undefined;
-          const from = grp ? `: the reset of the group ${grp.group} (${grp.source})` : gen ? `: the output of the reset generator ${gen}` : '';
+          const from = grp ? `: the reset of the group ${grp.group} (${grp.source})` : gen ? `: the output of the reset generator ${gen}`
+            : rec.resets[p.name] === 'default' ? `, for a reset group; ${rec.id} is in none, so the port keeps its default` : '';
           o.reset = rst.sync === 'async'
             ? { kind: 'async', note: grp ? `Asynchronous reset from the group ${grp.group} (${grp.source}): ${b.entity} synchronises its release itself.` : rst.description ?? `Asynchronous reset: ${b.entity} synchronises its release itself.` }
             : { kind: 'sync', note: `Synchronous reset in the clock domain ${this.d.clockDomains.find((c) => c.id === rec.clocks[rst.clock ?? ''])?.name ?? rec.clocks[rst.clock ?? ''] ?? ''} (clock ${rst.clock ?? ''})${from}.` };
         }
         if (clockPorts.has(p.name)) {
           o.actual = rec.clocks[p.name] ? clockOf(rec.clocks[p.name]) : 'open';
-        } else if (p.name in rec.resets && p.dir !== 'out') {
+        } else if (p.name in rec.resets && p.dir !== 'out' && rec.resets[p.name] !== 'default') {
           const r = rec.resets[p.name];
           o.actual = r === RESET_PORT ? RESET_PORT : isSource(r) ? signalName(instanceOf(r), portOf(r)) : 'open';
         } else if (this.directActuals.has(`${rec.id}.${p.name}`)) {

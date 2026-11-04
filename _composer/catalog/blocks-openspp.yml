@@ -19,6 +19,8 @@ blocks:
       - { port: Clk, primary: true, label: Clock, description: All of the core; one beat per cycle on every path. }
     resets:
       - { port: Rst, active: high, sync: sync, clock: Clk }
+      # the data path reset for a reset group of the system (user guide 3.1); outside a group it keeps its default
+      - { port: DpRst, active: high, sync: sync, clock: Clk, group: true, description: "Data path reset: every function except the link output stage, which ends a packet open on M_Link with an EEP beat." }
     # follow.rank: when the generics at both ends of a connection follow each other, the lower rank follows the higher
     generics:
       - { name: DataWidth_g, label: Stream width, unit: bits, check: multiple8, description: Width of all streams; follows the connected packet link unless set by hand., follow: { interfaces: [S_Link, M_Link], measure: data, rank: 2 } }
@@ -45,6 +47,7 @@ blocks:
         type: spp.tx
         role: sink
         clock: Clk
+        resetBy: DpRst
         vector: NumTx_g
         tieOff: zero
         signals: { data: S_Tx_Data, keep: S_Tx_Keep, last: S_Tx_Last, user: S_Tx_User, valid: S_Tx_Valid, ready: S_Tx_Ready }
@@ -62,6 +65,7 @@ blocks:
         type: spp.rx
         role: source
         clock: Clk
+        resetBy: DpRst
         vector: NumRx_g
         mustServe: true
         description: Must be served; all receive ports share one receive buffer.
@@ -88,6 +92,7 @@ blocks:
         type: pkt.link
         role: sink
         clock: Clk
+        resetBy: DpRst
         description: "Received packets; user bit 0 is the error end of packet."
         signals: { data: S_Link_Data, keep: S_Link_Keep, last: S_Link_Last, user: S_Link_User, valid: S_Link_Valid, ready: S_Link_Ready }
         userFields:
@@ -97,6 +102,7 @@ blocks:
         type: axi4lite
         role: slave
         clock: Clk
+        resetBy: DpRst
         prefix: S_AxiLite_
         params: { addrWidth: 11 }
       - name: Irq
@@ -104,6 +110,7 @@ blocks:
         type: irq
         role: event_out
         clock: Clk
+        resetBy: DpRst
         tieOff: open
         signals: { irq: Irq }
         # the registers of the interrupt in the register map of the block (the brief gives their offsets)
@@ -113,6 +120,7 @@ blocks:
         type: spp.err
         role: event_out
         clock: Clk
+        resetBy: DpRst
         tieOff: open
         signals: { valid: Err_Valid, code: Err_Code, port: Err_Port, apid: Err_Apid }
     rules:
@@ -139,6 +147,8 @@ blocks:
     endToEnd: "Send one SDU on a send port (APID 0x123, for example) and expect it on receive port 0 with the same APID in user bits 10:0, once the APID tables are ready."
     notes:
       - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen.
+      - "DpRst restarts the core while the link stays in operation: it resets every function except the link output stage, which ends a packet open on M_Link with an EEP beat. It takes the reset of a reset group of the system and keeps its default '0' outside one. M_Link is reset by Rst only, so the link side (spp_nchar, the SpaceWire or SpaceFibre port) stays out of the group (user guide 3.1)."
+      - "M_Link is driven by the register stage spp_link_output, which adds one clock cycle of latency (since OpenSPP 0.2.0) and no cycle per packet: the throughput and the clock cycles per packet are unchanged."
       - After the reset the core initialises both APID tables (2048 clock cycles); packets are sent and delivered once the tables are ready.
       - Serve every receive port, or place a buffer behind a port whose user can stall for long.
       - TxBufferBytes_g holds the longest SDU of a port, RxBufferBytes_g the longest Space Packet.
