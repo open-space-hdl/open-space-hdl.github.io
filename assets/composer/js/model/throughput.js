@@ -27,7 +27,7 @@
  */
 
 import { evaluate, ExprError } from './expr.js';
-import { headerBytes, imagePeriod, maxImageBytes } from './ocp.js';
+import { headerBytes, imagePeriod, maxImageBytes } from '../vendor/opencompact/ocp_throughput.mjs';
 import { formatHz } from './rules.js';
 import { analyseSizes } from './sizes.js';
 import { subsystemName } from './subsystems.js';
@@ -256,17 +256,16 @@ function value(text, env, n) {
  * @type {Record<string, (g: Record<string, any>, stated: import('./design.js').InstanceTraffic | undefined) => Record<string, number | string>>}
  */
 const MODELS = {
-  // OpenCompact ocp_core (model/ocp.js): the cycles between the first samples of consecutive images (image_period() of
-  // tools/ocp_throughput.py), the header, and the compressed image: from the assumed ratio, else its upper bound
-  // (max_image_bytes() of tools/ocp_model.py)
+  // OpenCompact ocp_core (vendor/opencompact/ocp_throughput.mjs, the models OpenCompact supplies): the cycles between
+  // the first samples of consecutive images (image_period() of tools/ocp_throughput.py), the header, and the
+  // compressed image: from the assumed ratio, else its upper bound (max_image_bytes() of tools/ocp_model.py)
   ocp: (g, stated) => {
-    const spec = g.Speculation_g !== false;
     const header = headerBytes(g);
     const word = g.OutputWordSize_g;
     const input = Math.ceil((g.XSize_g * g.YSize_g * g.ZSize_g * g.DynamicRange_g) / 8);
     const key = JSON.stringify(g);
     return {
-      ocp_cycles_per_image: cached(`period ${spec} ${key}`, () => imagePeriod(g, spec)),
+      ocp_cycles_per_image: ocpCyclesPerImage(g),
       ocp_header_bytes: header,
       // the assumed ratio relates the bytes of the samples to the bytes of the compressed image, header included
       ocp_image_bytes: stated?.ratio
@@ -290,6 +289,16 @@ function cached(key, fn) {
   if (modelCache.size >= 64) modelCache.delete(/** @type {string} */ (modelCache.keys().next().value));
   modelCache.set(key, v);
   return v;
+}
+
+/**
+ * The cycles between the first samples of consecutive images of an OpenCompact compressor (the rate model ocp), once
+ * per configuration: the budget and the estimate of the inspector (model/estimates.js) read the same value.
+ * @param {Record<string, any>} g   the generics of ocp_core (or of ocp_channel, which passes them on)
+ */
+export function ocpCyclesPerImage(g) {
+  const spec = g.Speculation_g !== false;
+  return cached(`period ${spec} ${JSON.stringify(g)}`, () => imagePeriod(g, spec));
 }
 
 /**
