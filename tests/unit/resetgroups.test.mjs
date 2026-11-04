@@ -211,7 +211,7 @@ test('a block with reset ports for a group (OpenSPP DpRst): only they take it, a
     ...core,
     id: 'test/ocp_dp',
     idPrefix: 'dp',
-    ports: [...core.ports, { name: 'DpRst', dir: 'in', vhdlType: 'std_logic', width: '1' }],
+    ports: [...core.ports, { name: 'DpRst', dir: 'in', vhdlType: 'std_logic', width: '1', default: "'0'" }],
     resets: [...core.resets, { port: 'DpRst', active: 'high', sync: 'sync', clock: 'Clk', group: true }],
     interfaces: core.interfaces.map((/** @type {any} */ i) => (i.name === 'In' || (outByGroup && i.name === 'Out') ? { ...i, resetBy: 'DpRst' } : i)),
   });
@@ -240,6 +240,52 @@ test('a block with reset ports for a group (OpenSPP DpRst): only they take it, a
       assert.deepEqual(groupChecks(r, 'info'), [`The inserted blocks ${conv} (dp0.Out to frm0.S_In) at the border of the reset group pipe keep the reset of their clock domain: only one end of their connection is reset by the group.`]);
     }
   }
+});
+
+test('a reset input for a group outside one keeps its default: no reset generator for it, the port map leaves it out', () => {
+  // test entries of the catalog: the compressor with a second reset input DpRst for a group (default '0'), and one
+  // whose only reset input is for a group
+  const json = loadCatalogJson();
+  const core = json.blocks.find((/** @type {any} */ b) => b.id === 'opencompact/ocp_core');
+  json.blocks.push({
+    ...core,
+    id: 'test/ocp_dp',
+    idPrefix: 'dp',
+    ports: [...core.ports, { name: 'DpRst', dir: 'in', vhdlType: 'std_logic', width: '1', default: "'0'" }],
+    resets: [...core.resets, { port: 'DpRst', active: 'high', sync: 'sync', clock: 'Clk', group: true }],
+  }, {
+    ...core,
+    id: 'test/ocp_g',
+    idPrefix: 'g',
+    ports: core.ports.map((/** @type {any} */ p) => (p.name === 'Rst' ? { ...p, default: "'0'" } : p)),
+    resets: core.resets.map((/** @type {any} */ r) => ({ ...r, group: true })),
+  });
+  const tcat = new Catalog(json);
+  const one = (/** @type {string} */ block) => addInstance(createDesign('t'), tcat, block, { x: 0, y: 0 }).design;
+  // Rst on the reset generator of the domain, DpRst at its default
+  let d = one('test/ocp_dp');
+  let r = resolve(tcat, d);
+  assert.equal(r.byId.get('dp0')?.resets.Rst, 'auto_rst_sys.RstOut');
+  assert.equal(r.byId.get('dp0')?.resets.DpRst, 'default');
+  assert.deepEqual(r.resetGroups, []);
+  let n = netlist(tcat, d, r);
+  assert.deepEqual(n.problems, []);
+  const dp = n.instances.find((i) => i.id === 'dp0')?.ports.find((/** @type {any} */ p) => p.name === 'DpRst');
+  assert.deepEqual({ actual: dp.actual, useDefault: dp.useDefault, default: dp.default }, { actual: null, useDefault: true, default: "'0'" });
+  assert.equal(dp.reset.note, 'Synchronous reset in the clock domain System clock (clock Clk), for a reset group; dp0 is in none, so the port keeps its default.');
+  const doc = /** @type {any} */ (toDocument(d, tcat));
+  assert.match(doc.agent.brief, /\| `dp0\.DpRst` \| synchronous \| default `'0'` \| Synchronous reset in the clock domain System clock \(clock Clk\), for a reset group; dp0 is in none, so the port keeps its default\. \|/);
+  const top = exportHdl(tcat, doc.resolved, { generator: 'x', input: 't.composer.json', sha256: '0'.repeat(64) }).files.find((f) => f.name === 't.vhd')?.text ?? '';
+  assert.match(top, /i_dp0 : entity [\s\S]*?Rst +=> auto_rst_sys_RstOut_s,/);
+  assert.doesNotMatch(top, /DpRst +=>/);
+  // a block whose only reset input is for a group: its domain needs no reset generator
+  d = one('test/ocp_g');
+  r = resolve(tcat, d);
+  assert.equal(r.byId.get('g0')?.resets.Rst, 'default');
+  assert.equal(r.byId.get('auto_rst_sys'), undefined);
+  n = netlist(tcat, d, r);
+  assert.deepEqual(n.problems, []);
+  assert.deepEqual(n.resets, []);
 });
 
 test('a reset output of any name: the members take the signal of its port', () => {

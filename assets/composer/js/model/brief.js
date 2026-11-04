@@ -492,7 +492,7 @@ export function agentBrief(cat, d, res, resolved, checks) {
       g.ports.map((/** @type {string} */ p) => `\`${p}\``).join(', '),
     ])), '');
   }
-  const resetPorts = resolved.instances.flatMap((/** @type {any} */ i) => i.ports.filter((/** @type {any} */ p) => p.reset).map((/** @type {any} */ p) => [`\`${i.id}.${p.name}\``, p.reset.kind === 'async' ? 'asynchronous' : 'synchronous', `\`${p.actual}\``, p.reset.note]));
+  const resetPorts = resolved.instances.flatMap((/** @type {any} */ i) => i.ports.filter((/** @type {any} */ p) => p.reset).map((/** @type {any} */ p) => [`\`${i.id}.${p.name}\``, p.reset.kind === 'async' ? 'asynchronous' : 'synchronous', p.useDefault ? `default \`${p.default}\`` : `\`${p.actual}\``, p.reset.note]));
   L.push('Reset ports (`reset` of the port):', '');
   L.push(table(['Port', 'Reset', 'Actual', 'Why'], resetPorts), '');
   L.push('`Rst` is the asynchronous system reset. A reset generator asserts the reset of its domain at once and releases it synchronously to the clock; a block with an asynchronous reset synchronises the release itself.', '');

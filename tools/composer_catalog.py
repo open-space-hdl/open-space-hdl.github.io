@@ -1410,6 +1410,9 @@ def build_block(ctx: Context, b: dict, sources: dict, types: dict, groups: dict)
         # a reset input that a reset group of the system drives (group true); the other inputs stay on their domain
         if "group" in r and (r["group"] is not True or r.get("dir", "in") != "in"):
             ctx.err(where, f"reset {r['port']}: group is true on a reset input, or absent")
+        # outside a group the input keeps its VHDL default
+        if r.get("group") is True and p and p.get("default") is None:
+            ctx.err(where, f"reset {r['port']}: an input for reset groups needs a default in the VHDL")
         # a reset input that gets the unsynchronised system reset (asynchronous, or without a clock): the system has no
         # timing exception on Rst, so the block must release it through olo_base_reset_gen, whose scoped constraints
         # cut the paths into its synchronisers

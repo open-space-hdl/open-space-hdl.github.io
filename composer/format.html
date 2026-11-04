@@ -194,7 +194,8 @@ permalink: /composer/format/
       <li><code>members</code>: instance ids of blocks of the top level, at least one. A member takes the reset on all its
         reset inputs, except a block whose catalog entry marks reset inputs with <code>group</code>: it takes the group
         reset on those only and keeps the reset generator on the others (OpenSPP <code>DpRst</code>, which resets the
-        data path but not the output stage that ends a packet in progress).</li>
+        data path but not the output stage that ends a packet in progress). Such an input of a block in no group keeps
+        its VHDL default, so the block behaves as without it.</li>
     </ul>
     <p>
       A synchronous reset input of a member must be in the clock domain of the source; an asynchronous one takes the
@@ -418,7 +419,7 @@ spp0_S_Tx_User_s &lt;= "0000000000000000000100100011";</code></pre>
         <thead><tr><th scope="col">Entry</th><th scope="col">Meaning</th></tr></thead>
         <tbody>
           <tr><td data-label="Entry"><code>entity</code>, <code>ports</code></td><td data-label="Meaning">Name and ports of the top-level entity, in order. <code>Rst</code> is the asynchronous system reset (high-active), <code>Clk_&lt;domain&gt;</code> the clock of an external clock domain, the other ports belong to external interfaces and are named <code>&lt;prefix&gt;&lt;port&gt;</code> (an element of a vector interface adds <code>_&lt;index&gt;</code>). Every port names its clock <code>domain</code>; a port of an external interface names its logical <code>signal</code> and, where its bits have a meaning, the <code>fields</code> (for example the APID in bits 10:0 of a receive port of OpenSPP).</td></tr>
-          <tr><td data-label="Entry"><code>instances</code></td><td data-label="Meaning">Entity, library, origin (placed or inserted, with the reason), clock domain, every generic with its value, VHDL literal and whether it is the default, every port with its type, actual and clock <code>domain</code> (a block with several clocks: the clock of the interface of the port). A reset input says in <code>reset</code> whether it is synchronous (from the reset generator of its domain, or from the source of its reset group) or asynchronous (the block synchronises the release itself), and why.</td></tr>
+          <tr><td data-label="Entry"><code>instances</code></td><td data-label="Meaning">Entity, library, origin (placed or inserted, with the reason), clock domain, every generic with its value, VHDL literal and whether it is the default, every port with its type, actual and clock <code>domain</code> (a block with several clocks: the clock of the interface of the port). A reset input says in <code>reset</code> whether it is synchronous (from the reset generator of its domain, or from the source of its reset group; an input for reset groups outside one keeps its default) or asynchronous (the block synchronises the release itself), and why.</td></tr>
           <tr><td data-label="Entry"><code>signals</code></td><td data-label="Meaning">Signal declarations of the architecture.</td></tr>
           <tr><td data-label="Entry"><code>nets</code></td><td data-label="Meaning">Assignments: connections signal by signal (<code>kind</code> connection), constants of side bands and missing signals (constant), tie-offs of unconnected inputs (tie-off) and the top-level ports (top). A packed data word appears bit field by bit field. A constant of a side band or of an instance carries its field map in <code>fields</code>.</td></tr>
           <tr><td data-label="Entry"><code>packing</code></td><td data-label="Meaning">Bit fields of every packed data word, for example <code>data 31:0, keep 35:32, last 36, user 37</code>.</td></tr>
