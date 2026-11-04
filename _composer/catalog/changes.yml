@@ -273,6 +273,10 @@ opencompact:
       - { block: opencompact/ocp_channel, kind: generic_added, generic: RuntimeParams_g, text: "New generic RuntimeParams_g (default false, only with RuntimeConfig_g): the user-defined data, M (BI order), the weight update parameters and the entropy coder parameters of every image come from the registers NEXT_SAMPLES to NEXT_BLOCK with the same CONTROL.COMMIT; SubFrameDepth_g, RescaleCounterSize_g and RefInterval_g are then the maxima. With false the compressed images and the throughput are unchanged." }
       - { block: opencompact/ocp_channel, kind: registers, text: "Register map version 3 (ID 0x4F435003): new registers NEXT_SAMPLES 0x07C, NEXT_ORDER 0x080, NEXT_WEIGHTS 0x084, NEXT_ADAPTIVE 0x088, NEXT_BLOCK 0x08C and GENERICS bit 19 RUNTIME_PARAMS; with the runtime parameters the parameter fields of SAMPLES, ORDER, WEIGHTS, ADAPTIVE and BLOCK show the values of the last image that started; the existing registers keep their offsets and fields." }
       - { block: opencompact/ocp_core, kind: behaviour, text: "New interfaces Params (the runtime parameters of the next image, taken with Cfg) and ParamsAct (the values taken for the last image), present only with RuntimeParams_g." }
+  - previous: c238942b0274e5227272c40688131fb87a444af1
+    pin: 7956d5a7c19d32a6e21a4870f39a39c8846be81d
+    evidence: "PR #39 of the core: None. The core is unchanged; the new JavaScript functions for the Composer are `headerBytes`, `imagePeriod`, `maxImageBytes` and `estimateResources(generics, target = \"polarfire\")`. The merge commit is the release v0.3.1 of the core."
+    changes: []
 
 olo:
   - previous: 1bc4fb90888cf24ac29bc54527c2982d2dec307c
