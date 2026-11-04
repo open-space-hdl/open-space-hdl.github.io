@@ -331,6 +331,7 @@ test('a member connected to a border of another member is a warning: spp_nchar o
   assert.equal(r.byId.get('spp0')?.resets.DpRst, 'prst0.RstOut');
   const spp = /** @type {any} */ (cat.blocks.get('openspp/spp_core'));
   const why = spp.interfaces.find((/** @type {any} */ i) => i.name === 'M_Link').resetBorder;
+  assert.equal(why, 'reset the link side (spp_nchar, the SpaceWire or SpaceFibre port) with the reset of the link, never with DpRst, so that the EEP that ends an interrupted packet reaches the far end (OpenSPP user guide 3.1).');
   const warnings = r.checks.filter((c) => c.rule === 'reset_group' && c.severity === 'warning');
   assert.deepEqual(warnings.map((c) => c.message), [`nchar0 is in the reset group dp and connected to spp0.M_Link, a border of the group: spp_core resets M_Link by Rst only, not by the reset of the group. A reset of the group resets nchar0 while spp0.M_Link keeps running.${why ? ` spp_core forbids it: ${why}` : ''}`]);
   assert.equal(warnings[0].instance, 'nchar0');

@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "3eac4209d32d",
+ "id": "c1a3d87ffe8b",
  "sources": [
   {
    "id": "openwire",
@@ -16185,6 +16185,7 @@
        "bits": 4
       }
      ],
+     "resetBorder": "reset the link side (spp_nchar, the SpaceWire or SpaceFibre port) with the reset of the link, never with DpRst, so that the EEP that ends an interrupted packet reaches the far end (OpenSPP user guide 3.1).",
      "signals": {
       "data": "M_Link_Data",
       "keep": "M_Link_Keep",
