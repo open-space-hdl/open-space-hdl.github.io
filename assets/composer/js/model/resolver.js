@@ -1104,7 +1104,8 @@ export class Resolution {
    * (another domain is an error), the asynchronous ones directly. A block whose catalog entry marks reset inputs with
    * group gets the group reset on those only; outside a group they keep their default. An inserted block takes the
    * group reset when both ends of its connection are reset by the same group (for a block with marked inputs: the
-   * interfaces whose resetBy names one of them); at the border of a group it keeps the reset of its domain.
+   * interfaces whose resetBy names one of them); at the border of a group it keeps the reset of its domain. A member
+   * connected to such a border of another member is a warning (with the reason of the catalog, resetBorder).
    */
   resetGroupsPass() {
     /** @type {ResolvedResetGroup[]} */
@@ -1205,6 +1206,25 @@ export class Resolution {
     }
     for (const [gid, list] of border) {
       this.check('info', 'reset_group', `The inserted blocks ${list.join(', ')} at the border of the reset group ${gid} keep the reset of their clock domain: only one end of their connection is reset by the group.`);
+    }
+    // a member connected to an interface of another member that the group does not reset (a border of a block with
+    // reset inputs for groups): the group resets the one while the logic behind that interface keeps running
+    for (const chain of this.chains) {
+      const ends = [chain.from, chain.to];
+      const ids = ends.map((ref) => ref.split('.')[0]);
+      const gid = memberOf.get(ids[0]);
+      if (!gid || ids[0] === ids[1] || memberOf.get(ids[1]) !== gid) continue;
+      ends.forEach((ref, k) => {
+        if (groupAt(ref) === gid) return;
+        const other = ids[1 - k];
+        const rec = this.byId.get(ids[k]);
+        const b = rec && this.cat.blocks.get(rec.block);
+        if (!b) return;
+        const name = ref.slice(ids[k].length + 1).replace(/\[\d+\]$/, '');
+        const itf = b.interfaces.find((i) => i.name === name);
+        const by = b.resets.filter((r) => r.dir !== 'out' && !r.group).map((r) => r.port);
+        this.check('warning', 'reset_group', `${other} is in the reset group ${gid} and connected to ${ref}, a border of the group: ${b.entity} resets ${name} by ${by.length ? by.join(' and ') : 'none of its reset inputs'} only, not by the reset of the group. A reset of the group resets ${other} while ${ref} keeps running.${itf?.resetBorder ? ` ${b.entity} forbids it: ${itf.resetBorder}` : ''}`, { instance: other, connection: chain.connection });
+      });
     }
   }
 

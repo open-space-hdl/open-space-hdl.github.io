@@ -319,6 +319,42 @@ test('OpenSPP spp_core: DpRst keeps its default outside a group; in a group only
   assert.equal(port('nchar0', 'Rst').actual, 'auto_rst_sys_RstOut_s');
 });
 
+test('a member connected to a border of another member is a warning: spp_nchar on spp0.M_Link in the group of DpRst', () => {
+  let d = createDesign('t');
+  for (const b of ['olo/olo_ft_reset_ctrl_axi', 'openspp/spp_core', 'openspp/spp_nchar']) d = addInstance(d, cat, b, { x: 0, y: 0 }).design;
+  d = link(cat, d, 'spp0.M_Link', 'nchar0.S_Link');
+  d = link(cat, d, 'nchar0.M_Link', 'spp0.S_Link');
+  d = setResetGroup(d, cat, 'prst0.RstOut', ['spp0', 'nchar0'], 'dp');
+  const r = resolve(cat, d);
+  // the group resets both blocks, but not the link output of spp0: one warning, on the connection to M_Link only
+  assert.equal(r.byId.get('nchar0')?.resets.Rst, 'prst0.RstOut');
+  assert.equal(r.byId.get('spp0')?.resets.DpRst, 'prst0.RstOut');
+  const spp = /** @type {any} */ (cat.blocks.get('openspp/spp_core'));
+  const why = spp.interfaces.find((/** @type {any} */ i) => i.name === 'M_Link').resetBorder;
+  const warnings = r.checks.filter((c) => c.rule === 'reset_group' && c.severity === 'warning');
+  assert.deepEqual(warnings.map((c) => c.message), [`nchar0 is in the reset group dp and connected to spp0.M_Link, a border of the group: spp_core resets M_Link by Rst only, not by the reset of the group. A reset of the group resets nchar0 while spp0.M_Link keeps running.${why ? ` spp_core forbids it: ${why}` : ''}`]);
+  assert.equal(warnings[0].instance, 'nchar0');
+  assert.equal(warnings[0].connection, r.chains.find((c) => c.from === 'spp0.M_Link')?.connection);
+  assert.deepEqual(groupChecks(r, 'error'), []);
+  // the reason of the catalog is quoted: a test entry with a resetBorder on Out of the compressor with DpRst
+  const json = loadCatalogJson();
+  const core = json.blocks.find((/** @type {any} */ b) => b.id === 'opencompact/ocp_core');
+  json.blocks.push({
+    ...core,
+    id: 'test/ocp_dp',
+    idPrefix: 'dp',
+    ports: [...core.ports, { name: 'DpRst', dir: 'in', vhdlType: 'std_logic', width: '1', default: "'0'" }],
+    resets: [...core.resets, { port: 'DpRst', active: 'high', sync: 'sync', clock: 'Clk', group: true }],
+    interfaces: core.interfaces.map((/** @type {any} */ i) => (i.name === 'Out' ? { ...i, resetBorder: 'keep the framer out of the group.' } : { ...i, resetBy: 'DpRst' })),
+  });
+  const tcat = new Catalog(json);
+  const t = resolve(tcat, setResetGroup(chain(tcat, 'test/ocp_dp'), tcat, 'prst0.RstOut', ['dp0', 'frm0', 'ocr0'], 'pipe'));
+  assert.deepEqual(groupChecks(t, 'warning'), ['frm0 is in the reset group pipe and connected to dp0.Out, a border of the group: ocp_core resets Out by Rst only, not by the reset of the group. A reset of the group resets frm0 while dp0.Out keeps running. ocp_core forbids it: keep the framer out of the group.']);
+  // without the framer in the group: no warning (the border is where it belongs)
+  const u = resolve(tcat, setResetGroup(chain(tcat, 'test/ocp_dp'), tcat, 'prst0.RstOut', ['dp0'], 'pipe'));
+  assert.deepEqual(groupChecks(u, 'warning'), []);
+});
+
 test('a reset output of any name: the members take the signal of its port', () => {
   // a test entry of the catalog: the reset controller with its output port named PipeRst
   const json = loadCatalogJson();

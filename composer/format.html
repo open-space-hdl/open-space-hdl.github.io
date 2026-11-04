@@ -211,7 +211,10 @@ permalink: /composer/format/
       without members, a member that is not an instance id (a member is never <code>instance.port</code>), an unknown
       instance, a member named twice, a duplicate group id. Errors of the checks (rule <code>reset_group</code>): a
       source that is no reset output, the source as a member of its own group, a member of two groups, two groups with
-      one source, a synchronous reset of a member in another clock domain. A member without a reset input is a warning.
+      one source, a synchronous reset of a member in another clock domain. Warnings: a member without a reset input; a
+      member connected to an interface of another member that the group does not reset (a border), with the reason the
+      catalog gives for that interface (<code>resetBorder</code>), for example the N-Char adapter on the link output of
+      OpenSPP, which must stay out of the group of <code>DpRst</code>.
       In the editor, the inspector of a block with a reset output lists the blocks of the system to check for its group
       and the name of the group; the inspector of a member names its group.
     </p>

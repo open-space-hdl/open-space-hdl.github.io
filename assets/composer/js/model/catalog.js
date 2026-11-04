@@ -93,6 +93,8 @@ export function docUrl(doc) {
  *           Out_Valid and Out_Ready of a FIFO, RdValid of a RAM
  * @property {string} [resetBy]   in a block with reset ports for a reset group (group true): the one of them that resets
  *           the logic behind this interface; an interface without it stays on the reset of its clock domain
+ * @property {string} [resetBorder]   an interface without resetBy in such a block: the rule of the core that keeps the block
+ *           at its far end out of a reset group of this block, quoted by the warning ("<entity> forbids it: ...")
  */
 
 /**
