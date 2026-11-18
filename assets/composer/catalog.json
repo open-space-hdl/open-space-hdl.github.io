@@ -1,7 +1,7 @@
 {
  "format": "open-space-composer-catalog",
  "formatVersion": 1,
- "id": "cf2616554595",
+ "id": "cb94e32ca787",
  "sources": [
   {
    "id": "openwire",
@@ -9,11 +9,11 @@
    "repo": "openwire",
    "url": "https://github.com/open-space-hdl/openwire",
    "doc": "/openwire/",
-   "commit": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
+   "commit": "32544f70b71187ea3b519b637483ac854c3d18a1",
    "library": "openwire",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.6",
+   "verifiedWith": "4.8.0-ft.2",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
    "files": [
     "hdl/owr_pkg/src/owr_regs_pkg.vhd",
@@ -88,6 +88,18 @@
        "text": "LinkClkFreq_g: 18 to 22 MHz, 27 to 33 MHz, 36 to 44 MHz and 45 to 2554 MHz; 9 to 11 MHz and 2555 MHz or more stop the elaboration now (CORE-CF-02)."
       }
      ]
+    },
+    {
+     "previous": "09e4b1f67be8ba0808a267ffdebd1c22c513e861",
+     "pin": "cac523940c15748a104f36144707e809af4ab21e",
+     "evidence": "PR #11 of the core: documentation tooling only (tools/docs/requirements.txt pins selectolax 1.0.0), no source, testbench or interface change.",
+     "changes": []
+    },
+    {
+     "previous": "cac523940c15748a104f36144707e809af4ab21e",
+     "pin": "32544f70b71187ea3b519b637483ac854c3d18a1",
+     "evidence": "PR #16 of the core: None. No port, generic, stream format, register or compile order of OpenWire changes. Open Logic pin 4.7.0-ft.6 (v0.1.0) to 4.8.0-ft.2 (1f4a6c3), based on Open Logic 4.8.0; the Open Logic entities that OpenWire instantiates keep their ports and generics. The merge commit is the release v0.1.1 of the core.",
+     "changes": []
     }
    ]
   },
@@ -97,11 +109,11 @@
    "repo": "openrmap",
    "url": "https://github.com/open-space-hdl/openrmap",
    "doc": "/openrmap/",
-   "commit": "caac2f3e65abeeff365637c854a7b6a2036639f4",
+   "commit": "0ed2aca4f0472e61e434e330da8c06d0a5e3eb93",
    "library": "openrmap",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.11",
+   "verifiedWith": "4.8.0-ft.2",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
    "files": [
     "hdl/omap_pkg/src/omap_regs_pkg.vhd",
@@ -196,6 +208,18 @@
        "text": "With Open Logic 4.7.0-ft.11 the memory master of the target takes the next chunk of a non-verified write while the bytes of the current one pass, so the chunks follow each other without a gap, and it issues at most one read transaction every four cycles. Section 9.2 of the user guide gives the new rate model of reads and non-verified writes (TC-TG-18); ports, generics, stream formats and the register map are unchanged."
       }
      ]
+    },
+    {
+     "previous": "caac2f3e65abeeff365637c854a7b6a2036639f4",
+     "pin": "0ed2aca4f0472e61e434e330da8c06d0a5e3eb93",
+     "evidence": "PR #25 of the core: Open Logic pin `4.7.0-ft.11` (227eecd) to `4.8.0-ft.2` (1f4a6c3). No port, generic, stream format or register of OpenRMAP changes. Behaviour: at `AxiDataWidth_g` 8 with `AxiAddrWidth_g` 12 to 25 the memory master splits accesses at 2^(`AxiAddrWidth_g` - 2) - 1 bytes instead of 2^(`AxiAddrWidth_g` - 1) - 1 (more, shorter commands; bursts stay within `AxiMaxBeats_g`). The merge commit is the release v0.1.2 of the core.",
+     "changes": [
+      {
+       "block": "openrmap/omap_core",
+       "kind": "behaviour",
+       "text": "With Open Logic 4.8.0-ft.2 the memory master of the target counts the bytes of a command in two bits fewer than the address at every data width: at AxiDataWidth_g 8 with AxiAddrWidth_g 12 to 25 an access longer than 2^(AxiAddrWidth_g - 2) - 1 bytes (before 2^(AxiAddrWidth_g - 1) - 1) is split into several commands. Bursts stay within AxiMaxBeats_g; ports, generics, stream formats and the register map are unchanged."
+      }
+     ]
     }
    ]
   },
@@ -205,11 +229,11 @@
    "repo": "openspp",
    "url": "https://github.com/open-space-hdl/openspp",
    "doc": "/openspp/",
-   "commit": "1f40829d62f8693ad970234ba5d4257777064e0f",
+   "commit": "c385fc0d000434368b8bd471ec7e07287c1e01f6",
    "library": "openspp",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "verifiedWith": "4.7.0-ft.12",
+   "verifiedWith": "4.8.0-ft.2",
    "note": "The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.",
    "files": [
     "hdl/spp_pkg/src/spp_regs_pkg.vhd",
@@ -321,6 +345,12 @@
        "text": "M_Link is driven by the register stage spp_link_output: one clock cycle more latency; the throughput and the clock cycles per packet are unchanged."
       }
      ]
+    },
+    {
+     "previous": "1f40829d62f8693ad970234ba5d4257777064e0f",
+     "pin": "c385fc0d000434368b8bd471ec7e07287c1e01f6",
+     "evidence": "PR #21 of the core: - Open Logic pin: 4.7.0-ft.12 (02a790d) to 4.8.0-ft.2 (1f4a6c3), based on Open Logic 4.8.0. - No change of the ports, generics, stream formats, `TUser` layouts or the register map of `spp_core`, `spp_nchar` or `spp_packetizer`. `compile_order.txt` does not change. The merge commit is the release v0.2.1 of the core.",
+     "changes": []
     }
    ]
   },
@@ -905,11 +935,11 @@
    "repo": "open-logic-ft",
    "url": "https://github.com/open-space-hdl/open-logic-ft",
    "doc": "/open-logic-ft/",
-   "tag": "4.7.0-ft.12",
+   "tag": "4.8.0-ft.2",
    "library": "olo",
    "fileList": "compile_order.txt",
    "fileListFormat": "files",
-   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). 4.7.0-ft.11 lets olo_axi_master_full overlap consecutive commands and adds the generics IntFifoDepth_g and EccPipeline_g to the fault-tolerant AXI masters (ft.9), resets the read alignment register of olo_axi_master_full (ft.10), matches the scoped constraint of the read path of olo_base_ram_sdp also after synthesis retiming and checks In_Last and In_Be of olo_base_crc only for an accepted beat (ft.11). 4.7.0-ft.12 adds olo_ft_reset_ctrl_axi, a reset of a group of blocks commanded through AXI4-Lite. The cores of the catalog are verified with 4.7.0-ft.6 (OpenWire, OpenCrypto), 4.7.0-ft.9 (OpenCompact), 4.7.0-ft.11 (OpenRMAP, OpenFibre) and 4.7.0-ft.12 (OpenSPP); the ports added since 4.7.0-ft.6 have a default (inputs) or may stay open (outputs), so every core compiles with 4.7.0-ft.12 unchanged.",
+   "note": "Clone with the submodule 3rdParty/en_cl_fix (git clone --recursive); compile_order.txt lists its files. 4.7.0-ft.6 adds olo_base_chunker and olo_axi_lite_decoder to 4.7.0-ft.2 (ft.3), fixes the error reporting of olo_axi_master_simple and the write word count of olo_axi_master_full (ft.4), the address of transfers that olo_axi_master_simple splits at AxiMaxBeats_g (ft.5), and the transfers of olo_axi_master_full with 8-bit data and narrow addresses (ft.6). 4.7.0-ft.8 adds the response code of a failed command to the AXI masters (outputs Wr_ErrorResp and Rd_ErrorResp), olo_intf_can and the Reed-Solomon codec (olo_base_rs_encode, olo_base_rs_decode), and fixes the beat counters of olo_axi_master_simple and the write word count of the largest commands of olo_axi_master_full (ft.7); it adds FIXED bursts to the AXI masters (inputs CmdWr_Fixed and CmdRd_Fixed, default '0'), olo_base_stream_join and olo_base_stream_split, drives Out_Be of olo_base_wconv_n2m with equal widths, and checks the byte enables of olo_base_wconv_n2m and the commands of olo_intf_i2c_master at the clock edge (ft.8). 4.7.0-ft.11 lets olo_axi_master_full overlap consecutive commands and adds the generics IntFifoDepth_g and EccPipeline_g to the fault-tolerant AXI masters (ft.9), resets the read alignment register of olo_axi_master_full (ft.10), matches the scoped constraint of the read path of olo_base_ram_sdp also after synthesis retiming and checks In_Last and In_Be of olo_base_crc only for an accepted beat (ft.11). 4.7.0-ft.12 adds olo_ft_reset_ctrl_axi, a reset of a group of blocks commanded through AXI4-Lite. 4.8.0-ft.2 has all of these changes on the release 4.8.0 of Open Logic: 4.8.0 contains the fixes of the AXI masters of ft.4 to ft.7, counts the bytes of a command of olo_axi_master_full in two bits fewer than the address also at 8-bit data (OpenRMAP 0.1.2 sizes its memory commands for it) and adds fixed-point entities (olo_fix_*); 4.8.0-ft.2 fixes the coefficient writes of olo_fix_fir_dec_semi_chtdm under QuestaSim with code coverage. The cores of the catalog are verified with 4.7.0-ft.6 (OpenCrypto), 4.7.0-ft.9 (OpenCompact), 4.7.0-ft.11 (OpenFibre) and 4.8.0-ft.2 (OpenWire, OpenRMAP, OpenSPP); the ports added since 4.7.0-ft.6 have a default (inputs) or may stay open (outputs), so every core compiles with 4.8.0-ft.2 unchanged.",
    "files": [
     "src/intf/vhdl/olo_intf_pkg_can.vhd",
     "src/base/vhdl/olo_base_pkg_crc.vhd",
@@ -1000,6 +1030,7 @@
     "3rdParty/en_cl_fix/hdl/en_cl_fix_pkg.vhd",
     "src/fix/vhdl/olo_fix_private_lin_approx_sqrt_pkg.vhd",
     "src/fix/vhdl/olo_fix_private_lin_approx_qsin_pkg.vhd",
+    "src/fix/vhdl/olo_fix_private_lin_approx_log2_pkg.vhd",
     "src/fix/vhdl/olo_fix_private_lin_approx_inv_pkg.vhd",
     "src/fix/vhdl/olo_fix_pkg.vhd",
     "src/fix/vhdl/olo_fix_to_real.vhd",
@@ -1023,10 +1054,14 @@
     "src/fix/vhdl/olo_fix_sqrt.vhd",
     "src/fix/vhdl/olo_fix_private_lin_approx_qsin.vhd",
     "src/fix/vhdl/olo_fix_sin.vhd",
+    "src/fix/vhdl/olo_fix_private_lin_approx_log2.vhd",
+    "src/fix/vhdl/olo_fix_log2.vhd",
     "src/fix/vhdl/olo_fix_private_lin_approx_inv.vhd",
     "src/fix/vhdl/olo_fix_limit.vhd",
     "src/fix/vhdl/olo_fix_inv.vhd",
     "src/fix/vhdl/olo_fix_from_real.vhd",
+    "src/fix/vhdl/olo_fix_fir_dec_par_chtdm.vhd",
+    "src/fix/vhdl/olo_fix_dds.vhd",
     "src/fix/vhdl/olo_fix_cplx_mult.vhd",
     "src/fix/vhdl/olo_fix_cordic_vect.vhd",
     "src/fix/vhdl/olo_fix_cordic_rot.vhd",
@@ -1035,6 +1070,7 @@
     "src/fix/vhdl/olo_fix_fir_dec_ser_chtdm.vhd",
     "src/fix/vhdl/olo_fix_fir_dec_ser_chpar.vhd",
     "src/fix/vhdl/olo_fix_fir_dec_semi_chtdm.vhd",
+    "src/fix/vhdl/olo_fix_cic_intp_tdm_par.vhd",
     "src/fix/vhdl/olo_fix_cic_dec_tdm.vhd",
     "src/fix/vhdl/olo_fix_cic_dec_par_tdm.vhd",
     "src/fix/vhdl/olo_fix_bin_div.vhd",
@@ -1108,9 +1144,21 @@
      "pin": "02a790ddf05c190a98314b6a75f4f4b92ffa9cf2",
      "evidence": "Tag 4.7.0-ft.12 of Open Logic FT: the new entity olo_ft_reset_ctrl_axi, a reset of a group of blocks commanded by a key write to an AXI4-Lite register (new block of the catalog); no change of the existing blocks of the catalog.",
      "changes": []
+    },
+    {
+     "previous": "02a790ddf05c190a98314b6a75f4f4b92ffa9cf2",
+     "pin": "1f4a6c3b363151c30e754d4f413b8ee5e1febb95",
+     "rebase": {
+      "from": "4.7.0-ft.12",
+      "to": "4.8.0-ft.2",
+      "base": "5136eedce163fb23fecb647d7a00fc6861e4d6d0",
+      "reason": "The changes of the fork up to 4.7.0-ft.12 were rebased onto the release 4.8.0 of Open Logic (5136eed) for 4.8.0-ft.1, and 4.8.0-ft.2 descends from 4.8.0-ft.1, so it does not descend from 4.7.0-ft.12."
+     },
+     "evidence": "Tags 4.8.0-ft.1 and 4.8.0-ft.2 of Open Logic FT: the changes of the fork up to 4.7.0-ft.12 on the release 4.8.0 of Open Logic (5136eed). 4.8.0 contains the fixes of olo_axi_master_simple and olo_axi_master_full of 4.7.0-ft.4 to 4.7.0-ft.7, counts the bytes of a command of olo_axi_master_full in two bits fewer than the address also at 8-bit data (used inside OpenRMAP, whose release 0.1.2 sizes its memory commands for it) and adds six files of fixed-point entities to compile_order.txt; 4.8.0-ft.2 fixes the coefficient writes of olo_fix_fir_dec_semi_chtdm under QuestaSim with code coverage. No port, generic or file of the blocks of the catalog changes.",
+     "changes": []
     }
    ],
-   "commit": "02a790ddf05c190a98314b6a75f4f4b92ffa9cf2"
+   "commit": "1f4a6c3b363151c30e754d4f413b8ee5e1febb95"
   }
  ],
  "categories": [

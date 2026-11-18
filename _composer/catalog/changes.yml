@@ -5,6 +5,7 @@
 #   <source id>:
 #     - previous: <the pin before, a full commit>
 #       pin: <the new pin; the last step of a source ends at its pin in sources.yml>
+#       rebase: { from: <tag at previous>, to: <tag at pin>, base: <upstream commit>, reason: <why> }   (only if needed)
 #       evidence: "PR #<n> of the core: <the line of its Interfaces section>"
 #       changes:
 #         - { block: <block id>, kind: <kind>, text: <what changed, for the reader>, <keys of the kind> }
@@ -15,6 +16,11 @@
 #
 # The catalog check verifies every step at the pins: both commits exist, previous is an ancestor of pin, the steps
 # follow each other and end at the current pin, and the names exist as the current catalog has them.
+#
+# rebase: a fork whose changes were rebased onto a newer release of its upstream project has a new pin that does not
+# descend from the previous one. The step names the tag of each pin, the upstream commit the new pin is based on and the
+# reason; the check then verifies instead of the ancestry: previous does not descend to pin, base is in pin and not in
+# previous, the two pins share no history after base, and the file list at pin names every file it named at previous.
 
 openwire:
   - previous: 2897668e2e519e9517a5c7270f243c5ab0d7fdb0
@@ -40,6 +46,14 @@ openwire:
       - { block: openwire/owr_core, kind: generic_range, generic: RxFifoDepth_g, text: "RxFifoDepth_g: powers of 2 from 16 to 32768 (CORE-CF-01); the receive FIFO holds the eight N-Chars of an FCT and the reserved place of an EEP, FIFO_DEPTHS and FIFO_LEVELS are 16-bit fields." }
       - { block: openwire/owr_core, kind: generic_range, generic: TxFifoDepth_g, text: "TxFifoDepth_g: powers of 2 from 2 to 32768 (CORE-CF-01)." }
       - { block: openwire/owr_core, kind: generic_range, generic: LinkClkFreq_g, text: "LinkClkFreq_g: 18 to 22 MHz, 27 to 33 MHz, 36 to 44 MHz and 45 to 2554 MHz; 9 to 11 MHz and 2555 MHz or more stop the elaboration now (CORE-CF-02)." }
+  - previous: 09e4b1f67be8ba0808a267ffdebd1c22c513e861
+    pin: cac523940c15748a104f36144707e809af4ab21e
+    evidence: "PR #11 of the core: documentation tooling only (tools/docs/requirements.txt pins selectolax 1.0.0), no source, testbench or interface change."
+    changes: []
+  - previous: cac523940c15748a104f36144707e809af4ab21e
+    pin: 32544f70b71187ea3b519b637483ac854c3d18a1
+    evidence: "PR #16 of the core: None. No port, generic, stream format, register or compile order of OpenWire changes. Open Logic pin 4.7.0-ft.6 (v0.1.0) to 4.8.0-ft.2 (1f4a6c3), based on Open Logic 4.8.0; the Open Logic entities that OpenWire instantiates keep their ports and generics. The merge commit is the release v0.1.1 of the core."
+    changes: []
 
 openrmap:
   - previous: 55033637795a009132286f60da90a6a876a9c087
@@ -78,6 +92,11 @@ openrmap:
     evidence: "PR #21 of the core: - Open Logic pin: `4.7.0-ft.6` (0.1.0) to `4.7.0-ft.11` (227eecd). Ports, generics, stream formats and the register map are unchanged. The merge commit is the release v0.1.1 of the core."
     changes:
       - { block: openrmap/omap_core, kind: behaviour, text: "With Open Logic 4.7.0-ft.11 the memory master of the target takes the next chunk of a non-verified write while the bytes of the current one pass, so the chunks follow each other without a gap, and it issues at most one read transaction every four cycles. Section 9.2 of the user guide gives the new rate model of reads and non-verified writes (TC-TG-18); ports, generics, stream formats and the register map are unchanged." }
+  - previous: caac2f3e65abeeff365637c854a7b6a2036639f4
+    pin: 0ed2aca4f0472e61e434e330da8c06d0a5e3eb93
+    evidence: "PR #25 of the core: Open Logic pin `4.7.0-ft.11` (227eecd) to `4.8.0-ft.2` (1f4a6c3). No port, generic, stream format or register of OpenRMAP changes. Behaviour: at `AxiDataWidth_g` 8 with `AxiAddrWidth_g` 12 to 25 the memory master splits accesses at 2^(`AxiAddrWidth_g` - 2) - 1 bytes instead of 2^(`AxiAddrWidth_g` - 1) - 1 (more, shorter commands; bursts stay within `AxiMaxBeats_g`). The merge commit is the release v0.1.2 of the core."
+    changes:
+      - { block: openrmap/omap_core, kind: behaviour, text: "With Open Logic 4.8.0-ft.2 the memory master of the target counts the bytes of a command in two bits fewer than the address at every data width: at AxiDataWidth_g 8 with AxiAddrWidth_g 12 to 25 an access longer than 2^(AxiAddrWidth_g - 2) - 1 bytes (before 2^(AxiAddrWidth_g - 1) - 1) is split into several commands. Bursts stay within AxiMaxBeats_g; ports, generics, stream formats and the register map are unchanged." }
 
 openspp:
   - previous: 2d7ee8f92175d15e41d1e069f0db663de951d0c6
@@ -115,6 +134,10 @@ openspp:
     changes:
       - { block: openspp/spp_core, kind: behaviour, text: "New reset input DpRst (synchronous, high-active, default '0'): it resets every function of the core except the link output stage, which ends a packet open on M_Link with an EEP beat. It is an input for reset groups: an instance in no group keeps it at its default and behaves as before." }
       - { block: openspp/spp_core, kind: behaviour, text: "M_Link is driven by the register stage spp_link_output: one clock cycle more latency; the throughput and the clock cycles per packet are unchanged." }
+  - previous: 1f40829d62f8693ad970234ba5d4257777064e0f
+    pin: c385fc0d000434368b8bd471ec7e07287c1e01f6
+    evidence: "PR #21 of the core: - Open Logic pin: 4.7.0-ft.12 (02a790d) to 4.8.0-ft.2 (1f4a6c3), based on Open Logic 4.8.0. - No change of the ports, generics, stream formats, `TUser` layouts or the register map of `spp_core`, `spp_nchar` or `spp_packetizer`. `compile_order.txt` does not change. The merge commit is the release v0.2.1 of the core."
+    changes: []
 
 openfibre:
   - previous: bd4d80b1f05ee5fda67a97ff4c760952a25a79a7
@@ -319,4 +342,9 @@ olo:
   - previous: 227eecdd0c7b808cc387d8959a12c8ad7be000d9
     pin: 02a790ddf05c190a98314b6a75f4f4b92ffa9cf2
     evidence: "Tag 4.7.0-ft.12 of Open Logic FT: the new entity olo_ft_reset_ctrl_axi, a reset of a group of blocks commanded by a key write to an AXI4-Lite register (new block of the catalog); no change of the existing blocks of the catalog."
+    changes: []
+  - previous: 02a790ddf05c190a98314b6a75f4f4b92ffa9cf2
+    pin: 1f4a6c3b363151c30e754d4f413b8ee5e1febb95
+    rebase: { from: 4.7.0-ft.12, to: 4.8.0-ft.2, base: 5136eedce163fb23fecb647d7a00fc6861e4d6d0, reason: "The changes of the fork up to 4.7.0-ft.12 were rebased onto the release 4.8.0 of Open Logic (5136eed) for 4.8.0-ft.1, and 4.8.0-ft.2 descends from 4.8.0-ft.1, so it does not descend from 4.7.0-ft.12." }
+    evidence: "Tags 4.8.0-ft.1 and 4.8.0-ft.2 of Open Logic FT: the changes of the fork up to 4.7.0-ft.12 on the release 4.8.0 of Open Logic (5136eed). 4.8.0 contains the fixes of olo_axi_master_simple and olo_axi_master_full of 4.7.0-ft.4 to 4.7.0-ft.7, counts the bytes of a command of olo_axi_master_full in two bits fewer than the address also at 8-bit data (used inside OpenRMAP, whose release 0.1.2 sizes its memory commands for it) and adds six files of fixed-point entities to compile_order.txt; 4.8.0-ft.2 fixes the coefficient writes of olo_fix_fir_dec_semi_chtdm under QuestaSim with code coverage. No port, generic or file of the blocks of the catalog changes."
     changes: []

@@ -112,6 +112,10 @@ step with its evidence: the pull request of the core and the line of its interfa
 verifies the chain at the pins (both commits exist, one step follows the other, the last ends at the current pin, the
 names exist as the catalog has them). A file of an older pin is migrated when it is opened, and the changes that
 affect its instances are listed (`/composer/format/#changes`, rule `migration`). A pin bump adds its step here.
+A fork whose changes were rebased onto a newer release of its upstream project (Open Logic FT) gives a new pin that
+does not descend from the previous one. Such a step says so in `rebase`: the tags of both pins, the upstream commit
+of the new pin and the reason. The check accepts it only as a rebase onto a newer base that carries over every file
+of the file list; a step that does not descend and has no `rebase` still fails.
 
 In `sizes` the block description states the size limits of its interfaces (the longest packet, as a generic, an
 expression or a number, whether a generic or only the reset value of a register sets it, and what happens to a longer
@@ -131,8 +135,10 @@ npm run e2e        # against the built site in ../_site (COMPOSER_SITE selects a
                    # COMPOSER_SCREENS=<directory> also writes review screenshots and a screen recording
 ```
 
-`.github/workflows/composer.yml` runs on every push and pull request: the catalog check with the source repositories
-cloned next to the site, the schema validation of the examples, the unit tests and the type check, the VHDL export of
+The tests of the catalog tool run from the repository root: `python -m unittest discover -s tests/tools` (PyYAML).
+
+`.github/workflows/composer.yml` runs on every push and pull request: the tests of the catalog tool, the catalog check
+with the source repositories cloned next to the site, the schema validation of the examples, the unit tests and the type check, the VHDL export of
 every example analysed, elaborated and run to 0 ns with GHDL (and the refusals that the tests expect), and the browser
 tests in Chromium, Firefox and WebKit against a Jekyll build with the gem set of GitHub Pages (`tests/jekyll/Gemfile`).
 The frame-time bounds of the 100-block test are checked locally only; shared runners have no GPU.

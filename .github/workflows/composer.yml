@@ -30,6 +30,10 @@ jobs:
           python-version: "3.12"
       - name: Python packages
         run: python -m pip install --quiet pyyaml jsonschema
+      # The pin steps of changes.yml on a repository the test makes: a step to a pin that does not descend from the
+      # previous one fails unless it is the documented rebase of a fork onto a newer upstream release.
+      - name: Tests of the catalog tool
+        run: python -m unittest discover -s site/tests/tools -v
       - name: Clone the core repositories (next to the site, full history for the pin check)
         run: python site/tools/composer_catalog.py clone
       - name: Catalog check (YAML against the VHDL entities at the pinned commits, catalog.json current, examples valid)
