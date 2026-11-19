@@ -53,11 +53,11 @@ sources:
     repo: openfibre
     url: https://github.com/open-space-hdl/openfibre
     doc: /openfibre/
-    commit: d1389f64862069666ed4f4290b729a6947885fe2
+    commit: 5513ceea5d68d75ca55719d8c281f44deb550f69
     library: openfibre
     file_list: compile_order.txt
     file_list_format: files
-    verified_with: 4.7.0-ft.11
+    verified_with: 4.8.0-ft.2
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer. compile_order.txt lists the technology-independent sources; the vendor-specific physical adapter ofb_pa_gty is added separately (see its notes).
 
   - id: opencrypto
@@ -65,11 +65,11 @@ sources:
     repo: opencrypto
     url: https://github.com/open-space-hdl/opencrypto
     doc: /opencrypto/
-    commit: b835a4901c330e7e49ccc3dea13350e66e758ceb
+    commit: e40e3e354493a23f0da651952fdc66b8dbb2ff7b
     library: opencrypto
     file_list: compile_order.txt
     file_list_format: files
-    verified_with: 4.7.0-ft.6
+    verified_with: 4.8.0-ft.2
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
 
   - id: opencompact
@@ -77,11 +77,11 @@ sources:
     repo: opencompact
     url: https://github.com/open-space-hdl/opencompact
     doc: /opencompact/
-    commit: 7956d5a7c19d32a6e21a4870f39a39c8846be81d
+    commit: 468cd7e9ac85ca56c88f992920aa7f449bcf62c3
     library: opencompact
     file_list: compile_order.txt
     file_list_format: files
-    verified_with: 4.7.0-ft.9
+    verified_with: 4.8.0-ft.2
     note: The submodules of the repository (open-logic, uvvm) serve its own tests; a system uses the olo library of the Composer.
     # the models of OpenCompact for the Composer (MIT): throughput, header and image bound, resource estimate
     vendor: [tools/estimate/ocp_throughput.mjs, tools/estimate/ocp_resources.mjs, tools/estimate/ocp_models.mjs, tools/estimate/LICENSE]
@@ -114,7 +114,5 @@ sources:
       changes on the release 4.8.0 of Open Logic: 4.8.0 contains the fixes of the AXI masters of ft.4 to ft.7, counts
       the bytes of a command of olo_axi_master_full in two bits fewer than the address also at 8-bit data (OpenRMAP
       0.1.2 sizes its memory commands for it) and adds fixed-point entities (olo_fix_*); 4.8.0-ft.2 fixes the
-      coefficient writes of olo_fix_fir_dec_semi_chtdm under QuestaSim with code coverage. The cores of the catalog are
-      verified with 4.7.0-ft.6 (OpenCrypto), 4.7.0-ft.9 (OpenCompact), 4.7.0-ft.11 (OpenFibre) and 4.8.0-ft.2 (OpenWire,
-      OpenRMAP, OpenSPP); the ports added since 4.7.0-ft.6 have a default (inputs) or may stay open (outputs), so every
-      core compiles with 4.8.0-ft.2 unchanged.
+      coefficient writes of olo_fix_fir_dec_semi_chtdm under QuestaSim with code coverage. Every core of the catalog is
+      verified with 4.8.0-ft.2.

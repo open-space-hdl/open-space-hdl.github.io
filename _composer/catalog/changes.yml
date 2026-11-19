@@ -237,6 +237,10 @@ openfibre:
     evidence: "PR #52 of the core: None (ports, generics and register map unchanged; Open Logic pin `4.7.0-ft.11` since #50). The merge commit is the release v0.1.4 of the core."
     changes:
       - { block: openfibre/ofb_core, kind: behaviour, text: "The error recovery buffer registers every admitted data word with its row write and the commit of its item (DL-ER-09), so every item reaches the transmitter one CoreClk cycle later: a packet of one byte on the idle link takes 370, 393, 400 and 402 ns with 1, 2, 3 and 4 lanes (user guide section 7)." }
+  - previous: d1389f64862069666ed4f4290b729a6947885fe2
+    pin: 5513ceea5d68d75ca55719d8c281f44deb550f69
+    evidence: "PR #58 of the core: None: ports, generics and register map unchanged. Open Logic pin `4.7.0-ft.11` to `4.8.0-ft.2` (1f4a6c3), based on Open Logic 4.8.0; no Open Logic file that OpenFibre uses changes. The merge commit is the release v0.1.5 of the core."
+    changes: []
 
 opencrypto:
   - previous: e03bc8cda75a660cc3e28bdc14d7f9409ddb0497
@@ -261,6 +265,16 @@ opencrypto:
     pin: b835a4901c330e7e49ccc3dea13350e66e758ceb
     evidence: "PR #8 of the core: None. The GHASH multiplier writes every product coefficient once, with identical logic; Vivado elaborates ocr_core with its default stack."
     changes: []
+  - previous: b835a4901c330e7e49ccc3dea13350e66e758ceb
+    pin: da1df943fbdb0c4cfb3781bea53cac4f9cb4df5f
+    evidence: "PR #10 of the core: documentation tooling only (tools/docs/requirements.txt pins selectolax 1.0.0), no source, testbench or interface change."
+    changes: []
+  - previous: da1df943fbdb0c4cfb3781bea53cac4f9cb4df5f
+    pin: e40e3e354493a23f0da651952fdc66b8dbb2ff7b
+    evidence: "PR #17 of the core: None: the ports, generics, stream formats and the register map are those of 0.1.0. Open Logic pin `4.7.0-ft.9` (develop; `4.7.0-ft.6` in 0.1.0) to `4.8.0-ft.2`. Behaviour changes are the rates and latencies of the summary (KT-PF-01: one context per three clock cycles with generated IVs; dense output latency two cycles). The merge commit is the release v0.1.1 of the core."
+    changes:
+      - { block: opencrypto/ocr_core, kind: behaviour, text: "The key table resolves a context with a generated IV in three clock cycles (before two), so consecutive encryptions with generated IVs need at least three output beats per message (TC-KT-09, TC-CO-14), and the dense output has two clock cycles of latency (before one); messages of three output beats or more keep their throughput. Ports, generics, stream formats and the register map are unchanged." }
+      - { block: opencrypto/ocr_core, kind: behaviour, text: "Every reset, at power-up or a functional reset, erases every key slot with its key and IV state within NumKeys_g + 3 clock cycles after the release of Rst (STATUS.BUSY is '1' until then); the software reloads the keys and restores the invocation counters (user guide section 8)." }
 
 opencompact:
   - previous: 591c5f37644bcc994946c17f35fc8841060299be
@@ -309,6 +323,10 @@ opencompact:
   - previous: c238942b0274e5227272c40688131fb87a444af1
     pin: 7956d5a7c19d32a6e21a4870f39a39c8846be81d
     evidence: "PR #39 of the core: None. The core is unchanged; the new JavaScript functions for the Composer are `headerBytes`, `imagePeriod`, `maxImageBytes` and `estimateResources(generics, target = \"polarfire\")`. The merge commit is the release v0.3.1 of the core."
+    changes: []
+  - previous: 7956d5a7c19d32a6e21a4870f39a39c8846be81d
+    pin: 468cd7e9ac85ca56c88f992920aa7f449bcf62c3
+    evidence: "PR #50 of the core: No port, generic, stream format or register changes. Open Logic pin `4.7.0-ft.9` to `4.8.0-ft.2`. `tools/estimate/ocp_models.mjs` changes its model coefficients; its functions and their arguments stay. The merge commit is the release v0.3.2 of the core."
     changes: []
 
 olo:

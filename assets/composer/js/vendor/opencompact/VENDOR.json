@@ -1,8 +1,8 @@
 {
  "source": "opencompact",
  "repo": "https://github.com/open-space-hdl/opencompact",
- "commit": "7956d5a7c19d32a6e21a4870f39a39c8846be81d",
- "tag": "v0.3.1",
+ "commit": "468cd7e9ac85ca56c88f992920aa7f449bcf62c3",
+ "tag": "v0.3.2",
  "files": [
   {
    "path": "tools/estimate/ocp_throughput.mjs",
@@ -17,7 +17,7 @@
   {
    "path": "tools/estimate/ocp_models.mjs",
    "file": "ocp_models.mjs",
-   "sha256": "61374ff8a432869e9d6861e4d22c41d4d5f5bc1a243c2d19ea678495c4d9423a"
+   "sha256": "cce194b5d4c631ca88e0cbd0aba1d62789f38413bc40d43f9e026e5980600276"
   },
   {
    "path": "tools/estimate/LICENSE",

@@ -133,7 +133,7 @@ blocks:
           data and tag each start a new beat), or consume the status at M_Sts.
     notes:
       - Rst is synchronous and high-active; synchronise its release to Clk, for example with olo_base_reset_gen with SyncTmr_g = true.
-      - After the reset the key table erases every slot (NumKeys_g cycles, STATUS.BUSY = '1'); no key survives a reset.
+      - After every reset the key table erases every slot with its key and IV state (NumKeys_g + 3 cycles after the release of Rst, STATUS.BUSY = '1'); no key and no invocation counter survives a reset.
       - One context per message, in the order of the messages; the core pairs the n-th context with the n-th message.
       - Load every key slot in use through the registers before sending contexts (programming sequence of the user guide).
       - Without the release buffer, discard every decrypted message whose last beat carries the error flag or whose status is not OK.
@@ -145,8 +145,10 @@ blocks:
       vars: { B: DataWidth_g / 8 }
       interfaces:
         S_In: { bytesPerBeat: B }
-        # sectioned: IV, data and tag each start a beat; dense: packed, at most one cycle more per message (TC-CO-10)
-        M_Out: { cycles: "DenseOutput_g * (cdiv(n, B) + 1) + (1 - DenseOutput_g) * (cdiv(12, B) + cdiv(n - 28, B) + cdiv(16, B))" }
+        # sectioned: IV, data and tag each start a beat; dense: packed, at most one cycle more per message (TC-CO-10);
+        # at least three cycles per message: the key table resolves a context with a generated IV in three clock
+        # cycles (TC-KT-09, TC-CO-14); with external IVs one per cycle, which the output beats never undercut
+        M_Out: { cycles: "max(3, DenseOutput_g * (cdiv(n, B) + 1) + (1 - DenseOutput_g) * (cdiv(12, B) + cdiv(n - 28, B) + cdiv(16, B)))" }
       routes:
         - { from: S_In, to: M_Out, addBytes: "28" }
     sizes:

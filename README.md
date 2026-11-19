@@ -138,9 +138,10 @@ npm run e2e        # against the built site in ../_site (COMPOSER_SITE selects a
 The tests of the catalog tool run from the repository root: `python -m unittest discover -s tests/tools` (PyYAML).
 
 `.github/workflows/composer.yml` runs on every push and pull request: the tests of the catalog tool, the catalog check
-with the source repositories cloned next to the site, the schema validation of the examples, the unit tests and the type check, the VHDL export of
-every example analysed, elaborated and run to 0 ns with GHDL (and the refusals that the tests expect), and the browser
-tests in Chromium, Firefox and WebKit against a Jekyll build with the gem set of GitHub Pages (`tests/jekyll/Gemfile`).
+with the source repositories cloned next to the site, the schema validation of the examples, the unit tests and the
+type check, the VHDL export of every example analysed, elaborated and run to 0 ns with GHDL (and the refusals that the
+tests expect), and the browser tests in Chromium, Firefox and WebKit against a Jekyll build with the gem set of GitHub
+Pages (`tests/jekyll/Gemfile`).
 The frame-time bounds of the 100-block test are checked locally only; shared runners have no GPU.
 
 ## Local preview (optional)

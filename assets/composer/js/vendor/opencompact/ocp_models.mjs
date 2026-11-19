@@ -10,54 +10,54 @@
 export const MODELS = {
   "polarfire": {
     "lut": {
-      "base": 9064.1,
+      "base": 9393.7,
       "dyn_range": 0.0,
-      "products": 11.3,
+      "products": 9.9,
       "weights": 0.0,
-      "cascade": 2.4,
-      "register": 36.7,
-      "quantizer": 4.9,
-      "relative": 21.5,
-      "representatives": 0.0,
-      "stride": 12.7,
-      "periodic": 1115.6,
-      "hybrid": 5845.3,
-      "block": 74.1,
+      "cascade": 1.1,
+      "register": 94.3,
+      "quantizer": 4.4,
+      "relative": 22.9,
+      "representatives": 7.0,
+      "stride": 3.0,
+      "periodic": 1089.4,
+      "hybrid": 6024.9,
+      "block": 76.2,
       "counters": 0.0,
       "out_width": 0.0,
-      "runtime_config": 444.0,
-      "runtime_params": 7293.2
+      "runtime_config": 448.9,
+      "runtime_params": 7290.6
     },
     "ff": {
-      "base": 2161.2,
+      "base": 2161.3,
       "dyn_range": 29.5,
       "products": 8.0,
-      "weights": 7.0,
+      "weights": 6.9,
       "cascade": 0.0,
       "register": 0.0,
       "quantizer": 10.8,
       "relative": 30.4,
       "representatives": 0.0,
       "stride": 52.7,
-      "periodic": 792.5,
-      "hybrid": 509.9,
+      "periodic": 792.2,
+      "hybrid": 509.5,
       "block": 39.6,
-      "counters": 12.7,
+      "counters": 12.5,
       "out_width": 1.1,
-      "runtime_config": 264.6,
+      "runtime_config": 264.2,
       "runtime_params": 948.0
     },
     "period_ps": {
-      "base": 7509,
-      "cascade": 1656,
-      "block": 676,
-      "near_lossless": 686,
-      "wide": 14
+      "base": 7542,
+      "cascade": 1615,
+      "block": 682,
+      "near_lossless": 651,
+      "wide": 12
     },
     "notes": [
-      "LUT and flip-flops: PolarFire MPF100T (STD), Libero SoC 2025.2 (Synplify Pro (R) W-2025.03M-SP1-1), 32-bit output, runs of 2026-10-30; a linear model over the structure of the configuration, fitted to 56 of 61 synthesis runs. Error against all runs: LUT RMS 7.5%, max 30.6% (7.0% and 13.5% for the 5 runs kept out of the fit); flip-flops RMS 3.7%, max 14.4% (8.4% and 14.4% for the 5 runs kept out of the fit).",
-      "LUT of the 11 configurations of user guide section 8.2: RMS 11.9%, max 30.6% (c11_wide_d32); without c11_wide_d32 RMS 7.8%, max 13.5%.",
-      "Clock frequency: place and route for a 100 MHz constraint, a linear model of the clock period fitted to 11 of 16 runs. Error against all runs: RMS 4.4%, max 12.8% (2.5% and 3.7% for the 5 runs kept out of the fit)."
+      "LUT and flip-flops: PolarFire MPF100T (STD), Libero SoC 2025.2 (Synplify Pro (R) W-2025.03M-SP1-1), 32-bit output, runs of 2026-11-18; a linear model over the structure of the configuration, fitted to 56 of 61 synthesis runs. Error against all runs: LUT RMS 5.6%, max 16.2% (8.9% and 13.6% for the 5 runs kept out of the fit); flip-flops RMS 3.7%, max 14.3% (8.4% and 14.3% for the 5 runs kept out of the fit).",
+      "LUT of the 11 configurations of user guide section 8.2: RMS 7.1%, max 13.6% (c30_tp_bip_both_stride); without c11_wide_d32 RMS 7.4%, max 13.6%.",
+      "Clock frequency: place and route for a 100 MHz constraint, a linear model of the clock period fitted to 11 of 16 runs. Error against all runs: RMS 4.1%, max 11.9% (2.5% and 3.7% for the 5 runs kept out of the fit)."
     ]
   }
 };
