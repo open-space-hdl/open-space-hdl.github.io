@@ -23,7 +23,7 @@ test('the vendored files of OpenCompact: their note names the pin of the catalog
   const note = JSON.parse(readFileSync(`${DIR}VENDOR.json`, 'utf-8'));
   const src = loadCatalogJson().sources.find((/** @type {any} */ s) => s.id === 'opencompact');
   assert.equal(note.commit, src.commit);
-  assert.equal(note.tag, 'v0.3.1');
+  assert.equal(note.tag, 'v0.3.2');
   assert.deepEqual(note.files.map((/** @type {any} */ f) => f.file).sort(), ['LICENSE', 'ocp_models.mjs', 'ocp_resources.mjs', 'ocp_throughput.mjs']);
   assert.deepEqual(readdirSync(DIR).sort(), ['LICENSE', 'VENDOR.json', 'ocp_models.mjs', 'ocp_resources.mjs', 'ocp_throughput.mjs']);
   for (const f of note.files) {

@@ -209,13 +209,57 @@ CHANGE_KINDS = {
     "registers": (),
     "behaviour": (),
 }
+# the keys of a pin step to a fork rebased onto a newer upstream release (changes.yml rebase)
+REBASE_KEYS = ("from", "to", "base", "reason")
+
+
+def list_lines(repo: Path, rev: str, path: str) -> list[str]:
+    """The entries of a file list at a commit (no blank lines, no comments)."""
+    text = git_ok_output(repo, "show", f"{rev}:{path}")
+    return [ln.strip() for ln in text.splitlines() if ln.strip() and not ln.strip().startswith("#")]
+
+
+def check_rebase(ctx: "Context", swhere: str, repo: Path, src: dict, step: dict) -> None:
+    """A pin step whose new pin does not descend from the previous one, because the fork was rebased onto a newer
+    release of its upstream project: rebase names the tag of each pin (from, to), the upstream commit the new pin is
+    based on (base) and the reason. The rebase replays the fork on the newer base: base is in pin and not in previous,
+    the two pins share no history after base, and the file list of the source at pin still names every file it named at
+    previous (the fork's sources are carried over; the blocks themselves are checked at the pin)."""
+    rb = step["rebase"]
+    if not isinstance(rb, dict) or set(rb) != set(REBASE_KEYS) or not all(isinstance(rb[k], str) and rb[k].strip() for k in REBASE_KEYS):
+        ctx.err(swhere, f"rebase needs {', '.join(REBASE_KEYS)}")
+        return
+    prev, pin, base = str(step["previous"]), str(step["pin"]), rb["base"]
+    if git_ok(repo, "merge-base", "--is-ancestor", prev, pin):
+        ctx.err(swhere, "previous is an ancestor of pin: the step is no rebase, remove rebase")
+        return
+    for key, name, sha in (("from", "previous", prev), ("to", "pin", pin)):
+        if git_ok_output(repo, "rev-parse", "--verify", "--quiet", f"refs/tags/{rb[key]}^{{commit}}").strip() != sha:
+            ctx.err(swhere, f"rebase: {key} {rb[key]} is no tag of {src['repo']} at {name} {sha[:10]}")
+    if not re.fullmatch(r"[0-9a-f]{40}", base) or not git_ok(repo, "cat-file", "-e", f"{base}^{{commit}}"):
+        ctx.err(swhere, f"rebase: base {base} is no full commit of {src['repo']}")
+        return
+    if not git_ok(repo, "merge-base", "--is-ancestor", base, pin):
+        ctx.err(swhere, f"rebase: base {base[:10]} is not an ancestor of pin")
+    if git_ok(repo, "merge-base", "--is-ancestor", base, prev):
+        ctx.err(swhere, f"rebase: base {base[:10]} is an ancestor of previous, so the new pin is not based on a newer release")
+    fork_point = git_ok_output(repo, "merge-base", prev, pin).strip()
+    if not fork_point or not git_ok(repo, "merge-base", "--is-ancestor", fork_point, base):
+        ctx.err(swhere, f"rebase: previous and pin share history after base (merge base {fork_point[:10] or 'none'}), "
+                        "so pin is not previous rebased onto base")
+    before, after = list_lines(repo, prev, src["file_list"]), set(list_lines(repo, pin, src["file_list"]))
+    dropped = [f for f in before if f not in after]
+    if not before or dropped:
+        ctx.err(swhere, f"rebase: {src['file_list']} at pin does not name {', '.join(dropped[:5]) or 'the files at previous'}"
+                        f"{' and more' if len(dropped) > 5 else ''}, so the sources at previous are not carried over")
 
 
 def check_changes(ctx: "Context", changes: object, sources: dict, blocks: list) -> None:
-    """The chain of pin steps of every source (changes.yml): each step moves from the pin before (previous, an ancestor)
-    to its pin, the steps follow each other and end at the current pin, and every change names a block of the source and
-    generics and interfaces as the current catalog has them (new names present, removed names gone). The steps are
-    attached to the source (sources[].changes)."""
+    """The chain of pin steps of every source (changes.yml): each step moves from the pin before (previous, an ancestor,
+    or a tag of the fork before its rebase onto a newer upstream release, see check_rebase) to its pin, the steps follow
+    each other and end at the current pin, and every change names a block of the source and generics and interfaces as
+    the current catalog has them (new names present, removed names gone). The steps are attached to the source
+    (sources[].changes)."""
     if changes is None:
         return
     if not isinstance(changes, dict):
@@ -234,13 +278,15 @@ def check_changes(ctx: "Context", changes: object, sources: dict, blocks: list) 
         repo = ctx.repos / src["repo"]
         for k, step in enumerate(steps):
             swhere = f"{where}: step {k + 1}"
-            if not isinstance(step, dict) or set(step) != {"previous", "pin", "evidence", "changes"} or not isinstance(step.get("evidence"), str):
-                ctx.err(swhere, "needs previous, pin, evidence and changes")
+            if not isinstance(step, dict) or set(step) - {"rebase"} != {"previous", "pin", "evidence", "changes"} or not isinstance(step.get("evidence"), str):
+                ctx.err(swhere, "needs previous, pin, evidence and changes (and rebase only for a rebased fork)")
                 continue
             for key in ("previous", "pin"):
                 if not git_ok(repo, "cat-file", "-e", f"{step[key]}^{{commit}}"):
                     ctx.err(swhere, f"{key} {step[key]} is no commit of {src['repo']}")
-            if not git_ok(repo, "merge-base", "--is-ancestor", str(step["previous"]), str(step["pin"])):
+            if "rebase" in step:
+                check_rebase(ctx, swhere, repo, src, step)
+            elif not git_ok(repo, "merge-base", "--is-ancestor", str(step["previous"]), str(step["pin"])):
                 ctx.err(swhere, f"previous {step['previous']} is not an ancestor of pin {step['pin']}")
             if k > 0 and isinstance(steps[k - 1], dict) and steps[k - 1].get("pin") != step["previous"]:
                 ctx.err(swhere, "previous is not the pin of the step before")

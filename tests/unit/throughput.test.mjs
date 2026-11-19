@@ -12,6 +12,7 @@ import {
 import { resolve } from '../../assets/composer/js/model/resolver.js';
 import { FormatError, fromText, toDocument, toText } from '../../assets/composer/js/model/serialize.js';
 import { analyseThroughput, formatNumber, formatRate, pathAt } from '../../assets/composer/js/model/throughput.js';
+import { evaluate, makeEnv } from '../../assets/composer/js/model/expr.js';
 import { Catalog } from '../../assets/composer/js/model/catalog.js';
 import { loadCatalog, loadCatalogJson, ROOT } from './helpers.mjs';
 
@@ -98,6 +99,21 @@ test('the chain formula applies to the framer and the core with the dense output
   const k = q.elements.findIndex((el) => el.label === 'ocr0.M_Out');
   // sectioned: IV, data and tag each start a beat: 3 + 257 + 4
   assert.equal(q.at(1024)?.elements[k].cycles, 264);
+});
+
+test('the output of ocr_core takes at least three cycles per message: the key table resolves a context with a generated IV in three', () => {
+  // OpenCrypto user guide 7.1 and TC-KT-09: one context per three clock cycles with a generated IV. The rate of the
+  // catalog assumes encryptions with generated IVs (the longest output); n is the output, IV 12, the data and tag 16
+  const out = loadCatalogJson().blocks.find((/** @type {any} */ b) => b.id === 'opencrypto/ocr_core').rates.interfaces.M_Out.cycles;
+  const cycles = (/** @type {number} */ width, /** @type {boolean} */ dense, /** @type {number} */ n) => evaluate(out, makeEnv({ DataWidth_g: width, DenseOutput_g: dense, B: width / 8, n }));
+  // 128 bit with empty DATA: two beats (IV and tag), three cycles
+  assert.equal(cycles(128, false, 28), 3);
+  assert.equal(cycles(128, true, 28), 3);
+  // where the beats are more, the beats count: sectioned 1 + 2 + 1, dense 3 + 1, and the narrower widths
+  assert.equal(cycles(128, false, 28 + 17), 4);
+  assert.equal(cycles(128, true, 28 + 17), 4);
+  assert.equal(cycles(64, false, 28), 4);
+  assert.equal(cycles(16, false, 28 + 1), 15);
 });
 
 test('the link capacities of OpenWire and OpenFibre match their measurements', () => {
