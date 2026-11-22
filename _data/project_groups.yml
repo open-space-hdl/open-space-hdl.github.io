@@ -11,7 +11,7 @@
 
 - id: processing-modules
   title: Processing Modules
-  summary: Cores that process payload data on board, such as image compression and encryption.
+  summary: Cores that process payload data on board, such as image processing, image compression and encryption.
 
 - id: system-infrastructure
   title: System Infrastructure

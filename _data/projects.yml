@@ -103,6 +103,17 @@
   trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
   roadmap: true
 
+- name: OpenISP
+  repo: openisp
+  group: processing-modules
+  tagline: [Region of interest, 2D window filters, Binning, Pixel replacement]
+  summary: Image signal processing for spacecraft imagers with region of interest, pixel operations, window filters, binning and pixel replacement.
+  public: true
+  docs: true
+  trl: 3
+  trl_status: Fully verified by simulation. Not yet tested on hardware, no flight heritage.
+  roadmap: true
+
 - name: OpenDMA
   repo: opendma
   group: system-infrastructure
